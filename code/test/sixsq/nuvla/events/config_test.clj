@@ -5,8 +5,8 @@
 
 
 (deftest events-enabled
-  (is (true? (t/events-enabled "default")))
-  (is (false? (t/events-enabled "event"))))
+  (is (true? (t/events-enabled? "default")))
+  (is (false? (t/events-enabled? "event"))))
 
 (deftest supported-event-types
   (is (= (t/supported-event-types "default")

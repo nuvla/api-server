@@ -12,53 +12,17 @@
             [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
             [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
             [sixsq.nuvla.server.resources.common.utils :as u]
+            [sixsq.nuvla.server.resources.event :as event]
             [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
-            [sixsq.nuvla.server.util.log :as logu]
             [sixsq.nuvla.server.util.response :as r]
             [sixsq.nuvla.server.util.time :as time]))
-
-
-;; not referencing event ns to avoid circular dependencies
-(def ^:const event-resource-type "event")
-(def ^:const event-collection-type "event-collection")
-
-
-(def collection-acl {:query       ["group/nuvla-user"]
-                     :add         ["group/nuvla-user" "group/nuvla-anon"]
-                     :bulk-delete ["group/nuvla-user"]})
-
-
-(defn prepare-event
-  "Enriches the given event with additional info. To be called before crud/add"
-  [{{:keys [event-type resource timestamp severity] :as body} :body :as request}]
-  (let [;; authn-info   (auth/current-authentication request)
-        ;; simple-user? (not (a/is-admin? authn-info))
-        user-id       (auth/current-user-id request)
-        session-id    (auth/current-session-id request)
-        resource-type (or (some-> resource :resource-type)
-                          (some-> resource :href u/id->resource-type))
-        {:keys [category default-severity]} (config/get-event-config resource-type event-type)
-        new-body      (cond-> (assoc body
-                                :active-claim (auth/current-active-claim request)
-                                :category category
-                                :severity (or severity default-severity "medium"))
-                              resource-type (assoc-in [:resource :resource-type] resource-type)
-                              user-id (assoc :user-id user-id)
-                              session-id (assoc :session-id session-id)
-                              (nil? timestamp) (assoc :timestamp (time/now-str))
-                              ;; simple-user? (assoc :category "user")
-                              )]
-    (-> request
-        (assoc :body new-body)
-        ;; on a resource-deleted event, resource not present anymore
-        #_(can-view-resource?))))
 
 
 (def ^:dynamic *parent-event* nil)
 
 
 (defmacro with-parent-event
-  "Sets the given event as the parent event on any additional event created in scope"
+  "Sets the given event as the parent event on any additional event created in scope."
   [event-id & body]
   `(binding [*parent-event* ~event-id]
      ~@body))
@@ -68,20 +32,49 @@
 ;; CRUD
 ;;
 
-(def add-impl (std-crud/add-fn event-resource-type collection-acl event-resource-type))
+(defn- prepare-event
+  "Enriches the given event with additional info."
+  [{{:keys [event-type resource timestamp severity acl parent] :as body} :body :as request}]
+  (let [active-claim  (auth/current-active-claim request)
+        user-id       (auth/current-user-id request)
+        session-id    (auth/current-session-id request)
+        acl           (or acl (cond-> {:owners ["group/nuvla-admin"]}
+                                      active-claim (assoc :view-data [active-claim]
+                                                          :view-meta [active-claim])))
+        parent        (or parent *parent-event*)
+        resource-type (or (some-> resource :resource-type)
+                          (some-> resource :href u/id->resource-type))
+        {:keys [category default-severity]} (config/get-event-config resource-type event-type)
+        event         (cond-> (assoc body
+                                :resource-type event/resource-type
+                                :severity severity
+                                :active-claim (auth/current-active-claim request)
+                                :category category
+                                :severity (or severity default-severity "medium"))
+                              resource-type (assoc-in [:resource :resource-type] resource-type)
+                              parent (assoc :parent parent)
+                              acl (assoc :acl acl)
+                              user-id (assoc :user-id user-id)
+                              session-id (assoc :session-id session-id)
+                              (nil? timestamp) (assoc :timestamp (time/now-str)))]
+    (-> request
+        (assoc :body event))))
+
+
+(def add-impl (std-crud/add-fn event/resource-type event/collection-acl event/resource-type))
 
 
 (defn- -add
   [_this {:keys [body] :as request}]
-  (when (config/events-enabled (-> body :resource :resource-type))
+  (when (config/events-enabled? (-> body :resource :resource-type))
     (let [resp (-> request
-                   (prepare-event)
+                   prepare-event
                    add-impl)]
-      (ka-crud/publish-on-add event-resource-type resp)
+      (ka-crud/publish-on-add event/resource-type resp)
       resp)))
 
 
-(def retrieve-impl (std-crud/retrieve-fn event-resource-type))
+(def retrieve-impl (std-crud/retrieve-fn event/resource-type))
 
 
 (defn -retrieve [_this request]
@@ -109,7 +102,7 @@
   (throw (r/ex-bad-method request)))
 
 
-(def query-impl (std-crud/query-fn event-resource-type collection-acl event-collection-type))
+(def query-impl (std-crud/query-fn event/resource-type event/collection-acl event/collection-type))
 
 
 (defn -query [_this {{:keys [orderby]} :cimi-params :as request}]
@@ -122,25 +115,13 @@
 ;;
 
 (defn add-event
-  [this request resource-type resource-uuid {:keys [acl severity parent] :as event}]
-  (when (config/events-enabled (-> event :resource :resource-type))
-    (let [active-claim   (auth/current-active-claim request)
-          acl            (or acl (cond-> {:owners ["group/nuvla-admin"]}
-                                         active-claim (assoc :view-data [active-claim]
-                                                             :view-meta [active-claim])))
-          parent         (or parent *parent-event*)
-          event-map      (-> event
-                             (merge {:resource-type event-resource-type
-                                     :resource      (cond-> {:resource-type resource-type}
-                                                            resource-uuid (assoc :href (u/resource-id resource-type resource-uuid)))
-                                     :severity      severity})
-                             (cond->
-                               acl (assoc :acl acl)
-                               parent (assoc :parent parent)))
-          create-request {:params      {:resource-name event-resource-type}
-                          :body        event-map
-                          :nuvla/authn (auth/current-authentication request)}]
-      (p/add this create-request))))
+  [this request resource-type resource-uuid event]
+  (let [resource       (cond-> {:resource-type resource-type}
+                               resource-uuid (assoc :href (u/resource-id resource-type resource-uuid)))
+        create-request {:params      {:resource-name event/resource-type}
+                        :body        (assoc event :resource resource)
+                        :nuvla/authn (auth/current-authentication request)}]
+    (p/add this create-request)))
 
 
 (defn -add-collection-event
@@ -154,7 +135,7 @@
 
 
 (defn -search [_this {:keys [event-type resource-type resource-href category start end] :as _opts}]
-  (some-> event-resource-type
+  (some-> event/resource-type
           (crud/query-as-admin
             {:cimi-params
              {:filter (parser/parse-cimi-filter
@@ -268,3 +249,4 @@
     (-wrap-crud-delete this delete-fn))
   (wrap-action [this action-fn]
     (-wrap-action this action-fn)))
+

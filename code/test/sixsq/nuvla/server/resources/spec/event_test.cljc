@@ -21,7 +21,6 @@
    :resource      {:resource-type "module"
                    :href "module/HNSciCloud-RHEA/S3"}
    :active-claim  "user/joe"
-   :details       {:state "Started"}
    :category      "state"
    :severity      "critical"})
 

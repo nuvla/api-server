@@ -7,6 +7,8 @@ configuration option.
   (:require
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.events.impl :as events]
+    [sixsq.nuvla.events.std-events :as std-events]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -73,6 +75,11 @@ configuration option.
 (defmethod crud/add resource-type
   [{{:keys [parent name value acl]} :body :as request}]
   (when (= name "ss:state")
+    (events/add-resource-event
+      request
+      parent
+      {:event-type (std-events/state-changed-event-type "deployment")
+       :details    {:new-state (:state value)}})
     #_(event-utils/create-event-old parent acl
                                     :state value
                                     :severity "medium"

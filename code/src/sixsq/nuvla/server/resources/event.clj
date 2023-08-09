@@ -110,7 +110,7 @@ an application.
 
 
 ;; disable events for the `event` resource
-(defmethod events-config/events-enabled resource-type [_]
+(defmethod events-config/events-enabled? resource-type [_]
   false)
 
 
@@ -130,3 +130,4 @@ an application.
   []
   (std-crud/initialize resource-type ::event/schema)
   (md/register resource-metadata))
+

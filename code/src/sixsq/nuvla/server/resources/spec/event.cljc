@@ -58,9 +58,6 @@
              :json-schema/description "event message")))
 
 
-;; Essential details of the events, indexed by ES.
-;; DO NOT overuse, ES has a max number of keys it can index.
-;; TODO: make it stricter, depending on the event category
 (s/def ::details
   (-> (st/spec (su/constrained-map keyword? any?))
       (assoc :name "details"
@@ -69,7 +66,7 @@
 
 
 ;; Freeform payload, not indexed by ES. Can be used to store
-;; full request/response payloads, for replaying.
+;; full request/response payloads, for full history/replaying.
 (s/def ::payload
   (-> (st/spec (su/constrained-map keyword? any?))
       (assoc :name "payload"
@@ -124,7 +121,10 @@
                                             ::details
                                             ::payload]})
                (-> (st/spec events-config/event-supported?)
-                   (assoc :reason "event type not supported for resource type "
+                   (assoc :reason "event type not supported on resource type"
+                          :json-schema/type "object"))
+               (-> (st/spec events-config/details-valid?)
+                   (assoc :reason "event details not valid for event type"
                           :json-schema/type "object"))))
       (assoc :name "event"
              :json-schema/type "object"

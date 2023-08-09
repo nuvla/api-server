@@ -285,7 +285,7 @@
           do-action-fn          (fn [_] (response/map-response "action executed" 202))
           do-action-with-events (p/wrap-action event-manager do-action-fn)
           request               (create-test-request resource-type resource-uuid action {})
-          response              (with-redefs [config/supported-event-types-impl
+          response              (with-redefs [std-events/supported-event-types-impl
                                               (constantly (std-events/action-event-types resource-type action))]
                                   (do-action-with-events request))]
       (is (= 202 (:status response)))
@@ -308,7 +308,7 @@
           do-action-fn          (fn [_] (response/response-not-found resource-id))
           do-action-with-events (p/wrap-action event-manager do-action-fn)
           request               (create-test-request resource-type resource-uuid action {})
-          response              (with-redefs [config/supported-event-types-impl
+          response              (with-redefs [std-events/supported-event-types-impl
                                               (constantly (std-events/action-event-types resource-type action))]
                                   (do-action-with-events request))]
       (is (= 404 (:status response)))
@@ -329,7 +329,7 @@
           do-action-fn          (fn [_] (throw (ex-info "unexpected error" {})))
           do-action-with-events (p/wrap-action event-manager do-action-fn)
           request               (create-test-request resource-type resource-uuid action {})]
-      (is (thrown? ExceptionInfo (with-redefs [config/supported-event-types-impl
+      (is (thrown? ExceptionInfo (with-redefs [std-events/supported-event-types-impl
                                                (constantly (std-events/action-event-types resource-type action))]
                                    (do-action-with-events request))))
       (let [[event1 event2 :as search-results] (p/search event-manager {:resource-type resource-type})]
@@ -346,7 +346,7 @@
 
 (defn check-disable-events
   [event-manager]
-  (with-redefs [config/events-enabled-impl (constantly false)]
+  (with-redefs [std-events/events-enabled?-impl (constantly false)]
     (testing "events on successful resource creation"
       (let [resource-type   "fake"
             resource-id     (u/resource-id resource-type (u/random-uuid))
@@ -386,7 +386,7 @@
             do-action-fn          (fn [_] (response/map-response "action executed" 202))
             do-action-with-events (p/wrap-action event-manager do-action-fn)
             request               (create-test-request resource-type resource-uuid action {})
-            response              (with-redefs [config/supported-event-types-impl
+            response              (with-redefs [std-events/supported-event-types-impl
                                                 (constantly (std-events/action-event-types resource-type action))]
                                     (do-action-with-events request))]
         (is (= 202 (:status response)))
