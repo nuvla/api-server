@@ -22,7 +22,7 @@
       (assoc :name "category"
              :json-schema/type "string"
              :json-schema/description "category of event"
-             :json-schema/value-scope {:values ["alarm" "crud" "action" "system" "email"]}
+             :json-schema/value-scope {:values ["command" "crud" "action" "state" "alarm" "email"]}
 
              :json-schema/order 30)))
 

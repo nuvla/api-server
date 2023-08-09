@@ -12,17 +12,34 @@
 (def valid-event
   {:id            "event/262626262626262"
    :resource-type t/resource-type
+   :event-type    "module.create"
+   :category      "command"
    :created       event-timestamp
    :updated       event-timestamp
+   :timestamp     event-timestamp
    :acl           {:owners   ["user/joe"]
                    :view-acl ["group/nuvla-anon"]}
-   :event-type    "module.create"
-   :timestamp     event-timestamp
    :resource      {:resource-type "module"
                    :href "module/HNSciCloud-RHEA/S3"}
    :active-claim  "user/joe"
-   :category      "state"
    :severity      "critical"})
+
+(def valid-state-event
+  {:id            "event/262626262626263"
+   :resource-type t/resource-type
+   :event-type    "infrastructure-service.state.changed"
+   :category      "state"
+   :created       event-timestamp
+   :updated       event-timestamp
+   :timestamp     event-timestamp
+   :acl           {:owners   ["user/joe"]
+                   :view-acl ["group/nuvla-anon"]}
+   :resource      {:resource-type "infrastructure-service"
+                   :href "infrastructure-service/xyz"}
+   :active-claim  "user/joe"
+   :severity      "medium"
+   :details       {:old-state "Initialized"
+                   :new-state "Started"}})
 
 
 (deftest check-supported-event-types
@@ -50,6 +67,13 @@
   (doseq [valid-category ["state" "alarm"]]
     (stu/is-valid ::event/schema (assoc valid-event :category valid-category)))
   (stu/is-invalid ::event/schema (assoc valid-event :category "unknown-category")))
+
+
+(deftest check-details
+  (stu/is-valid ::event/schema valid-state-event)
+  (stu/is-valid ::event/schema (update valid-state-event :details dissoc :old-state))
+  (stu/is-invalid ::event/schema (update valid-state-event :details dissoc :new-state))
+  (stu/is-invalid ::event/schema (assoc valid-state-event :details {:unsupported ""})))
 
 
 (deftest check-event-schema
