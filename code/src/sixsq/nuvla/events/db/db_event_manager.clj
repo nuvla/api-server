@@ -1,18 +1,12 @@
 (ns sixsq.nuvla.events.db.db-event-manager
-  (:require [clojure.string :as str]
-            [sixsq.nuvla.auth.acl-resource :as a]
-            [sixsq.nuvla.auth.utils :as auth]
-            [sixsq.nuvla.db.filter.parser :as parser]
+  (:require [sixsq.nuvla.auth.acl-resource :as a]
             [sixsq.nuvla.db.impl :as db]
             [sixsq.nuvla.events.config :as config]
-            [sixsq.nuvla.events.protocol :refer [EventManager] :as p]
-            [sixsq.nuvla.events.std-events :as std-events]
-            [sixsq.nuvla.events.util.event-manager-utils :refer [with-parent-event] :as utils]
-            [sixsq.nuvla.server.resources.common.crud :as crud]
+            [sixsq.nuvla.events.protocol :refer [EventManager]]
+            [sixsq.nuvla.events.util.event-manager-utils :as utils]
             [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
             [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
             [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
-            [sixsq.nuvla.server.resources.common.utils :as u]
             [sixsq.nuvla.server.resources.event :as event]
             [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
             [sixsq.nuvla.server.util.response :as r]))
@@ -31,6 +25,8 @@
   (when (config/events-enabled? (-> body :resource :resource-type))
     (let [resp (-> request
                    utils/enrich-event
+                   utils/validate-parent
+                   utils/set-acl
                    add-impl)]
       (ka-crud/publish-on-add event/resource-type resp)
       resp)))
@@ -72,112 +68,6 @@
     (assoc-in request [:cimi-params :orderby] (if (seq orderby) orderby [["timestamp" :desc]]))))
 
 
-;;
-;; Utility functions
-;;
-
-(defn add-event
-  [this request resource-type resource-uuid event]
-  (let [resource       (cond-> {:resource-type resource-type}
-                               resource-uuid (assoc :href (u/resource-id resource-type resource-uuid)))
-        create-request {:params      {:resource-name event/resource-type}
-                        :body        (assoc event :resource resource)
-                        :nuvla/authn (auth/current-authentication request)}]
-    (p/add this create-request)))
-
-
-(defn -add-collection-event
-  [this request resource-type event]
-  (add-event this request resource-type nil event))
-
-
-(defn -add-resource-event
-  [this request resource-id event]
-  (add-event this request (u/id->resource-type resource-id) (u/id->uuid resource-id) event))
-
-
-(defn -search [_this {:keys [event-type resource-type resource-href category start end] :as _opts}]
-  (some-> event/resource-type
-          (crud/query-as-admin
-            {:cimi-params
-             {:filter (parser/parse-cimi-filter
-                        (str/join " and "
-                                  (cond-> []
-                                          resource-type (conj (str "resource/resource-type='" resource-type "'"))
-                                          resource-href (conj (str "resource/href='" resource-href "'"))
-                                          event-type (conj (str "event-type='" event-type "'"))
-                                          category (conj (str "category='" category "'"))
-                                          start (conj (str "timestamp>='" start "'"))
-                                          end (conj (str "timestamp<'" end "'")))))}})
-          second))
-
-
-;; CRUD wrapping
-
-(defn -wrap-crud-add [this add-fn]
-  (fn [{{resource-type :resource-name} :params :as request}]
-    (let [operation "create"]
-      (with-parent-event (-> (-add-collection-event
-                               this request resource-type
-                               {:event-type (std-events/operation-requested-event-type resource-type operation)})
-                             (get-in [:body :resource-id]))
-        (try
-          (let [{status :status {resource-id :resource-id} :body :as response} (add-fn request)]
-            (if (= 201 status)
-              (-add-resource-event this request resource-id
-                                   {:event-type (std-events/operation-completed-event-type resource-type operation)})
-              (-add-collection-event this request resource-type
-                                     {:event-type (std-events/operation-failed-event-type resource-type operation)
-                                      :message    (str "Resource creation failed with status " status)}))
-            response)
-          (catch Throwable t
-            (-add-collection-event this request resource-type
-                                   {:event-type (std-events/operation-failed-event-type resource-type operation)
-                                    :message    (str "Resource creation failed with an unexpected error")})
-            (throw t)))))))
-
-
-(defn with-resource-operation-events
-  "Creates a `<resource-type>.<operation>` event, sets it as parent of subsequent events, and finally creates
-   either a `<resource-type>.<operation>.completed` event or a `<resource-type>.<operation>.failed` event."
-  [this resource-type resource-uuid operation request op-fn]
-  (let [resource-id (u/resource-id resource-type resource-uuid)]
-    (with-parent-event (-> (-add-resource-event this request resource-id
-                                                {:event-type (std-events/operation-requested-event-type resource-type operation)})
-                           (get-in [:body :resource-id]))
-      (try
-        (let [{status :status :as response} (op-fn request)]
-          (if (<= 200 status 299)
-            (-add-resource-event this request resource-id
-                                 {:event-type (std-events/operation-completed-event-type resource-type operation)})
-            (-add-resource-event this request resource-id
-                                 {:event-type (std-events/operation-failed-event-type resource-type operation)
-                                  :message    (str operation " failed with status " status)}))
-          response)
-        (catch Throwable t
-          (-add-resource-event this request resource-id
-                               {:event-type (std-events/operation-failed-event-type resource-type operation)
-                                :message    (str operation " failed with an unexpected error")})
-          (throw t))))))
-
-(defn -wrap-crud-edit [this edit-fn]
-  (fn [request]
-    (let [{{resource-type :resource-name uuid :uuid} :params} request]
-      (with-resource-operation-events this resource-type uuid "update" request edit-fn))))
-
-
-(defn -wrap-crud-delete [this delete-fn]
-  (fn [request]
-    (let [{{resource-type :resource-name uuid :uuid} :params} request]
-      (with-resource-operation-events this resource-type uuid "delete" request delete-fn))))
-
-
-(defn -wrap-action [this action-fn]
-  (fn [request]
-    (let [{{resource-type :resource-name uuid :uuid action :action} :params} request]
-      (with-resource-operation-events this resource-type uuid action request action-fn))))
-
-
 (deftype DbEventManager []
   EventManager
 
@@ -197,18 +87,17 @@
     (-query this request))
 
   (add-collection-event [this request resource-type event]
-    (-add-collection-event this request resource-type event))
+    (utils/-add-collection-event this request resource-type event))
   (add-resource-event [this request resource-id event]
-    (-add-resource-event this request resource-id event))
+    (utils/-add-resource-event this request resource-id event))
   (search [this opts]
-    (-search this opts))
+    (utils/-search this opts))
 
   (wrap-crud-add [this add-fn]
-    (-wrap-crud-add this add-fn))
+    (utils/-wrap-crud-add this add-fn))
   (wrap-crud-edit [this edit-fn]
-    (-wrap-crud-edit this edit-fn))
+    (utils/-wrap-crud-edit this edit-fn))
   (wrap-crud-delete [this delete-fn]
-    (-wrap-crud-delete this delete-fn))
+    (utils/-wrap-crud-delete this delete-fn))
   (wrap-action [this action-fn]
-    (-wrap-action this action-fn)))
-
+    (utils/-wrap-action this action-fn)))

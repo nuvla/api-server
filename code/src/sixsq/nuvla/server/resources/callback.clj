@@ -21,6 +21,8 @@ appropriate users.
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.events.config :as config]
+    [sixsq.nuvla.events.std-events :as std-events]
     [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -182,6 +184,16 @@ appropriate users.
       (let [msg "cannot create user callback"]
         (throw (ex-info msg (r/map-response msg 500 "")))))))
 
+
+;;
+;; events
+;;
+
+(defmethod config/supported-event-types resource-type
+  [_]
+  (merge
+    (std-events/supported-event-types-impl resource-type)
+    (std-events/action-event-types resource-type "execute" {:allow-anon true})))
 
 ;;
 ;; initialization: common schema for all subtypes

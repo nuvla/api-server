@@ -10,6 +10,8 @@ address. When the callback is triggered, the `validated` flag is set to true.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.events.config :as config]
+    [sixsq.nuvla.events.std-events :as std-events]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -135,6 +137,17 @@ address. When the callback is triggered, the `validated` flag is set to true.
           (catch Exception e
             (.printStackTrace e)))
         (throw (r/ex-bad-request "email address is already validated"))))))
+
+
+;;
+;; events
+;;
+
+(defmethod config/supported-event-types resource-type
+  [_]
+  (merge
+    (std-events/supported-event-types-impl resource-type)
+    (std-events/action-event-types resource-type "validate" {:allow-anon true})))
 
 
 ;;

@@ -12,6 +12,8 @@ particular NuvlaBox release.
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.events.config :as config]
+    [sixsq.nuvla.events.std-events :as std-events]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -1073,6 +1075,19 @@ particular NuvlaBox release.
                       (utils/can-generate-new-api-key? resource) (conj generate-new-key-op)
                       (utils/can-unsuspend? resource) (conj unsuspend-op)
                       )))))
+
+;;
+;; events
+;;
+
+(defmethod config/supported-event-types resource-type
+  [_]
+  (merge
+    (std-events/supported-event-types-impl resource-type)
+    (std-events/actions-event-types resource-type
+                                    ["activate"
+                                     "commission"]
+                                    {:allow-anon true})))
 
 ;;
 ;; initialization

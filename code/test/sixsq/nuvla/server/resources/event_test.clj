@@ -20,15 +20,15 @@
                   :created    "2015-01-16T08:05:00.00Z"
                   :updated    "2015-01-16T08:05:00.00Z"
                   :timestamp  "2015-01-16T08:05:00.00Z"
-                  :event-type "run.create"
-                  :resource   {:href "run/45614147-aed1-4a24-889d-6365b0b1f2cd"}
+                  :event-type "user.create"
+                  :resource   {:href "user/45614147-aed1-4a24-889d-6365b0b1f2cd"}
                   :severity   "critical"})
 
 
 (def valid-events
   (for [i (range nb-events)]
     (-> valid-event
-        (assoc-in [:resource :href] (str "run/" i))
+        (assoc-in [:resource :href] (str "user/" i))
         (assoc :timestamp (if (even? i) "2016-01-16T08:05:00.00Z" "2015-01-16T08:05:00.00Z")))))
 
 
@@ -37,7 +37,7 @@
   (let [state (-> (ltu/ring-app)
                   session
                   (content-type "application/json")
-                  (header authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon"))]
+                  (header authn-info-header "group/nuvla-user"))]
     (doseq [valid-event valid-events]
       (-> state
           (request base-uri
@@ -127,23 +127,23 @@
 
 
 (deftest pagination-occurs-after-filtering
-  (are-counts 1 "?filter=resource/href='run/5'")
-  (are-counts 1 "?filter=resource/href='run/5'&last=1")
-  (are-counts 1 "?last=1&filter=resource/href='run/5'"))
+  (are-counts 1 "?filter=resource/href='user/5'")
+  (are-counts 1 "?filter=resource/href='user/5'&last=1")
+  (are-counts 1 "?last=1&filter=resource/href='user/5'"))
 
 
 (deftest resources-filtering
   (doseq [i (range nb-events)]
-    (are-counts 1 (str "?filter=resource/href='run/" i "'")))
-  (are-counts 0 "?filter=resource/href='run/100'")
+    (are-counts 1 (str "?filter=resource/href='user/" i "'")))
+  (are-counts 0 "?filter=resource/href='user/100'")
 
-  (are-counts 1 "?filter=resource/href='run/3' and category='command'")
-  (are-counts 1 "?filter=category='command' and resource/href='run/3'")
-  (are-counts 1 "?filter=category='command'       and     resource/href='run/3'")
+  (are-counts 1 "?filter=resource/href='user/3' and category='command'")
+  (are-counts 1 "?filter=category='command' and resource/href='user/3'")
+  (are-counts 1 "?filter=category='command'       and     resource/href='user/3'")
 
-  (are-counts 1 "?filter=resource/href='run/3'")
-  (are-counts 0 "?filter=category='WRONG' and resource/href='run/3'")
-  (are-counts 0 "?filter=resource/href='run/3' and category='WRONG'")
+  (are-counts 1 "?filter=resource/href='user/3'")
+  (are-counts 0 "?filter=category='WRONG' and resource/href='user/3'")
+  (are-counts 0 "?filter=resource/href='user/3' and category='WRONG'")
   (are-counts nb-events "?filter=category='command'"))
 
 
@@ -168,7 +168,7 @@
 
 (deftest filter-multiple
   (are-counts 0 "?filter=category='command'&filter=category='XXX'")
-  (are-counts 1 "?filter=category='command'&filter=resource/href='run/3'"))
+  (are-counts 1 "?filter=category='command'&filter=resource/href='user/3'"))
 
 
 (deftest filter-nulls
@@ -182,7 +182,7 @@
 
 (deftest filter-prefix
   (are-counts nb-events "?filter=category^='co'")
-  (are-counts nb-events "?filter=resource/href^='run/'")
+  (are-counts nb-events "?filter=resource/href^='user/'")
   (are-counts 0 "?filter=category^='coXXX'")
   (are-counts 0 "?filter=resource/href^='XXX/'"))
 

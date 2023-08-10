@@ -623,7 +623,7 @@
 
 
 ;;
-;; Events
+;; events
 ;;
 
 (def event-base-uri (str p/service-context "event"))

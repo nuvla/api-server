@@ -216,21 +216,22 @@
                            [(resource-event "deployment.update.completed")]])
 
           (testing "user should not be able to change parent credential to something not accessible"
-            (with-redefs [crud/retrieve-by-id-as-admin (fn [id]
-                                                         (if (= id "credential/x")
-                                                           {:id  "credential/x"
-                                                            :acl {:owners ["group/nuvla-admin"]}}
-                                                           (crud/retrieve-by-id-as-admin id)))]
-              (-> session-user
-                  (request deployment-url
-                           :request-method :put
-                           :body (json/write-str {:parent "credential/x"}))
-                  (ltu/body->edn)
-                  (ltu/is-status 403))
+            (let [retrieve-by-id-as-admin crud/retrieve-by-id-as-admin]
+              (with-redefs [crud/retrieve-by-id-as-admin (fn [id]
+                                                           (if (= id "credential/x")
+                                                             {:id  "credential/x"
+                                                              :acl {:owners ["group/nuvla-admin"]}}
+                                                             (retrieve-by-id-as-admin id)))]
+                (-> session-user
+                    (request deployment-url
+                             :request-method :put
+                             :body (json/write-str {:parent "credential/x"}))
+                    (ltu/body->edn)
+                    (ltu/is-status 403))
 
-              (ltu/are-events session-admin
-                              [(resource-event "deployment.update")
-                               [(resource-event "deployment.update.failed")]])))
+                (ltu/are-events session-admin
+                                [(resource-event "deployment.update")
+                                 [(resource-event "deployment.update.failed")]]))))
 
           ;; attempt to start the deployment and check the start job was created
           (let [job-id  (-> session-user

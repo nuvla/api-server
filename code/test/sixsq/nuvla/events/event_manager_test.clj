@@ -1,11 +1,11 @@
 (ns sixsq.nuvla.events.event-manager-test
   (:require [clojure.test :refer [is testing]]
             [sixsq.nuvla.auth.utils :as auth]
-            [sixsq.nuvla.events.config :as config]
             [sixsq.nuvla.events.std-events :as std-events]
+            [sixsq.nuvla.server.resources.common.crud :as crud]
             [sixsq.nuvla.server.resources.common.utils :as u]
             [sixsq.nuvla.events.protocol :as p]
-            [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+            [sixsq.nuvla.server.resources.event :as event]
             [sixsq.nuvla.server.util.response :as response]
             [sixsq.nuvla.server.util.time :as time])
   (:import (clojure.lang ExceptionInfo)))
@@ -45,38 +45,86 @@
     :nuvla/authn
     {:user-id      "user/alpha"
      :active-claim "user/alpha"
-     :claims       #{"group/nuvla-user" "group/nuvla-anon"}}}))
+     :claims       #{"user/alpha" "group/nuvla-user" "group/nuvla-anon"}}}))
+
+
+(defn is-status [response status]
+  (is (= status (:status response)))
+  response)
+
+
+(defn add-and-retrieve-resource [resource-type data]
+  (let [create-resource-request (create-test-request resource-type data)
+        {:keys [status body]} (crud/add create-resource-request)]
+    (is (= 201 status))
+    (crud/retrieve-by-id-as-admin (:resource-id body))))
+
+
+(defn add-resource-event
+  [event-manager resource-id event]
+  (let [request (create-test-request "event" event)
+        {:keys [status body]} (p/add-resource-event event-manager request resource-id event)]
+    (is (= 201 status))
+    (crud/retrieve-by-id-as-admin (:resource-id body))))
+
+
+(defn add-collection-event [event-manager resource-type event]
+  (let [request (create-test-request "event" event)
+        {:keys [status body]} (p/add-collection-event event-manager request resource-type event)]
+    (is (= 201 status))
+    (crud/retrieve-by-id-as-admin (:resource-id body))))
 
 
 (defn check-add-event
   [event-manager]
-  (testing "adding and retrieving collection events"
-    (let [resource-type "user"
-          event         {:event-type "user.create"
-                         :resource   {:resource-type resource-type}}
-          request       (create-test-request "event" event)]
+  (let [resource-type "user"
+        event         {:event-type "user.create"}
+        resource-uuid (u/random-uuid)
+        resource-id   (u/resource-id resource-type resource-uuid)]
 
-      (-> {:response (p/add-collection-event event-manager request resource-type event)}
-          (ltu/is-status 201))
-
+    (testing "adding and searching collection events"
+      (add-collection-event event-manager resource-type event)
       (let [search-results (p/search event-manager {:resource-type "user"})]
         (is (= 1 (count search-results)))
-        (is (= event (select-keys (first search-results) (keys event)))))))
+        (is (= event (select-keys (first search-results) (keys event))))))
 
-  (testing "adding and retrieving resource events"
-    (let [resource-type "user"
-          resource-uuid (u/random-uuid)
-          resource-id   (u/resource-id resource-type resource-uuid)
-          event         {:event-type "user.create"
-                         :resource   {:resource-type resource-type
-                                      :href          resource-id}}
-          request       (create-test-request "event" event)]
-      (-> {:response (p/add-resource-event event-manager request resource-id event)}
-          (ltu/is-status 201))
-
+    (testing "adding and searching resource events"
+      (add-resource-event event-manager resource-id event)
       (let [search-results (p/search event-manager {:resource-href resource-id})]
         (is (= 1 (count search-results)))
-        (is (= event (select-keys (first search-results) (keys event))))))))
+        (is (= event (select-keys (first search-results) (keys event))))))
+
+    (testing "acl"
+      (testing "acl from resource"
+        (let [valid-email {:address   "admin@example.com"
+                           :validated true}
+              email       (add-and-retrieve-resource "email" valid-email)
+              event       (add-resource-event event-manager (:id email)
+                                              {:event-type "email.create"
+                                               :category   "command"})]
+          (is (= (:acl event) (:acl email))))))
+
+    (testing "parent field"
+      (testing "valid parent event"
+        (let [good-parent (add-resource-event event-manager resource-id event)
+              event       (assoc event :parent (:id good-parent))]
+          (add-resource-event event-manager resource-id event)))
+
+      (testing "invalid parent event"
+        (let [non-existing-parent-id (u/resource-id event/resource-type "xyz")
+              event                  (assoc event :parent non-existing-parent-id)
+              ex                     (is (thrown? ExceptionInfo
+                                                  (add-resource-event event-manager resource-id event)))]
+          (is (= 404 (:status (ex-data ex))))))
+
+      (testing "invalid parent type"
+        (let [valid-email {:address   "admin2@example.com"
+                           :validated true}
+              email       (add-and-retrieve-resource "email" valid-email)
+              event       (assoc event :parent (:id email))
+              ex          (is (thrown? ExceptionInfo
+                                       (add-resource-event event-manager resource-id event)))]
+          (is (= 400 (:status (ex-data ex)))))))))
 
 
 (defn check-search-events

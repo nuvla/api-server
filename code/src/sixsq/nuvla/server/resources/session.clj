@@ -87,6 +87,8 @@ status, a 'set-cookie' header, and a 'location' header with the created
     [sixsq.nuvla.auth.utils.timestamp :as ts]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.events.config :as config]
+    [sixsq.nuvla.events.std-events :as std-events]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -505,6 +507,17 @@ status, a 'set-cookie' header, and a 'location' header with the created
           {})))
     (catch Exception e
       (or (ex-data e) (throw e)))))
+
+
+;;
+;; events
+;;
+
+(defmethod config/supported-event-types resource-type
+  [_]
+  (merge
+    (std-events/supported-event-types-impl resource-type)
+    (std-events/crud-operation-event-types resource-type "create" "resource-create" {:allow-anon true})))
 
 
 ;;

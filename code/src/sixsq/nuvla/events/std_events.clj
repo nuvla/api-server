@@ -19,24 +19,30 @@
   (str resource-type ".state.changed"))
 
 
-(defn crud-event-types [resource-type]
-  {(operation-requested-event-type resource-type "create") {:category "command"}
-   (operation-completed-event-type resource-type "create") {:category "crud" :subcategory "resource-create"}
-   (operation-failed-event-type resource-type "create")    {:category "crud" :subcategory "resource-create"}
-
-   (operation-requested-event-type resource-type "update") {:category "command"}
-   (operation-completed-event-type resource-type "update") {:category "crud" :subcategory "resource-update"}
-   (operation-failed-event-type resource-type "update")    {:category "crud" :subcategory "resource-update"}
-
-   (operation-requested-event-type resource-type "delete") {:category "command"}
-   (operation-completed-event-type resource-type "delete") {:category "crud" :subcategory "resource-delete"}
-   (operation-failed-event-type resource-type "delete")    {:category "crud" :subcategory "resource-delete"}})
+(defn crud-operation-event-types
+  ([resource-type op crud-subcategory]
+   (crud-operation-event-types resource-type op crud-subcategory nil))
+  ([resource-type op crud-subcategory extra-opts]
+   {(operation-requested-event-type resource-type op) (merge {:category "command"} extra-opts)
+    (operation-completed-event-type resource-type op) (merge {:category "crud" :subcategory crud-subcategory} extra-opts)
+    (operation-failed-event-type resource-type op)    (merge {:category "crud" :subcategory crud-subcategory} extra-opts)}))
 
 
-(defn action-event-types [resource-type action]
-  {(operation-requested-event-type resource-type action) {:category "command"}
-   (operation-completed-event-type resource-type action) {:category "action"}
-   (operation-failed-event-type resource-type action)    {:category "action"}})
+(defn crud-event-types
+  [resource-type]
+  (merge
+    (crud-operation-event-types resource-type "create" "resource-create")
+    (crud-operation-event-types resource-type "update" "resource-delete")
+    (crud-operation-event-types resource-type "delete" "resource-delete")))
+
+
+(defn action-event-types
+  ([resource-type action]
+   (action-event-types resource-type action nil))
+  ([resource-type action extra-opts]
+   {(operation-requested-event-type resource-type action) (merge {:category "command"} extra-opts)
+    (operation-completed-event-type resource-type action) (merge {:category "action"} extra-opts)
+    (operation-failed-event-type resource-type action)    (merge {:category "action"} extra-opts)}))
 
 
 (defn- resource-type-actions
@@ -49,13 +55,17 @@
        (map second)))
 
 
-(defn actions-event-types [resource-type]
-  (let [actions (resource-type-actions resource-type)]
-    (reduce
-      (fn [m action]
-        (merge m (action-event-types resource-type action)))
-      {}
-      actions)))
+(defn actions-event-types
+  ([resource-type]
+   (actions-event-types resource-type (resource-type-actions resource-type)))
+  ([resource-type actions]
+   (actions-event-types resource-type actions nil))
+  ([resource-type actions extra-opts]
+   (reduce
+     (fn [m action]
+       (merge m (action-event-types resource-type action extra-opts)))
+     {}
+     actions)))
 
 
 (defn state-event-types [resource-type]

@@ -94,10 +94,6 @@ paging, etc. parameters are not supported.
 ;; CRUD operations: only retrieve and query are supported
 ;;
 
-(defmethod crud/add resource-type
-  [request]
-  (throw (r/ex-bad-method request)))
-
 
 (defmethod crud/retrieve resource-type
   [{{uuid :uuid} :params :as request}]
@@ -119,16 +115,6 @@ paging, etc. parameters are not supported.
     (get @templates id)
     (catch Exception e
       (or (ex-data e) (throw e)))))
-
-
-(defmethod crud/edit resource-type
-  [request]
-  (throw (r/ex-bad-method request)))
-
-
-(defmethod crud/delete resource-type
-  [request]
-  (throw (r/ex-bad-method request)))
 
 
 (defmethod crud/query resource-type

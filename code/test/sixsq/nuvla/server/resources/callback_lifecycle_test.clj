@@ -166,3 +166,4 @@
   (let [resource-uri (str p/service-context (u/new-resource-id callback/resource-type))]
     (ltu/verify-405-status [[resource-uri :put]
                             [resource-uri :post]])))
+

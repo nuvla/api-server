@@ -263,17 +263,31 @@
 ;; CRUD augmented with events recording
 ;;
 
+
+(defn- implements-multifn?
+  [multifn dispatch-value]
+  (some? (get (methods multifn) dispatch-value)))
+
+
 (defn add-with-events [request]
+  (when-not (implements-multifn? add (resource-name-dispatch request))
+    (throw (r/ex-bad-method request)))
   ((events/wrap-crud-add add) request))
 
 
 (defn edit-with-events [request]
+  (when-not (implements-multifn? edit (resource-name-dispatch request))
+    (throw (r/ex-bad-method request)))
   ((events/wrap-crud-edit edit) request))
 
 
 (defn delete-with-events [request]
+  (when-not (implements-multifn? delete (resource-name-dispatch request))
+    (throw (r/ex-bad-method request)))
   ((events/wrap-crud-delete delete) request))
 
 
 (defn do-action-with-events [request]
+  (when-not (implements-multifn? do-action (resource-name-and-action-dispatch request))
+    (throw (r/ex-bad-action request (resource-name-and-action-dispatch request))))
   ((events/wrap-action do-action) request))
