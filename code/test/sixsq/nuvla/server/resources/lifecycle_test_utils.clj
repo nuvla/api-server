@@ -549,7 +549,7 @@
           (let [ts (System/currentTimeMillis)]
             (.close kafka)
             (log/debug (str "--->: close kafka done in: "
-                            (- (System/currentTimeMillis) ts))) )
+                            (- (System/currentTimeMillis) ts))))
           (ke/delete-dir log-dir))))))
 
 
@@ -703,7 +703,7 @@
   (is (= expected-event (select-keys event (conj (keys expected-event) :parent)))))
 
 
-(defn- check-events
+(defn check-events
   "Given a nested vector of expected events and a vector of actual events,
    checks that the actual event hierarchy matches the expected one, and that
    the expected event properties match."
@@ -715,19 +715,19 @@
            events))))
 
 
-(defn are-events
+(defmacro are-events
   "Checks that the latest recorded events match the events passed as parameters.
    Events should be a vector of events or sub-vectors of the same form.
    Sub-vectors are meant to be children of the event that precedes.
    Only specified keys are checked, events might contain additional keys that are not checked."
   [session expected-events]
-  (let [expected-count (count (flatten expected-events))
-        last-events (-> session
-                        (request (str event-base-uri "?first=0&last=" expected-count))
-                        (body->edn)
-                        (is-status 200)
-                        (body)
-                        :resources
-                        reverse)]
-    (is (= expected-count (count last-events)))
-    (check-events expected-events last-events)))
+  `(let [expected-count# (count (flatten ~expected-events))
+         last-events#    (-> ~session
+                             (request (str event-base-uri "?first=0&last=" expected-count#))
+                             (body->edn)
+                             (is-status 200)
+                             (body)
+                             :resources
+                             reverse)]
+     (is (= expected-count# (count last-events#)))
+     (check-events ~expected-events last-events#)))
