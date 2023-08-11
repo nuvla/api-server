@@ -628,19 +628,22 @@
 
 (def event-base-uri (str p/service-context "event"))
 
-(defn dump-events [session {:keys [keys payload?]}]
-  (pprint
-    (-> session
-        (request (str event-base-uri))
-        (body->edn)
-        (is-status 200)
-        :response
-        :body
-        :resources
-        (->> (sort-by :timestamp)
-             (map #(select-keys % (or keys
-                                      (cond-> [:id :event-type :category :message :resource :parent]
-                                              payload? (conj :payload)))))))))
+(defn dump-events
+  ([session]
+   (dump-events session nil))
+  ([session {:keys [keys payload?]}]
+   (pprint
+     (-> session
+         (request (str event-base-uri))
+         (body->edn)
+         (is-status 200)
+         :response
+         :body
+         :resources
+         (->> (sort-by :timestamp)
+              (map #(select-keys % (or keys
+                                       (cond-> [:id :event-type :category :subcategory :message :resource :parent :details]
+                                               payload? (conj :payload))))))))))
 
 (defn collection-event
   [resource-type event-type]
@@ -695,24 +698,25 @@
                 (assoc event :parent (:id (nth events parent-idx)))
                 event)))))
 
-(defn- check-event-keys
+(defmacro check-event-keys
   "Compare an expected event with an actual event.
    Only the keys in the expected event are checked.
    The only exception is the :parent key which is always checked."
   [expected-event event]
-  (is (= expected-event (select-keys event (conj (keys expected-event) :parent)))))
+  `(is (= ~expected-event (select-keys ~event (conj (keys ~expected-event) :parent)))))
 
 
-(defn check-events
+(defmacro check-events
   "Given a nested vector of expected events and a vector of actual events,
    checks that the actual event hierarchy matches the expected one, and that
    the expected event properties match."
   [expected-events events]
-  (when (= (count expected-events) (count events))
-    (dorun
-      (map check-event-keys
-           (normalize-expected-events expected-events events)
-           events))))
+  `(when (= (count ~expected-events) (count ~events))
+     (dorun
+       (map (fn [expected-event# event#]
+              (check-event-keys expected-event# event#))
+            (normalize-expected-events ~expected-events ~events)
+            ~events))))
 
 
 (defmacro are-events
@@ -729,5 +733,5 @@
                              (body)
                              :resources
                              reverse)]
-     (is (= expected-count# (count last-events#)))
+     (is (= expected-count# (count last-events#)) (str "Events: " (pr-str last-events#)))
      (check-events ~expected-events last-events#)))

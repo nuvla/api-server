@@ -87,6 +87,11 @@
                               (str nb/resource-type "-" nb-0/schema-version)))
 
 
+(def collection-event (partial ltu/collection-event "nuvlabox"))
+
+(def job-collection-event (partial ltu/collection-event "job"))
+
+
 (deftest create-edit-delete-lifecycle
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session       (-> (ltu/ring-app)
@@ -95,14 +100,15 @@
 
           session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")]
 
-      (let [nuvlabox-id  (-> session-owner
-                             (request base-uri
-                                      :request-method :post
-                                      :body (json/write-str valid-nuvlabox))
-                             (ltu/body->edn)
-                             (ltu/is-status 201)
-                             (ltu/location))
-            nuvlabox-url (str p/service-context nuvlabox-id)
+      (let [nuvlabox-id    (-> session-owner
+                               (request base-uri
+                                        :request-method :post
+                                        :body (json/write-str valid-nuvlabox))
+                               (ltu/body->edn)
+                               (ltu/is-status 201)
+                               (ltu/location))
+            nuvlabox-url   (str p/service-context nuvlabox-id)
+            resource-event (partial ltu/resource-event nuvlabox-id)
 
             {:keys [id acl owner]} (-> session-owner
                                        (request nuvlabox-url)
@@ -120,6 +126,11 @@
         (is (contains? (set (:owners acl)) "group/nuvla-admin"))
         (is (contains? (set (:manage acl)) id))
         (is (contains? (set (:edit-acl acl)) owner))
+
+        ;; check generated events
+        (ltu/are-events session-owner
+                        [(collection-event "nuvlabox.create")
+                         [(resource-event "nuvlabox.create.completed")]])
 
         ;; only name description acl are editable for normal user other changes are ignored
         ;; FIXME update with test of change acl repercussion on other resources
@@ -139,10 +150,18 @@
               (ltu/is-key-value :edit-acl :acl (conj (:edit-acl acl) new-owner))
               (ltu/body)))
 
+        (ltu/are-events session-owner
+                        [(resource-event "nuvlabox.update")
+                         [(resource-event "nuvlabox.update.completed")]])
+
         (-> session-owner
             (request nuvlabox-url
                      :request-method :delete)
-            (ltu/is-status 200)))
+            (ltu/is-status 200))
+
+        (ltu/are-events session-owner
+                        [(resource-event "nuvlabox.delete")
+                         [(resource-event "nuvlabox.delete.completed")]]))
 
       ;; create nuvlabox with inexistent vpn id will fail
       (-> session-owner
@@ -152,6 +171,10 @@
                                            :vpn-server-id "infrastructure-service/fake")))
           (ltu/body->edn)
           (ltu/is-status 404))
+
+      (ltu/are-events session-owner
+                      [(collection-event "nuvlabox.create")
+                       [(collection-event "nuvlabox.create.failed")]])
       )))
 
 
@@ -166,26 +189,30 @@
           session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
       (doseq [session [session-admin session-owner]]
-        (let [nuvlabox-id  (-> session
-                               (request base-uri
-                                        :request-method :post
-                                        :body (json/write-str valid-nuvlabox))
-                               (ltu/body->edn)
-                               (ltu/is-status 201)
-                               (ltu/location))
-              nuvlabox-url (str p/service-context nuvlabox-id)
+        (let [nuvlabox-id    (-> session
+                                 (request base-uri
+                                          :request-method :post
+                                          :body (json/write-str valid-nuvlabox))
+                                 (ltu/body->edn)
+                                 (ltu/is-status 201)
+                                 (ltu/location))
+              nuvlabox-url   (str p/service-context nuvlabox-id)
+              resource-event (partial ltu/resource-event nuvlabox-id)
+              _              (ltu/are-events session-admin
+                                             [(collection-event "nuvlabox.create")
+                                              [(resource-event "nuvlabox.create.completed")]])
 
-              activate-url (-> session
-                               (request nuvlabox-url)
-                               (ltu/body->edn)
-                               (ltu/is-status 200)
-                               (ltu/is-operation-present :edit)
-                               (ltu/is-operation-present :delete)
-                               (ltu/is-operation-present :activate)
-                               (ltu/is-operation-absent :commission)
-                               (ltu/is-operation-absent :decommission)
-                               (ltu/is-key-value :state "NEW")
-                               (ltu/get-op-url :activate))]
+              activate-url   (-> session
+                                 (request nuvlabox-url)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/is-operation-present :edit)
+                                 (ltu/is-operation-present :delete)
+                                 (ltu/is-operation-present :activate)
+                                 (ltu/is-operation-absent :commission)
+                                 (ltu/is-operation-absent :decommission)
+                                 (ltu/is-key-value :state "NEW")
+                                 (ltu/get-op-url :activate))]
 
           ;; anonymous should be able to activate the NuvlaBox
           ;; and receive an api key/secret pair to access Nuvla
@@ -198,6 +225,9 @@
                                         (ltu/body)
                                         :api-key
                                         (ltu/href->url))
+                _                   (ltu/are-events session-admin
+                                                    [(resource-event "nuvlabox.activate")
+                                                     [(resource-event "nuvlabox.activate.completed")]])
 
                 credential-nuvlabox (-> session-admin
                                         (request credential-url)
@@ -258,14 +288,14 @@
                                      (ltu/is-key-value :state "ACTIVATED")
                                      (ltu/get-op-url :decommission))]
 
-            (-> session
-                (request decommission-url
-                         :request-method :post)
-                (ltu/body->edn)
-                (ltu/is-status 202))
-
             ;; verify state of the resource and that ACL has been updated
-            (let [{:keys [owner acl]} (-> session
+            (let [job-id (-> session
+                             (request decommission-url
+                                      :request-method :post)
+                             (ltu/body->edn)
+                             (ltu/is-status 202)
+                             (ltu/location))
+                  {:keys [owner acl]} (-> session
                                           (request nuvlabox-url)
                                           (ltu/body->edn)
                                           (ltu/is-status 200)
@@ -281,7 +311,14 @@
               (is (contains? (set (:view-acl acl)) owner))
               (is (empty? (set (:edit-meta acl))))
               (is (empty? (set (:edit-data acl))))
-              (is (empty? (set (:edit-acl acl))))))
+              (is (empty? (set (:edit-acl acl))))
+
+              ;; check the events
+              (ltu/are-events session-admin
+                              [(resource-event "nuvlabox.decommission")
+                               [(job-collection-event "job.create")
+                                [(ltu/resource-event job-id "job.create.completed")]]
+                               [(resource-event "nuvlabox.decommission.completed")]])))
 
           ;; normally the job would set the state to DECOMMISSIONED
           ;; set it here manually to ensure that operations are correct
@@ -291,6 +328,10 @@
                        :body (json/write-str (assoc valid-nuvlabox :state "DECOMMISSIONED")))
               (ltu/body->edn)
               (ltu/is-status 200))
+
+          (ltu/are-events session-admin
+                          [(resource-event "nuvlabox.update")
+                           [(resource-event "nuvlabox.update.completed")]])
 
           ;; DECOMMISSIONED state with correct actions
           (-> session-owner
@@ -311,6 +352,10 @@
                        :request-method :delete)
               (ltu/body->edn)
               (ltu/is-status 200))
+
+          (ltu/are-events session-admin
+                          [(resource-event "nuvlabox.delete")
+                           [(resource-event "nuvlabox.delete.completed")]])
 
           ;; verify that the nuvlabox has been removed
           (-> session

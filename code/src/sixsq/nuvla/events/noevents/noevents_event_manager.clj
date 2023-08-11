@@ -3,15 +3,25 @@
 
 (deftype NoEventsEventManager []
   EventManager
-  (add-collection-event [_ _request _resource-type _event])
-  (add-resource-event [_ _request _resource-id _event])
-  (wrap-crud-add [_ add-fn]
+
+  (add [_this request])
+  (retrieve [_this request])
+  (retrieve-by-id [_this resource-id request])
+  (edit [_this request])
+  (delete [_this request])
+  (do-action [_this request])
+  (query [_this request])
+
+  (add-collection-event [_this _request _resource-type _event])
+  (add-resource-event [_this _request _resource-id _event])
+  (search [_this _opts]
+    [])
+
+  (wrap-crud-add [_this add-fn]
     add-fn)
-  (wrap-crud-edit [_ edit-fn]
+  (wrap-crud-edit [_this edit-fn]
     edit-fn)
-  (wrap-crud-delete [_ delete-fn]
+  (wrap-crud-delete [_this delete-fn]
     delete-fn)
-  (wrap-action [_ action-fn]
-    action-fn)
-  (search [_ _opts]
-    []))
+  (wrap-action [_this action-fn]
+    action-fn))
