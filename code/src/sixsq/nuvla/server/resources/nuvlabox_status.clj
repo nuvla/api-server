@@ -80,21 +80,30 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
     (update response :body #(apply dissoc % blacklist-response-keys))))
 
 
+(defn get-nuvlabox-status-name-description
+  [nuvlabox-id nuvlabox-name]
+  {:name        (utils/format-nb-name
+                  nuvlabox-name (utils/short-nb-id nuvlabox-id))
+   :description (str "NuvlaEdge status of "
+                     (utils/format-nb-name nuvlabox-name nuvlabox-id))})
+
 (defn create-nuvlabox-status
   "Utility to facilitate creating a new nuvlabox-status resource from the
    nuvlabox resource. This will create (as an administrator) an unknown
    state based on the given id and acl. The returned value is the standard
    'add' response for the request."
-  [schema-version nuvlabox-id nuvlabox-acl]
+  [schema-version nuvlabox-id nuvlabox-name nuvlabox-acl]
   (let [status-acl (merge
                      (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
                      {:owners    ["group/nuvla-admin"]
                       :edit-data [nuvlabox-id]})
-        body       {:resource-type resource-type
-                    :parent        nuvlabox-id
-                    :version       schema-version
-                    :status        "UNKNOWN"
-                    :acl           status-acl}
+        body       (merge
+                     (get-nuvlabox-status-name-description nuvlabox-id nuvlabox-name)
+                     {:resource-type resource-type
+                      :parent        nuvlabox-id
+                      :version       schema-version
+                      :status        "UNKNOWN"
+                      :acl           status-acl})
         request    {:params      {:resource-name resource-type}
                     :nuvla/authn auth/internal-identity
                     :body        body}]
@@ -179,14 +188,16 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 
 
 (defn update-nuvlabox-status
-  [id nuvlabox-id nuvlabox-acl]
+  [id nuvlabox-id nuvlabox-name nuvlabox-acl]
   (let [acl     (merge
                   (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
                   {:owners    ["group/nuvla-admin"]
                    :edit-data [nuvlabox-id]})
         request {:params      {:uuid          (u/id->uuid id)
                                :resource-name resource-type}
-                 :body        {:acl acl}
+                 :body        (merge
+                                (get-nuvlabox-status-name-description nuvlabox-id nuvlabox-name)
+                                {:acl acl})
                  :nuvla/authn auth/internal-identity}]
     (edit-impl request)))
 

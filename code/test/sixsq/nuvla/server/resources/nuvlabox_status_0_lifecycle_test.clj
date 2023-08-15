@@ -295,8 +295,8 @@
 
 
       ;; verify that the internal create function also works
-      (let [response  (nb-status/create-nuvlabox-status 0 nuvlabox-id {:owners   ["group/nuvla-admin"]
-                                                                       :edit-acl ["user/alpha"]})
+      (let [response  (nb-status/create-nuvlabox-status 0 nuvlabox-id "name" {:owners   ["group/nuvla-admin"]
+                                                                              :edit-acl ["user/alpha"]})
             location  (get-in response [:headers "Location"])
             state-id  (-> response :body :resource-id)
             state-url (str p/service-context state-id)]

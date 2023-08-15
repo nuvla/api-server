@@ -52,8 +52,8 @@
 
 
 (defn create-nuvlabox-status
-  [{:keys [id version acl] :as nuvlabox}]
-  (let [{:keys [status body] :as _resp} (nb-status/create-nuvlabox-status version id acl)]
+  [{:keys [id name version acl] :as nuvlabox}]
+  (let [{:keys [status body] :as _resp} (nb-status/create-nuvlabox-status version id name acl)]
     (if (= 201 status)
       (assoc nuvlabox :nuvlabox-status (:resource-id body))
       (let [msg (str "creating nuvlabox-status resource failed:" status (:message body))]
@@ -61,8 +61,8 @@
 
 
 (defn update-nuvlabox-status
-  [status-id {:keys [id acl] :as nuvlabox}]
-  (let [{:keys [status body] :as _resp} (nb-status/update-nuvlabox-status status-id id acl)]
+  [status-id {:keys [id name acl] :as nuvlabox}]
+  (let [{:keys [status body] :as _resp} (nb-status/update-nuvlabox-status status-id id name acl)]
     (if (= 200 status)
       nuvlabox
       (let [msg (str "updating nuvlabox-status resource failed:" status (:message body))]
@@ -329,7 +329,7 @@
                                   {:name        (utils/format-nb-name
                                                   nuvlabox-name
                                                   (utils/short-nb-id nuvlabox-id))
-                                   :description (str "NuvlaBox credential linked to "
+                                   :description (str "NuvlaEdge credential linked to "
                                                      (utils/format-nb-name
                                                        nuvlabox-name nuvlabox-id))
                                    :acl         acl}
