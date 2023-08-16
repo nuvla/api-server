@@ -223,6 +223,8 @@
   (let [deployment       (some-> target-resource :href crud/retrieve-by-id-as-admin)
         credential       (some-> deployment :parent crud/retrieve-by-id-as-admin)
         infra            (some-> credential :parent crud/retrieve-by-id-as-admin)
+        nuvlaedge        (some-> deployment :nuvlabox crud/retrieve-by-id-as-admin)
+        nuvlaedge-status (some-> nuvlaedge  :nuvlabox-status crud/retrieve-by-id-as-admin)
         registries-creds (when full
                            (some->> deployment :registries-credentials
                                     (map crud/retrieve-by-id-as-admin)))
@@ -232,6 +234,8 @@
       deployment
       credential
       infra
+      nuvlaedge
+      nuvlaedge-status
       registries-creds
       registries-infra)))
 
