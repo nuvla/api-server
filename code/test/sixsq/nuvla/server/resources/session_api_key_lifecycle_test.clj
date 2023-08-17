@@ -140,6 +140,10 @@
             (ltu/body->edn)
             (ltu/is-status 403))
 
+        (ltu/is-last-event uuid {:event-type         "session.add"
+                                 :success            false
+                                 :linked-identifiers [(str "credential/" uuid)]})
+
         ;; anonymous create must succeed; also with redirect
         (let [resp        (-> session-anon
                               (request base-uri
@@ -149,6 +153,9 @@
                               (ltu/is-set-cookie)
                               (ltu/is-status 201))
               id          (ltu/body-resource-id resp)
+              _           (ltu/is-last-event id {:event-type         "session.add"
+                                                 :success            true
+                                                 :linked-identifiers [(str "credential/" uuid)]})
 
               token       (get-in resp [:response :cookies authn-cookie :value])
               cookie-info (if token (sign/unsign-cookie-info token) {})

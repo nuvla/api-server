@@ -11,6 +11,8 @@
 
 (def valid-event
   {:id            "event/262626262626262"
+   :event-type    "test"
+   :success       true
    :resource-type t/resource-type
    :created       event-timestamp
    :updated       event-timestamp
@@ -21,7 +23,10 @@
    :content       {:resource {:href "module/HNSciCloud-RHEA/S3"}
                    :state    "Started"}
    :category      "state"
-   :severity      "critical"})
+   :severity      "critical"
+   :authn-info    {:user-id      "user/a978c1c0-f958-4238-9eba-aab85714b114"
+                   :claims       ["group/nuvla-anon" "group/nuvla-user"]
+                   :active-claim "group/nuvla-user"}})
 
 
 (deftest check-reference

@@ -5,6 +5,7 @@
     [clojure.test :refer [deftest is testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
+    [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as p]
@@ -314,6 +315,12 @@
                                (ltu/is-status 201))
         session-user-id    (ltu/body-resource-id session-user)
         sesssion-user-url  (ltu/location-url session-user)
+        credential-id      (:credential-password (auth-password/user-id->user user-id))
+        _                  (ltu/is-last-event session-user-id
+                                              {:event-type         "session.add"
+                                               :success            true
+                                               :linked-identifiers [user-id credential-id]
+                                               :acl                {:owners ["group/nuvla-admin" user-id]}})
         handler            (wrap-authn-info identity)
         authn-session-user (-> session-user
                                :response
@@ -336,7 +343,12 @@
                           :request-method :post] authn-session-user))
           (ltu/body->edn)
           (ltu/is-status 403)
-          (ltu/message-matches #"Switch group cannot be done to requested group:.*")))
+          (ltu/message-matches #"Switch group cannot be done to requested group:.*"))
+
+      (ltu/is-last-event session-user-id {:event-type         "session.switch-group"
+                                          :success            false
+                                          :linked-identifiers [group-b]
+                                          :acl                {:owners    ["group/nuvla-admin" group-b]}}))
 
     (testing "User can switch to a group that he is part of."
       (-> session-admin

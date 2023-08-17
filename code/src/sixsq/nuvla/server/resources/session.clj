@@ -90,6 +90,8 @@ status, a 'set-cookie' header, and a 'location' header with the created
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
+    [sixsq.nuvla.server.resources.common.event-config :as ec]
+    [sixsq.nuvla.server.resources.common.event-context :as ectx]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.email :as email]
@@ -461,9 +463,16 @@ status, a 'set-cookie' header, and a 'location' header with the created
         (format "Switch group cannot be done to requested group: %s!" claim) 403))))
 
 
+(defn set-event-context
+  [{{:keys [claim]} :body :as _request}]
+  (ectx/add-linked-identifier claim)
+  (ectx/add-to-context :visible-to [claim]))
+
+
 (defmethod crud/do-action [resource-type "switch-group"]
   [{{uuid :uuid} :params :as request}]
   (try
+    (set-event-context request)
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve id request)
           (a/throw-cannot-edit request)
@@ -505,6 +514,24 @@ status, a 'set-cookie' header, and a 'location' header with the created
           {})))
     (catch Exception e
       (or (ex-data e) (throw e)))))
+
+;;
+;; Events
+;;
+
+(defmethod ec/events-enabled? resource-type
+  [_resource-type]
+  true)
+
+
+(defmethod ec/log-event? "session.get-peers"
+  [_event _response]
+  false)
+
+
+(defmethod ec/log-event? "session.get-groups"
+  [_event _response]
+  false)
 
 
 ;;

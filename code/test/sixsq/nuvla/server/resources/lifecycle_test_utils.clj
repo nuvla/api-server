@@ -25,8 +25,10 @@
     [sixsq.nuvla.server.middleware.base-uri :refer [wrap-base-uri]]
     [sixsq.nuvla.server.middleware.cimi-params :refer [wrap-cimi-params]]
     [sixsq.nuvla.server.middleware.exception-handler :refer [wrap-exceptions]]
+    [sixsq.nuvla.server.middleware.eventer :refer [wrap-eventer]]
     [sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
+    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.util.kafka :as ka]
     [sixsq.nuvla.server.util.zookeeper :as uzk]
     [zookeeper :as zk])
@@ -472,11 +474,12 @@
       wrap-authn-info
       wrap-exceptions
       (wrap-json-body {:keywords? true})
+      wrap-eventer
       (wrap-json-response {:pretty true :escape-non-ascii true})
       wrap-logger))
 
 
-(def ^:private ring-app-cache (atom nil))
+(defonce ^:private ring-app-cache (atom nil))
 
 (defn set-ring-app-cache
   "Sets the value of the cached ring application. If the current value is nil,
@@ -538,7 +541,7 @@
           (let [ts (System/currentTimeMillis)]
             (.close kafka)
             (log/debug (str "--->: close kafka done in: "
-                            (- (System/currentTimeMillis) ts))) )
+                            (- (System/currentTimeMillis) ts))))
           (ke/delete-dir log-dir))))))
 
 
@@ -599,4 +602,19 @@
                    :body (json/write-str {:dummy "value"}))
           (is-status 405)))))
 
+;;
+;; events
+;;
 
+(defmacro is-last-event
+  [resource-id {:keys [event-type linked-identifiers success acl]}]
+  `(let [event# (last (event-utils/query-events ~resource-id {:orderby [["timestamp" :desc]] :last 1}))]
+     (is (some? event#))
+     (when ~event-type
+       (is (= ~event-type (:event-type event#))))
+     (when ~linked-identifiers
+       (is (= (set ~linked-identifiers) (set (get-in event# [:content :linked-identifiers])))))
+     (when (some? ~success)
+       (is (= ~success (:success event#))))
+     (when (some? ~acl)
+       (is (= ~acl (:acl event#))))))

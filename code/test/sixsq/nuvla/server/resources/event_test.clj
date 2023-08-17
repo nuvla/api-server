@@ -16,13 +16,16 @@
 (def ^:private nb-events 20)
 
 
-(def valid-event {:acl       {:owners ["user/joe"]}
-                  :created   "2015-01-16T08:05:00.00Z"
-                  :updated   "2015-01-16T08:05:00.00Z"
-                  :timestamp "2015-01-16T08:05:00.00Z"
-                  :content   {:resource {:href "run/45614147-aed1-4a24-889d-6365b0b1f2cd"}
-                              :state    "Started"}
-                  :severity  "critical"})
+(def valid-event {:acl        {:owners ["user/joe"]}
+                  :authn-info {}
+                  :event-type "legacy"
+                  :success    true
+                  :created    "2015-01-16T08:05:00.00Z"
+                  :updated    "2015-01-16T08:05:00.00Z"
+                  :timestamp  "2015-01-16T08:05:00.00Z"
+                  :content    {:resource {:href "run/45614147-aed1-4a24-889d-6365b0b1f2cd"}
+                               :state    "Started"}
+                  :severity   "critical"})
 
 
 (def valid-events
