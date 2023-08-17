@@ -17,6 +17,7 @@
     [sixsq.nuvla.server.middleware.cimi-params :refer [wrap-cimi-params]]
     [sixsq.nuvla.server.middleware.default-content-type :refer [default-content-type]]
     [sixsq.nuvla.server.middleware.exception-handler :refer [wrap-exceptions]]
+    [sixsq.nuvla.server.middleware.eventer :refer [wrap-eventer]]
     [sixsq.nuvla.server.middleware.gzip :refer [wrap-gzip-uncompress]]
     [sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
     [sixsq.nuvla.server.middleware.redirect-cep :refer [redirect-cep]]
@@ -49,6 +50,7 @@
       wrap-authn-info
       (wrap-json-body {:keywords? true})
       wrap-gzip-uncompress
+      wrap-eventer
       (wrap-json-response {:pretty           true
                            :escape-non-ascii true})
       (default-content-type "application/json")

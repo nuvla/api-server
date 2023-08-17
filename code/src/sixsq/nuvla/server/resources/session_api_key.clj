@@ -9,6 +9,7 @@ an API key-secret pair.
     [sixsq.nuvla.auth.utils.timestamp :as ts]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.event-context :as ec]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template-api-key :as api-key-tpl]
@@ -77,6 +78,7 @@ an API key-secret pair.
 
 (defmethod p/tpl->session authn-method
   [{:keys [href key secret] :as _resource} {:keys [headers] :as _request}]
+  (ec/add-linked-identifier (uuid->id key))
   (let [{{:keys [identity roles]} :claims :as api-key} (retrieve-credential-by-id key)]
     (if (valid-api-key? api-key secret)
       (let [session     (sutils/create-session identity identity {:href href} headers authn-method)

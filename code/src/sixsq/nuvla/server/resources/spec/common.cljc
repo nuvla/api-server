@@ -14,14 +14,6 @@
              :json-schema/description "reference to another resource")))
 
 
-(s/def ::resource-link
-  (-> (st/spec (s/keys :req-un [::href]))
-      (assoc :name "resource-link"
-             :json-schema/type "map"
-             :json-schema/display-name "resource link"
-             :json-schema/description "map containing a reference (href) to a resource")))
-
-
 ;;
 ;; core meta
 ;;
