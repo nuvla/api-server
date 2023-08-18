@@ -26,6 +26,12 @@
   (when @*context*
     (swap! *context* assoc k v)))
 
+(defn add-to-visible-to
+  "Adds `v` to visible to"
+  [& claims]
+  (when @*context*
+    (swap! *context* update :visible-to concat claims)))
+
 
 (defn add-linked-identifier
   "Adds the identifier of a linked entity to the context."

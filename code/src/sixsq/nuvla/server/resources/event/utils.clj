@@ -61,7 +61,7 @@
   [{:keys [visible-to] :as _context}]
   (let [visible-to (remove nil? visible-to)]
     (or (when (seq visible-to)
-          {:owners (conj (vec visible-to) "group/nuvla-admin")})
+          {:owners (-> visible-to (conj "group/nuvla-admin") distinct vec)})
         {:owners ["group/nuvla-admin"]})))
 
 

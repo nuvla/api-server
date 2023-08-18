@@ -245,6 +245,15 @@
             (ltu/body->edn)
             (ltu/is-status 200))
 
+        (ltu/is-last-event id
+                           {:event-type         "session.delete"
+                            :success            true
+                            :linked-identifiers []
+                            :acl                {:owners ["group/nuvla-admin"
+                                                          "user/user"]}})
+
+
+
         ; create with invalid template fails
         (-> session-anon
             (request base-uri

@@ -228,7 +228,7 @@
 
           ;; user with session role can delete resource
           (-> (session app)
-              (header authn-info-header (str "user group/nuvla-user " id))
+              (header authn-info-header (str "user/user group/nuvla-user " id))
               (request abs-uri
                        :request-method :delete)
               (ltu/is-unset-cookie)
