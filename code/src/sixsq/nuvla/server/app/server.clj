@@ -47,10 +47,10 @@
       wrap-nested-params
       wrap-params
       wrap-exceptions
-      wrap-authn-info
       (wrap-json-body {:keywords? true})
       wrap-gzip-uncompress
       wrap-eventer
+      wrap-authn-info
       (wrap-json-response {:pretty           true
                            :escape-non-ascii true})
       (default-content-type "application/json")
