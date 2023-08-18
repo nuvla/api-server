@@ -471,10 +471,10 @@
       wrap-nested-params
       wrap-params
       wrap-base-uri
-      wrap-authn-info
       wrap-exceptions
       (wrap-json-body {:keywords? true})
       wrap-eventer
+      wrap-authn-info
       (wrap-json-response {:pretty true :escape-non-ascii true})
       wrap-logger))
 

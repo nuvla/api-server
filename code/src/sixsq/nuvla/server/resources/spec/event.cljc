@@ -5,7 +5,6 @@
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.session :as session]
-    [sixsq.nuvla.server.resources.spec.user :as user]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -101,7 +100,7 @@
 
 
 (s/def ::user-id
-  (-> (st/spec ::user/id)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "user-id"
              :json-schema/type "string"
              :json-schema/description "user id")))

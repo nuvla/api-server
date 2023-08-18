@@ -494,7 +494,7 @@ component, or application.
   true)
 
 
-(defmethod ec/log-event? "validate-docker-compose"
+(defmethod ec/log-event? "module.validate-docker-compose"
   [_event _response]
   false)
 
