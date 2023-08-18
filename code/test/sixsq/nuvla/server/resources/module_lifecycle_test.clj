@@ -20,26 +20,26 @@
 (defn- get-path-segments
   [path]
   (reduce
-   (fn [acu cur]
-     (conj acu (if (seq acu)
-                 (str (last acu) "/" cur)
-                 cur)))
-   []
-   (str/split path #"/")))
+    (fn [acu cur]
+      (conj acu (if (seq acu)
+                  (str (last acu) "/" cur)
+                  cur)))
+    []
+    (str/split path #"/")))
 
 (defn create-parent-projects [path user]
   (let [paths (get-path-segments (utils/get-parent-path path))]
     (run!
-     (fn [path-segment]
-       (-> user
-           (request base-uri
-                    :request-method :post
-                    :body (json/write-str {:subtype utils/subtype-project
-                                           :path path-segment
-                                           :parent-path (utils/get-parent-path path-segment)}))
-           ltu/body->edn
-           (ltu/is-status 201)))
-     paths)))
+      (fn [path-segment]
+        (-> user
+            (request base-uri
+                     :request-method :post
+                     :body (json/write-str {:subtype     utils/subtype-project
+                                            :path        path-segment
+                                            :parent-path (utils/get-parent-path path-segment)}))
+            ltu/body->edn
+            (ltu/is-status 201)))
+      paths)))
 
 (defn lifecycle-test-module
   [subtype valid-content]
@@ -71,6 +71,12 @@
         (ltu/body->edn)
         (ltu/is-status 403))
 
+    (ltu/is-last-event nil
+                       {:event-type         "module.add"
+                        :success            false
+                        :linked-identifiers []
+                        :acl                {:owners ["group/nuvla-admin"]}})
+
     ;; queries: NOK for anon
     (-> session-anon
         (request base-uri)
@@ -95,6 +101,12 @@
         (ltu/body->edn)
         (ltu/is-status 400))
 
+    (ltu/is-last-event nil
+                       {:event-type         "module.add"
+                        :success            false
+                        :linked-identifiers []
+                        :acl                {:owners ["group/nuvla-admin"]}})
+
     (when (utils/is-application? valid-entry)
 
       (testing "application should have compatibility attribute set"
@@ -107,7 +119,8 @@
             (ltu/message-matches "Application subtype should have compatibility attribute set!"))))
 
     ;; adding, retrieving and  deleting entry as user should succeed
-    (doseq [session [session-admin session-user]]
+    (doseq [[session event-owners] [[session-admin ["group/nuvla-admin"]]
+                                    [session-user ["group/nuvla-admin" "user/jane"]]]]
       (let [uri     (-> session
                         (request base-uri
                                  :request-method :post
@@ -118,22 +131,27 @@
 
             abs-uri (str p/service-context uri)]
 
+        (ltu/is-last-event uri
+                           {:event-type         "module.add"
+                            :success            true
+                            :linked-identifiers []
+                            :acl                {:owners event-owners}})
+
         ;; retrieve: NOK for anon
         (-> session-anon
             (request abs-uri)
             (ltu/body->edn)
             (ltu/is-status 403))
 
-        (let [content (-> session-admin
-                          (request abs-uri)
-                          (ltu/body->edn)
-                          (ltu/is-status 200)
-                          (ltu/is-key-value :compatibility "docker-compose")
-                          (as-> m (if (utils/is-application? valid-entry)
-                                    (ltu/is-operation-present m :validate-docker-compose)
-                                    (ltu/is-operation-absent m :validate-docker-compose)))
-                          (ltu/body)
-                          :content)]
+        (let [{:keys [content acl]} (-> session-admin
+                                        (request abs-uri)
+                                        (ltu/body->edn)
+                                        (ltu/is-status 200)
+                                        (ltu/is-key-value :compatibility "docker-compose")
+                                        (as-> m (if (utils/is-application? valid-entry)
+                                                  (ltu/is-operation-present m :validate-docker-compose)
+                                                  (ltu/is-operation-absent m :validate-docker-compose)))
+                                        (ltu/body))]
           (is (= valid-content (select-keys content (keys valid-content)))))
 
         ;; edit: NOK for anon
@@ -144,6 +162,12 @@
             (ltu/body->edn)
             (ltu/is-status 403))
 
+        (ltu/is-last-event uri
+                           {:event-type         "module.edit"
+                            :success            false
+                            :linked-identifiers []
+                            :acl                {:owners event-owners}})
+
         ;; insert 5 more versions
         (doseq [_ (range 5)]
           (-> session-admin
@@ -151,7 +175,13 @@
                        :request-method :put
                        :body (json/write-str valid-entry))
               (ltu/body->edn)
-              (ltu/is-status 200)))
+              (ltu/is-status 200))
+
+          (ltu/is-last-event uri
+                             {:event-type         "module.edit"
+                              :success            true
+                              :linked-identifiers []
+                              :acl                {:owners event-owners}}))
 
         (let [versions (-> session-admin
                            (request abs-uri
@@ -190,7 +220,13 @@
                 (request publish-url)
                 (ltu/body->edn)
                 (ltu/is-status 200)
-                (ltu/message-matches "published successfully")))
+                (ltu/message-matches "published successfully"))
+
+            (ltu/is-last-event uri
+                               {:event-type         "module.publish"
+                                :success            true
+                                :linked-identifiers []
+                                :acl                {:owners event-owners}}))
 
           (testing "operation urls of specific version"
             (let [abs-uri-v2         (str abs-uri "_2")
@@ -214,7 +250,13 @@
                 (request (str abs-uri "_2/publish"))
                 (ltu/body->edn)
                 (ltu/is-status 200)
-                (ltu/message-matches "published successfully")))
+                (ltu/message-matches "published successfully"))
+
+            (ltu/is-last-event (str uri "_2")
+                               {:event-type         "module.publish"
+                                :success            true
+                                :linked-identifiers []
+                                :acl                {:owners event-owners}}))
 
           (let [unpublish-url (-> session
                                   (request abs-uri)
@@ -233,12 +275,24 @@
                 (ltu/is-status 200)
                 (ltu/message-matches "unpublished successfully")))
 
+          (ltu/is-last-event uri
+                             {:event-type         "module.unpublish"
+                              :success            true
+                              :linked-identifiers []
+                              :acl                {:owners event-owners}})
+
           ; publish is idempotent
           (-> session
               (request (str abs-uri "_2/publish"))
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/message-matches "published successfully"))
+
+          (ltu/is-last-event (str uri "_2")
+                             {:event-type         "module.publish"
+                              :success            true
+                              :linked-identifiers []
+                              :acl                {:owners event-owners}})
 
           (-> session
               (request abs-uri)
@@ -255,6 +309,12 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/message-matches "unpublished successfully"))
+
+          (ltu/is-last-event (str uri "_2")
+                             {:event-type         "module.unpublish"
+                              :success            true
+                              :linked-identifiers []
+                              :acl                {:owners event-owners}})
 
           (-> session
               (request abs-uri)
@@ -283,6 +343,7 @@
               (ltu/body->edn)
               (ltu/is-status 200))
 
+
           (-> session-admin
               (request (str abs-uri i))
               (ltu/body->edn)
@@ -294,6 +355,14 @@
               (request (str abs-uri "/delete-version"))
               (ltu/body->edn)
               (ltu/is-status 200)))
+
+
+        (ltu/is-last-event uri
+                           {:event-type         "module.delete-version"
+                            :success            true
+                            :linked-identifiers []
+                            :acl                {:owners event-owners}})
+
 
         (testing "delete out of bound index should return 404"
           (-> session-admin
@@ -318,6 +387,13 @@
                      :request-method :delete)
             (ltu/body->edn)
             (ltu/is-status 200))
+
+
+        (ltu/is-last-event uri
+                           {:event-type         "module.delete"
+                            :success            true
+                            :linked-identifiers []
+                            :acl                {:owners event-owners}})
 
         ;; verify that the resource was deleted.
         (-> session-admin
@@ -353,12 +429,12 @@
         session-user  (header session-anon authn-info-header
                               "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
-        project       {:resource-type             module/resource-type
-                       :created                   timestamp
-                       :updated                   timestamp
-                       :parent-path               ""
-                       :path                      "example"
-                       :subtype                   utils/subtype-project}
+        project       {:resource-type module/resource-type
+                       :created       timestamp
+                       :updated       timestamp
+                       :parent-path   ""
+                       :path          "example"
+                       :subtype       utils/subtype-project}
 
         valid-app     {:parent-path               "example"
                        :path                      "example/app"
@@ -393,13 +469,13 @@
 
     (testing "Failure creating application 3: user does not have edit rights in parent project"
       ;; Creating a parent project with nuvla-admin as owner
-      (let [uri (->  session-admin
-                     (request base-uri
-                              :request-method :post
-                              :body (json/write-str project))
-                     ltu/body->edn
-                     (ltu/is-status 201)
-                     ltu/location-url)]
+      (let [uri (-> session-admin
+                    (request base-uri
+                             :request-method :post
+                             :body (json/write-str project))
+                    ltu/body->edn
+                    (ltu/is-status 201)
+                    ltu/location-url)]
 
         ;; If user has no view rights, failure message says that parent project does not exist.
         (-> session-user
@@ -415,11 +491,11 @@
             (request uri
                      :request-method :put
                      :body (json/write-str
-                            (assoc project
-                                   :acl {:owners ["group/nuvla-admin"]
-                                         :view-meta ["user/jane"]
-                                         :view-data ["user/jane"]
-                                         :view-acl ["user/jane"]})))
+                             (assoc project
+                               :acl {:owners    ["group/nuvla-admin"]
+                                     :view-meta ["user/jane"]
+                                     :view-data ["user/jane"]
+                                     :view-acl  ["user/jane"]})))
             ltu/body->edn
             (ltu/is-status 200)))
 
@@ -432,7 +508,7 @@
           (ltu/is-status 403)
           (ltu/message-matches "You do not have edit rights for:")))
 
-      ;; Trying to add app to parent app should fail
+    ;; Trying to add app to parent app should fail
     (testing "Failure creating application 4: Parent is not a project."
       (-> session-user
           (request base-uri
@@ -456,18 +532,18 @@
 
     (testing "new application can be in a project nested inside another project"
       ;; Creating a parent project with wrong edit rights
-      (->  session-user
-           (request base-uri
-                    :request-method :post
-                    :body (json/write-str (assoc project :path "grandparent")))
-           ltu/body->edn
-           (ltu/is-status 201))
-      (->  session-user
-           (request base-uri
-                    :request-method :post
-                    :body (json/write-str (assoc project :path "grandparent/parent")))
-           ltu/body->edn
-           (ltu/is-status 201))
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str (assoc project :path "grandparent")))
+          ltu/body->edn
+          (ltu/is-status 201))
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str (assoc project :path "grandparent/parent")))
+          ltu/body->edn
+          (ltu/is-status 201))
       (-> session-user
           (request base-uri
                    :request-method :post
@@ -529,9 +605,9 @@
           (request app-1-uri
                    :request-method :put
                    :body (json/write-str
-                          (update valid-app-1 :content assoc
-                                  :docker-compose "content changed"
-                                  :commit "second commit")))
+                           (update valid-app-1 :content assoc
+                                   :docker-compose "content changed"
+                                   :commit "second commit")))
           (ltu/body->edn)
           (ltu/is-status 200))
 
