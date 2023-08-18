@@ -52,16 +52,39 @@
 (defn retrieve-by-id
   [id]
   (try
-    (crud/retrieve-by-id-as-admin id)
+    (:body (crud/retrieve {:params         (u/id->request-params id)
+                           :request-method :get
+                           :nuvla/authn    auth/internal-identity}))
     (catch Exception _ex
       nil)))
 
 
+(defn get-resource-href
+  [{{:keys [resource-name uuid]} :params :as _context} response]
+  (or (some->> uuid (str resource-name "/"))
+      (-> response :body :resource-id)))
+
+
+(defn transform-acl
+  [acl]
+  (when acl
+    {:owners (vec (concat (:edit-data acl) (:owners acl)))}))
+
+(defn derive-acl-from-resource
+  [context response]
+  (when-let [acl (some-> (get-resource-href context response)
+                         retrieve-by-id
+                         :acl)]
+    (transform-acl acl)))
+
+
 (defn get-acl
-  [{:keys [visible-to] :as _context}]
+  [{:keys [visible-to acl] :as context} response]
   (let [visible-to (remove nil? visible-to)]
     (or (when (seq visible-to)
           {:owners (-> visible-to (conj "group/nuvla-admin") distinct vec)})
+        (transform-acl acl)
+        (derive-acl-from-resource context response)
         {:owners ["group/nuvla-admin"]})))
 
 
@@ -71,9 +94,8 @@
 
 
 (defn get-resource
-  [{{:keys [resource-name uuid]} :params :as _context} _request response]
-  {:href (or (some->> uuid (str resource-name "/"))
-             (-> response :body :resource-id))})
+  [context response]
+  {:href (get-resource-href context response)})
 
 
 (defn get-linked-identifiers
@@ -89,9 +111,9 @@
    :category      (get-category context)
    :timestamp     (get-timestamp context)
    :authn-info    (auth/current-authentication request)
-   :acl           (get-acl context)
+   :acl           (get-acl context response)
    :severity      (get-severity context)
-   :content       {:resource           (get-resource context request response)
+   :content       {:resource           (get-resource context response)
                    :state              "to be removed"
                    :linked-identifiers (get-linked-identifiers context)}})
 
