@@ -13,4 +13,10 @@
       (is (= info (get (t/get-context) k)))
 
       (t/add-linked-identifier linked-id)
-      (is (some #{linked-id} (:linked-identifiers (t/get-context)))))))
+      (is (some #{linked-id} (:linked-identifiers (t/get-context))))
+
+      (t/add-to-visible-to "user/toto")
+      (is (= #{"user/toto"} (set (:visible-to (t/get-context)))))
+      (t/add-to-visible-to "user/tata" "user/titi")
+      (is (= #{"user/tata" "user/titi" "user/toto"} (set (:visible-to (t/get-context)))))
+      )))

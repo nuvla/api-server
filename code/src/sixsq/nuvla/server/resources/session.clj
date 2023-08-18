@@ -304,6 +304,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 (defmethod crud/delete resource-type
   [request]
+  (ectx/add-to-visible-to (auth/current-user-id request))
   (let [response (delete-impl request)
         cookies  (delete-cookie response)]
     (merge response cookies)))
@@ -466,7 +467,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 (defn set-event-context
   [{{:keys [claim]} :body :as _request}]
   (ectx/add-linked-identifier claim)
-  (ectx/add-to-context :visible-to [claim]))
+  (ectx/add-to-visible-to claim))
 
 
 (defmethod crud/do-action [resource-type "switch-group"]
