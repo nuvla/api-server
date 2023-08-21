@@ -80,6 +80,7 @@
 
     (ltu/is-last-event nil
                        {:event-type         "module.add"
+                        :category           "add"
                         :success            false
                         :linked-identifiers []
                         :authn-info         authn-info-anon
@@ -111,6 +112,7 @@
 
     (ltu/is-last-event nil
                        {:event-type         "module.add"
+                        :category           "add"
                         :success            false
                         :linked-identifiers []
                         :authn-info         authn-info-admin
@@ -143,6 +145,7 @@
 
         (ltu/is-last-event uri
                            {:event-type         "module.add"
+                            :category           "add"
                             :success            true
                             :linked-identifiers []
                             :authn-info         authn-info
@@ -175,6 +178,7 @@
 
         (ltu/is-last-event uri
                            {:event-type         "module.edit"
+                            :category           "edit"
                             :success            false
                             :linked-identifiers []
                             :authn-info         authn-info-anon
@@ -191,6 +195,7 @@
 
           (ltu/is-last-event uri
                              {:event-type         "module.edit"
+                              :category           "edit"
                               :success            true
                               :linked-identifiers []
                               :authn-info         authn-info-admin
@@ -237,6 +242,7 @@
 
             (ltu/is-last-event uri
                                {:event-type         "module.publish"
+                                :category           "action"
                                 :success            true
                                 :linked-identifiers []
                                 :authn-info         authn-info
@@ -268,6 +274,7 @@
 
             (ltu/is-last-event (str uri "_2")
                                {:event-type         "module.publish"
+                                :category           "action"
                                 :success            true
                                 :linked-identifiers []
                                 :authn-info         authn-info
@@ -292,6 +299,7 @@
 
           (ltu/is-last-event uri
                              {:event-type         "module.unpublish"
+                              :category           "action"
                               :success            true
                               :linked-identifiers []
                               :authn-info         authn-info
@@ -306,6 +314,7 @@
 
           (ltu/is-last-event (str uri "_2")
                              {:event-type         "module.publish"
+                              :category           "action"
                               :success            true
                               :linked-identifiers []
                               :authn-info         authn-info
@@ -329,6 +338,7 @@
 
           (ltu/is-last-event (str uri "_2")
                              {:event-type         "module.unpublish"
+                              :category           "action"
                               :success            true
                               :linked-identifiers []
                               :authn-info         authn-info
@@ -377,6 +387,7 @@
 
         (ltu/is-last-event uri
                            {:event-type         "module.delete-version"
+                            :category           "action"
                             :success            true
                             :linked-identifiers []
                             :authn-info         authn-info-admin
@@ -410,6 +421,7 @@
 
         (ltu/is-last-event uri
                            {:event-type         "module.delete"
+                            :category           "delete"
                             :success            true
                             :linked-identifiers []
                             :authn-info         authn-info-admin
