@@ -36,7 +36,6 @@
           (is (= {:event-type    "resource.add"
                   :category      "action"
                   :content       {:resource           {:href id}
-                                  :state              "to be removed"
                                   :linked-identifiers []}
                   :authn-info    {}
                   :success       true
@@ -50,7 +49,6 @@
           (is (= {:event-type    "resource.add"
                   :category      "action"
                   :content       {:resource           {:href nil}
-                                  :state              "to be removed"
                                   :linked-identifiers []}
                   :authn-info    {}
                   :success       false

@@ -90,8 +90,9 @@
 
 
 (s/def ::content
-  (-> (st/spec (su/only-keys :req-un [::resource ::state]
-                             :opt-un [::linked-identifiers]))
+  (-> (st/spec (su/only-keys :req-un [::resource]
+                             :opt-un [::linked-identifiers
+                                      ::state]))
       (assoc :name "content"
              :json-schema/type "map"
              :json-schema/description "content describing event"
