@@ -43,25 +43,32 @@
 
 (defn lifecycle-test-module
   [subtype valid-content]
-  (let [session-anon  (-> (session (ltu/ring-app))
-                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header
-                              "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user  (header session-anon authn-info-header
-                              "user/jane user/jane group/nuvla-user group/nuvla-anon")
+  (let [session-anon     (-> (session (ltu/ring-app))
+                             (content-type "application/json"))
+        session-admin    (header session-anon authn-info-header
+                                 "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user     (header session-anon authn-info-header
+                                 "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
-        valid-entry   {:parent-path               "a/b"
-                       :path                      "a/b/c"
-                       :subtype                   subtype
+        valid-entry      {:parent-path               "a/b"
+                          :path                      "a/b/c"
+                          :subtype                   subtype
 
-                       :compatibility             "docker-compose"
+                          :compatibility             "docker-compose"
 
-                       :logo-url                  "https://example.org/logo"
+                          :logo-url                  "https://example.org/logo"
 
-                       :data-accept-content-types ["application/json" "application/x-something"]
-                       :data-access-protocols     ["http+s3" "posix+nfs"]
+                          :data-accept-content-types ["application/json" "application/x-something"]
+                          :data-access-protocols     ["http+s3" "posix+nfs"]
 
-                       :content                   valid-content}]
+                          :content                   valid-content}
+        authn-info-admin {:user-id      "group/nuvla-admin"
+                          :active-claim "group/nuvla-admin"
+                          :claims       ["group/nuvla-admin" "group/nuvla-anon" "group/nuvla-user"]}
+        authn-info-jane  {:user-id      "user/jane"
+                          :active-claim "user/jane"
+                          :claims       ["group/nuvla-anon" "user/jane" "group/nuvla-user"]}
+        authn-info-anon  {:claims ["group/nuvla-anon"]}]
 
     ;; create: NOK for anon
     (-> session-anon
@@ -75,6 +82,7 @@
                        {:event-type         "module.add"
                         :success            false
                         :linked-identifiers []
+                        :authn-info         authn-info-anon
                         :acl                {:owners ["group/nuvla-admin"]}})
 
     ;; queries: NOK for anon
@@ -105,6 +113,7 @@
                        {:event-type         "module.add"
                         :success            false
                         :linked-identifiers []
+                        :authn-info         authn-info-admin
                         :acl                {:owners ["group/nuvla-admin"]}})
 
     (when (utils/is-application? valid-entry)
@@ -119,8 +128,9 @@
             (ltu/message-matches "Application subtype should have compatibility attribute set!"))))
 
     ;; adding, retrieving and  deleting entry as user should succeed
-    (doseq [[session event-owners] [[session-admin ["group/nuvla-admin"]]
-                                    [session-user ["group/nuvla-admin" "user/jane"]]]]
+    (doseq [[session event-owners authn-info]
+            [[session-admin ["group/nuvla-admin"] authn-info-admin]
+             [session-user ["group/nuvla-admin" "user/jane"] authn-info-jane]]]
       (let [uri     (-> session
                         (request base-uri
                                  :request-method :post
@@ -135,6 +145,7 @@
                            {:event-type         "module.add"
                             :success            true
                             :linked-identifiers []
+                            :authn-info         authn-info
                             :acl                {:owners event-owners}})
 
         ;; retrieve: NOK for anon
@@ -166,6 +177,7 @@
                            {:event-type         "module.edit"
                             :success            false
                             :linked-identifiers []
+                            :authn-info         authn-info-anon
                             :acl                {:owners event-owners}})
 
         ;; insert 5 more versions
@@ -181,6 +193,7 @@
                              {:event-type         "module.edit"
                               :success            true
                               :linked-identifiers []
+                              :authn-info         authn-info-admin
                               :acl                {:owners event-owners}}))
 
         (let [versions (-> session-admin
@@ -226,6 +239,7 @@
                                {:event-type         "module.publish"
                                 :success            true
                                 :linked-identifiers []
+                                :authn-info         authn-info
                                 :acl                {:owners event-owners}}))
 
           (testing "operation urls of specific version"
@@ -256,6 +270,7 @@
                                {:event-type         "module.publish"
                                 :success            true
                                 :linked-identifiers []
+                                :authn-info         authn-info
                                 :acl                {:owners event-owners}}))
 
           (let [unpublish-url (-> session
@@ -279,6 +294,7 @@
                              {:event-type         "module.unpublish"
                               :success            true
                               :linked-identifiers []
+                              :authn-info         authn-info
                               :acl                {:owners event-owners}})
 
           ; publish is idempotent
@@ -292,6 +308,7 @@
                              {:event-type         "module.publish"
                               :success            true
                               :linked-identifiers []
+                              :authn-info         authn-info
                               :acl                {:owners event-owners}})
 
           (-> session
@@ -314,6 +331,7 @@
                              {:event-type         "module.unpublish"
                               :success            true
                               :linked-identifiers []
+                              :authn-info         authn-info
                               :acl                {:owners event-owners}})
 
           (-> session
@@ -361,6 +379,7 @@
                            {:event-type         "module.delete-version"
                             :success            true
                             :linked-identifiers []
+                            :authn-info         authn-info-admin
                             :acl                {:owners event-owners}})
 
 
@@ -393,6 +412,7 @@
                            {:event-type         "module.delete"
                             :success            true
                             :linked-identifiers []
+                            :authn-info         authn-info-admin
                             :acl                {:owners event-owners}})
 
         ;; verify that the resource was deleted.
