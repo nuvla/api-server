@@ -14,6 +14,7 @@
   (let-routes [uri (str p/service-context ":resource-name")]
     (POST uri request
       (ec/add-to-context :params (:params request))
+      (ec/add-to-context :category "add")
       (crud/add request))
     (PUT uri request
       (ec/add-to-context :params (:params request))
@@ -35,9 +36,11 @@
       (crud/retrieve request))
     (PUT uri request
       (ec/add-to-context :params (:params request))
+      (ec/add-to-context :category "edit")
       (crud/edit request))
     (DELETE uri request
       (ec/add-to-context :params (:params request))
+      (ec/add-to-context :category "delete")
       (crud/delete request))
     (ANY uri request
       (throw (r/ex-bad-method request)))))
@@ -47,6 +50,7 @@
   (let-routes [uri (str p/service-context ":resource-name/:uuid/:action")]
     (ANY uri request
       (ec/add-to-context :params (:params request))
+      (ec/add-to-context :category "action")
       (crud/do-action request))))
 
 

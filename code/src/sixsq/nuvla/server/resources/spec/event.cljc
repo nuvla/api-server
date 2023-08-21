@@ -17,12 +17,11 @@
 
 
 (s/def ::category
-  (-> (st/spec #{"state" "alarm" "action" "system" "user" "email"})
+  (-> (st/spec #{"add" "edit" "delete" "action" "state" "alarm" "email" "user"})
       (assoc :name "category"
              :json-schema/type "string"
              :json-schema/description "category of event"
-             :json-schema/value-scope {:values ["state" "alarm" "action" "system" "user"
-                                                "email"]}
+             :json-schema/value-scope {:values ["add" "edit" "delete" "action" "state" "alarm" "email" "user"]}
 
              :json-schema/order 30)))
 

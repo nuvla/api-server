@@ -607,12 +607,14 @@
 ;;
 
 (defmacro is-last-event
-  [resource-id {:keys [event-type authn-info linked-identifiers success acl]}]
+  [resource-id {:keys [event-type category authn-info linked-identifiers success acl]}]
   `(let [event#      (last (event-utils/query-events ~resource-id {:orderby [["timestamp" :desc]] :last 1}))
          authn-info# (:authn-info event#)]
      (is (some? event#))
      (when ~event-type
        (is (= ~event-type (:event-type event#))))
+     (when ~category
+       (is (= ~category (:category event#))))
      (when ~authn-info
        (is (= (:user-id ~authn-info) (:user-id authn-info#)))
        (is (= (:active-claim ~authn-info) (:active-claim authn-info#)))

@@ -250,6 +250,7 @@
 
         (ltu/is-last-event id
                            {:event-type         "session.delete"
+                            :category           "delete"
                             :success            true
                             :linked-identifiers []
                             :authn-info         event-authn-info
@@ -331,6 +332,7 @@
         credential-id      (:credential-password (auth-password/user-id->user user-id))
         _                  (ltu/is-last-event session-user-id
                                               {:event-type         "session.add"
+                                               :category           "add"
                                                :success            true
                                                :linked-identifiers [user-id credential-id]
                                                :authn-info         {:user-id      "user/unknown"
@@ -365,6 +367,7 @@
           (ltu/message-matches #"Switch group cannot be done to requested group:.*"))
 
       (ltu/is-last-event session-user-id {:event-type         "session.switch-group"
+                                          :category           "action"
                                           :success            false
                                           :linked-identifiers [group-b]
                                           :authn-info         event-authn-info
