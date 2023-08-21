@@ -114,7 +114,6 @@
    :acl           (get-acl context response)
    :severity      (get-severity context)
    :content       {:resource           (get-resource context response)
-                   :state              "to be removed"
                    :linked-identifiers (get-linked-identifiers context)}})
 
 
