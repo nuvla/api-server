@@ -123,7 +123,10 @@
                                                :key    uuid
                                                :secret secret}}
             unauthorized-create (update-in valid-create [:template :secret] (constantly bad-digest))
-            invalid-create      (assoc-in valid-create [:template :invalid] "BAD")]
+            invalid-create      (assoc-in valid-create [:template :invalid] "BAD")
+            event-authn-info    {:user-id      "user/unknown"
+                                 :active-claim "user/unknown"
+                                 :claims       ["user/unknown" "group/nuvla-anon"]}]
 
         ;; anonymous query should succeed but have no entries
         (-> session-anon
@@ -142,7 +145,9 @@
 
         (ltu/is-last-event uuid {:event-type         "session.add"
                                  :success            false
-                                 :linked-identifiers [(str "credential/" uuid)]})
+                                 :linked-identifiers [(str "credential/" uuid)]
+                                 :authn-info         event-authn-info
+                                 :acl                {:owners ["group/nuvla-admin"]}})
 
         ;; anonymous create must succeed; also with redirect
         (let [resp        (-> session-anon
@@ -155,7 +160,9 @@
               id          (ltu/body-resource-id resp)
               _           (ltu/is-last-event id {:event-type         "session.add"
                                                  :success            true
-                                                 :linked-identifiers [(str "credential/" uuid)]})
+                                                 :linked-identifiers [(str "credential/" uuid)]
+                                                 :authn-info         event-authn-info
+                                                 :acl                {:owners ["group/nuvla-admin" id]}})
 
               token       (get-in resp [:response :cookies authn-cookie :value])
               cookie-info (if token (sign/unsign-cookie-info token) {})

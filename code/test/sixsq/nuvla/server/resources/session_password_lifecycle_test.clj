@@ -151,20 +151,23 @@
                                           :email "jane@example.org")]
 
       ; anonymous create must succeed
-      (let [resp       (-> session-anon
-                           (request base-uri
-                                    :request-method :post
-                                    :body (json/write-str valid-create))
-                           (ltu/body->edn)
-                           (ltu/is-set-cookie)
-                           (ltu/is-status 201))
-            id         (ltu/body-resource-id resp)
+      (let [resp             (-> session-anon
+                                 (request base-uri
+                                          :request-method :post
+                                          :body (json/write-str valid-create))
+                                 (ltu/body->edn)
+                                 (ltu/is-set-cookie)
+                                 (ltu/is-status 201))
+            id               (ltu/body-resource-id resp)
 
-            token      (get-in resp [:response :cookies authn-cookie :value])
-            authn-info (if token (sign/unsign-cookie-info token) {})
+            token            (get-in resp [:response :cookies authn-cookie :value])
+            authn-info       (if token (sign/unsign-cookie-info token) {})
+            event-authn-info {:user-id      "user/user"
+                              :active-claim "group/nuvla-user"
+                              :claims       ["group/nuvla-anon" id "user/user"]}
 
-            uri        (ltu/location resp)
-            abs-uri    (str p/service-context uri)]
+            uri              (ltu/location resp)
+            abs-uri          (str p/service-context uri)]
 
         ; check claims in cookie
         (is (= jane-user-id (:user-id authn-info)))
@@ -249,6 +252,7 @@
                            {:event-type         "session.delete"
                             :success            true
                             :linked-identifiers []
+                            :authn-info         event-authn-info
                             :acl                {:owners ["group/nuvla-admin"
                                                           "user/user"]}})
 
@@ -329,6 +333,9 @@
                                               {:event-type         "session.add"
                                                :success            true
                                                :linked-identifiers [user-id credential-id]
+                                               :authn-info         {:user-id      "user/unknown"
+                                                                    :active-claim "user/unknown"
+                                                                    :claims       ["user/unknown" "group/nuvla-anon"]}
                                                :acl                {:owners ["group/nuvla-admin" user-id]}})
         handler            (wrap-authn-info identity)
         authn-session-user (-> session-user
@@ -344,7 +351,10 @@
         switch-op-url      (-> (apply request session-json (concat [sesssion-user-url] authn-session-user))
                                (ltu/body->edn)
                                (ltu/is-status 200)
-                               (ltu/get-op-url :switch-group))]
+                               (ltu/get-op-url :switch-group))
+        event-authn-info   {:user-id      user-id
+                            :active-claim user-id
+                            :claims       ["group/nuvla-anon" "group/nuvla-user" session-user-id user-id]}]
 
     (testing "User cannot switch to a group that he is not part of."
       (-> (apply request session-json
@@ -357,7 +367,8 @@
       (ltu/is-last-event session-user-id {:event-type         "session.switch-group"
                                           :success            false
                                           :linked-identifiers [group-b]
-                                          :acl                {:owners    ["group/nuvla-admin" group-b]}}))
+                                          :authn-info         event-authn-info
+                                          :acl                {:owners ["group/nuvla-admin" group-b]}}))
 
     (testing "User can switch to a group that he is part of."
       (-> session-admin

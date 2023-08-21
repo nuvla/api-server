@@ -310,7 +310,7 @@
       [client server])))
 
 
-(def ^:private zk-client-server-cache (atom nil))
+(defonce ^:private zk-client-server-cache (atom nil))
 
 
 (defn set-zk-client-server-cache
@@ -389,7 +389,7 @@
     [node client sniffer]))
 
 
-(def ^:private es-node-client-cache (atom nil))
+(defonce ^:private es-node-client-cache (atom nil))
 
 (defn es-node
   []
@@ -607,14 +607,20 @@
 ;;
 
 (defmacro is-last-event
-  [resource-id {:keys [event-type linked-identifiers success acl]}]
-  `(let [event# (last (event-utils/query-events ~resource-id {:orderby [["timestamp" :desc]] :last 1}))]
+  [resource-id {:keys [event-type authn-info linked-identifiers success acl]}]
+  `(let [event#      (last (event-utils/query-events ~resource-id {:orderby [["timestamp" :desc]] :last 1}))
+         authn-info# (:authn-info event#)]
      (is (some? event#))
      (when ~event-type
        (is (= ~event-type (:event-type event#))))
+     (when ~authn-info
+       (is (= (:user-id ~authn-info) (:user-id authn-info#)))
+       (is (= (:active-claim ~authn-info) (:active-claim authn-info#)))
+       (is (= (set (:claims ~authn-info)) (set (:claims authn-info#)))))
      (when ~linked-identifiers
        (is (= (set ~linked-identifiers) (set (get-in event# [:content :linked-identifiers])))))
      (when (some? ~success)
        (is (= ~success (:success event#))))
      (when (some? ~acl)
        (is (= ~acl (:acl event#))))))
+
