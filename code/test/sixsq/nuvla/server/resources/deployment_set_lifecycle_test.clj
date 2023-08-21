@@ -12,6 +12,8 @@
     [sixsq.nuvla.server.resources.deployment-set :as t]
     [sixsq.nuvla.server.resources.deployment-set.utils :as dep-set-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.resources.common.resource-creation :as resource-creation]
+    [sixsq.nuvla.server.resources.module :as module]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -19,6 +21,7 @@
 
 (def base-uri (str p/service-context t/resource-type))
 (def deployment-base-uri (str p/service-context deployment/resource-type))
+(def module-base-uri (str p/service-context module-utils/resource-type))
 
 (def session-id "session/324c6138-aaaa-bbbb-cccc-af3ad15815db")
 
@@ -43,10 +46,9 @@
                       {}
                       {}]}])
 
-(def valid-deployment-set {:name  dep-set-name,
-                           :start false,
-                           :applications-sets
-                           dep-apps-sets})
+(def valid-deployment-set {:name              dep-set-name,
+                           :start             false,
+                           :applications-sets dep-apps-sets})
 
 (def u-applications-sets-v11
   {:description               "mutli",
@@ -178,7 +180,7 @@
                                                      :value "overwritten in deployment set"}]
                           :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
                           :version                 1}
-            :credential  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
+            :target      "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
            {:app-set     "set-1"
             :application {:environmental-variables [{:name  "var_1_value"
                                                      :value "overwritten var1 overwritten in deployment set"}
@@ -186,31 +188,31 @@
                                                      :value "overwritten in deployment set"}]
                           :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
                           :version                 1}
-            :credential  "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
+            :target      "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
            {:app-set     "set-1"
             :application {:id      "module/188555b1-2006-4766-b287-f60e5e908197"
                           :version 0}
-            :credential  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
+            :target      "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
            {:app-set     "set-1"
             :application {:id      "module/188555b1-2006-4766-b287-f60e5e908197"
                           :version 0}
-            :credential  "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
+            :target      "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
            {:app-set     "set-1"
             :application {:id      "module/770f5090-be33-42a3-b9fe-0de4622f12ea"
                           :version 0}
-            :credential  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
+            :target      "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
            {:app-set     "set-1"
             :application {:id      "module/770f5090-be33-42a3-b9fe-0de4622f12ea"
                           :version 0}
-            :credential  "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
+            :target      "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
            {:app-set     "set-1"
             :application {:id      "module/fcc71f74-1898-4e38-a284-5997141801a7"
                           :version 0}
-            :credential  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
+            :target      "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
            {:app-set     "set-1"
             :application {:id      "module/fcc71f74-1898-4e38-a284-5997141801a7"
                           :version 0}
-            :credential  "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}})))
+            :target      "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}})))
 
 (deftest module-utils_get-applications-sets
   (is (= (module-utils/get-applications-sets u-applications-sets-v11)
@@ -345,48 +347,49 @@
                 (ltu/body->edn)
                 (ltu/is-status 200)
                 (ltu/body)
-                (= [{:credential "credential/bc258c46-4771-45d3-9b38-97afdf185f44",
-                     :application
-                     {:id "module/188555b1-2006-4766-b287-f60e5e908197", :version 0},
-                     :app-set    "set-1"}
-                    {:credential "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316",
-                     :application
-                     {:id "module/188555b1-2006-4766-b287-f60e5e908197", :version 0},
-                     :app-set    "set-1"}
-                    {:credential "credential/bc258c46-4771-45d3-9b38-97afdf185f44",
-                     :application
-                     {:id "module/770f5090-be33-42a3-b9fe-0de4622f12ea", :version 0},
-                     :app-set    "set-1"}
-                    {:credential "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316",
-                     :application
-                     {:id "module/770f5090-be33-42a3-b9fe-0de4622f12ea", :version 0},
-                     :app-set    "set-1"}
-                    {:credential "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316",
-                     :application
-                     {:id "module/fcc71f74-1898-4e38-a284-5997141801a7", :version 0},
-                     :app-set    "set-1"}
-                    {:credential "credential/bc258c46-4771-45d3-9b38-97afdf185f44",
-                     :application
-                     {:id "module/fcc71f74-1898-4e38-a284-5997141801a7", :version 0},
-                     :app-set    "set-1"}
-                    {:credential "credential/bc258c46-4771-45d3-9b38-97afdf185f44",
-                     :application
-                     {:id      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8",
-                      :version 1,
-                      :environmental-variables
-                      [{:name  "var_1_value",
-                        :value "overwritten var1 overwritten in deployment set"}
-                       {:name "var_2", :value "overwritten in deployment set"}]},
-                     :app-set    "set-1"}
-                    {:credential "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316",
-                     :application
-                     {:id      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8",
-                      :version 1,
-                      :environmental-variables
-                      [{:name  "var_1_value",
-                        :value "overwritten var1 overwritten in deployment set"}
-                       {:name "var_2", :value "overwritten in deployment set"}]},
-                     :app-set    "set-1"}])
+                set
+                (= #{{:target  "credential/bc258c46-4771-45d3-9b38-97afdf185f44",
+                      :application
+                      {:id "module/188555b1-2006-4766-b287-f60e5e908197", :version 0},
+                      :app-set "set-1"}
+                     {:target  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316",
+                      :application
+                      {:id "module/188555b1-2006-4766-b287-f60e5e908197", :version 0},
+                      :app-set "set-1"}
+                     {:target  "credential/bc258c46-4771-45d3-9b38-97afdf185f44",
+                      :application
+                      {:id "module/770f5090-be33-42a3-b9fe-0de4622f12ea", :version 0},
+                      :app-set "set-1"}
+                     {:target  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316",
+                      :application
+                      {:id "module/770f5090-be33-42a3-b9fe-0de4622f12ea", :version 0},
+                      :app-set "set-1"}
+                     {:target  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316",
+                      :application
+                      {:id "module/fcc71f74-1898-4e38-a284-5997141801a7", :version 0},
+                      :app-set "set-1"}
+                     {:target  "credential/bc258c46-4771-45d3-9b38-97afdf185f44",
+                      :application
+                      {:id "module/fcc71f74-1898-4e38-a284-5997141801a7", :version 0},
+                      :app-set "set-1"}
+                     {:target  "credential/bc258c46-4771-45d3-9b38-97afdf185f44",
+                      :application
+                      {:id      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8",
+                       :version 1,
+                       :environmental-variables
+                       [{:name  "var_1_value",
+                         :value "overwritten var1 overwritten in deployment set"}
+                        {:name "var_2", :value "overwritten in deployment set"}]},
+                      :app-set "set-1"}
+                     {:target  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316",
+                      :application
+                      {:id      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8",
+                       :version 1,
+                       :environmental-variables
+                       [{:name  "var_1_value",
+                         :value "overwritten var1 overwritten in deployment set"}
+                        {:name "var_2", :value "overwritten in deployment set"}]},
+                      :app-set "set-1"}})
                 (is))))
 
         (testing "create action will create a create_deployment_set job"
@@ -534,51 +537,50 @@
                              (ltu/body->edn)
                              (ltu/is-status 200)
                              (ltu/get-op-url :plan)))
-                (ltu/body->edn)
+                ltu/body->edn
                 (ltu/is-status 200)
-                (ltu/body)
-                (= [{:credential "credential/bc258c46-4771-45d3-9b38-97afdf185f44",
-                     :application
-                     {:id "module/188555b1-2006-4766-b287-f60e5e908197", :version 0},
-                     :app-set    "set-1"}
-                    {:credential "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316",
-                     :application
-                     {:id "module/188555b1-2006-4766-b287-f60e5e908197", :version 0},
-                     :app-set    "set-1"}
-                    {:credential "credential/bc258c46-4771-45d3-9b38-97afdf185f44",
-                     :application
-                     {:id "module/770f5090-be33-42a3-b9fe-0de4622f12ea", :version 0},
-                     :app-set    "set-1"}
-                    {:credential "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316",
-                     :application
-                     {:id "module/770f5090-be33-42a3-b9fe-0de4622f12ea", :version 0},
-                     :app-set    "set-1"}
-                    {:credential "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316",
-                     :application
-                     {:id "module/fcc71f74-1898-4e38-a284-5997141801a7", :version 0},
-                     :app-set    "set-1"}
-                    {:credential "credential/bc258c46-4771-45d3-9b38-97afdf185f44",
-                     :application
-                     {:id "module/fcc71f74-1898-4e38-a284-5997141801a7", :version 0},
-                     :app-set    "set-1"}
-                    {:credential "credential/bc258c46-4771-45d3-9b38-97afdf185f44",
-                     :application
-                     {:id      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8",
-                      :version 1,
-                      :environmental-variables
-                      [{:name  "var_1_value",
-                        :value "overwritten var1 overwritten in deployment set"}
-                       {:name "var_2", :value "overwritten in deployment set"}]},
-                     :app-set    "set-1"}
-                    {:credential "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316",
-                     :application
-                     {:id      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8",
-                      :version 1,
-                      :environmental-variables
-                      [{:name  "var_1_value",
-                        :value "overwritten var1 overwritten in deployment set"}
-                       {:name "var_2", :value "overwritten in deployment set"}]},
-                     :app-set    "set-1"}])
+                ltu/body
+                set
+                (= #{{:app-set     "set-1"
+                      :application {:environmental-variables [{:name  "var_1_value"
+                                                               :value "overwritten var1 overwritten in deployment set"}
+                                                              {:name  "var_2"
+                                                               :value "overwritten in deployment set"}]
+                                    :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
+                                    :version                 1}
+                      :target      "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
+                     {:app-set     "set-1"
+                      :application {:environmental-variables [{:name  "var_1_value"
+                                                               :value "overwritten var1 overwritten in deployment set"}
+                                                              {:name  "var_2"
+                                                               :value "overwritten in deployment set"}]
+                                    :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
+                                    :version                 1}
+                      :target      "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
+                     {:target  "credential/bc258c46-4771-45d3-9b38-97afdf185f44",
+                      :application
+                      {:id "module/188555b1-2006-4766-b287-f60e5e908197", :version 0},
+                      :app-set "set-1"}
+                     {:target  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316",
+                      :application
+                      {:id "module/188555b1-2006-4766-b287-f60e5e908197", :version 0},
+                      :app-set "set-1"}
+                     {:target  "credential/bc258c46-4771-45d3-9b38-97afdf185f44",
+                      :application
+                      {:id "module/770f5090-be33-42a3-b9fe-0de4622f12ea", :version 0},
+                      :app-set "set-1"}
+                     {:target  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316",
+                      :application
+                      {:id "module/770f5090-be33-42a3-b9fe-0de4622f12ea", :version 0},
+                      :app-set "set-1"}
+                     {:target  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316",
+                      :application
+                      {:id "module/fcc71f74-1898-4e38-a284-5997141801a7", :version 0},
+                      :app-set "set-1"}
+                     {:target  "credential/bc258c46-4771-45d3-9b38-97afdf185f44",
+                      :application
+                      {:id "module/fcc71f74-1898-4e38-a284-5997141801a7", :version 0},
+                      :app-set "set-1"}})
                 (is))))
 
         (testing "create action will create a create_deployment_set job"
@@ -700,6 +702,61 @@
               ltu/body->edn
               (ltu/is-status 200)
               (ltu/is-key-value :action "create_deployment_set")))))))
+
+(deftest lifecycle-create-apps-sets
+  (let [session-anon (-> (ltu/ring-app)
+                         session
+                         (content-type "application/json"))
+        session-user (header session-anon authn-info-header
+                             (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
+        module-id    (resource-creation/create-module session-user)
+        fleet        ["nuvlabox/1"]]
+
+    (module/initialize)
+
+    (-> session-user
+        (request (str p/service-context module-id)
+                 :request-method :put
+                 :body (json/write-str {:content {:docker-compose "a"
+                                                  :author         "user/jane"}}))
+        ltu/body->edn
+        (ltu/is-status 200))
+
+    (doseq [[expected-version m-id] [[1 module-id] [0 (str module-id "_0")]]]
+      (let [dep-set-url (-> session-user
+                           (request base-uri
+                                    :request-method :post
+                                    :body (json/write-str {:name    dep-set-name,
+                                                           :start   false,
+                                                           :modules [m-id]
+                                                           :fleet   fleet}))
+                           ltu/body->edn
+                           (ltu/is-status 201)
+                           ltu/location-url)
+           app-set-id  (-> session-user
+                           (request dep-set-url)
+                           ltu/body->edn
+                           (ltu/is-status 200)
+                           (ltu/is-key-value
+                             (comp :fleet first :overwrites first)
+                             :applications-sets fleet)
+                           ltu/body
+                           :applications-sets
+                           first
+                           :id)
+           app-set-url (str p/service-context app-set-id)]
+
+       (testing
+         "Application set was created in the right project
+          and latest version of the application was picked up"
+         (-> session-user
+             (request app-set-url)
+             ltu/body->edn
+             (ltu/is-status 200)
+             (ltu/is-key-value (comp first :applications first :applications-sets)
+                               :content {:id      module-id
+                                         :version expected-version})
+             (ltu/is-key-value :parent-path module-utils/project-apps-sets)))))))
 
 (deftest lifecycle-deployment-detach
   (binding [config-nuvla/*stripe-api-key* nil]

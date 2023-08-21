@@ -2,6 +2,7 @@
   (:require
     [clojure.edn :as edn]
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
@@ -25,6 +26,8 @@
 (def ^:const subtype-apps-sets "applications_sets")
 
 (def ^:const subtype-project "project")
+
+(def ^:const project-apps-sets "apps-sets")
 
 (defn module-subtype
   [module]
@@ -71,28 +74,34 @@
   (cond-> resource
           path (assoc :parent-path (get-parent-path path))))
 
+(defn version-lookup
+  [{:keys [versions] :as _module} pred]
+  (loop [i (dec (count versions))]
+    (when (> i -1)
+      (if (pred (nth versions i))
+        i
+        (recur (dec i))))))
+(defn latest-published-index
+  [module]
+  (version-lookup module #(:published %)))
+
+(defn latest-index
+  [module]
+  (version-lookup module some?))
 
 (defn set-published
   "Updates the :parent-path key in the module resource to ensure that it is
    consistent with the value of :path."
-  [{:keys [versions] :as resource}]
-  (if (is-project? resource)
-    resource
-    (assoc resource :published (boolean (some :published versions)))))
+  [module-meta]
+  (if (is-project? module-meta)
+    module-meta
+    (assoc module-meta :published (some? (latest-published-index module-meta)))))
 
 (defn throw-cannot-publish-project
   [resource]
   (if (is-project? resource)
     (throw (r/ex-response "project cannot be published" 400))
     resource))
-
-(defn last-index
-  [{:keys [versions] :as _module-meta}]
-  (loop [i (dec (count versions))]
-    (when (not (neg? i))
-      (if (some? (nth versions i))
-        i
-        (recur (dec i))))))
 
 (defn split-uuid
   [full-uuid]
@@ -111,7 +120,7 @@
 (defn latest-or-version-index
   [module-meta full-uuid]
   (or (full-uuid->version-index full-uuid)
-      (last-index module-meta)))
+      (latest-index module-meta)))
 
 (defn get-content-id
   [{:keys [versions] :as _module-meta} version-index]
@@ -187,7 +196,7 @@
                           "recurring"    {"interval"        "month"
                                           "aggregate_usage" "sum"
                                           "usage_type"      "metered"}
-                          "product_data" {"name"       (str (or name path) " v" (last-index module))
+                          "product_data" {"name"       (str (or name path) " v" (latest-index module))
                                           "unit_label" "app days"}})]
         (assoc module :price {:price-id              (pricing-impl/get-id s-price)
                               :product-id            (pricing-impl/get-product s-price)
@@ -295,3 +304,27 @@
                        :last   0}})
       first
       :count))
+
+(defn create-module
+  [body]
+  (try
+    (crud/add {:params      {:resource-name resource-type}
+               :body        body
+               :nuvla/authn auth/internal-identity})
+    (catch Exception e
+      (ex-data e))))
+
+(defn create-project-apps-sets
+  []
+  (let [{:keys [status]
+         :as   response} (create-module
+                           {:subtype subtype-project
+                            :path    project-apps-sets
+                            :name    project-apps-sets
+                            :acl     {:owners    ["group/nuvla-admin"]
+                                      :edit-data ["group/nuvla-user"]}})]
+    (case status
+      201 (log/infof "project '%s' created" project-apps-sets)
+      409 (log/infof "project '%s' already exists." project-apps-sets)
+      (log/errorf "unexpected status code (%s) when creating %s resource: %s"
+                  (str status) project-apps-sets response))))

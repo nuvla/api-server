@@ -490,4 +490,5 @@ component, or application.
 (defn initialize
   []
   (std-crud/initialize resource-type ::module/schema)
-  (md/register resource-metadata))
+  (md/register resource-metadata)
+  (utils/create-project-apps-sets))
