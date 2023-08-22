@@ -4,6 +4,16 @@
 
 ## Released
 
+## [6.0.19] - 2023-08-22
+
+- NuvlaEdge status - propagate name and description of NuvlaEdge when updated or
+  created (#796)
+- Deployment get-context - add nuvlaedge and nuvlaedge-status (#795)
+- Module initialization - create apps-sets project
+- Module utils - Helpers to get latest published apps or latest index
+- Deployment set create helper to create module application set (#794)
+- Deployment-set - plan action return target instead of credential
+
 ## [6.0.18] - 2023-07-21
 
 - Deps - parent v6.7.14
