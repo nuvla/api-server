@@ -143,7 +143,7 @@
             (ltu/body->edn)
             (ltu/is-status 403))
 
-        (ltu/is-last-event uuid {:event-type         "session.add"
+        (ltu/is-last-event uuid {:name               "session.add"
                                  :category           "add"
                                  :success            false
                                  :linked-identifiers [(str "credential/" uuid)]
@@ -159,7 +159,7 @@
                               (ltu/is-set-cookie)
                               (ltu/is-status 201))
               id          (ltu/body-resource-id resp)
-              _           (ltu/is-last-event id {:event-type         "session.add"
+              _           (ltu/is-last-event id {:name         "session.add"
                                                  :category           "add"
                                                  :success            true
                                                  :linked-identifiers [(str "credential/" uuid)]

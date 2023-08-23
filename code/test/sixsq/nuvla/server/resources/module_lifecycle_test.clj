@@ -79,7 +79,7 @@
         (ltu/is-status 403))
 
     (ltu/is-last-event nil
-                       {:event-type         "module.add"
+                       {:name               "module.add"
                         :category           "add"
                         :success            false
                         :linked-identifiers []
@@ -111,7 +111,7 @@
         (ltu/is-status 400))
 
     (ltu/is-last-event nil
-                       {:event-type         "module.add"
+                       {:name               "module.add"
                         :category           "add"
                         :success            false
                         :linked-identifiers []
@@ -144,7 +144,7 @@
             abs-uri (str p/service-context uri)]
 
         (ltu/is-last-event uri
-                           {:event-type         "module.add"
+                           {:name               "module.add"
                             :category           "add"
                             :success            true
                             :linked-identifiers []
@@ -177,7 +177,7 @@
             (ltu/is-status 403))
 
         (ltu/is-last-event uri
-                           {:event-type         "module.edit"
+                           {:name               "module.edit"
                             :category           "edit"
                             :success            false
                             :linked-identifiers []
@@ -194,7 +194,7 @@
               (ltu/is-status 200))
 
           (ltu/is-last-event uri
-                             {:event-type         "module.edit"
+                             {:name               "module.edit"
                               :category           "edit"
                               :success            true
                               :linked-identifiers []
@@ -241,7 +241,7 @@
                 (ltu/message-matches "published successfully"))
 
             (ltu/is-last-event uri
-                               {:event-type         "module.publish"
+                               {:name               "module.publish"
                                 :category           "action"
                                 :success            true
                                 :linked-identifiers []
@@ -273,7 +273,7 @@
                 (ltu/message-matches "published successfully"))
 
             (ltu/is-last-event (str uri "_2")
-                               {:event-type         "module.publish"
+                               {:name               "module.publish"
                                 :category           "action"
                                 :success            true
                                 :linked-identifiers []
@@ -298,7 +298,7 @@
                 (ltu/message-matches "unpublished successfully")))
 
           (ltu/is-last-event uri
-                             {:event-type         "module.unpublish"
+                             {:name               "module.unpublish"
                               :category           "action"
                               :success            true
                               :linked-identifiers []
@@ -313,7 +313,7 @@
               (ltu/message-matches "published successfully"))
 
           (ltu/is-last-event (str uri "_2")
-                             {:event-type         "module.publish"
+                             {:name               "module.publish"
                               :category           "action"
                               :success            true
                               :linked-identifiers []
@@ -337,7 +337,7 @@
               (ltu/message-matches "unpublished successfully"))
 
           (ltu/is-last-event (str uri "_2")
-                             {:event-type         "module.unpublish"
+                             {:name               "module.unpublish"
                               :category           "action"
                               :success            true
                               :linked-identifiers []
@@ -386,7 +386,7 @@
 
 
         (ltu/is-last-event uri
-                           {:event-type         "module.delete-version"
+                           {:name               "module.delete-version"
                             :category           "action"
                             :success            true
                             :linked-identifiers []
@@ -420,7 +420,7 @@
 
 
         (ltu/is-last-event uri
-                           {:event-type         "module.delete"
+                           {:name               "module.delete"
                             :category           "delete"
                             :success            true
                             :linked-identifiers []
