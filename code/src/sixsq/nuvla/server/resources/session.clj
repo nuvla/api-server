@@ -95,6 +95,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.email :as email]
+    [sixsq.nuvla.server.resources.event.utils :as eu]
     [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.session :as session]
@@ -533,6 +534,36 @@ status, a 'set-cookie' header, and a 'location' header with the created
 (defmethod ec/log-event? "session.get-groups"
   [_event _response]
   false)
+
+
+(defmethod ec/event-description "session.add"
+  [{:keys [success] :as event}]
+  (if success
+    (when-let [user-name-or-credential (or (some-> (eu/get-linked-resources event "user") first :name)
+                                           (some-> (eu/get-linked-resource-ids event "user") first)
+                                           (some-> (eu/get-linked-resources event "credential") first :id)
+                                           (some-> (eu/get-linked-resource-ids event "credential") first))]
+      (str user-name-or-credential " logged in."))
+    "Login attempt failed."))
+
+
+(defmethod ec/event-description "session.delete"
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event}]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " logged out."))
+    "Logout attempt failed."))
+
+
+(defmethod ec/event-description "session.switch-group"
+  [{:keys [success] {:keys [user-id]} :authn-info {:keys [linked-identifiers]} :content :as event}]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " switched to group "
+           (or (some-> (eu/get-linked-resources event) first :name)
+               (first linked-identifiers))
+           "."))
+    "Switch group attempt failed."))
 
 
 ;;
