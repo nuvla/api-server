@@ -18,7 +18,7 @@
 
 (def valid-event {:acl        {:owners ["user/joe"]}
                   :authn-info {}
-                  :event-type "legacy"
+                  :name       "legacy"
                   :success    true
                   :created    "2015-01-16T08:05:00.00Z"
                   :updated    "2015-01-16T08:05:00.00Z"

@@ -3,13 +3,13 @@
             [sixsq.nuvla.server.resources.common.event-config :as t]))
 
 
-(def logged-event {:event-type "resource.add"})
+(def logged-event {:name "resource.add"})
 
 
 (def not-logged-event {})
 
 
-(def disabled-event {:event-type "resource.validate"})
+(def disabled-event {:name "resource.validate"})
 
 
 (defmethod t/log-event?

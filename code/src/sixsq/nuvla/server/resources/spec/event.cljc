@@ -9,13 +9,6 @@
     [spec-tools.core :as st]))
 
 
-(s/def ::event-type
-  (-> (st/spec string?)
-      (assoc :name "event-type"
-             :json-schema/type "string"
-             :json-schema/description "type of event")))
-
-
 (s/def ::category
   (-> (st/spec #{"add" "edit" "delete" "action" "state" "alarm" "email" "user"})
       (assoc :name "category"
@@ -65,13 +58,6 @@
       (assoc :name "resource"
              :json-schema/type "map"
              :json-schema/description "link to associated resource")))
-
-
-(s/def ::identifier
-  (-> (st/spec string?)
-      (assoc :name "event-type"
-             :json-schema/type "string"
-             :json-schema/description "type of event")))
 
 
 (s/def ::identifier
@@ -133,8 +119,7 @@
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
-                     {:req-un [::event-type
-                               ::timestamp
+                     {:req-un [::timestamp
                                ::content
                                ::category
                                ::severity
