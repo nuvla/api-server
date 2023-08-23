@@ -4,11 +4,15 @@
             [sixsq.nuvla.server.resources.common.event-config :as t]))
 
 
-(def logged-event {:name       "resource.add"
+<<<<<<< HEAD
+(def logged-event {:name "resource.add"})
+=======
+(def logged-event {:event-type "resource.add"
                    :category   "add"
                    :success    true
                    :authn-info {:user-id "user/12345"}
                    :content    {:resource {:href "resource/12345"}}})
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
 
 
 (def not-logged-event {})

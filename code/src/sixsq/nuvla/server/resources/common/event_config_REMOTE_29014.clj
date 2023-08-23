@@ -10,8 +10,8 @@
   resource-type)
 
 
-(defn event-name-dispatch [{event-name :name :as _event} & rest]
-  event-name)
+(defn event-type-dispatch [{:keys [event-type] :as _event} & _rest]
+  event-type)
 
 
 ;;
@@ -34,13 +34,13 @@
 
 (defmulti log-event?
           "Returns true if the event should be logged, false otherwise."
-          event-name-dispatch)
+          event-type-dispatch)
 
 
 (defmethod log-event? :default
-  [{event-name :name :as _event} {:keys [status] :as _response}]
+  [{:keys [event-type] :as _event} {:keys [status] :as _response}]
   (and (not= 405 status)
-       (some? event-name)))
+       (some? event-type)))
 
 
 ;;

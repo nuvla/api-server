@@ -33,9 +33,14 @@
         (let [uuid  (u/random-uuid)
               id    (str "resource/" uuid)
               event (t/build-event context request {:status 201 :body {:resource-id id}})]
+<<<<<<< HEAD
           (is (= {:name          "resource.add"
+                  :category      "action"
+=======
+          (is (= {:event-type    "resource.add"
                   :category      "add"
                   :description   (str "An anonymous user added resource " id ".")
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
                   :content       {:resource           {:href id}
                                   :linked-identifiers []}
                   :authn-info    {}
@@ -47,9 +52,14 @@
                  event))))
       (testing "failure"
         (let [event (t/build-event context request {:status 400})]
+<<<<<<< HEAD
           (is (= {:name          "resource.add"
+                  :category      "action"
+=======
+          (is (= {:event-type    "resource.add"
                   :category      "add"
                   :description   "resource.add attempt failed."
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
                   :content       {:resource           {:href nil}
                                   :linked-identifiers []}
                   :authn-info    {}

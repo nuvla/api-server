@@ -143,8 +143,12 @@
             (ltu/body->edn)
             (ltu/is-status 403))
 
+<<<<<<< HEAD
         (ltu/is-last-event uuid {:name               "session.add"
+=======
+        (ltu/is-last-event uuid {:event-type         "session.add"
                                  :description        "Login attempt failed."
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
                                  :category           "add"
                                  :success            false
                                  :linked-identifiers [(str "credential/" uuid)]
@@ -160,8 +164,12 @@
                               (ltu/is-set-cookie)
                               (ltu/is-status 201))
               id          (ltu/body-resource-id resp)
+<<<<<<< HEAD
               _           (ltu/is-last-event id {:name         "session.add"
+=======
+              _           (ltu/is-last-event id {:event-type         "session.add"
                                                  :description        (str (:id valid-api-key) " logged in.")
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
                                                  :category           "add"
                                                  :success            true
                                                  :linked-identifiers [(str "credential/" uuid)]

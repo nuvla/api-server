@@ -10,8 +10,13 @@
   resource-type)
 
 
-(defn event-name-dispatch [{event-name :name :as _event} & rest]
+<<<<<<< HEAD
+(defn event-name-dispatch [{event-name :name :as _event} _response]
   event-name)
+=======
+(defn event-type-dispatch [{:keys [event-type] :as _event} & _rest]
+  event-type)
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
 
 
 ;;
@@ -40,7 +45,10 @@
 (defmethod log-event? :default
   [{event-name :name :as _event} {:keys [status] :as _response}]
   (and (not= 405 status)
+<<<<<<< HEAD
        (some? event-name)))
+=======
+       (some? event-type)))
 
 
 ;;
@@ -78,3 +86,4 @@
     (str event-type " attempt failed.")))
 
 
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
