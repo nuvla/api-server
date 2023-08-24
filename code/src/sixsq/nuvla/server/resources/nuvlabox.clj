@@ -145,6 +145,13 @@ particular NuvlaBox release.
                :description    "unsuspend the nuvlabox"
                :method         "POST"
                :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           utils/action-heartbeat
+               :uri            utils/action-heartbeat
+               :description    "allow to receive heartbeat from nuvlabox"
+               :method         "POST"
+               :input-message  "application/json"
                :output-message "application/json"}])
 
 
@@ -1011,6 +1018,21 @@ particular NuvlaBox release.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
+(defmethod crud/do-action [resource-type utils/action-heartbeat]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id       (str resource-type "/" uuid)
+          nuvlabox (-> (db/retrieve id request)
+                       (a/throw-cannot-manage request)
+                       (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
+                       utils/update-last-heartbeat
+                       utils/update-next-heartbeat
+                       u/update-timestamps)]
+      (db/edit nuvlabox request)
+      (r/json-response {}))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
 
 ;;
 ;; Set operation
@@ -1019,10 +1041,10 @@ particular NuvlaBox release.
 ;;
 ;; operations for states for owner are:
 ;;
-;;                edit delete activate commission decommission unsuspend ...
+;;                edit delete activate commission decommission unsuspend heartbeat
 ;; NEW             Y     Y       Y
-;; ACTIVATED       Y                       Y           Y
-;; COMMISSIONED    Y                       Y           Y
+;; ACTIVATED       Y                       Y           Y                     Y
+;; COMMISSIONED    Y                       Y           Y                     Y
 ;; DECOMMISSIONING Y                                   Y
 ;; DECOMMISSIONED  Y     Y
 ;; ERROR           Y     Y                             Y
@@ -1048,6 +1070,7 @@ particular NuvlaBox release.
         create-log-op        (u/action-map id :create-log)
         generate-new-key-op  (u/action-map id :generate-new-api-key)
         unsuspend-op         (u/action-map id :unsuspend)
+        heartbeat-op         (u/action-map id utils/action-heartbeat)
         can-manage?          (a/can-manage? resource request)]
     (assoc resource
       :operations
@@ -1072,6 +1095,7 @@ particular NuvlaBox release.
                       (utils/can-create-log? resource) (conj create-log-op)
                       (utils/can-generate-new-api-key? resource) (conj generate-new-key-op)
                       (utils/can-unsuspend? resource) (conj unsuspend-op)
+                      (utils/can-heartbeat? resource) (conj heartbeat-op)
                       )))))
 
 ;;

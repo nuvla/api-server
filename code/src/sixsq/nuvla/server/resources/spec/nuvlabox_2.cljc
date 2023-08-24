@@ -1,14 +1,40 @@
 (ns sixsq.nuvla.server.resources.spec.nuvlabox-2
   (:require
     [clojure.spec.alpha :as s]
+    [spec-tools.core :as st]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.spec.nuvlabox-0 :as nb-0]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]))
 
 
 ;; This version of the schema is the same as the previous one (0).
 ;; Use the same attribute definitions to avoid repetition.
+
+(s/def ::heartbeat-interval
+  (assoc (st/spec pos-int?)
+    :name "hearthbeat-interval"
+    :json-schema/display-name "hearthbeat interval"
+    :json-schema/description "hearthbeat interval in seconds"
+
+    :json-schema/order 38))
+
+(s/def ::next-heartbeat
+  (assoc (st/spec ::core/timestamp)
+    :name "next-heartbeat"
+    :json-schema/display-name "next heartbeat"
+    :json-schema/description "timestamp for next heartbeat update"
+
+    :json-schema/order 39))
+
+(s/def ::last-heartbeat
+  (assoc (st/spec ::core/timestamp)
+    :name "last-heartbeat"
+    :json-schema/display-name "last heartbeat"
+    :json-schema/description "timestamp for last heartbeat update"
+
+    :json-schema/order 40))
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
@@ -37,4 +63,7 @@
                                ::nb-0/capabilities
                                ::nb-0/online
                                ::nb-0/inferred-location
-                               ::nb-0/nuvlabox-engine-version]}))
+                               ::nb-0/nuvlabox-engine-version
+                               ::heartbeat-interval
+                               ::last-heartbeat
+                               ::next-heartbeat]}))

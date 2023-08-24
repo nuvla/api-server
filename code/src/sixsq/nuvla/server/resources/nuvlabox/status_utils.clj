@@ -4,7 +4,7 @@
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.util.time :as time]))
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]))
 
 (defn get-next-heartbeat
   [nuvlabox-id]
@@ -12,10 +12,7 @@
     (some-> nuvlabox-id
             crud/retrieve-by-id-as-admin
             :refresh-interval
-            (* 2)
-            (+ 10)
-            (time/from-now :seconds)
-            time/to-str)
+            nb-utils/compute-next-heartbeat)
     (catch Exception ex
       (log/errorf "Unable to get next heartbeat for %1: %2" nuvlabox-id ex))))
 

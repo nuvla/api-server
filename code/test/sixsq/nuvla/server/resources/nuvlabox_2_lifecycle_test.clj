@@ -65,7 +65,7 @@
                      :form-factor      "Nuvlabox"
                      :lan-cidr         "10.0.1.0/24"
                      :ssh-keys         ["credential/aaa-bbb-ccc"]
-                     :capabilities     ["RANDOM" "NUVLA_JOB_PULL"]})
+                     :capabilities     ["RANDOM" utils/capability-job-pull]})
 
 
 (deftest check-metadata
@@ -444,7 +444,7 @@
                                                 :minio-access-key    "access"
                                                 :minio-secret-key    "secret"
                                                 :minio-endpoint      "https://minio.example.com"
-                                                :capabilities        ["NUVLA_JOB_PULL"]}))
+                                                :capabilities        [utils/capability-job-pull]}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -1730,6 +1730,71 @@
                 (ltu/is-status 200)
                 (ltu/is-key-value :state "COMMISSIONED"))))))))
 
+(deftest create-activate-commission-heartbeat-lifecycle
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session       (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
+
+      (let [nuvlabox-id  (-> session-owner
+                             (request base-uri
+                                      :request-method :post
+                                      :body (json/write-str
+                                              (update valid-nuvlabox
+                                                      :capabilities
+                                                      conj
+                                                      utils/capability-heartbeat)))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
+
+            nuvlabox-url (str p/service-context nuvlabox-id)
+
+            activate-url (-> session-owner
+                             (request nuvlabox-url)
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/get-op-url :activate))]
+
+        ;; activate nuvlabox
+        (-> session-anon
+            (request activate-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (let [session-nuvlabox (header session authn-info-header
+                                       (str nuvlabox-id " " nuvlabox-id
+                                            " group/nuvla-nuvlabox group/nuvla-anon"))
+              commission       (-> session-owner
+                                   (request nuvlabox-url)
+                                   (ltu/body->edn)
+                                   (ltu/is-status 200)
+                                   (ltu/get-op-url :commission)
+                                   (ltu/is-operation-absent :heartbeat))]
+
+          (-> session-nuvlabox
+              (request commission
+                       :request-method :post)
+              (ltu/body->edn)
+              (ltu/is-status 200))
+
+          (let [heartbeat-op     (-> session-nuvlabox
+                                     (request nuvlabox-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/is-operation-present :heartbeat)
+                                     (ltu/get-op-url :heartbeat))]
+            (-> session-nuvlabox
+                (request heartbeat-op)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/dump)
+                (ltu/is-key-value :online true))))))))
 
 
 (deftest should-propagate-changes-test

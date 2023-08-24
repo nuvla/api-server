@@ -9,7 +9,8 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.time :as time]))
 
 (def ^:const state-new "NEW")
 (def ^:const state-activated "ACTIVATED")
@@ -19,9 +20,22 @@
 (def ^:const state-suspended "SUSPENDED")
 (def ^:const state-error "ERROR")
 
+(def ^:const capability-job-pull "NUVLA_JOB_PULL")
+(def ^:const capability-heartbeat "NUVLA_HEARTBEAT")
+
+(def ^:const action-heartbeat "heartbeat")
+
 (defn is-version-before-2?
   [nuvlabox]
   (< (:version nuvlabox) 2))
+
+(defn has-capability?
+  [capability {:keys [capabilities] :as _nuvlabox}]
+  (contains? (set capabilities) capability))
+
+(def has-job-pull-support? (partial has-capability? capability-job-pull))
+
+(def has-heartbeat-support? (partial has-capability? capability-heartbeat))
 
 (def is-state-commissioned? (partial u/is-state? state-commissioned))
 
@@ -83,6 +97,28 @@
   state-not-in-decommissioned-decommissioning-suspended?)
 
 (def can-unsuspend? (partial u/is-state? state-suspended))
+
+(defn can-heartbeat?
+  [nuvlabox]
+  (and
+    (has-heartbeat-support? nuvlabox)
+    (u/is-state-within? #{state-activated state-commissioned} nuvlabox)))
+
+(defn update-last-heartbeat
+  [nuvlabox]
+  (assoc nuvlabox :last-heartbeat (time/now-str)))
+
+(defn compute-next-heartbeat
+  [interval-in-seconds]
+  (some-> interval-in-seconds
+          (* 2)
+          (+ 10)
+          (time/from-now :seconds)
+          time/to-str))
+
+(defn update-next-heartbeat
+  [{:keys [heartbeat-interval] :as nuvlabox}]
+  (assoc nuvlabox :next-heartbeat (compute-next-heartbeat heartbeat-interval)))
 
 (defn throw-nuvlabox-is-suspended
   [{:keys [id] :as nuvlabox}]
@@ -189,16 +225,9 @@
                          (not-empty status-notes) (assoc :status-notes status-notes))]
     (action (assoc request :body new-body))))
 
-
-(defn has-capability?
-  [capability {:keys [capabilities] :as _nuvlabox}]
-  (contains? (set capabilities) capability))
-
-(def has-pull-support? (partial has-capability? "NUVLA_JOB_PULL"))
-
 (defn get-execution-mode
   [nuvlabox]
-  (if (has-pull-support? nuvlabox) "pull" "push"))
+  (if (has-job-pull-support? nuvlabox) "pull" "push"))
 
 (defn get-playbooks
   ([nuvlabox-id] (get-playbooks nuvlabox-id "MANAGEMENT"))

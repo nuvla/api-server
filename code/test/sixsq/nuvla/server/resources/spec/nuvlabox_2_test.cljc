@@ -57,7 +57,10 @@
                :capabilities                   ["NUVLA_JOB_PULL", "SYS_ADMIN"]
                :online                         true
                :host-level-management-api-key  "credential/123-abc"
-               :nuvlabox-engine-version        "1.2.3"})
+               :nuvlabox-engine-version        "1.2.3"
+               :next-heartbeat                 timestamp
+               :last-heartbeat                 timestamp
+               :heartbeat-interval             20})
 
 
 (deftest check-nuvlabox
@@ -76,5 +79,6 @@
                  :manufacturer-serial-number :firmware-version :hardware-type :form-factor :wifi-ssid :wifi-password
                  :root-password :login-username :login-password :cloud-password :comment :vm-cidr :lan-cidr :os-version
                  :hw-revision-code :monitored :infrastructure-service-id :ssh-keys :capabilities :online
-                 :host-level-management-api-key :nuvlabox-engine-version}]
+                 :host-level-management-api-key :nuvlabox-engine-version :next-heartbeat :last-heartbeat
+                 :telemetry-interval}]
     (stu/is-valid ::nb-2/schema (dissoc valid-nb attr))))
