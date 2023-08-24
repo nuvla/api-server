@@ -1793,8 +1793,7 @@
                 (request heartbeat-op)
                 (ltu/body->edn)
                 (ltu/is-status 200)
-                (ltu/dump)
-                (ltu/is-key-value :online true))))))))
+                (ltu/is-key-value :jobs []))))))))
 
 
 (deftest should-propagate-changes-test

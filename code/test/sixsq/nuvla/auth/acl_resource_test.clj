@@ -187,3 +187,7 @@
       (= expect (a/acl-remove acl user-id))
       acl nil
       {:owners    ["user/a"]} "user/b")))
+
+(deftest is-admin-request?
+  (is (true? (a/is-admin-request? {:nuvla/authn {:claims ["group/nuvla-admin"]}})))
+  (is (false? (a/is-admin-request? {:nuvla/authn {:claims ["group/nuvla-user"]}}))))

@@ -28,7 +28,7 @@
   (is (false? (t/can-heartbeat? {:state t/state-new})))
   (is (false? (t/can-heartbeat? {:state t/state-commissioned})))
   (is (false? (t/can-heartbeat? {:state        t/state-commissioned
-                                :capabilities ["A"]})))
+                                 :capabilities ["A"]})))
   (is (true? (t/can-heartbeat? {:state        t/state-commissioned
                                 :capabilities [t/capability-heartbeat]}))))
 
@@ -62,3 +62,15 @@
                   a/is-admin?                        (constantly false)
                   payment/active-claim->subscription (constantly {:status "past_due"})]
       (is (= (t/throw-when-payment-required {}) {})))))
+
+(deftest throw-value-should-be-bigger
+  (let [request          {}
+        request-user-nok {:body {:some-key 1}}
+        request-admin    (assoc request-user-nok
+                           :nuvla/authn {:claims ["group/nuvla-admin"]})]
+    (is (= request (t/throw-value-should-be-bigger request :some-key 10)))
+    (is (thrown-with-msg?
+          Exception
+          #"some-key should be bigger than 10!"
+          (t/throw-value-should-be-bigger request-user-nok :some-key 10)))
+    (is (= request-admin (t/throw-value-should-be-bigger request-admin :some-key 10)))))

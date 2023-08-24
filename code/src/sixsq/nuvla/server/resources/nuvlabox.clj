@@ -49,10 +49,6 @@ particular NuvlaBox release.
 ;;
 (def ^:const latest-version 2)
 
-
-(def ^:const default-refresh-interval 90)
-
-
 (def actions [{:name           "activate"
                :uri            "activate"
                :description    "activate the nuvlabox"
@@ -201,23 +197,24 @@ particular NuvlaBox release.
 
 
 (defmethod crud/add resource-type
-  [{{:keys [version refresh-interval vpn-server-id owner]
-     :or   {version          latest-version
-            refresh-interval default-refresh-interval}
+  [{{:keys [version refresh-interval heartbeat-interval vpn-server-id owner]
+     :or   {version            latest-version
+            refresh-interval   utils/default-refresh-interval
+            heartbeat-interval utils/default-heartbeat-interval}
      :as   body} :body :as request}]
-  (let [authn-info (auth/current-authentication request)
-        is-admin?  (a/is-admin? authn-info)]
-    (when vpn-server-id
-      (let [vpn-service (vpn-utils/get-service vpn-server-id)]
-        (vpn-utils/check-service-subtype vpn-service)))
-
-    (utils/throw-when-payment-required request)
+  (let [is-admin? (-> request
+                      utils/throw-when-payment-required
+                      utils/throw-refresh-interval-should-be-bigger
+                      utils/throw-heartbeat-interval-should-be-bigger
+                      utils/throw-vpn-server-id-should-be-vpn
+                      a/is-admin-request?)]
 
     (let [nb-owner     (if is-admin? (or owner "group/nuvla-admin")
                                      (auth/current-active-claim request))
           new-nuvlabox (assoc body :version version
                                    :state utils/state-new
                                    :refresh-interval refresh-interval
+                                   :heartbeat-interval heartbeat-interval
                                    :owner nb-owner)
           resp         (add-impl (assoc request :body new-nuvlabox))]
       (ka-crud/publish-on-add resource-type resp)
@@ -286,7 +283,8 @@ particular NuvlaBox release.
 (def edit-impl (std-crud/edit-fn resource-type))
 
 (defn restricted-body
-  [{:keys [name description location tags ssh-keys capabilities acl] :as _body}
+  [{:keys [name description location tags ssh-keys capabilities acl
+           refresh-interval heartbeat-interval] :as _body}
    {:keys [id owner vpn-server-id] :as existing-resource}]
   (cond-> (dissoc existing-resource :name :description :location :tags :ssh-keys :capabilities :acl)
           name (assoc :name name)
@@ -295,6 +293,8 @@ particular NuvlaBox release.
           tags (assoc :tags tags)
           ssh-keys (assoc :ssh-keys ssh-keys)
           capabilities (assoc :capabilities capabilities)
+          refresh-interval (assoc :refresh-interval refresh-interval)
+          heartbeat-interval (assoc :heartbeat-interval heartbeat-interval)
           acl (assoc
                 :acl (-> acl
                          (select-keys [:view-meta :edit-data :edit-meta :delete])
@@ -307,18 +307,26 @@ particular NuvlaBox release.
                             :manage    (vec (distinct (concat (:manage acl) [id])))})
                          (acl-utils/normalize-acl)))))
 
+(defn update-request-body
+  [request resource]
+  (if (a/is-admin-request? request)
+    request
+    (-> request
+        (u/delete-attributes resource)
+        (restricted-body resource)
+        (->> (assoc request :body)))))
+
 
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params :as request}]
-  (let [authn-info    (auth/current-authentication request)
-        is-not-admin? (not (a/is-admin? authn-info))
-        current       (-> (str resource-type "/" uuid)
-                          (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                          (a/throw-cannot-edit request))
+  (let [current (-> (str resource-type "/" uuid)
+                    (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                    (a/throw-cannot-edit request))
         {updated-nb :body :as resp} (-> request
-                                        (cond-> is-not-admin? (assoc :body (-> request
-                                                                               (u/delete-attributes current)
-                                                                               (restricted-body current))))
+                                        utils/throw-refresh-interval-should-be-bigger
+                                        utils/throw-heartbeat-interval-should-be-bigger
+                                        utils/throw-vpn-server-id-should-be-vpn
+                                        (update-request-body current)
                                         edit-impl)]
     (ka-crud/publish-on-edit resource-type resp)
     (edit-subresources current updated-nb)
@@ -1029,7 +1037,7 @@ particular NuvlaBox release.
                        utils/update-next-heartbeat
                        u/update-timestamps)]
       (db/edit nuvlabox request)
-      (r/json-response {}))
+      (r/json-response {:jobs (utils/get-jobs id)}))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

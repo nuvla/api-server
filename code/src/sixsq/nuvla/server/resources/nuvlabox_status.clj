@@ -109,24 +109,6 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                     :body        body}]
     (add-impl request)))
 
-
-(defn get-jobs
-  [{nb-id :parent :as _resource}]
-  (->> {:params      {:resource-name "job"}
-        :cimi-params {:filter  (cimi-params-impl/cimi-filter
-                                 {:filter (str "execution-mode='pull' and "
-                                               "state!='FAILED' and "
-                                               "state!='SUCCESS' and state!='STOPPED'")})
-                      :select  ["id"]
-                      :orderby [["created" :asc]]}
-        :nuvla/authn {:user-id      nb-id
-                      :active-claim nb-id
-                      :claims       #{nb-id "group/nuvla-user" "group/nuvla-anon"}}}
-       crud/query
-       :body
-       :resources
-       (mapv :id)))
-
 (defn edit-impl [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
   (try
     (let [{:keys [parent acl] :as current} (-> (str resource-type "/" uuid)
@@ -134,7 +116,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                                                (a/throw-cannot-edit request)
                                                (utils/throw-parent-nuvlabox-is-suspended))
 
-          jobs                     (get-jobs current)
+          jobs                     (utils/get-jobs parent)
           rights                   (a/extract-rights (auth/current-authentication request) acl)
           dissoc-keys              (-> (map keyword select)
                                        set

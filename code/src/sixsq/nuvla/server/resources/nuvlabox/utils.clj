@@ -9,6 +9,7 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
+    [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time]))
 
@@ -24,6 +25,9 @@
 (def ^:const capability-heartbeat "NUVLA_HEARTBEAT")
 
 (def ^:const action-heartbeat "heartbeat")
+
+(def ^:const default-refresh-interval 60)
+(def ^:const default-heartbeat-interval 20)
 
 (defn is-version-before-2?
   [nuvlabox]
@@ -119,6 +123,23 @@
 (defn update-next-heartbeat
   [{:keys [heartbeat-interval] :as nuvlabox}]
   (assoc nuvlabox :next-heartbeat (compute-next-heartbeat heartbeat-interval)))
+
+(defn get-jobs
+  [nb-id]
+  (->> {:params      {:resource-name "job"}
+        :cimi-params {:filter  (cimi-params-impl/cimi-filter
+                                 {:filter (str "execution-mode='pull' and "
+                                               "state!='FAILED' and "
+                                               "state!='SUCCESS' and state!='STOPPED'")})
+                      :select  ["id"]
+                      :orderby [["created" :asc]]}
+        :nuvla/authn {:user-id      nb-id
+                      :active-claim nb-id
+                      :claims       #{nb-id "group/nuvla-user" "group/nuvla-anon"}}}
+       crud/query
+       :body
+       :resources
+       (mapv :id)))
 
 (defn throw-nuvlabox-is-suspended
   [{:keys [id] :as nuvlabox}]
@@ -328,3 +349,31 @@
             (#{"active" "past_due" "trialing"} subs-status)))
     request
     (payment/throw-payment-required)))
+
+
+(defn throw-value-should-be-bigger
+  [request k min-value]
+  (let [v (get-in request [:body k])]
+    (if (or (nil? v)
+            (a/is-admin-request? request)
+            (>= v min-value))
+      request
+      (throw (r/ex-response
+               (str (name k) " should be bigger than " min-value "!")
+               400)))))
+
+(defn throw-refresh-interval-should-be-bigger
+  [request]
+  (throw-value-should-be-bigger request :refresh-interval 60))
+
+(defn throw-heartbeat-interval-should-be-bigger
+  [request]
+  (throw-value-should-be-bigger request :heartbeat-interval 10))
+
+(defn throw-vpn-server-id-should-be-vpn
+  [{{:keys [vpn-server-id]} :body :as request}]
+  (if vpn-server-id
+    (let [vpn-service (vpn-utils/get-service vpn-server-id)]
+      (or (vpn-utils/check-service-subtype vpn-service)
+          request))
+    request))
