@@ -197,28 +197,27 @@ particular NuvlaBox release.
 
 
 (defmethod crud/add resource-type
-  [{{:keys [version refresh-interval heartbeat-interval vpn-server-id owner]
+  [{{:keys [version refresh-interval heartbeat-interval owner]
      :or   {version            latest-version
             refresh-interval   utils/default-refresh-interval
             heartbeat-interval utils/default-heartbeat-interval}
      :as   body} :body :as request}]
-  (let [is-admin? (-> request
-                      utils/throw-when-payment-required
-                      utils/throw-refresh-interval-should-be-bigger
-                      utils/throw-heartbeat-interval-should-be-bigger
-                      utils/throw-vpn-server-id-should-be-vpn
-                      a/is-admin-request?)]
-
-    (let [nb-owner     (if is-admin? (or owner "group/nuvla-admin")
-                                     (auth/current-active-claim request))
-          new-nuvlabox (assoc body :version version
-                                   :state utils/state-new
-                                   :refresh-interval refresh-interval
-                                   :heartbeat-interval heartbeat-interval
-                                   :owner nb-owner)
-          resp         (add-impl (assoc request :body new-nuvlabox))]
-      (ka-crud/publish-on-add resource-type resp)
-      resp)))
+  (let [is-admin?    (-> request
+                         utils/throw-when-payment-required
+                         utils/throw-refresh-interval-should-be-bigger
+                         utils/throw-heartbeat-interval-should-be-bigger
+                         utils/throw-vpn-server-id-should-be-vpn
+                         a/is-admin-request?)
+        nb-owner     (if is-admin? (or owner "group/nuvla-admin")
+                                   (auth/current-active-claim request))
+        new-nuvlabox (assoc body :version version
+                                 :state utils/state-new
+                                 :refresh-interval refresh-interval
+                                 :heartbeat-interval heartbeat-interval
+                                 :owner nb-owner)
+        resp         (add-impl (assoc request :body new-nuvlabox))]
+    (ka-crud/publish-on-add resource-type resp)
+    resp))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))

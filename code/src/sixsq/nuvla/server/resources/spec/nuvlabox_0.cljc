@@ -264,6 +264,31 @@
              :json-schema/order 37)))
 
 
+(s/def ::heartbeat-interval
+  (assoc (st/spec pos-int?)
+    :name "hearthbeat-interval"
+    :json-schema/display-name "hearthbeat interval"
+    :json-schema/description "hearthbeat interval in seconds"
+
+    :json-schema/order 38))
+
+(s/def ::next-heartbeat
+  (assoc (st/spec ::core/timestamp)
+    :name "next-heartbeat"
+    :json-schema/display-name "next heartbeat"
+    :json-schema/description "timestamp for next heartbeat update"
+
+    :json-schema/order 39))
+
+(s/def ::last-heartbeat
+  (assoc (st/spec ::core/timestamp)
+    :name "last-heartbeat"
+    :json-schema/display-name "last heartbeat"
+    :json-schema/description "timestamp for last heartbeat update"
+
+    :json-schema/order 40))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb/attributes
@@ -294,4 +319,7 @@
                                ::capabilities
                                ::online
                                ::inferred-location
-                               ::nuvlabox-engine-version]}))
+                               ::nuvlabox-engine-version
+                               ::heartbeat-interval
+                               ::last-heartbeat
+                               ::next-heartbeat]}))
