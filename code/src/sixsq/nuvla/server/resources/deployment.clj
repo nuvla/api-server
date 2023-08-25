@@ -9,6 +9,8 @@ a container orchestration engine.
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.event-config :as ec]
+    [sixsq.nuvla.server.resources.common.event-context :as ectx]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.deployment.utils :as utils]
@@ -154,7 +156,7 @@ a container orchestration engine.
 
         msg                 (get-in create-response [:body :message])]
 
-    (event-utils/create-event deployment-id msg (a/default-acl authn-info))
+    (event-utils/create-event deployment-id msg (a/default-acl authn-info) :category "state")
 
     create-response))
 
@@ -244,6 +246,7 @@ a container orchestration engine.
            delete-response (-> deployment
                                (a/throw-cannot-delete request)
                                (db/delete request))]
+       (ectx/add-to-context :acl (:acl deployment))
        (utils/delete-all-child-resources deployment-id)
        delete-response)
      (catch Exception e
@@ -386,9 +389,11 @@ a container orchestration engine.
   [request]
   (try
     (a/throw-cannot-add collection-acl request)
-    (-> (crud/get-resource-throw-nok request)
-        (select-keys [:module :data :name :description :tags])
-        (create-deployment request))
+    (let [response (-> (crud/get-resource-throw-nok request)
+                       (select-keys [:module :data :name :description :tags])
+                       (create-deployment request))]
+      (ectx/add-linked-identifier (get-in response [:body :resource-id]))
+      response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -535,6 +540,31 @@ a container orchestration engine.
                                 :resource-name resource-type}
                   :body        dep-updated
                   :nuvla/authn authn-info}))))
+
+
+;;
+;; Events
+;;
+
+(defmethod ec/events-enabled? resource-type
+  [_resource-type]
+  true)
+
+
+(defmethod ec/log-event? "deployment.create-log"
+  [_event _response]
+  false)
+
+
+(defmethod ec/log-event? "deployment.check-dct"
+  [_event _response]
+  false)
+
+
+(defmethod ec/log-event? "deployment.fetch-module"
+  [_event _response]
+  false)
+
 
 ;;
 ;; initialization

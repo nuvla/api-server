@@ -47,7 +47,7 @@
 ;; Events may need to reference resources that do not follow the CIMI.
 ;; conventions.  Allow for a more flexible schema to be used here.
 (s/def ::href
-  (-> (st/spec (s/nilable (s/and string? #(re-matches #"^[a-zA-Z0-9]+[a-zA-Z0-9_./-]*$" %))))
+  (-> (st/spec (s/nilable ::core/nonblank-string))
       (assoc :name "href"
              :json-schema/type "string"
              :json-schema/description "reference to associated resource")))

@@ -603,28 +603,72 @@
           (is-status 405)))))
 
 ;;
+;; ACL
+;;
+
+(defmacro is-acl
+  [expected-acl actual-acl]
+  `(do
+     (when (:owners ~expected-acl)
+       (is (= (set (:owners ~expected-acl)) (set (:owners ~actual-acl)))))
+     (when (:edit-acl ~expected-acl)
+       (is (= (set (:edit-acl ~expected-acl)) (set (:edit-acl ~actual-acl)))))
+     (when (:edit-data ~expected-acl)
+       (is (= (set (:edit-data ~expected-acl)) (set (:edit-data ~actual-acl)))))
+     (when (:edit-meta ~expected-acl)
+       (is (= (set (:edit-meta ~expected-acl)) (set (:edit-meta ~actual-acl)))))
+     (when (:view-acl ~expected-acl)
+       (is (= (set (:view-acl ~expected-acl)) (set (:view-acl ~actual-acl)))))
+     (when (:view-data ~expected-acl)
+       (is (= (set (:view-data ~expected-acl)) (set (:view-data ~actual-acl)))))
+     (when (:view-meta ~expected-acl)
+       (is (= (set (:view-meta ~expected-acl)) (set (:view-meta ~actual-acl)))))
+     (when (:manage ~expected-acl)
+       (is (= (set (:manage ~expected-acl)) (set (:manage ~actual-acl)))))
+     (when (:delete ~expected-acl)
+       (is (= (set (:delete ~expected-acl)) (set (:delete ~actual-acl)))))))
+
+
+;;
 ;; events
 ;;
 
-(defmacro is-last-event
-  [resource-id {:keys [description category authn-info linked-identifiers success acl] event-name :name}]
-  `(let [event#      (last (event-utils/query-events ~resource-id {:orderby [["timestamp" :desc]] :last 1}))
-         authn-info# (:authn-info event#)]
-     (is (some? event#))
-     (when ~event-name
-       (is (= ~event-name (:name event#))))
-     (when ~description
-       (is (= ~description (:description event#))))
-     (when ~category
-       (is (= ~category (:category event#))))
-     (when ~authn-info
-       (is (= (:user-id ~authn-info) (:user-id authn-info#)))
-       (is (= (:active-claim ~authn-info) (:active-claim authn-info#)))
-       (is (= (set (:claims ~authn-info)) (set (:claims authn-info#)))))
-     (when ~linked-identifiers
-       (is (= (set ~linked-identifiers) (set (get-in event# [:content :linked-identifiers])))))
-     (when (some? ~success)
-       (is (= ~success (:success event#))))
-     (when (some? ~acl)
-       (is (= ~acl (:acl event#))))))
+(defmacro is-event
+  [expected-event actual-event]
+  `(let [expected-authn-info# (:authn-info ~expected-event)
+         authn-info#          (:authn-info ~actual-event)]
+     (is (some? ~actual-event))
+     (when (:name ~expected-event)
+       (is (= (:name ~expected-event) (:name ~actual-event))))
+     (when (:description ~expected-event)
+       (is (= (:description ~expected-event) (:description ~actual-event))))
+     (when (:category ~expected-event)
+       (is (= (:category ~expected-event) (:category ~actual-event))))
+     (when expected-authn-info#
+       (is (= (:user-id expected-authn-info#) (:user-id authn-info#)))
+       (is (= (:active-claim expected-authn-info#) (:active-claim authn-info#)))
+       (is (= (set (:claims expected-authn-info#)) (set (:claims authn-info#)))))
+     (when (:linked-identifiers ~expected-event)
+       (is (= (set (:linked-identifiers ~expected-event))
+              (set (get-in ~actual-event [:content :linked-identifiers])))))
+     (when (some? (:success ~expected-event))
+       (is (= (:success ~expected-event) (:success ~actual-event))))
+     (when (some? (:acl ~expected-event))
+       (is-acl (:acl ~expected-event) (:acl ~actual-event)))))
 
+
+(defmacro is-last-event
+  [resource-id expected-event]
+  `(let [event# (last (event-utils/query-events ~resource-id {:orderby [["timestamp" :desc]] :last 1}))]
+     (is-event ~expected-event event#)))
+
+
+(defmacro are-last-events
+  [resource-id expected-events]
+  `(let [events# (take (count ~expected-events) (event-utils/query-events ~resource-id {:orderby [["timestamp" :desc]]
+                                                                                        :last    (count ~expected-events)}))]
+     (is (= (count ~expected-events) (count events#)))
+     (doall (map (fn [expected-event# actual-event#]
+                   (is-event expected-event# actual-event#))
+                 ~expected-events
+                 events#))))
