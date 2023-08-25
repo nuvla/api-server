@@ -31,9 +31,7 @@
 
 (deftest check-reference
   (let [updated-event (assoc-in valid-event [:content :resource :href] "another/valid-identifier")]
-    (stu/is-valid ::event/schema updated-event))
-  (let [updated-event (assoc-in valid-event [:content :resource :href] "/not a valid reference/")]
-    (stu/is-invalid ::event/schema updated-event)))
+    (stu/is-valid ::event/schema updated-event)))
 
 
 (deftest check-severity

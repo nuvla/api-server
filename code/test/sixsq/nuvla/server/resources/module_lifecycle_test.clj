@@ -41,34 +41,42 @@
             (ltu/is-status 201)))
       paths)))
 
-(defn lifecycle-test-module
+(def session-anon
+  (-> (session (ltu/ring-app))
+      (content-type "application/json")))
+(def session-admin
+  (header session-anon authn-info-header
+          "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon"))
+(def session-user
+  (header session-anon authn-info-header
+          "user/jane user/jane group/nuvla-user group/nuvla-anon"))
+
+(def authn-info-admin {:user-id      "group/nuvla-admin"
+                       :active-claim "group/nuvla-admin"
+                       :claims       ["group/nuvla-admin" "group/nuvla-anon" "group/nuvla-user"]})
+(def authn-info-jane {:user-id      "user/jane"
+                      :active-claim "user/jane"
+                      :claims       ["group/nuvla-anon" "user/jane" "group/nuvla-user"]})
+(def authn-info-anon {:claims ["group/nuvla-anon"]})
+
+(defn build-valid-entry
   [subtype valid-content]
-  (let [session-anon     (-> (session (ltu/ring-app))
-                             (content-type "application/json"))
-        session-admin    (header session-anon authn-info-header
-                                 "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user     (header session-anon authn-info-header
-                                 "user/jane user/jane group/nuvla-user group/nuvla-anon")
+  {:parent-path               "a/b"
+   :path                      "a/b/c"
+   :subtype                   subtype
 
-        valid-entry      {:parent-path               "a/b"
-                          :path                      "a/b/c"
-                          :subtype                   subtype
+   :compatibility             "docker-compose"
 
-                          :compatibility             "docker-compose"
+   :logo-url                  "https://example.org/logo"
 
-                          :logo-url                  "https://example.org/logo"
+   :data-accept-content-types ["application/json" "application/x-something"]
+   :data-access-protocols     ["http+s3" "posix+nfs"]
 
-                          :data-accept-content-types ["application/json" "application/x-something"]
-                          :data-access-protocols     ["http+s3" "posix+nfs"]
+   :content                   valid-content})
 
-                          :content                   valid-content}
-        authn-info-admin {:user-id      "group/nuvla-admin"
-                          :active-claim "group/nuvla-admin"
-                          :claims       ["group/nuvla-admin" "group/nuvla-anon" "group/nuvla-user"]}
-        authn-info-jane  {:user-id      "user/jane"
-                          :active-claim "user/jane"
-                          :claims       ["group/nuvla-anon" "user/jane" "group/nuvla-user"]}
-        authn-info-anon  {:claims ["group/nuvla-anon"]}
+(defn create-module-nok
+  [valid-entry]
+  (let []
         admin-group-name "Nuvla Administrator Group"]
 
     ;; create: NOK for anon
@@ -130,321 +138,359 @@
                      :body (json/write-str (dissoc valid-entry :compatibility)))
             (ltu/body->edn)
             (ltu/is-status 400)
-            (ltu/message-matches "Application subtype should have compatibility attribute set!"))))
+            (ltu/message-matches "Application subtype should have compatibility attribute set!"))))))
 
-    ;; adding, retrieving and  deleting entry as user should succeed
-    (doseq [[session event-owners authn-info user-name-or-id]
-            [[session-admin ["group/nuvla-admin"] authn-info-admin admin-group-name]
-             [session-user ["group/nuvla-admin" "user/jane"] authn-info-jane "user/jane"]]]
-      (let [uri     (-> session
-                        (request base-uri
-                                 :request-method :post
-                                 :body (json/write-str valid-entry))
-                        (ltu/body->edn)
-                        (ltu/is-status 201)
-                        (ltu/location))
 
-            abs-uri (str p/service-context uri)]
+(defn create-module
+  [session valid-entry event-owners authn-info]
+  (let [uri     (-> session
+                    (request base-uri
+                             :request-method :post
+                             :body (json/write-str valid-entry))
+                    (ltu/body->edn)
+                    (ltu/is-status 201)
+                    (ltu/location))
 
-        (ltu/is-last-event uri
-                           {:name               "module.add"
+        abs-uri (str p/service-context uri)]
+
+    (ltu/is-last-event uri
+                       {:event-type         "module.add"
                             :description        (str user-name-or-id " added module " uri ".")
-                            :category           "add"
-                            :success            true
-                            :linked-identifiers []
-                            :authn-info         authn-info
-                            :acl                {:owners event-owners}})
+                        :category           "add"
+                        :success            true
+                        :linked-identifiers []
+                        :authn-info         authn-info
+                        :acl                {:owners event-owners}})
 
-        ;; retrieve: NOK for anon
-        (-> session-anon
-            (request abs-uri)
-            (ltu/body->edn)
-            (ltu/is-status 403))
+    ;; retrieve: NOK for anon
+    (-> session-anon
+        (request abs-uri)
+        (ltu/body->edn)
+        (ltu/is-status 403))
 
-        (let [{:keys [content acl]} (-> session-admin
-                                        (request abs-uri)
-                                        (ltu/body->edn)
-                                        (ltu/is-status 200)
-                                        (ltu/is-key-value :compatibility "docker-compose")
-                                        (as-> m (if (utils/is-application? valid-entry)
-                                                  (ltu/is-operation-present m :validate-docker-compose)
-                                                  (ltu/is-operation-absent m :validate-docker-compose)))
-                                        (ltu/body))]
-          (is (= valid-content (select-keys content (keys valid-content)))))
+    uri))
 
-        ;; edit: NOK for anon
-        (-> session-anon
-            (request abs-uri
-                     :request-method :put
-                     :body (json/write-str valid-entry))
-            (ltu/body->edn)
-            (ltu/is-status 403))
+(defn retrieve-module
+  [uri valid-entry valid-content]
+  (let [abs-uri (str p/service-context uri)
+        {:keys [content] :as module} (-> session-admin
+                                         (request abs-uri)
+                                         (ltu/body->edn)
+                                         (ltu/is-status 200)
+                                         (ltu/is-key-value :compatibility "docker-compose")
+                                         (as-> m (if (utils/is-application? valid-entry)
+                                                   (ltu/is-operation-present m :validate-docker-compose)
+                                                   (ltu/is-operation-absent m :validate-docker-compose)))
+                                         (ltu/body))]
+    (is (= valid-content (select-keys content (keys valid-content))))
+    module))
 
-        (ltu/is-last-event uri
+
+(defn edit-module
+  [uri valid-entry event-owners]
+  (let [abs-uri (str p/service-context uri)]
+    ;; edit: NOK for anon
+    (-> session-anon
+        (request abs-uri
+                 :request-method :put
+                 :body (json/write-str valid-entry))
+        (ltu/body->edn)
+        (ltu/is-status 403))
+
+    (ltu/is-last-event uri
                            {:name               "module.edit"
                             :description        "module.edit attempt failed."
-                            :category           "edit"
-                            :success            false
-                            :linked-identifiers []
-                            :authn-info         authn-info-anon
-                            :acl                {:owners event-owners}})
+                        :category           "edit"
+                        :success            false
+                        :linked-identifiers []
+                        :authn-info         authn-info-anon
+                        :acl                {:owners event-owners}})
 
-        ;; insert 5 more versions
-        (doseq [_ (range 5)]
-          (-> session-admin
-              (request abs-uri
-                       :request-method :put
-                       :body (json/write-str valid-entry))
-              (ltu/body->edn)
-              (ltu/is-status 200))
+    ;; insert 5 more versions
+    (doseq [_ (range 5)]
+      (-> session-admin
+          (request abs-uri
+                   :request-method :put
+                   :body (json/write-str valid-entry))
+          (ltu/body->edn)
+          (ltu/is-status 200))
 
-          (ltu/is-last-event uri
+      (ltu/is-last-event uri
                              {:name               "module.edit"
                               :description        (str admin-group-name " edited module " uri ".")
-                              :category           "edit"
-                              :success            true
-                              :linked-identifiers []
-                              :authn-info         authn-info-admin
-                              :acl                {:owners event-owners}}))
+                          :category           "edit"
+                          :success            true
+                          :linked-identifiers []
+                          :authn-info         authn-info-admin
+                          :acl                {:owners event-owners}}))
 
-        (let [versions (-> session-admin
-                           (request abs-uri
-                                    :request-method :put
-                                    :body (json/write-str valid-entry))
-                           (ltu/body->edn)
-                           (ltu/is-status 200)
-                           (ltu/body)
-                           :versions)]
-          (is (= 7 (count versions)))
-
-          ;; extract by indexes or last
-          (doseq [[i n] [["_0" 0] ["_1" 1] ["" 6]]]
-            (let [content-id (-> session-admin
-                                 (request (str abs-uri i))
-                                 (ltu/body->edn)
-                                 (ltu/is-status 200)
-                                 (ltu/body)
-                                 :content
-                                 :id)]
-              (is (= (-> versions (nth n) :href) content-id))
-              (is (= (-> versions (nth n) :author) "someone"))
-              (is (= (-> versions (nth n) :commit) "wip")))))
-
-        ;; publish
-        (let [publish-url (-> session
-                              (request abs-uri)
-                              (ltu/body->edn)
-                              (ltu/is-status 200)
-                              (ltu/is-operation-present :publish)
-                              (ltu/is-operation-present :unpublish)
-                              (ltu/get-op-url :publish))]
-
-          (testing "publish last version"
-            (-> session
-                (request publish-url)
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/message-matches "published successfully"))
-
-            (ltu/is-last-event uri
-                               {:name               "module.publish"
-                                :description        (str user-name-or-id " executed action publish on module " uri ".")
-                                :category           "action"
-                                :success            true
-                                :linked-identifiers []
-                                :authn-info         authn-info
-                                :acl                {:owners event-owners}}))
-
-          (testing "operation urls of specific version"
-            (let [abs-uri-v2         (str abs-uri "_2")
-                  resp               (-> session
-                                         (request (str abs-uri "_2"))
-                                         (ltu/body->edn)
-                                         (ltu/is-status 200))
-                  publish-url        (ltu/get-op-url resp :publish)
-                  unpublish-url      (ltu/get-op-url resp :unpublish)
-                  edit-url           (ltu/get-op-url resp :edit)
-                  delete-url         (ltu/get-op-url resp :delete)
-                  delete-version-url (ltu/get-op-url resp :delete-version)]
-              (is (= publish-url (str abs-uri-v2 "/publish")))
-              (is (= unpublish-url (str abs-uri-v2 "/unpublish")))
-              (is (= delete-version-url (str abs-uri-v2 "/delete-version")))
-              (is (= delete-url abs-uri))
-              (is (= edit-url abs-uri))))
-
-          (testing "publish specific version"
-            (-> session
-                (request (str abs-uri "_2/publish"))
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/message-matches "published successfully"))
-
-            (ltu/is-last-event (str uri "_2")
-                               {:name               "module.publish"
-                                :description        (str user-name-or-id " executed action publish on module " uri "_2.")
-                                :category           "action"
-                                :success            true
-                                :linked-identifiers []
-                                :authn-info         authn-info
-                                :acl                {:owners event-owners}}))
-
-          (let [unpublish-url (-> session
-                                  (request abs-uri)
-                                  (ltu/body->edn)
-                                  (ltu/is-status 200)
-                                  (ltu/is-operation-present :publish)
-                                  (ltu/is-operation-present :unpublish)
-                                  (ltu/is-key-value #(-> % last :published) :versions true)
-                                  (ltu/is-key-value #(-> % (nth 2) :published) :versions true)
-                                  (ltu/is-key-value :published true)
-                                  (ltu/get-op-url :unpublish))]
-
-            (-> session
-                (request unpublish-url)
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/message-matches "unpublished successfully")))
-
-          (ltu/is-last-event uri
-                             {:name               "module.unpublish"
-                              :description        (str user-name-or-id " executed action unpublish on module " uri ".")
-                              :category           "action"
-                              :success            true
-                              :linked-identifiers []
-                              :authn-info         authn-info
-                              :acl                {:owners event-owners}})
-
-          ; publish is idempotent
-          (-> session
-              (request (str abs-uri "_2/publish"))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/message-matches "published successfully"))
-
-          (ltu/is-last-event (str uri "_2")
-                             {:name               "module.publish"
-                              :description        (str user-name-or-id " executed action publish on module " uri "_2.")
-                              :category           "action"
-                              :success            true
-                              :linked-identifiers []
-                              :authn-info         authn-info
-                              :acl                {:owners event-owners}})
-
-          (-> session
-              (request abs-uri)
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-operation-present :publish)
-              (ltu/is-operation-present :unpublish)
-              (ltu/is-key-value #(-> % last :published) :versions false)
-              (ltu/is-key-value :published true)
-              (ltu/get-op-url :unpublish))
-
-          (-> session
-              (request (str abs-uri "_2/unpublish"))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/message-matches "unpublished successfully"))
-
-          (ltu/is-last-event (str uri "_2")
-                             {:name               "module.unpublish"
-                              :description        (str user-name-or-id " executed action unpublish on module " uri "_2.")
-                              :category           "action"
-                              :success            true
-                              :linked-identifiers []
-                              :authn-info         authn-info
-                              :acl                {:owners event-owners}})
-
-          (-> session
-              (request abs-uri)
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-operation-present :publish)
-              (ltu/is-operation-present :unpublish)
-              (ltu/is-key-value #(-> % (nth 2) :published) :versions false)
-              (ltu/is-key-value :published false)
-              (ltu/get-op-url :unpublish)))
-
-        (testing "edit module without putting the module-content should not create new version"
-          (is (= 7 (-> session-admin
+    (let [versions (-> session-admin
                        (request abs-uri
                                 :request-method :put
-                                :body (json/write-str (dissoc valid-entry :content :path)))
+                                :body (json/write-str valid-entry))
                        (ltu/body->edn)
                        (ltu/is-status 200)
                        (ltu/body)
-                       :versions
-                       count))))
+                       :versions)]
+      (is (= 7 (count versions)))
 
-        (doseq [i ["_0/delete-version" "_1/delete-version"]]
-          (-> session-admin
-              (request (str abs-uri i))
-              (ltu/body->edn)
-              (ltu/is-status 200))
-
-
-          (-> session-admin
-              (request (str abs-uri i))
-              (ltu/body->edn)
-              (ltu/is-status 404)))
-
-
-        (testing "delete latest version without specifying version"
-          (-> session-admin
-              (request (str abs-uri "/delete-version"))
-              (ltu/body->edn)
-              (ltu/is-status 200)))
+      ;; extract by indexes or last
+      (doseq [[i n] [["_0" 0] ["_1" 1] ["" 6]]]
+        (let [content-id (-> session-admin
+                             (request (str abs-uri i))
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/body)
+                             :content
+                             :id)]
+          (is (= (-> versions (nth n) :href) content-id))
+          (is (= (-> versions (nth n) :author) "someone"))
+          (is (= (-> versions (nth n) :commit) "wip")))))))
 
 
-        (ltu/is-last-event uri
+(defn publish-unpublish
+  [session uri event-owners authn-info]
+  ;; publish
+  (let [abs-uri     (str p/service-context uri)
+        publish-url (-> session
+                        (request abs-uri)
+                        (ltu/body->edn)
+                        (ltu/is-status 200)
+                        (ltu/is-operation-present :publish)
+                        (ltu/is-operation-present :unpublish)
+                        (ltu/get-op-url :publish))]
+
+    (testing "publish last version"
+      (-> session
+          (request publish-url)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/message-matches "published successfully"))
+
+      (ltu/is-last-event uri
+                               {:name               "module.publish"
+                                :description        (str user-name-or-id " executed action publish on module " uri ".")
+                          :category           "action"
+                          :success            true
+                          :linked-identifiers []
+                          :authn-info         authn-info
+                          :acl                {:owners event-owners}}))
+
+    (testing "operation urls of specific version"
+      (let [abs-uri-v2         (str abs-uri "_2")
+            resp               (-> session
+                                   (request (str abs-uri "_2"))
+                                   (ltu/body->edn)
+                                   (ltu/is-status 200))
+            publish-url        (ltu/get-op-url resp :publish)
+            unpublish-url      (ltu/get-op-url resp :unpublish)
+            edit-url           (ltu/get-op-url resp :edit)
+            delete-url         (ltu/get-op-url resp :delete)
+            delete-version-url (ltu/get-op-url resp :delete-version)]
+        (is (= publish-url (str abs-uri-v2 "/publish")))
+        (is (= unpublish-url (str abs-uri-v2 "/unpublish")))
+        (is (= delete-version-url (str abs-uri-v2 "/delete-version")))
+        (is (= delete-url abs-uri))
+        (is (= edit-url abs-uri))))
+
+    (testing "publish specific version"
+      (-> session
+          (request (str abs-uri "_2/publish"))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/message-matches "published successfully"))
+
+      (ltu/is-last-event (str uri "_2")
+                               {:name               "module.publish"
+                                :description        (str user-name-or-id " executed action publish on module " uri "_2.")
+                          :category           "action"
+                          :success            true
+                          :linked-identifiers []
+                          :authn-info         authn-info
+                          :acl                {:owners event-owners}}))
+
+    (let [unpublish-url (-> session
+                            (request abs-uri)
+                            (ltu/body->edn)
+                            (ltu/is-status 200)
+                            (ltu/is-operation-present :publish)
+                            (ltu/is-operation-present :unpublish)
+                            (ltu/is-key-value #(-> % last :published) :versions true)
+                            (ltu/is-key-value #(-> % (nth 2) :published) :versions true)
+                            (ltu/is-key-value :published true)
+                            (ltu/get-op-url :unpublish))]
+
+      (-> session
+          (request unpublish-url)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/message-matches "unpublished successfully")))
+
+    (ltu/is-last-event uri
+                             {:name               "module.unpublish"
+                              :description        (str user-name-or-id " executed action unpublish on module " uri ".")
+                        :category           "action"
+                        :success            true
+                        :linked-identifiers []
+                        :authn-info         authn-info
+                        :acl                {:owners event-owners}})
+
+    ; publish is idempotent
+    (-> session
+        (request (str abs-uri "_2/publish"))
+        (ltu/body->edn)
+        (ltu/is-status 200)
+        (ltu/message-matches "published successfully"))
+
+    (ltu/is-last-event (str uri "_2")
+                             {:name               "module.publish"
+                              :description        (str user-name-or-id " executed action publish on module " uri "_2.")
+                        :category           "action"
+                        :success            true
+                        :linked-identifiers []
+                        :authn-info         authn-info
+                        :acl                {:owners event-owners}})
+
+    (-> session
+        (request abs-uri)
+        (ltu/body->edn)
+        (ltu/is-status 200)
+        (ltu/is-operation-present :publish)
+        (ltu/is-operation-present :unpublish)
+        (ltu/is-key-value #(-> % last :published) :versions false)
+        (ltu/is-key-value :published true)
+        (ltu/get-op-url :unpublish))
+
+    (-> session
+        (request (str abs-uri "_2/unpublish"))
+        (ltu/body->edn)
+        (ltu/is-status 200)
+        (ltu/message-matches "unpublished successfully"))
+
+    (ltu/is-last-event (str uri "_2")
+                             {:name               "module.unpublish"
+                              :description        (str user-name-or-id " executed action unpublish on module " uri "_2.")
+                        :category           "action"
+                        :success            true
+                        :linked-identifiers []
+                        :authn-info         authn-info
+                        :acl                {:owners event-owners}})
+
+    (-> session
+        (request abs-uri)
+        (ltu/body->edn)
+        (ltu/is-status 200)
+        (ltu/is-operation-present :publish)
+        (ltu/is-operation-present :unpublish)
+        (ltu/is-key-value #(-> % (nth 2) :published) :versions false)
+        (ltu/is-key-value :published false)
+        (ltu/get-op-url :unpublish))))
+
+
+(defn versions
+  [uri valid-entry event-owners]
+  (let [abs-uri (str p/service-context uri)]
+    (testing "edit module without putting the module-content should not create new version"
+      (is (= 7 (-> session-admin
+                   (request abs-uri
+                            :request-method :put
+                            :body (json/write-str (dissoc valid-entry :content :path)))
+                   (ltu/body->edn)
+                   (ltu/is-status 200)
+                   (ltu/body)
+                   :versions
+                   count))))
+
+    (doseq [i ["_0/delete-version" "_1/delete-version"]]
+      (-> session-admin
+          (request (str abs-uri i))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+
+      (-> session-admin
+          (request (str abs-uri i))
+          (ltu/body->edn)
+          (ltu/is-status 404)))
+
+
+    (testing "delete latest version without specifying version"
+      (-> session-admin
+          (request (str abs-uri "/delete-version"))
+          (ltu/body->edn)
+          (ltu/is-status 200)))
+
+
+    (ltu/is-last-event uri
                            {:name               "module.delete-version"
                             :description        (str admin-group-name " executed action delete-version on module " uri ".")
-                            :category           "action"
-                            :success            true
-                            :linked-identifiers []
-                            :authn-info         authn-info-admin
-                            :acl                {:owners event-owners}})
+                        :category           "action"
+                        :success            true
+                        :linked-identifiers []
+                        :authn-info         authn-info-admin
+                        :acl                {:owners event-owners}})
 
 
-        (testing "delete out of bound index should return 404"
-          (-> session-admin
-              (request (str abs-uri "_50/delete-version"))
-              (ltu/body->edn)
-              (ltu/is-status 404)))
+    (testing "delete out of bound index should return 404"
+      (-> session-admin
+          (request (str abs-uri "_50/delete-version"))
+          (ltu/body->edn)
+          (ltu/is-status 404)))
 
-        (-> session-admin
-            (request (str abs-uri "_50"))
-            (ltu/body->edn)
-            (ltu/is-status 404))
-
-        ;; delete: NOK for anon
-        (-> session-anon
-            (request abs-uri
-                     :request-method :delete)
-            (ltu/body->edn)
-            (ltu/is-status 403))
-
-        (-> session-admin
-            (request abs-uri
-                     :request-method :delete)
-            (ltu/body->edn)
-            (ltu/is-status 200))
+    (-> session-admin
+        (request (str abs-uri "_50"))
+        (ltu/body->edn)
+        (ltu/is-status 404))))
 
 
-        (ltu/is-last-event uri
+(defn delete-module
+  [uri event-owners]
+  (let [abs-uri (str p/service-context uri)]
+    ;; delete: NOK for anon
+    (-> session-anon
+        (request abs-uri
+                 :request-method :delete)
+        (ltu/body->edn)
+        (ltu/is-status 403))
+
+    (-> session-admin
+        (request abs-uri
+                 :request-method :delete)
+        (ltu/body->edn)
+        (ltu/is-status 200))
+
+
+    (ltu/is-last-event uri
                            {:name               "module.delete"
                             :description        (str admin-group-name " deleted module " uri ".")
-                            :category           "delete"
-                            :success            true
-                            :linked-identifiers []
-                            :authn-info         authn-info-admin
-                            :acl                {:owners event-owners}})
+                        :category           "delete"
+                        :success            true
+                        :linked-identifiers []
+                        :authn-info         authn-info-admin
+                        :acl                {:owners event-owners}})
 
-        ;; verify that the resource was deleted.
-        (-> session-admin
-            (request abs-uri)
-            (ltu/body->edn)
-            (ltu/is-status 404))))))
+    ;; verify that the resource was deleted.
+    (-> session-admin
+        (request abs-uri)
+        (ltu/body->edn)
+        (ltu/is-status 404))))
+
+
+(defn lifecycle-test-module
+  [subtype valid-content]
+  (let [valid-entry (build-valid-entry subtype valid-content)]
+    (create-module-nok valid-entry)
+    ;; adding, retrieving and  deleting entry as user should succeed
+    (doseq [[session event-owners authn-info]
+            [[session-admin ["group/nuvla-admin"] authn-info-admin]
+             [session-user ["group/nuvla-admin" "user/jane"] authn-info-jane]]]
+      (let [uri    (create-module session valid-entry event-owners authn-info)
+            module (retrieve-module uri valid-entry valid-content)]
+        (edit-module uri valid-entry event-owners)
+        (publish-unpublish session uri event-owners authn-info)
+        (versions uri valid-entry event-owners)
+        (delete-module uri event-owners)))))
+
 
 (deftest lifecycle-component
   (let [valid-component {:author        "someone"
