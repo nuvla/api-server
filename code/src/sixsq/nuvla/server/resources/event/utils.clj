@@ -10,7 +10,7 @@
     [sixsq.nuvla.server.util.time :as time]))
 
 
-(defn request-event-type
+(defn request-event-name
   "Returns a string of the form <resource-name>.<action>"
   [{{:keys [resource-name uuid action]} :params :as _context}
    {:keys [request-method] :as _request}]
@@ -33,10 +33,10 @@
   (<= 200 status 399))
 
 
-(defn get-event-type
-  [{:keys [event-type] :as context} request]
-  (or event-type
-      (request-event-type context request)))
+(defn get-event-name
+  [{:keys [event-name] :as context} request]
+  (or event-name
+      (request-event-name context request)))
 
 
 (defn get-category
@@ -106,7 +106,7 @@
 (defn build-event
   [context request response]
   {:resource-type event/resource-type
-   :event-type    (get-event-type context request)
+   :name          (get-event-name context request)
    :success       (get-success response)
    :category      (get-category context)
    :timestamp     (get-timestamp context)
@@ -133,7 +133,7 @@
   [resource-href state acl & {:keys [severity category timestamp]
                               :or   {severity "medium"
                                      category "action"}}]
-  (let [event-map      {:event-type    "legacy"
+  (let [event-map      {:name          "legacy"
                         :success       true
                         :resource-type event/resource-type
                         :content       {:resource {:href resource-href}
@@ -152,7 +152,7 @@
 (defn query-events
   ([resource-href opts]
    (query-events (assoc opts :resource-href resource-href)))
-  ([{:keys [resource-href event-type linked-identifier category state start end orderby last] :as opts}]
+  ([{:keys [resource-href linked-identifier category state start end orderby last] event-name :name :as opts}]
    (some-> event/resource-type
            (crud/query-as-admin
              {:cimi-params
@@ -162,7 +162,7 @@
                                      (cond-> []
                                              resource-href (conj (str "content/resource/href='" resource-href "'"))
                                              (and (contains? opts :resource-href) (nil? resource-href)) (conj (str "content/resource/href=null"))
-                                             event-type (conj (str "event-type='" event-type "'"))
+                                             event-name (conj (str "name='" event-name "'"))
                                              category (conj (str "category='" category "'"))
                                              state (conj (str "content/state='" state "'"))
                                              linked-identifier (conj (str "content/linked-identifiers='" linked-identifier "'"))

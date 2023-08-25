@@ -33,7 +33,7 @@
         (let [uuid  (u/random-uuid)
               id    (str "resource/" uuid)
               event (t/build-event context request {:status 201 :body {:resource-id id}})]
-          (is (= {:event-type    "resource.add"
+          (is (= {:name          "resource.add"
                   :category      "action"
                   :content       {:resource           {:href id}
                                   :linked-identifiers []}
@@ -46,7 +46,7 @@
                  event))))
       (testing "failure"
         (let [event (t/build-event context request {:status 400})]
-          (is (= {:event-type    "resource.add"
+          (is (= {:name          "resource.add"
                   :category      "action"
                   :content       {:resource           {:href nil}
                                   :linked-identifiers []}
@@ -71,7 +71,7 @@
 
 
 (deftest search-event
-  (doseq [category  ["action" "system"]
+  (doseq [category  ["action" "add"]
           timestamp ["2015-01-16T08:05:00.000Z" "2015-01-17T08:05:00.000Z" (time/now-str)]]
     (t/create-event "user/1" "hello" {:owners ["group/nuvla-admin"]}
                     :category category

@@ -11,7 +11,7 @@
 
 (def valid-event
   {:id            "event/262626262626262"
-   :event-type    "test"
+   :name          "test"
    :success       true
    :resource-type t/resource-type
    :created       event-timestamp
