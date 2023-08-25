@@ -80,8 +80,12 @@
         (ltu/is-status 403))
 
     (ltu/is-last-event nil
+<<<<<<< HEAD
                        {:name               "module.add"
+=======
+                       {:event-type         "module.add"
                         :description        "module.add attempt failed."
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
                         :category           "add"
                         :success            false
                         :linked-identifiers []
@@ -113,8 +117,12 @@
         (ltu/is-status 400))
 
     (ltu/is-last-event nil
+<<<<<<< HEAD
                        {:name               "module.add"
+=======
+                       {:event-type         "module.add"
                         :description        "module.add attempt failed."
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
                         :category           "add"
                         :success            false
                         :linked-identifiers []
@@ -147,8 +155,12 @@
             abs-uri (str p/service-context uri)]
 
         (ltu/is-last-event uri
+<<<<<<< HEAD
                            {:name               "module.add"
+=======
+                           {:event-type         "module.add"
                             :description        (str user-name-or-id " added module " uri ".")
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
                             :category           "add"
                             :success            true
                             :linked-identifiers []
@@ -181,8 +193,12 @@
             (ltu/is-status 403))
 
         (ltu/is-last-event uri
+<<<<<<< HEAD
                            {:name               "module.edit"
+=======
+                           {:event-type         "module.edit"
                             :description        "module.edit attempt failed."
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
                             :category           "edit"
                             :success            false
                             :linked-identifiers []
@@ -199,8 +215,12 @@
               (ltu/is-status 200))
 
           (ltu/is-last-event uri
+<<<<<<< HEAD
                              {:name               "module.edit"
+=======
+                             {:event-type         "module.edit"
                               :description        (str admin-group-name " edited module " uri ".")
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
                               :category           "edit"
                               :success            true
                               :linked-identifiers []
@@ -247,8 +267,12 @@
                 (ltu/message-matches "published successfully"))
 
             (ltu/is-last-event uri
+<<<<<<< HEAD
                                {:name               "module.publish"
+=======
+                               {:event-type         "module.publish"
                                 :description        (str user-name-or-id " executed action publish on module " uri ".")
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
                                 :category           "action"
                                 :success            true
                                 :linked-identifiers []
@@ -280,8 +304,12 @@
                 (ltu/message-matches "published successfully"))
 
             (ltu/is-last-event (str uri "_2")
+<<<<<<< HEAD
                                {:name               "module.publish"
+=======
+                               {:event-type         "module.publish"
                                 :description        (str user-name-or-id " executed action publish on module " uri "_2.")
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
                                 :category           "action"
                                 :success            true
                                 :linked-identifiers []
@@ -306,8 +334,12 @@
                 (ltu/message-matches "unpublished successfully")))
 
           (ltu/is-last-event uri
+<<<<<<< HEAD
                              {:name               "module.unpublish"
+=======
+                             {:event-type         "module.unpublish"
                               :description        (str user-name-or-id " executed action unpublish on module " uri ".")
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
                               :category           "action"
                               :success            true
                               :linked-identifiers []
@@ -322,8 +354,12 @@
               (ltu/message-matches "published successfully"))
 
           (ltu/is-last-event (str uri "_2")
+<<<<<<< HEAD
                              {:name               "module.publish"
+=======
+                             {:event-type         "module.publish"
                               :description        (str user-name-or-id " executed action publish on module " uri "_2.")
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
                               :category           "action"
                               :success            true
                               :linked-identifiers []
@@ -347,8 +383,12 @@
               (ltu/message-matches "unpublished successfully"))
 
           (ltu/is-last-event (str uri "_2")
+<<<<<<< HEAD
                              {:name               "module.unpublish"
+=======
+                             {:event-type         "module.unpublish"
                               :description        (str user-name-or-id " executed action unpublish on module " uri "_2.")
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
                               :category           "action"
                               :success            true
                               :linked-identifiers []
@@ -397,8 +437,12 @@
 
 
         (ltu/is-last-event uri
+<<<<<<< HEAD
                            {:name               "module.delete-version"
+=======
+                           {:event-type         "module.delete-version"
                             :description        (str admin-group-name " executed action delete-version on module " uri ".")
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
                             :category           "action"
                             :success            true
                             :linked-identifiers []
@@ -432,8 +476,12 @@
 
 
         (ltu/is-last-event uri
+<<<<<<< HEAD
                            {:name               "module.delete"
+=======
+                           {:event-type         "module.delete"
                             :description        (str admin-group-name " deleted module " uri ".")
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
                             :category           "delete"
                             :success            true
                             :linked-identifiers []

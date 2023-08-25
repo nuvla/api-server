@@ -607,14 +607,23 @@
 ;;
 
 (defmacro is-last-event
-  [resource-id {:keys [description category authn-info linked-identifiers success acl] event-name :name}]
+<<<<<<< HEAD
+  [resource-id {:keys [category authn-info linked-identifiers success acl] event-name :name}]
   `(let [event#      (last (event-utils/query-events ~resource-id {:orderby [["timestamp" :desc]] :last 1}))
          authn-info# (:authn-info event#)]
      (is (some? event#))
      (when ~event-name
        (is (= ~event-name (:name event#))))
+=======
+  [resource-id {:keys [event-type description category authn-info linked-identifiers success acl]}]
+  `(let [event#      (last (event-utils/query-events ~resource-id {:orderby [["timestamp" :desc]] :last 1}))
+         authn-info# (:authn-info event#)]
+     (is (some? event#))
+     (when ~event-type
+       (is (= ~event-type (:event-type event#))))
      (when ~description
        (is (= ~description (:description event#))))
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
      (when ~category
        (is (= ~category (:category event#))))
      (when ~authn-info

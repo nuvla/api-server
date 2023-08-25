@@ -129,8 +129,20 @@
 
 (defn build-event
   [context request response]
-  (-> {:resource-type event/resource-type
+<<<<<<< HEAD
+  {:resource-type event/resource-type
    :name          (get-event-name context request)
+   :success       (get-success response)
+   :category      (get-category context)
+   :timestamp     (get-timestamp context)
+   :authn-info    (auth/current-authentication request)
+   :acl           (get-acl context response)
+   :severity      (get-severity context)
+   :content       {:resource           (get-resource context response)
+                   :linked-identifiers (get-linked-identifiers context)}})
+=======
+  (-> {:resource-type event/resource-type
+       :event-type    (get-event-type context request)
        :success       (get-success response)
        :category      (get-category context)
        :timestamp     (get-timestamp context)
@@ -140,6 +152,7 @@
        :content       {:resource           (get-resource context response)
                        :linked-identifiers (get-linked-identifiers context)}}
       (set-description)))
+>>>>>>> bc60a2ab (use description field to provide human readable label for events)
 
 
 (defn add-event
