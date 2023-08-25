@@ -104,9 +104,7 @@
 
 (defn can-heartbeat?
   [nuvlabox]
-  (and
-    (has-heartbeat-support? nuvlabox)
-    (u/is-state-within? #{state-activated state-commissioned} nuvlabox)))
+  (u/is-state-within? #{state-new state-activated state-commissioned} nuvlabox))
 
 (defn update-last-heartbeat
   [nuvlabox]

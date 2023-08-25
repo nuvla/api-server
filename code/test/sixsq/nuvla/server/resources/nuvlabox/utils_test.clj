@@ -25,9 +25,10 @@
 
 (deftest can-heartbeat?
   (is (false? (t/can-heartbeat? {})))
-  (is (false? (t/can-heartbeat? {:state t/state-new})))
-  (is (false? (t/can-heartbeat? {:state t/state-commissioned})))
-  (is (false? (t/can-heartbeat? {:state        t/state-commissioned
+  (is (false? (t/can-heartbeat? {:state t/state-suspended})))
+  (is (true? (t/can-heartbeat? {:state t/state-new})))
+  (is (true? (t/can-heartbeat? {:state t/state-commissioned})))
+  (is (true? (t/can-heartbeat? {:state        t/state-commissioned
                                  :capabilities ["A"]})))
   (is (true? (t/can-heartbeat? {:state        t/state-commissioned
                                 :capabilities [t/capability-heartbeat]}))))

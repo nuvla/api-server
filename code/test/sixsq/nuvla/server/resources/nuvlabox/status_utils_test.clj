@@ -7,6 +7,7 @@
 
 
 (deftest status-fields-to-denormalize
+  ;FIXME
   (are [expected nuvlabox-status]
     (= expected (t/status-fields-to-denormalize nuvlabox-status))
     {} nil

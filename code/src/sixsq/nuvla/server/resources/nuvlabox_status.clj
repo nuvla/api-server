@@ -111,12 +111,10 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 
 (defn edit-impl [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
   (try
-    (let [{:keys [parent acl] :as current} (-> (str resource-type "/" uuid)
-                                               (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                                               (a/throw-cannot-edit request)
-                                               (utils/throw-parent-nuvlabox-is-suspended))
-
-          jobs                     (utils/get-jobs parent)
+    (let [{:keys [acl] :as current} (-> (str resource-type "/" uuid)
+                                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                                        (a/throw-cannot-edit request)
+                                        (utils/throw-parent-nuvlabox-is-suspended))
           rights                   (a/extract-rights (auth/current-authentication request) acl)
           dissoc-keys              (-> (map keyword select)
                                        set
@@ -124,41 +122,17 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                                        (a/editable-keys rights))
           current-without-selected (apply dissoc current dissoc-keys)
           editable-body            (select-keys body (-> body keys (a/editable-keys rights)))
-          is-nuvlabox?             (-> (auth/current-active-claim request)
-                                       (str/starts-with? "nuvlabox/"))
-          online                   (or is-nuvlabox? (:online body))
-          online-prev              (:online current)
-          edit-fn                  #(let [response (db/edit %1 request)]
-                                      (status-utils/denormalize-changes-nuvlabox %)
-                                      (kafka-crud/publish-on-edit resource-type response)
-                                      response)
-          minimal-update           #(-> %
-                                        (u/update-timestamps)
-                                        (u/set-updated-by request)
-                                        (cond-> (some? online) (assoc :online online))
-                                        (cond-> online (assoc :next-heartbeat (status-utils/get-next-heartbeat parent)))
-                                        (cond-> (some? online-prev) (assoc :online-prev online-prev)))
+          jobs                     (status-utils/heartbeat request current)
           new-status               (-> current-without-selected
                                        (merge editable-body)
-                                       (minimal-update)
                                        (assoc :jobs jobs)
-                                       (cond-> (contains? body :resources) (assoc :resources-prev (:resources current))))
-          spec-exception           (try
-                                     (crud/validate new-status)
-                                     nil
-                                     (catch Exception e
-                                       e))]
-      (if spec-exception
-        (do
-          (when is-nuvlabox?
-            ;; update heartbeat only when spec issue
-            (-> current
-                (minimal-update)
-                (crud/validate)
-                (edit-fn))
-            (log/errorf "Nuvlabox got a spec issue while sending telemetry: %s" parent))
-          (throw spec-exception))
-        (edit-fn new-status)))
+                                       (cond-> (contains? body :resources)
+                                               (assoc :resources-prev (:resources current)))
+                                       (crud/validate))
+          response                 (db/edit new-status request)]
+      (status-utils/denormalize-changes-nuvlabox new-status)
+      (kafka-crud/publish-on-edit resource-type response)
+      response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
