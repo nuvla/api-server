@@ -56,6 +56,7 @@
                :ssh-keys                       ["credential/aaa-bbb-ccc", "credential/111-222-ccc"]
                :capabilities                   ["NUVLA_JOB_PULL", "SYS_ADMIN"]
                :online                         true
+               :online-prev                    true
                :host-level-management-api-key  "credential/123-abc"
                :nuvlabox-engine-version        "1.2.3"
                :next-heartbeat                 timestamp
@@ -80,5 +81,5 @@
                  :root-password :login-username :login-password :cloud-password :comment :vm-cidr :lan-cidr :os-version
                  :hw-revision-code :monitored :infrastructure-service-id :ssh-keys :capabilities :online
                  :host-level-management-api-key :nuvlabox-engine-version :next-heartbeat :last-heartbeat
-                 :telemetry-interval}]
+                 :telemetry-interval :online-prev}]
     (stu/is-valid ::nb-2/schema (dissoc valid-nb attr))))

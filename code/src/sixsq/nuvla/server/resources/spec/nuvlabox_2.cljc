@@ -1,11 +1,9 @@
 (ns sixsq.nuvla.server.resources.spec.nuvlabox-2
   (:require
     [clojure.spec.alpha :as s]
-    [spec-tools.core :as st]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.spec.nuvlabox-0 :as nb-0]
-    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]))
 
 
@@ -38,6 +36,7 @@
                                ::nb-0/ssh-keys
                                ::nb-0/capabilities
                                ::nb-0/online
+                               ::nb-0/online-prev
                                ::nb-0/inferred-location
                                ::nb-0/nuvlabox-engine-version
                                ::nb-0/heartbeat-interval

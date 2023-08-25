@@ -288,6 +288,15 @@
 
     :json-schema/order 40))
 
+(s/def ::online-prev
+  (-> (st/spec boolean?)
+      (assoc :name "online-prev"
+             :json-schema/type "boolean"
+             :json-schema/description "Indicates previous value of online"
+             :json-schema/server-managed true
+
+             :json-schema/order 41)))
+
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
@@ -318,6 +327,7 @@
                                ::ssh-keys
                                ::capabilities
                                ::online
+                               ::online-prev
                                ::inferred-location
                                ::nuvlabox-engine-version
                                ::heartbeat-interval

@@ -377,3 +377,18 @@
       (or (vpn-utils/check-service-subtype vpn-service)
           request))
     request))
+
+(defn set-online
+  [m online online-prev]
+  (if (some? online)
+    (cond-> (assoc m :online online)
+            (some? online-prev) (assoc :online-prev online-prev))
+    m))
+
+(defn set-online-resource
+  [{online-prev :online :as current} online]
+  (set-online current online online-prev))
+
+(defn set-online-request
+  [{{:keys [online]} :body :as request} {online-prev :online :as _current}]
+  (update request :body set-online online online-prev))

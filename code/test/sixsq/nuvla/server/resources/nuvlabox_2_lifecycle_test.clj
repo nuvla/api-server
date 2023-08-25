@@ -1788,12 +1788,35 @@
                                      (ltu/body->edn)
                                      (ltu/is-status 200)
                                      (ltu/is-operation-present :heartbeat)
+                                     (ltu/is-key-value :online nil)
                                      (ltu/get-op-url :heartbeat))]
             (-> session-nuvlabox
                 (request heartbeat-op)
                 (ltu/body->edn)
                 (ltu/is-status 200)
-                (ltu/is-key-value :jobs []))))))))
+                (ltu/is-key-value :jobs []))
+
+            (-> session-nuvlabox
+                (request nuvlabox-url)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-key-value :online true)
+                (ltu/is-key-value :online-prev nil))
+
+            (-> session-admin
+                (request nuvlabox-url
+                         :request-method :put
+                         :body (json/write-str {:online false}))
+                (ltu/body->edn)
+                (ltu/is-status 200))
+
+            (-> session-nuvlabox
+                (request nuvlabox-url)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-key-value :online false)
+                (ltu/is-key-value :online-prev true))
+            ))))))
 
 
 (deftest should-propagate-changes-test

@@ -306,29 +306,26 @@ particular NuvlaBox release.
                             :manage    (vec (distinct (concat (:manage acl) [id])))})
                          (acl-utils/normalize-acl)))))
 
-(defn update-request-body
+(defn restrict-request-body
   [request resource]
   (if (a/is-admin-request? request)
     request
-    (-> request
-        (u/delete-attributes resource)
-        (restricted-body resource)
-        (->> (assoc request :body)))))
-
+    (update request :body restricted-body resource)))
 
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params :as request}]
   (let [current (-> (str resource-type "/" uuid)
                     (db/retrieve (assoc-in request [:cimi-params :select] nil))
                     (a/throw-cannot-edit request))
-        {updated-nb :body :as resp} (-> request
-                                        utils/throw-refresh-interval-should-be-bigger
-                                        utils/throw-heartbeat-interval-should-be-bigger
-                                        utils/throw-vpn-server-id-should-be-vpn
-                                        (update-request-body current)
-                                        edit-impl)]
+        resp    (-> request
+                    utils/throw-refresh-interval-should-be-bigger
+                    utils/throw-heartbeat-interval-should-be-bigger
+                    utils/throw-vpn-server-id-should-be-vpn
+                    (restrict-request-body current)
+                    (utils/set-online-request current)
+                    edit-impl)]
     (ka-crud/publish-on-edit resource-type resp)
-    (edit-subresources current updated-nb)
+    (edit-subresources current (:body resp))
     resp))
 
 
@@ -1028,14 +1025,15 @@ particular NuvlaBox release.
 (defmethod crud/do-action [resource-type utils/action-heartbeat]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id       (str resource-type "/" uuid)
-          nuvlabox (-> (db/retrieve id request)
-                       (a/throw-cannot-manage request)
-                       (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
-                       utils/update-last-heartbeat
-                       utils/update-next-heartbeat
-                       u/update-timestamps)]
-      (db/edit nuvlabox request)
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
+          utils/update-last-heartbeat
+          utils/update-next-heartbeat
+          u/update-timestamps
+          (utils/set-online-resource true)
+          (db/edit request))
       (r/json-response {:jobs (utils/get-jobs id)}))
     (catch Exception e
       (or (ex-data e) (throw e)))))
