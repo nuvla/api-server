@@ -59,6 +59,9 @@
                       :claims       ["group/nuvla-anon" "user/jane" "group/nuvla-user"]})
 (def authn-info-anon {:claims ["group/nuvla-anon"]})
 
+(def admin-group-name "Nuvla Administrator Group")
+
+
 (defn build-valid-entry
   [subtype valid-content]
   {:parent-path               "a/b"
@@ -76,73 +79,70 @@
 
 (defn create-module-nok
   [valid-entry]
-  (let []
-        admin-group-name "Nuvla Administrator Group"]
+  ;; create: NOK for anon
+  (-> session-anon
+      (request base-uri
+               :request-method :post
+               :body (json/write-str valid-entry))
+      (ltu/body->edn)
+      (ltu/is-status 403))
 
-    ;; create: NOK for anon
-    (-> session-anon
-        (request base-uri
-                 :request-method :post
-                 :body (json/write-str valid-entry))
-        (ltu/body->edn)
-        (ltu/is-status 403))
+  (ltu/is-last-event nil
+                     {:name               "module.add"
+                      :description        "module.add attempt failed."
+                      :category           "add"
+                      :success            false
+                      :linked-identifiers []
+                      :authn-info         authn-info-anon
+                      :acl                {:owners ["group/nuvla-admin"]}})
 
-    (ltu/is-last-event nil
-                       {:name               "module.add"
-                        :description        "module.add attempt failed."
-                        :category           "add"
-                        :success            false
-                        :linked-identifiers []
-                        :authn-info         authn-info-anon
-                        :acl                {:owners ["group/nuvla-admin"]}})
+  ;; queries: NOK for anon
+  (-> session-anon
+      (request base-uri)
+      (ltu/body->edn)
+      (ltu/is-status 403))
 
-    ;; queries: NOK for anon
-    (-> session-anon
+  (doseq [session [session-admin session-user]]
+    (-> session
         (request base-uri)
         (ltu/body->edn)
-        (ltu/is-status 403))
+        (ltu/is-status 200)
+        (ltu/is-count zero?)))
 
-    (doseq [session [session-admin session-user]]
-      (-> session
-          (request base-uri)
+  ;; Creating editable parent project
+  (create-parent-projects (:path valid-entry) session-user)
+
+  ;; invalid module subtype
+  (-> session-admin
+      (request base-uri
+               :request-method :post
+               :body (json/write-str (assoc valid-entry :subtype "bad-module-subtype")))
+      (ltu/body->edn)
+      (ltu/is-status 400))
+
+  (ltu/is-last-event nil
+                     {:name               "module.add"
+                      :description        "module.add attempt failed."
+                      :category           "add"
+                      :success            false
+                      :linked-identifiers []
+                      :authn-info         authn-info-admin
+                      :acl                {:owners ["group/nuvla-admin"]}})
+
+  (when (utils/is-application? valid-entry)
+
+    (testing "application should have compatibility attribute set"
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str (dissoc valid-entry :compatibility)))
           (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-count zero?)))
-
-    ;; Creating editable parent project
-    (create-parent-projects (:path valid-entry) session-user)
-
-    ;; invalid module subtype
-    (-> session-admin
-        (request base-uri
-                 :request-method :post
-                 :body (json/write-str (assoc valid-entry :subtype "bad-module-subtype")))
-        (ltu/body->edn)
-        (ltu/is-status 400))
-
-    (ltu/is-last-event nil
-                       {:name               "module.add"
-                        :description        "module.add attempt failed."
-                        :category           "add"
-                        :success            false
-                        :linked-identifiers []
-                        :authn-info         authn-info-admin
-                        :acl                {:owners ["group/nuvla-admin"]}})
-
-    (when (utils/is-application? valid-entry)
-
-      (testing "application should have compatibility attribute set"
-        (-> session-user
-            (request base-uri
-                     :request-method :post
-                     :body (json/write-str (dissoc valid-entry :compatibility)))
-            (ltu/body->edn)
-            (ltu/is-status 400)
-            (ltu/message-matches "Application subtype should have compatibility attribute set!"))))))
+          (ltu/is-status 400)
+          (ltu/message-matches "Application subtype should have compatibility attribute set!")))))
 
 
 (defn create-module
-  [session valid-entry event-owners authn-info]
+  [session valid-entry event-owners authn-info user-name-or-id]
   (let [uri     (-> session
                     (request base-uri
                              :request-method :post
@@ -155,7 +155,7 @@
 
     (ltu/is-last-event uri
                        {:event-type         "module.add"
-                            :description        (str user-name-or-id " added module " uri ".")
+                        :description        (str user-name-or-id " added module " uri ".")
                         :category           "add"
                         :success            true
                         :linked-identifiers []
@@ -198,8 +198,8 @@
         (ltu/is-status 403))
 
     (ltu/is-last-event uri
-                           {:name               "module.edit"
-                            :description        "module.edit attempt failed."
+                       {:name               "module.edit"
+                        :description        "module.edit attempt failed."
                         :category           "edit"
                         :success            false
                         :linked-identifiers []
@@ -216,8 +216,8 @@
           (ltu/is-status 200))
 
       (ltu/is-last-event uri
-                             {:name               "module.edit"
-                              :description        (str admin-group-name " edited module " uri ".")
+                         {:name               "module.edit"
+                          :description        (str admin-group-name " edited module " uri ".")
                           :category           "edit"
                           :success            true
                           :linked-identifiers []
@@ -249,7 +249,7 @@
 
 
 (defn publish-unpublish
-  [session uri event-owners authn-info]
+  [session uri event-owners authn-info user-name-or-id]
   ;; publish
   (let [abs-uri     (str p/service-context uri)
         publish-url (-> session
@@ -268,8 +268,8 @@
           (ltu/message-matches "published successfully"))
 
       (ltu/is-last-event uri
-                               {:name               "module.publish"
-                                :description        (str user-name-or-id " executed action publish on module " uri ".")
+                         {:name               "module.publish"
+                          :description        (str user-name-or-id " executed action publish on module " uri ".")
                           :category           "action"
                           :success            true
                           :linked-identifiers []
@@ -301,8 +301,8 @@
           (ltu/message-matches "published successfully"))
 
       (ltu/is-last-event (str uri "_2")
-                               {:name               "module.publish"
-                                :description        (str user-name-or-id " executed action publish on module " uri "_2.")
+                         {:name               "module.publish"
+                          :description        (str user-name-or-id " executed action publish on module " uri "_2.")
                           :category           "action"
                           :success            true
                           :linked-identifiers []
@@ -327,8 +327,8 @@
           (ltu/message-matches "unpublished successfully")))
 
     (ltu/is-last-event uri
-                             {:name               "module.unpublish"
-                              :description        (str user-name-or-id " executed action unpublish on module " uri ".")
+                       {:name               "module.unpublish"
+                        :description        (str user-name-or-id " executed action unpublish on module " uri ".")
                         :category           "action"
                         :success            true
                         :linked-identifiers []
@@ -343,8 +343,8 @@
         (ltu/message-matches "published successfully"))
 
     (ltu/is-last-event (str uri "_2")
-                             {:name               "module.publish"
-                              :description        (str user-name-or-id " executed action publish on module " uri "_2.")
+                       {:name               "module.publish"
+                        :description        (str user-name-or-id " executed action publish on module " uri "_2.")
                         :category           "action"
                         :success            true
                         :linked-identifiers []
@@ -368,8 +368,8 @@
         (ltu/message-matches "unpublished successfully"))
 
     (ltu/is-last-event (str uri "_2")
-                             {:name               "module.unpublish"
-                              :description        (str user-name-or-id " executed action unpublish on module " uri "_2.")
+                       {:name               "module.unpublish"
+                        :description        (str user-name-or-id " executed action unpublish on module " uri "_2.")
                         :category           "action"
                         :success            true
                         :linked-identifiers []
@@ -422,8 +422,8 @@
 
 
     (ltu/is-last-event uri
-                           {:name               "module.delete-version"
-                            :description        (str admin-group-name " executed action delete-version on module " uri ".")
+                       {:name               "module.delete-version"
+                        :description        (str admin-group-name " executed action delete-version on module " uri ".")
                         :category           "action"
                         :success            true
                         :linked-identifiers []
@@ -461,8 +461,8 @@
 
 
     (ltu/is-last-event uri
-                           {:name               "module.delete"
-                            :description        (str admin-group-name " deleted module " uri ".")
+                       {:name               "module.delete"
+                        :description        (str admin-group-name " deleted module " uri ".")
                         :category           "delete"
                         :success            true
                         :linked-identifiers []
@@ -481,13 +481,13 @@
   (let [valid-entry (build-valid-entry subtype valid-content)]
     (create-module-nok valid-entry)
     ;; adding, retrieving and  deleting entry as user should succeed
-    (doseq [[session event-owners authn-info]
-            [[session-admin ["group/nuvla-admin"] authn-info-admin]
-             [session-user ["group/nuvla-admin" "user/jane"] authn-info-jane]]]
-      (let [uri    (create-module session valid-entry event-owners authn-info)
-            module (retrieve-module uri valid-entry valid-content)]
+    (doseq [[session event-owners authn-info user-name-or-id]
+            [[session-admin ["group/nuvla-admin"] authn-info-admin admin-group-name]
+             [session-user ["group/nuvla-admin" "user/jane"] authn-info-jane "user/jane"]]]
+      (let [uri    (create-module session valid-entry event-owners authn-info user-name-or-id)
+            _module (retrieve-module uri valid-entry valid-content)]
         (edit-module uri valid-entry event-owners)
-        (publish-unpublish session uri event-owners authn-info)
+        (publish-unpublish session uri event-owners authn-info user-name-or-id)
         (versions uri valid-entry event-owners)
         (delete-module uri event-owners)))))
 
