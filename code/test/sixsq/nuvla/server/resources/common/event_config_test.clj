@@ -17,15 +17,15 @@
 (def disabled-event {:name "resource.validate"})
 
 
-(def anon-event {:event-type "resource.add"
+(def anon-event {:name       "resource.add"
                  :category   "add"
                  :success    true
                  :authn-info {:claims ["group/nuvla-anon"]}
                  :content    {:resource {:href "resource/12345"}}})
 
 
-(def failure-event {:event-type "resource.add"
-                    :success    false})
+(def failure-event {:name    "resource.add"
+                    :success false})
 
 
 

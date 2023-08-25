@@ -49,11 +49,11 @@
 
 (defmulti event-description
           "Returns a human-readable description of the event"
-          event-type-dispatch)
+          event-name-dispatch)
 
 
 (defmethod event-description :default
-  [{:keys [success event-type authn-info category content] :as _event}]
+  [{:keys [success authn-info category content] event-name :name :as _event}]
   (if success
     (let [user-name-or-id (or (some-> authn-info :user-id crud/retrieve-by-id-as-admin1 :name)
                               (:user-id authn-info))
@@ -68,13 +68,13 @@
                "add" (str " added " resource-type " " resource-name-or-id)
                "edit" (str " edited " resource-type " " resource-name-or-id)
                "delete" (str " deleted " resource-type " " resource-name-or-id)
-               "action" (let [action (some->> event-type (re-matches #".*\.(.*)") second)]
+               "action" (let [action (some->> event-name (re-matches #".*\.(.*)") second)]
                           (str " executed action " action " on " resource-type " " resource-name-or-id))
                nil)
              ".")
         ("state" "alarm" "email" "user")
-        event-type                                          ;; FIXME: improve description in this case
-        event-type))
-    (str event-type " attempt failed.")))
+        event-name                                          ;; FIXME: improve description in this case
+        event-name))
+    (str event-name " attempt failed.")))
 
 
