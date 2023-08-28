@@ -154,7 +154,7 @@
         abs-uri (str p/service-context uri)]
 
     (ltu/is-last-event uri
-                       {:event-type         "module.add"
+                       {:name               "module.add"
                         :description        (str user-name-or-id " added module " uri ".")
                         :category           "add"
                         :success            true
@@ -484,7 +484,7 @@
     (doseq [[session event-owners authn-info user-name-or-id]
             [[session-admin ["group/nuvla-admin"] authn-info-admin admin-group-name]
              [session-user ["group/nuvla-admin" "user/jane"] authn-info-jane "user/jane"]]]
-      (let [uri    (create-module session valid-entry event-owners authn-info user-name-or-id)
+      (let [uri     (create-module session valid-entry event-owners authn-info user-name-or-id)
             _module (retrieve-module uri valid-entry valid-content)]
         (edit-module uri valid-entry event-owners)
         (publish-unpublish session uri event-owners authn-info user-name-or-id)
