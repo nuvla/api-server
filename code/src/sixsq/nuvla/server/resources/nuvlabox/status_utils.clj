@@ -5,8 +5,7 @@
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
-    [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]))
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]))
 
 (defn get-next-heartbeat
   [nuvlabox-id]
@@ -14,7 +13,7 @@
     (some-> nuvlabox-id
             crud/retrieve-by-id-as-admin
             :refresh-interval
-            nb-utils/compute-next-heartbeat)
+            utils/compute-next-heartbeat)
     (catch Exception ex
       (log/errorf "Unable to get next heartbeat for %1: %2" nuvlabox-id ex))))
 
@@ -40,8 +39,7 @@
 
 (defn nuvlabox-request?
   [request]
-  (-> (auth/current-active-claim request)
-      (str/starts-with? "nuvlabox/")))
+  (str/starts-with? (auth/current-active-claim request) "nuvlabox/"))
 
 (defn nuvlabox-does-not-support-heartbeat
   [nuvlabox-id]
