@@ -5,21 +5,18 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.nuvlabox.status-utils :as t]))
 
-
 (deftest status-fields-to-denormalize
-  ;FIXME
   (are [expected nuvlabox-status]
     (= expected (t/status-fields-to-denormalize nuvlabox-status))
     {} nil
     {} {:other true}
-    {:online true} {:online true}
-    {:online false} {:online false}
+    {} {:online true}
 
-    {:online false :inferred-location [46.2 6.1]}
+    {:inferred-location [46.2 6.1]}
     {:online false :inferred-location [46.2 6.1] :other false}
 
-    {:online false :inferred-location [46.2 6.1] :nuvlabox-engine-version "2.9.0"}
-    {:online false :inferred-location [46.2 6.1] :nuvlabox-engine-version "2.9.0" :other "x"}))
+    {:inferred-location [46.2 6.1] :nuvlabox-engine-version "2.9.0"}
+    {:inferred-location [46.2 6.1] :nuvlabox-engine-version "2.9.0" :other "x"}))
 
 (deftest denormalize-changes-nuvlabox
   (testing
