@@ -825,8 +825,7 @@
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
                      {:req-un [::status]
-                      :opt-un [::next-heartbeat
-                               ::current-time
+                      :opt-un [::current-time
                                ::comment
                                ::resources
                                ::resources-prev
@@ -849,8 +848,11 @@
                                ::installation-parameters
                                ::jobs
                                ::swarm-node-cert-expiry-date
-                               ::online
-                               ::online-prev
                                ::temperatures
-                               ::container-plugins]}))
+                               ::container-plugins
+
+                               ;; deprecated
+                               ::next-heartbeat
+                               ::online
+                               ::online-prev]}))
 

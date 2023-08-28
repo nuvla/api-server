@@ -59,7 +59,7 @@
       (-> parent
           (crud/do-action-as-user
             utils/action-heartbeat (auth/current-authentication request))
-          (get-in [:response :body :jobs] []))
+          (get-in [:body :jobs] []))
       [])
     (catch Exception e
       (log/errorf "Nuvlabox status heartbeat failed: %s\n%s" parent (str e)))))
