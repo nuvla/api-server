@@ -40,7 +40,7 @@
                                 session
                                 (content-type "application/json"))
         session-admin       (header session-anon authn-info-header
-                                    "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+                                    "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user        (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
         ;; setup a service-group to act as parent for service
@@ -65,7 +65,14 @@
                              :tags        service-tags
                              :template    {:href   (str infra-service-tpl/resource-type "/"
                                                         infra-service-tpl-vpn/method)
-                                           :parent service-group-id}}]
+                                           :parent service-group-id}}
+        authn-info-admin    {:user-id      "group/nuvla-admin"
+                             :active-claim "group/nuvla-admin"
+                             :claims       ["group/nuvla-admin" "group/nuvla-anon" "group/nuvla-user"]}
+        authn-info-jane     {:user-id      "user/jane"
+                             :active-claim "user/jane"
+                             :claims       ["group/nuvla-anon" "user/jane" "group/nuvla-user"]}
+        admin-group-name    "Nuvla Administrator Group"]
 
     ;; anon create must fail
     (-> session-anon
@@ -76,7 +83,9 @@
         (ltu/is-status 400))
 
     ;; check creation
-    (doseq [session [session-admin session-user]]
+    (doseq [[session event-owners authn-info user-name-or-id]
+            [[session-admin ["group/nuvla-admin"] authn-info-admin admin-group-name]
+             [session-user ["group/nuvla-admin" "user/jane"] authn-info-jane "user/jane"]]]
       (let [uri     (-> session
                         (request base-uri
                                  :request-method :post
@@ -101,8 +110,27 @@
           (is (:subtype service))
           (is (nil? (:endpoint service))))
 
+        (ltu/is-last-event uri
+                           {:name               "infrastructure-service.add"
+                            :description        (str user-name-or-id " added infrastructure-service " service-name ".")
+                            :category           "add"
+                            :success            true
+                            :linked-identifiers []
+                            :authn-info         authn-info
+                            :acl                {:owners event-owners}})
+
         ;; can delete resource
         (-> session
             (request abs-uri :request-method :delete)
             (ltu/body->edn)
-            (ltu/is-status 200))))))
+            (ltu/is-status 200))
+
+        (ltu/is-last-event uri
+                           {:name               "infrastructure-service.delete"
+                            :description        (str user-name-or-id " deleted infrastructure-service " service-name ".")
+                            :category           "delete"
+                            :success            true
+                            :linked-identifiers []
+                            :authn-info         authn-info
+                            :acl                {:owners event-owners}})))))
+

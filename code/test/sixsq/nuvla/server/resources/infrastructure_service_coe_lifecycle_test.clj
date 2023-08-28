@@ -56,7 +56,7 @@
                                   session
                                   (content-type "application/json"))
           session-admin       (header session-anon authn-info-header
-                                      "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+                                      "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
           session-user        (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
           ;; setup a service-group to act as parent for service
@@ -101,7 +101,14 @@
                                              :method                infra-service-tpl-coe/method
                                              :parent                service-group-id
                                              :subtype               subtype
-                                             :management-credential credential-id}}]
+                                             :management-credential credential-id}}
+          authn-info-admin    {:user-id      "group/nuvla-admin"
+                               :active-claim "group/nuvla-admin"
+                               :claims       ["group/nuvla-admin" "group/nuvla-anon" "group/nuvla-user"]}
+          authn-info-jane     {:user-id      "user/jane"
+                               :active-claim "user/jane"
+                               :claims       ["group/nuvla-anon" "user/jane" "group/nuvla-user"]}
+          admin-group-name    "Nuvla Administrator Group"]
 
       ;; anon create must fail
       (-> session-anon
@@ -112,7 +119,9 @@
           (ltu/is-status 400))
 
       ;; check creation
-      (doseq [session [session-admin session-user]]
+      (doseq [[session event-owners authn-info user-name-or-id]
+              [[session-admin ["group/nuvla-admin"] authn-info-admin admin-group-name]
+               [session-user ["group/nuvla-admin" "user/jane"] authn-info-jane "user/jane"]]]
         (let [uri     (-> session
                           (request base-uri
                                    :request-method :post
@@ -141,11 +150,29 @@
             (is (= "STARTING" (:state service)))
             (is (= credential-id (:management-credential service))))
 
+          (ltu/is-last-event uri
+                             {:name               "infrastructure-service.add"
+                              :description        (str user-name-or-id " added infrastructure-service " service-name ".")
+                              :category           "add"
+                              :success            true
+                              :linked-identifiers []
+                              :authn-info         authn-info
+                              :acl                {:owners event-owners}})
+
           ;; can NOT delete resource in STARTING state
           (-> session
               (request abs-uri :request-method :delete)
               (ltu/body->edn)
               (ltu/is-status 409))
+
+          (ltu/is-last-event uri
+                             {:name               "infrastructure-service.delete"
+                              :description        "infrastructure-service.delete attempt failed."
+                              :category           "delete"
+                              :success            false
+                              :linked-identifiers []
+                              :authn-info         authn-info
+                              :acl                {:owners event-owners}})
 
           ;; set TERMINATED state
           (set-state-on-is abs-uri session "TERMINATED")
@@ -154,7 +181,16 @@
           (-> session
               (request abs-uri :request-method :delete)
               (ltu/body->edn)
-              (ltu/is-status 200)))))))
+              (ltu/is-status 200))
+
+          (ltu/is-last-event uri
+                             {:name               "infrastructure-service.delete"
+                              :description        (str user-name-or-id " deleted infrastructure-service " service-name ".")
+                              :category           "delete"
+                              :success            true
+                              :linked-identifiers []
+                              :authn-info         authn-info
+                              :acl                {:owners event-owners}}))))))
 
 
 ;; Validate right CRUD operations and actions are available on resource in
@@ -218,22 +254,27 @@
                                     (ltu/is-status 201)
                                     (ltu/location))
             abs-uri             (str p/service-context uri)
+            event-owners        ["group/nuvla-admin" "user/jane"]
+            authn-info          {:user-id      "user/jane"
+                                 :active-claim "user/jane"
+                                 :claims       ["group/nuvla-anon" "user/jane" "group/nuvla-user"]}
             check-event         (fn [exp-state]
-                                  (let [filter (format "category='state' and content/resource/href='%s' and content/state='%s'" uri exp-state)
-                                        state  (-> session-user
-                                                   (content-type "application/x-www-form-urlencoded")
-                                                   (request "/api/event"
-                                                            :request-method :put
-                                                            :body (rc/form-encode {:filter filter}))
-                                                   (ltu/body->edn)
-                                                   (ltu/is-status 200)
-                                                   (ltu/is-count 1)
-                                                   (ltu/body)
-                                                   :resources
-                                                   first
-                                                   :content
-                                                   :state)]
-                                    (is (= state exp-state))))]
+                                  ;; legacy events
+                                  #_(let [filter (format "category='state' and content/resource/href='%s' and content/state='%s'" uri exp-state)
+                                          state  (-> session-user
+                                                     (content-type "application/x-www-form-urlencoded")
+                                                     (request "/api/event"
+                                                              :request-method :put
+                                                              :body (rc/form-encode {:filter filter}))
+                                                     (ltu/body->edn)
+                                                     (ltu/is-status 200)
+                                                     (ltu/is-count 1)
+                                                     (ltu/body)
+                                                     :resources
+                                                     first
+                                                     :content
+                                                     :state)]
+                                      (is (= state exp-state))))]
 
         ;; STARTING: edit
         (let [response (-> session-user
@@ -271,15 +312,25 @@
                          (request abs-uri)
                          (ltu/body->edn)
                          (ltu/is-status 200)
-                         (ltu/get-op-url "stop"))]
-          (-> session-user
-              (request op-uri
-                       :request-method :post)
-              (ltu/is-status 202)
-              (ltu/body->edn)))
+                         (ltu/get-op-url "stop"))
+              job-id (-> session-user
+                         (request op-uri
+                                  :request-method :post)
+                         (ltu/is-status 202)
+                         (ltu/body->edn)
+                         (ltu/location))]
 
-        ;; check event for STOPPING was created
-        (check-event "STOPPING")
+          ;; check event for STOPPING was created
+          (check-event "STOPPING")
+
+          (ltu/is-last-event uri
+                             {:name               "infrastructure-service.stop"
+                              :description        (str "user/jane stopped infrastructure service.")
+                              :category           "action"
+                              :success            true
+                              :linked-identifiers [job-id]
+                              :authn-info         authn-info
+                              :acl                {:owners event-owners}}))
 
         ;; STOPPING: edit
         (let [response (-> session-user
@@ -314,15 +365,25 @@
                          (request abs-uri)
                          (ltu/body->edn)
                          (ltu/is-status 200)
-                         (ltu/get-op-url "terminate"))]
-          (-> session-user
-              (request op-uri
-                       :request-method :post)
-              (ltu/is-status 202)
-              (ltu/body->edn)))
+                         (ltu/get-op-url "terminate"))
+              job-id (-> session-user
+                         (request op-uri
+                                  :request-method :post)
+                         (ltu/is-status 202)
+                         (ltu/body->edn)
+                         (ltu/location))]
 
-        ;; check event for TERMINATING was created
-        (check-event "TERMINATING")
+          ;; check event for TERMINATING was created
+          (check-event "TERMINATING")
+
+          (ltu/is-last-event uri
+                             {:name               "infrastructure-service.terminate"
+                              :description        (str "user/jane terminated infrastructure service.")
+                              :category           "action"
+                              :success            true
+                              :linked-identifiers [job-id]
+                              :authn-info         authn-info
+                              :acl                {:owners event-owners}}))
 
         ;; TERMINATING: edit
         (let [response (-> session-user

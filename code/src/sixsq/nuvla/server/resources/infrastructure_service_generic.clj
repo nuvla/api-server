@@ -38,8 +38,9 @@ an endpoint.
 
 
 (defmethod infra-service/post-add-hook method
-  [service request]
-  (try
+  [_service _request]
+  ;; legacy events
+  #_(try
     (let [id       (:id service)
           category "state"]
       (event-utils/create-event id

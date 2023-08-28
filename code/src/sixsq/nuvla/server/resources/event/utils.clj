@@ -121,8 +121,8 @@
 
 
 (defn set-description
-  [event]
-  (let [event-description (ec/event-description event)]
+  [event context]
+  (let [event-description (ec/event-description event context)]
     (cond-> event
             event-description (assoc :description event-description))))
 
@@ -130,7 +130,7 @@
 (defn build-event
   [context request response]
   (-> {:resource-type event/resource-type
-   :name          (get-event-name context request)
+       :name          (get-event-name context request)
        :success       (get-success response)
        :category      (get-category context)
        :timestamp     (get-timestamp context)
@@ -139,7 +139,7 @@
        :severity      (get-severity context)
        :content       {:resource           (get-resource context response)
                        :linked-identifiers (get-linked-identifiers context)}}
-      (set-description)))
+      (set-description context)))
 
 
 (defn add-event

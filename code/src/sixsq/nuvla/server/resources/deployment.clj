@@ -245,6 +245,7 @@ a container orchestration engine.
                                (a/throw-cannot-delete request)
                                (db/delete request))]
        (ectx/add-to-context :acl (:acl deployment))
+       (ectx/add-to-context :resource deployment)
        (utils/delete-all-child-resources deployment-id)
        delete-response)
      (catch Exception e
@@ -565,7 +566,7 @@ a container orchestration engine.
 
 
 (defmethod ec/event-description "deployment.start"
-  [{:keys [success] {:keys [user-id]} :authn-info :as _event}]
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
   (if success
     (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
       (str user-name " started deployment."))
@@ -573,7 +574,7 @@ a container orchestration engine.
 
 
 (defmethod ec/event-description "deployment.stop"
-  [{:keys [success] {:keys [user-id]} :authn-info :as _event}]
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
   (if success
     (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
       (str user-name " stopped deployment."))
@@ -581,7 +582,7 @@ a container orchestration engine.
 
 
 (defmethod ec/event-description "deployment.clone"
-  [{:keys [success] {:keys [user-id]} :authn-info :as _event}]
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
   (if success
     (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
       (str user-name " cloned deployment."))
