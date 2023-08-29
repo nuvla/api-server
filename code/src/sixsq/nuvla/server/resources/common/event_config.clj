@@ -53,13 +53,16 @@
 
 
 (defmethod event-description :default
-  [{:keys [success authn-info category content] event-name :name :as _event}]
+  [{:keys [success authn-info category content] event-name :name :as _event}
+   & [{:keys [resource] :as _context}]]
   (if success
     (let [user-name-or-id (or (some-> authn-info :user-id crud/retrieve-by-id-as-admin1 :name)
                               (:user-id authn-info))
           resource-id     (-> content :resource :href)
           resource-type   (u/id->resource-type resource-id)
-          resource-name   (:name (crud/retrieve-by-id-as-admin1 resource-id))
+          resource        (or resource
+                              (crud/retrieve-by-id-as-admin1 resource-id))
+          resource-name   (:name resource)
           resource-name-or-id (or resource-name resource-id)]
       (case category
         ("add" "edit" "delete" "action")
@@ -76,5 +79,4 @@
         event-name                                          ;; FIXME: improve description in this case
         event-name))
     (str event-name " attempt failed.")))
-
 

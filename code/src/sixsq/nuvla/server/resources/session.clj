@@ -537,7 +537,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 
 (defmethod ec/event-description "session.add"
-  [{:keys [success] :as event}]
+  [{:keys [success] :as event} & _]
   (if success
     (when-let [user-name-or-credential (or (some-> (eu/get-linked-resources event "user") first :name)
                                            (some-> (eu/get-linked-resource-ids event "user") first)
@@ -548,7 +548,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 
 (defmethod ec/event-description "session.delete"
-  [{:keys [success] {:keys [user-id]} :authn-info :as _event}]
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
   (if success
     (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
       (str user-name " logged out."))
@@ -556,7 +556,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 
 (defmethod ec/event-description "session.switch-group"
-  [{:keys [success] {:keys [user-id]} :authn-info {:keys [linked-identifiers]} :content :as event}]
+  [{:keys [success] {:keys [user-id]} :authn-info {:keys [linked-identifiers]} :content :as event} & _]
   (if success
     (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
       (str user-name " switched to group "
