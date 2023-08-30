@@ -9,6 +9,8 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.event-config :as ec]
+    [sixsq.nuvla.server.resources.common.event-context :as ectx]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.job :as job]
@@ -314,13 +316,31 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 
 (defmethod crud/delete resource-type
   [{{uuid :uuid} :params :as request}]
-  (-> (str resource-type "/" uuid)
-      (db/retrieve request)
-      (a/throw-cannot-delete request)
-      (special-delete request)))
+  (let [resource (-> (str resource-type "/" uuid)
+                     (db/retrieve request))
+        delete-resp (-> resource
+                        (a/throw-cannot-delete request)
+                        (special-delete request))]
+    (ectx/add-to-context :resource resource)
+    (ectx/add-to-context :acl (:acl resource))
+    delete-resp))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 (defmethod crud/query resource-type
   [request]
   (query-impl request))
+
+
+;;
+;; Events
+;;
+
+(defmethod ec/events-enabled? resource-type
+  [_resource-type]
+  true)
+
+
+(defmethod ec/log-event? "credential.check"
+  [_event _response]
+  false)
