@@ -46,24 +46,33 @@
                              (ltu/body))
 
         upload           {:template (-> template
-                                      ltu/strip-unwanted-attrs
-                                      (assoc :href  href
-                                             :public-key "mypublickey"))}
+                                        ltu/strip-unwanted-attrs
+                                        (assoc :href href
+                                               :public-key "mypublickey"))}
 
         upload-pvt-key   {:template (-> template
-                                      ltu/strip-unwanted-attrs
-                                      (assoc :href  href
-                                             :public-key  "mypublickey"
-                                             :private-key "******"))}
+                                        ltu/strip-unwanted-attrs
+                                        (assoc :href href
+                                               :public-key "mypublickey"
+                                               :private-key "******"))}
 
         create-no-href   {:template (-> template
-                                      ltu/strip-unwanted-attrs
-                                      (assoc :public-key  "mypublickey"))}
+                                        ltu/strip-unwanted-attrs
+                                        (assoc :public-key "mypublickey"))}
 
         create           {:name        name-attr
                           :description description-attr
                           :tags        tags-attr
-                          :template    {:href  href}}]
+                          :template    {:href href}}
+        authn-info-admin {:user-id      "group/nuvla-admin"
+                          :active-claim "group/nuvla-admin"
+                          :claims       ["group/nuvla-admin" "group/nuvla-anon" "group/nuvla-user"]}
+        authn-info-jane  {:user-id      "user/jane"
+                          :active-claim "user/jane"
+                          :claims       ["group/nuvla-anon" "user/jane" "group/nuvla-user"]}
+        authn-info-anon  {:user-id      "user/unknown"
+                          :active-claim "user/unknown"
+                          :claims       #{"user/unknown" "group/nuvla-anon"}}]
 
     ;; check we can perform search with ordering by name
     (-> session-admin
@@ -90,13 +99,25 @@
         (ltu/is-status 403))
 
     ;; creating a new credential without reference will fail for all types of users
-    (doseq [session [session-admin session-user session-anon]]
+    (doseq [[session event-owners authn-info]
+            [[session-admin ["group/nuvla-admin"] authn-info-admin]
+             [session-user ["group/nuvla-admin"] authn-info-jane]
+             [session-anon ["group/nuvla-admin"] authn-info-anon]]]
       (-> session
           (request base-uri
                    :request-method :post
                    :body (json/write-str create-no-href))
           (ltu/body->edn)
-          (ltu/is-status 400)))
+          (ltu/is-status 400))
+
+      (ltu/is-last-event nil
+                         {:name               "credential.add"
+                          :description        "credential.add attempt failed."
+                          :category           "add"
+                          :success            false
+                          :linked-identifiers []
+                          :authn-info         authn-info
+                          :acl                {:owners event-owners}}))
 
     ;; creating a new credential as anon will fail; expect 400 because href cannot be accessed
     (-> session-anon
@@ -123,6 +144,15 @@
 
       ;; resource id and the uri (location) should be the same
       (is (= id uri))
+
+      (ltu/is-last-event uri
+                         {:name               "credential.add"
+                          :description        (str "user/jane added credential " uri ".")
+                          :category           "add"
+                          :success            true
+                          :linked-identifiers []
+                          :authn-info         authn-info-jane
+                          :acl                {:owners ["group/nuvla-admin" "user/jane"]}})
 
       ;; admin/user should be able to see and delete credential
       (doseq [session [session-admin session-user]]
@@ -160,15 +190,15 @@
     ;;;;;;
     ;; upload an existing gpg key and save the private key
     (let [resp    (-> session-user
-                    (request base-uri
-                      :request-method :post
-                      :body (json/write-str upload-pvt-key))
-                    (ltu/body->edn)
-                    (ltu/is-status 201))
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str upload-pvt-key))
+                      (ltu/body->edn)
+                      (ltu/is-status 201))
           id      (ltu/body-resource-id resp)
           keypair (get-in resp [:response :body])
           uri     (-> resp
-                    (ltu/location))
+                      (ltu/location))
           abs-uri (str p/service-context uri)]
 
       ;; resource id and the uri (location) should be the same
@@ -190,9 +220,17 @@
 
       ;; delete the credential
       (-> session-user
-        (request abs-uri
-          :request-method :delete)
-        (ltu/body->edn)
-        (ltu/is-status 200))) ))
+          (request abs-uri
+                   :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 200))
 
+      (ltu/is-last-event uri
+                         {:name               "credential.delete"
+                          :description        (str "user/jane deleted credential " uri ".")
+                          :category           "delete"
+                          :success            true
+                          :linked-identifiers []
+                          :authn-info         authn-info-jane
+                          :acl                {:owners ["group/nuvla-admin" "user/jane"]}}))))
 

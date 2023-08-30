@@ -561,11 +561,11 @@
 
                     (ltu/is-last-event deployment-id
                                        {:name        "deployment.delete"
-                                        :description (str "user/jane deleted deployment " deployment-id ".")
+                                        :description (str "user/jane deleted deployment API credential for " deployment-id ".")
                                         :category    "delete"
                                         :success     true
                                         :authn-info  authn-info-jane
-                                        :acl         {:owners (conj event-owners-jane deployment-id "user/tarzan")}})
+                                        :acl         {:owners (conj ["group/nuvla-admin"] deployment-id)}})
 
                     ;; verify that the deployment has disappeared
                     (-> session-user

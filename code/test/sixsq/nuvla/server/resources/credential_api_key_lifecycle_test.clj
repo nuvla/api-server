@@ -35,7 +35,7 @@
                                         session
                                         (content-type "application/json"))
         session-admin               (header session authn-info-header
-                                            "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+                                            "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user                (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
         session-anon                (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")
 
@@ -63,7 +63,17 @@
         create-import-href-zero-ttl {:template {:href href
                                                 :ttl  0}}
 
-        create-import-href-no-ttl   {:template {:href href}}]
+        create-import-href-no-ttl   {:template {:href href}}
+        authn-info-admin            {:user-id      "group/nuvla-admin"
+                                     :active-claim "group/nuvla-admin"
+                                     :claims       ["group/nuvla-admin" "group/nuvla-anon" "group/nuvla-user"]}
+        authn-info-jane             {:user-id      "user/jane"
+                                     :active-claim "user/jane"
+                                     :claims       ["group/nuvla-anon" "user/jane" "group/nuvla-user"]}
+        authn-info-anon             {:user-id      "user/unknown"
+                                     :active-claim "user/unknown"
+                                     :claims       #{"user/unknown" "group/nuvla-anon"}}
+        admin-group-name            "Nuvla Administrator Group"]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (if (env/env :nuvla-super-password)
@@ -91,13 +101,25 @@
         (ltu/is-status 403))
 
     ;; creating a new credential without reference will fail for all types of users
-    (doseq [session [session-admin session-user session-anon]]
+    (doseq [[session event-owners authn-info]
+            [[session-admin ["group/nuvla-admin"] authn-info-admin]
+             [session-user ["group/nuvla-admin"] authn-info-jane]
+             [session-anon ["group/nuvla-admin"] authn-info-anon]]]
       (-> session
           (request base-uri
                    :request-method :post
                    :body (json/write-str create-import-no-href))
           (ltu/body->edn)
-          (ltu/is-status 400)))
+          (ltu/is-status 400))
+
+      (ltu/is-last-event nil
+                         {:name               "credential.add"
+                          :description        "credential.add attempt failed."
+                          :category           "add"
+                          :success            false
+                          :linked-identifiers []
+                          :authn-info         authn-info
+                          :acl                {:owners event-owners}}))
 
     ;; creating a new credential as anon will fail; expect 400 because href cannot be accessed
     (-> session-anon
@@ -122,6 +144,15 @@
 
       ;; resource id and the uri (location) should be the same
       (is (= id uri))
+
+      (ltu/is-last-event uri
+                         {:name               "credential.add"
+                          :description        (str "user/jane added credential " name-attr ".")
+                          :category           "add"
+                          :success            true
+                          :linked-identifiers []
+                          :authn-info         authn-info-jane
+                          :acl                {:owners ["group/nuvla-admin" "user/jane"]}})
 
       ;; the secret key must be returned as part of the 201 response
       (is secret-key)
@@ -155,7 +186,16 @@
           (request abs-uri
                    :request-method :delete)
           (ltu/body->edn)
-          (ltu/is-status 200)))
+          (ltu/is-status 200))
+
+      (ltu/is-last-event uri
+                         {:name               "credential.delete"
+                          :description        (str "user/jane deleted credential " name-attr ".")
+                          :category           "delete"
+                          :success            true
+                          :linked-identifiers []
+                          :authn-info         authn-info-jane
+                          :acl                {:owners ["group/nuvla-admin" "user/jane"]}}))
 
     ;; execute the same tests but now create an API key without an expiry date
     (let [resp       (-> session-user
@@ -236,7 +276,8 @@
                                                            (request abs-uri)
                                                            (ltu/body->edn)
                                                            (ltu/is-status 200)
-                                                           (ltu/body))]
+                                                           (ltu/body))
+            new-name-attr "UPDATED!"]
         (is digest)
         (is (key-utils/valid? secret-key digest))
         (is (nil? expiry))
@@ -249,7 +290,7 @@
                      :request-method :put
                      :body (json/write-str
                              (assoc current
-                               :name "UPDATED!"
+                               :name new-name-attr
                                :claims {:identity "super",
                                         :roles    ["group/nuvla-user" "group/nuvla-anon" "group/nuvla-admin"]})))
             (ltu/body->edn)
@@ -266,6 +307,15 @@
           (is (= (dissoc expected :updated) (dissoc reread :updated :updated-by)))
           (is (not= (:updated expected) (:updated reread))))
 
+        (ltu/is-last-event uri
+                           {:name               "credential.edit"
+                            :description        (str "user/jane edited credential " new-name-attr ".")
+                            :category           "edit"
+                            :success            true
+                            :linked-identifiers []
+                            :authn-info         authn-info-jane
+                            :acl                {:owners ["group/nuvla-admin" "user/jane"]}})
+
         ;; update the credential by changing the name attribute
         ;; claims are editable for super
         (-> session-admin
@@ -280,17 +330,27 @@
             (ltu/is-status 200))
 
         ;; verify that the attribute has been changed
-        (let [expected (assoc current :name "UPDATED by super!"
-                                      :claims {:identity "super",
-                                               :roles    ["group/nuvla-user" "group/nuvla-anon" "group/nuvla-admin"]})
-              reread   (-> session-admin
-                           (request abs-uri)
-                           (ltu/body->edn)
-                           (ltu/is-status 200)
-                           (ltu/body))]
+        (let [new-name-attr "UPDATED by super!"
+              expected      (assoc current :name new-name-attr
+                                           :claims {:identity "super",
+                                                    :roles    ["group/nuvla-user" "group/nuvla-anon" "group/nuvla-admin"]})
+              reread        (-> session-admin
+                                (request abs-uri)
+                                (ltu/body->edn)
+                                (ltu/is-status 200)
+                                (ltu/body))]
 
           (is (= (dissoc expected :updated) (dissoc reread :updated :updated-by)))
-          (is (not= (:updated expected) (:updated reread)))))
+          (is (not= (:updated expected) (:updated reread)))
+
+          (ltu/is-last-event uri
+                             {:name               "credential.edit"
+                              :description        (str admin-group-name " edited credential " new-name-attr ".")
+                              :category           "edit"
+                              :success            true
+                              :linked-identifiers []
+                              :authn-info         authn-info-admin
+                              :acl                {:owners ["group/nuvla-admin" "user/jane"]}})))
 
       ;; delete the credential
       (-> session-user
