@@ -28,14 +28,7 @@ These resources represent a deployment set that regroups deployments.
 (def collection-acl {:query ["group/nuvla-user"]
                      :add   ["group/nuvla-user"]})
 
-(def actions [{:name           utils/action-create
-               :uri            utils/action-create
-               :description    "create deployments"
-               :method         "POST"
-               :input-message  "application/json"
-               :output-message "application/json"}
-
-              {:name           utils/action-start
+(def actions [{:name           utils/action-start
                :uri            utils/action-start
                :description    "start deployment set"
                :method         "POST"
@@ -45,6 +38,20 @@ These resources represent a deployment set that regroups deployments.
               {:name           utils/action-stop
                :uri            utils/action-stop
                :description    "stop deployment set"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           utils/action-cancel
+               :uri            utils/action-cancel
+               :description    "cancel running action on deployment set"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           utils/action-update
+               :uri            utils/action-update
+               :description    "cancel running action on deployment set"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
@@ -97,13 +104,6 @@ These resources represent a deployment set that regroups deployments.
     (event-utils/create-event id action (a/default-acl (auth/current-authentication request)))
     (r/map-response job-msg 202 id job-id)))
 
-(defn throw-action-not-allowed
-  [{{uuid :uuid} :params :as request} can-action? action]
-  (-> (str resource-type "/" uuid)
-      crud/retrieve-by-id-as-admin
-      (a/throw-cannot-manage request)
-      (utils/throw-can-not-do-action can-action? action)))
-
 (defn action-bulk
   [id request action]
   (let [authn-info (auth/current-authentication request)
@@ -114,13 +114,18 @@ These resources represent a deployment set that regroups deployments.
     (std-crud/create-bulk-job
       (utils/action-job-name action) id authn-info acl payload)))
 
-(defmethod crud/do-action [resource-type utils/action-create]
-  [{{uuid :uuid} :params :as request}]
-  (-> (str resource-type "/" uuid)
-      crud/retrieve-by-id-as-admin
-      (a/throw-cannot-manage request)
-      (utils/throw-can-not-do-action utils/can-create? utils/action-create)
-      (create-job request utils/action-create)))
+(defn standard-action
+  [{{uuid :uuid} :params :as request} action-name]
+  (let [{:keys [f-can-do? f-next-state
+                f-action]} (get utils/action-map action-name)
+        id             (str resource-type "/" uuid)
+        deployment-set (-> (crud/retrieve-by-id-as-admin id)
+                           (a/throw-cannot-manage request)
+                           (utils/throw-can-not-do-action f-can-do? action-name))]
+    (utils/state-transition deployment-set (f-next-state deployment-set))
+    (if f-action
+      (f-action deployment-set request)
+      (action-bulk id request action-name))))
 
 (defmethod crud/do-action [resource-type utils/action-plan]
   [{{uuid :uuid} :params :as request}]
@@ -134,22 +139,20 @@ These resources represent a deployment set that regroups deployments.
     (r/json-response (utils/plan deployment-set applications-sets))))
 
 (defmethod crud/do-action [resource-type utils/action-start]
-  [{{uuid :uuid} :params :as request}]
-  (let [id             (str resource-type "/" uuid)
-        deployment-set (-> (crud/retrieve-by-id-as-admin id)
-                           (a/throw-cannot-manage request)
-                           (utils/throw-can-not-do-action
-                             utils/can-start? utils/action-start))]
-    (if (utils/state-new? deployment-set)
-      (do
-        (crud/edit-by-id-as-admin id {:start true})
-        (create-job deployment-set request utils/action-create))
-      (action-bulk id request utils/action-start))))
+  [request]
+  (standard-action request utils/action-start))
+
+(defmethod crud/do-action [resource-type utils/action-update]
+  [request]
+  (standard-action request utils/action-update))
 
 (defmethod crud/do-action [resource-type utils/action-stop]
-  [{{uuid :uuid} :params :as request}]
-  (let [id (str resource-type "/" uuid)]
-    (action-bulk id request utils/action-stop)))
+  [request]
+  (standard-action request utils/action-stop))
+
+(defmethod crud/do-action [resource-type utils/action-cancel]
+  [request]
+  (standard-action request utils/action-cancel))
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
@@ -211,7 +214,7 @@ These resources represent a deployment set that regroups deployments.
         id       (get-in response [:body :resource-id])]
     (if start
       (create-job (crud/get-resource-throw-nok id request)
-                  request utils/action-create)
+                  request utils/action-start)
       response)))
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -229,8 +232,15 @@ These resources represent a deployment set that regroups deployments.
 (def delete-impl (std-crud/delete-fn resource-type))
 
 (defmethod crud/delete resource-type
-  [request]
+  [{{uuid :uuid} :params :as request}]
+  (let [id (str resource-type "/" uuid)]
+    (-> (crud/retrieve-by-id-as-admin id)
+        (a/throw-cannot-delete request)
+        (utils/throw-can-not-do-action utils/can-delete? "delete")))
+  ;; todo : need to delete deployments
   (delete-impl request))
+
+;; todo : action force delete
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
@@ -240,24 +250,18 @@ These resources represent a deployment set that regroups deployments.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [create-op   (u/action-map id :create)
-        start-op    (u/action-map id :start)
-        stop-op     (u/action-map id :stop)
-        plan-op     (u/action-map id :plan)
-        can-manage? (a/can-manage? resource request)]
-    (cond-> (crud/set-standard-operations resource request)
+  (let [can-manage? (a/can-manage? resource request)
 
-            can-manage?
-            (update :operations conj plan-op)
+        operations  (if can-manage?
+                      (utils/get-extra-operations resource)
+                      [])]
+    (cond-> (assoc resource :operations operations)
 
-            (and can-manage? (utils/can-create? resource))
-            (update :operations conj create-op)
+            (and (a/can-edit? resource request)
+                 (utils/can-edit? resource)) (update :operations conj (u/operation-map id :edit))
 
-            (and can-manage? (utils/can-start? resource))
-            (update :operations conj start-op)
-
-            (and can-manage? (utils/can-stop? resource))
-            (update :operations conj stop-op))))
+            (and (a/can-delete? resource request)
+                 (utils/can-delete? resource)) (update :operations conj (u/operation-map id :delete)))))
 
 ;;
 ;; initialization

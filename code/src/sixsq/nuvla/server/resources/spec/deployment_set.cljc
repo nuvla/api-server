@@ -4,22 +4,17 @@
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
     [sixsq.nuvla.server.resources.spec.module-applications-sets :as module-sets]
+    [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 (s/def ::state
-  (assoc (st/spec #{"NEW",
-                    "CREATING", "CREATED",
-                    "STARTING", "STARTED",
-                    "STOPPING", "STOPPED"})
+  (assoc (st/spec (set utils/states))
     :name "state"
     :json-schema/type "string"
     :json-schema/description "state of deployment set"
 
-    :json-schema/value-scope {:values ["NEW",
-                                       "CREATING", "CREATED",
-                                       "STARTING", "STARTED",
-                                       "STOPPING", "STOPPED"]}))
+    :json-schema/value-scope {:values utils/states}))
 
 (s/def ::targets
   (assoc (st/spec (s/coll-of ::cred-spec/credential-id :min-count 1))

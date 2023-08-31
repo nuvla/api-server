@@ -1,36 +1,89 @@
 (ns sixsq.nuvla.server.resources.deployment-set.utils
   (:require [clojure.string :as str]
+            [sixsq.nuvla.auth.utils :as auth]
+            [sixsq.nuvla.db.impl :as db]
+            [sixsq.nuvla.server.resources.common.crud :as crud]
+            [sixsq.nuvla.server.resources.common.utils :as u]
             [sixsq.nuvla.server.resources.module.utils :as module-utils]
             [sixsq.nuvla.server.util.response :as r]))
 
 (def state-new "NEW")
-(def state-creating "CREATING")
-(def state-created "CREATED")
 (def state-starting "STARTING")
 (def state-started "STARTED")
 (def state-stopping "STOPPING")
 (def state-stopped "STOPPED")
+(def state-partially-started "PARTIALLY-STARTED")
+(def state-partially-updated "PARTIALLY-UPDATED")
+(def state-partially-stopped "PARTIALLY-STOPPED")
+(def state-updating "UPDATING")
+(def state-updated "UPDATED")
 
-(def action-create "create")
+(def states [state-new,
+             state-starting, state-started, state-partially-started,
+             state-updating, state-updated, state-partially-updated,
+             state-stopping, state-stopped, state-partially-stopped])
+
 (def action-start "start")
 (def action-stop "stop")
+(def action-update "update")
+(def action-cancel "cancel")
 (def action-plan "plan")
 
 (defn state-new?
   [{:keys [state] :as _resource}]
   (= state state-new))
 
-(defn can-create?
-  [resource]
-  (state-new? resource))
-
 (defn can-start?
   [{:keys [state] :as _resource}]
-  (contains? #{state-new state-created state-stopped} state))
+  (contains? #{state-new state-stopped} state))
 
 (defn can-stop?
   [{:keys [state] :as _resource}]
-  (contains? #{state-started} state))
+  (contains? #{state-started state-partially-started
+               state-updated state-partially-updated} state))
+
+(defn can-delete?
+  [{:keys [state] :as _resource}]
+  (contains? #{state-new state-stopped} state))
+
+(defn can-edit?
+  [{:keys [state] :as _resource}]
+  (not (contains? #{state-starting state-updating state-stopping} state)))
+
+(defn cancel-next-state
+  [{:keys [state] :as _deployment-set}]
+  (get {state-starting state-partially-started
+        state-updating state-partially-updated
+        state-stopping state-partially-stopped} state))
+
+(defn can-cancel?
+  [resource]
+  (some? (cancel-next-state resource)))
+
+(defn can-update?
+  [{:keys [state] :as _resource}]
+  (contains? #{state-started state-partially-started
+               state-updated state-partially-updated} state))
+
+(def action-map {action-start  {:f-can-do?    can-start?
+                                :f-next-state (constantly state-starting)}
+                 action-update {:f-can-do?    can-update?
+                                :f-next-state (constantly state-updating)}
+                 action-stop   {:f-can-do?    can-stop?
+                                :f-next-state (constantly state-stopping)}
+                 action-cancel {:f-can-do?    can-cancel?
+                                :f-next-state cancel-next-state
+                                :f-action     (fn [_dep-set _req]) ;fixme
+                                }})
+
+(defn get-extra-operations
+  [{:keys [id] :as resource}]
+  (->> (keys action-map)
+       (map (fn [action-name]
+              (let [f-can-do? (get-in action-map [action-name :f-can-do?])]
+                (when (f-can-do? resource)
+                  (u/action-map id action-name)))))
+       (remove nil?)))
 
 (defn action-job-name
   [action]
@@ -42,6 +95,14 @@
     resource
     (throw (r/ex-response (format "invalid state (%s) for %s on %s"
                                   state action id) 409 id))))
+
+(defn state-transition
+  [deployment-set new-state]
+  (-> deployment-set
+      (u/update-timestamps)
+      (assoc :state new-state)
+      (crud/validate)
+      (db/edit {:nuvla/authn auth/internal-identity})))
 
 (defn get-first-applications-sets
   [deployment-set]
