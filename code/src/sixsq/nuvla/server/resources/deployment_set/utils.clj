@@ -93,8 +93,8 @@
   [{:keys [id state] :as resource} pred action]
   (if (pred resource)
     resource
-    (throw (r/ex-response (format "invalid state (%s) for %s on %s"
-                                  state action id) 409 id))))
+    (throw (r/ex-response (format "%s action is not allowed in state [%s]"
+                                  action state id) 409 id))))
 
 (defn state-transition
   [deployment-set new-state]

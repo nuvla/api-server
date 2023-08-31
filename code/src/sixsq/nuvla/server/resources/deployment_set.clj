@@ -226,7 +226,11 @@ These resources represent a deployment set that regroups deployments.
 (def edit-impl (std-crud/edit-fn resource-type))
 
 (defmethod crud/edit resource-type
-  [request]
+  [{{uuid :uuid} :params :as request}]
+  (let [id (str resource-type "/" uuid)]
+    (-> (crud/retrieve-by-id-as-admin id)
+        (a/throw-cannot-edit request)
+        (utils/throw-can-not-do-action utils/can-edit? "edit")))
   (edit-impl request))
 
 (def delete-impl (std-crud/delete-fn resource-type))

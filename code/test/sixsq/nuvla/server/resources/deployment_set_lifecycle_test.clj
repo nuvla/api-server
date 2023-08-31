@@ -449,6 +449,15 @@
               (ltu/is-operation-absent :cancel)
               (ltu/is-key-value :state dep-set-utils/state-started)))
 
+        (testing "edit action is possible"
+          (-> session-user
+              (request dep-set-url
+                       :request-method :put
+                       :body (json/write-str {:description "foo"}))
+              ltu/body->edn
+              (ltu/is-status 200)
+              (ltu/is-key-value :description "foo")))
+
         (testing "update action will create a update_deployment_set job"
           (let [update-op-url (-> session-user
                                   (request dep-set-url)
@@ -473,6 +482,15 @@
                 (ltu/is-key-value :href :target-resource resource-id)
                 (ltu/is-key-value :action "update_deployment_set")
                 (ltu/is-key-value json/read-str :payload job-payload))))
+
+        (testing "edit action is not allowed in a transitional state"
+          (-> session-user
+              (request dep-set-url
+                       :request-method :put
+                       :body (json/write-str {:description "bar"}))
+              ltu/body->edn
+              (ltu/is-status 409)
+              (ltu/message-matches "edit action is not allowed in state [UPDATING]")))
 
         (testing "force state transition to simulate job action"
           (dep-set-utils/state-transition
