@@ -8,6 +8,7 @@ These resources represent a deployment set that regroups deployments.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.state-machine :as sm]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
@@ -63,6 +64,10 @@ These resources represent a deployment set that regroups deployments.
                :input-message  "application/json"
                :output-message "application/json"}])
 
+(defmethod sm/state-machine resource-type
+  [_resource]
+  utils/state-machine)
+
 ;;
 ;; validate deployment set
 ;;
@@ -115,17 +120,14 @@ These resources represent a deployment set that regroups deployments.
       (utils/action-job-name action) id authn-info acl payload)))
 
 (defn standard-action
-  [{{uuid :uuid} :params :as request} action-name]
-  (let [{:keys [f-can-do? f-next-state
-                f-action]} (get utils/action-map action-name)
-        id             (str resource-type "/" uuid)
-        deployment-set (-> (crud/retrieve-by-id-as-admin id)
-                           (a/throw-cannot-manage request)
-                           (utils/throw-can-not-do-action f-can-do? action-name))]
-    (utils/state-transition deployment-set (f-next-state deployment-set))
-    (if f-action
-      (f-action deployment-set request)
-      (action-bulk id request action-name))))
+  [{{uuid :uuid} :params :as request} action]
+  (let [id (str resource-type "/" uuid)]
+    (-> (crud/retrieve-by-id-as-admin id)
+        (a/throw-cannot-manage request)
+        (sm/throw-can-not-do-action request)
+        (sm/transition action)
+        utils/save-deployment-set)
+    (action-bulk id request (name action))))
 
 (defmethod crud/do-action [resource-type utils/action-plan]
   [{{uuid :uuid} :params :as request}]
@@ -152,6 +154,7 @@ These resources represent a deployment set that regroups deployments.
 
 (defmethod crud/do-action [resource-type utils/action-cancel]
   [request]
+  ;fixme cancel job
   (standard-action request utils/action-cancel))
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
@@ -209,7 +212,6 @@ These resources represent a deployment set that regroups deployments.
   [{{:keys [start]} :body :as request}]
   (let [response (-> request
                      request-with-create-app-set
-                     (update :body assoc :state utils/state-new)
                      add-impl)
         id       (get-in response [:body :resource-id])]
     (if start
@@ -226,21 +228,17 @@ These resources represent a deployment set that regroups deployments.
 (def edit-impl (std-crud/edit-fn resource-type))
 
 (defmethod crud/edit resource-type
-  [{{uuid :uuid} :params :as request}]
-  (let [id (str resource-type "/" uuid)]
-    (-> (crud/retrieve-by-id-as-admin id)
-        (a/throw-cannot-edit request)
-        (utils/throw-can-not-do-action utils/can-edit? "edit")))
+  [request]
   (edit-impl request))
 
 (def delete-impl (std-crud/delete-fn resource-type))
 
 (defmethod crud/delete resource-type
   [{{uuid :uuid} :params :as request}]
-  (let [id (str resource-type "/" uuid)]
-    (-> (crud/retrieve-by-id-as-admin id)
-        (a/throw-cannot-delete request)
-        (utils/throw-can-not-do-action utils/can-delete? "delete")))
+  (-> (str resource-type "/" uuid)
+      crud/retrieve-by-id-as-admin
+      (a/throw-cannot-delete request)
+      (sm/throw-can-not-do-action request))
   ;; todo : need to delete deployments
   (delete-impl request))
 
@@ -253,19 +251,13 @@ These resources represent a deployment set that regroups deployments.
   (query-impl request))
 
 (defmethod crud/set-operations resource-type
-  [{:keys [id] :as resource} request]
+  [resource request]
   (let [can-manage? (a/can-manage? resource request)
-
         operations  (if can-manage?
                       (utils/get-extra-operations resource)
                       [])]
-    (cond-> (assoc resource :operations operations)
-
-            (and (a/can-edit? resource request)
-                 (utils/can-edit? resource)) (update :operations conj (u/operation-map id :edit))
-
-            (and (a/can-delete? resource request)
-                 (utils/can-delete? resource)) (update :operations conj (u/operation-map id :delete)))))
+    (cond-> (crud/set-standard-operations resource request)
+            (seq operations) (update :operations concat operations))))
 
 ;;
 ;; initialization

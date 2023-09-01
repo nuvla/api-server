@@ -331,7 +331,7 @@
               (request dep-set-url)
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value :state dep-set-utils/state-new)
+              (ltu/is-key-value :state "NEW")
               (ltu/is-operation-present :start)
               (ltu/is-key-value :applications-sets dep-apps-sets)))
 
@@ -430,7 +430,7 @@
                 (ltu/is-key-value :href :target-resource resource-id))))
 
         (testing "force state transition to simulate job action"
-          (dep-set-utils/state-transition
+          (dep-set-utils/save-deployment-set
             (-> session-user
                 (request dep-set-url)
                 ltu/body->edn
@@ -493,7 +493,7 @@
               (ltu/message-matches "edit action is not allowed in state [UPDATING]")))
 
         (testing "force state transition to simulate job action"
-          (dep-set-utils/state-transition
+          (dep-set-utils/save-deployment-set
             (-> session-user
                 (request dep-set-url)
                 ltu/body->edn

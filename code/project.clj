@@ -30,7 +30,10 @@
   :pom-location "target/"
 
   :dependencies
-  [[buddy/buddy-core]
+  [
+   [clj-statecharts "0.1.7"]
+   [metosin/tilakone "0.0.4"]
+   [buddy/buddy-core]
    [org.clojars.konstan/kinsky ~kinsky-version]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]

@@ -3,6 +3,7 @@
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.resources.common.state-machine :as sm]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -205,10 +206,12 @@
 
 
 (defn set-standard-resource-operations
-  [{:keys [id] :as resource} request]
+  [{:keys [id] :as resource} {{:keys [action]} :params :as request}]
   (let [ops (cond-> []
-                    (a/can-edit? resource request) (conj (u/operation-map id :edit))
-                    (a/can-delete? resource request) (conj (u/operation-map id :delete)))]
+                    (and (a/can-edit? resource request)
+                         (sm/can-do-action? resource action)) (conj (u/operation-map id :edit))
+                    (and (a/can-delete? resource request)
+                         (sm/can-do-action? resource action)) (conj (u/operation-map id :delete)))]
     (if (seq ops)
       (assoc resource :operations ops)
       (dissoc resource :operations))))

@@ -3,104 +3,102 @@
             [sixsq.nuvla.auth.utils :as auth]
             [sixsq.nuvla.db.impl :as db]
             [sixsq.nuvla.server.resources.common.crud :as crud]
+            [sixsq.nuvla.server.resources.common.state-machine :as sm]
             [sixsq.nuvla.server.resources.common.utils :as u]
             [sixsq.nuvla.server.resources.module.utils :as module-utils]
-            [sixsq.nuvla.server.util.response :as r]))
+            [statecharts.core :as fsm]))
 
-(def state-new "NEW")
-(def state-starting "STARTING")
-(def state-started "STARTED")
-(def state-stopping "STOPPING")
-(def state-stopped "STOPPED")
-(def state-partially-started "PARTIALLY-STARTED")
-(def state-partially-updated "PARTIALLY-UPDATED")
-(def state-partially-stopped "PARTIALLY-STOPPED")
-(def state-updating "UPDATING")
-(def state-updated "UPDATED")
+(def action-start :start)
+(def action-stop :stop)
+(def action-update :update)
+(def action-cancel :cancel)
+(def action-edit :edit)
+(def action-delete :delete)
+(def action-ok :ok)
+(def action-nok :nok)
+(def action-force-delete :force-delete)
+(def action-plan :plan)
 
-(def states [state-new,
-             state-starting, state-started, state-partially-started,
-             state-updating, state-updated, state-partially-updated,
-             state-stopping, state-stopped, state-partially-stopped])
+(def actions [action-start action-stop action-update action-cancel
+              action-edit action-delete action-ok action-nok action-force-delete
+              action-plan])
 
-(def action-start "start")
-(def action-stop "stop")
-(def action-update "update")
-(def action-cancel "cancel")
-(def action-plan "plan")
 
-(defn state-new?
-  [{:keys [state] :as _resource}]
-  (= state state-new))
+(def state-new :new)
+(def state-starting :starting)
+(def state-started :started)
+(def state-stopping :stopping)
+(def state-stopped :stopped)
+(def state-partially-started :partially-started)
+(def state-partially-updated :partially-updated)
+(def state-partially-stopped :partially-stopped)
+(def state-updating :updating)
+(def state-updated :updated)
 
-(defn can-start?
-  [{:keys [state] :as _resource}]
-  (contains? #{state-new state-stopped} state))
+(def states-map {state-new               "NEW"
+                 state-starting          "STARTING"
+                 state-started           "STARTED"
+                 state-stopping          "STOPPING"
+                 state-stopped           "STOPPED"
+                 state-partially-started "PARTIALLY-STARTED"
+                 state-partially-updated "PARTIALLY-UPDATED"
+                 state-partially-stopped "PARTIALLY-STOPPED"
+                 state-updating          "UPDATING"
+                 state-updated           "UPDATED"})
+(def states (vec (vals states-map)))
 
-(defn can-stop?
-  [{:keys [state] :as _resource}]
-  (contains? #{state-started state-partially-started
-               state-updated state-partially-updated} state))
-
-(defn can-delete?
-  [{:keys [state] :as _resource}]
-  (contains? #{state-new state-stopped} state))
-
-(defn can-edit?
-  [{:keys [state] :as _resource}]
-  (not (contains? #{state-starting state-updating state-stopping} state)))
-
-(defn cancel-next-state
-  [{:keys [state] :as _deployment-set}]
-  (get {state-starting state-partially-started
-        state-updating state-partially-updated
-        state-stopping state-partially-stopped} state))
-
-(defn can-cancel?
-  [resource]
-  (some? (cancel-next-state resource)))
-
-(defn can-update?
-  [{:keys [state] :as _resource}]
-  (contains? #{state-started state-partially-started
-               state-updated state-partially-updated} state))
-
-(def action-map {action-start  {:f-can-do?    can-start?
-                                :f-next-state (constantly state-starting)}
-                 action-update {:f-can-do?    can-update?
-                                :f-next-state (constantly state-updating)}
-                 action-stop   {:f-can-do?    can-stop?
-                                :f-next-state (constantly state-stopping)}
-                 action-cancel {:f-can-do?    can-cancel?
-                                :f-next-state cancel-next-state
-                                :f-action     (fn [_dep-set _req]) ;fixme
-                                }})
+(def state-machine
+  (fsm/machine
+    {:id      :deployment-group
+     :initial state-new
+     :states
+     {state-new               {:on {action-start  state-starting
+                                    action-edit   {}
+                                    action-delete {}}}
+      state-starting          {:on {action-cancel state-partially-started
+                                    action-ok     state-started
+                                    action-nok    state-partially-started}}
+      state-started           {:on {action-edit   {}
+                                    action-update state-updating
+                                    action-stop   state-stopping}}
+      state-stopping          {:on {action-cancel state-partially-stopped
+                                    action-ok     state-stopped
+                                    action-nok    state-partially-stopped}}
+      state-updating          {:on {action-cancel state-partially-updated
+                                    action-ok     state-updated
+                                    action-nok    state-partially-updated}}
+      state-stopped           {:on {action-edit   {}
+                                    action-delete {}
+                                    action-start  state-starting}}
+      state-updated           {:on {action-edit   {}
+                                    action-stop   state-stopping
+                                    action-update state-updating}}
+      state-partially-updated {:on {action-edit   {}
+                                    action-stop   state-stopping
+                                    action-update state-updating}}
+      state-partially-started {:on {action-edit   {}
+                                    action-stop   state-stopping
+                                    action-update state-updating}}
+      state-partially-stopped {:on {action-edit         {}
+                                    action-force-delete {}
+                                    action-start        state-starting}}}}))
 
 (defn get-extra-operations
   [{:keys [id] :as resource}]
-  (->> (keys action-map)
-       (map (fn [action-name]
-              (let [f-can-do? (get-in action-map [action-name :f-can-do?])]
-                (when (f-can-do? resource)
-                  (u/action-map id action-name)))))
+  (->> actions
+       (map (fn [action]
+              (when (sm/can-do-action? resource action)
+                (u/action-map id action))))
        (remove nil?)))
 
 (defn action-job-name
   [action]
   (str action "_deployment_set"))
 
-(defn throw-can-not-do-action
-  [{:keys [id state] :as resource} pred action]
-  (if (pred resource)
-    resource
-    (throw (r/ex-response (format "%s action is not allowed in state [%s]"
-                                  action state id) 409 id))))
-
-(defn state-transition
-  [deployment-set new-state]
+(defn save-deployment-set
+  [deployment-set]
   (-> deployment-set
       (u/update-timestamps)
-      (assoc :state new-state)
       (crud/validate)
       (db/edit {:nuvla/authn auth/internal-identity})))
 
