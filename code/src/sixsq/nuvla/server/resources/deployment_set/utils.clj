@@ -5,83 +5,100 @@
             [sixsq.nuvla.server.resources.common.crud :as crud]
             [sixsq.nuvla.server.resources.common.state-machine :as sm]
             [sixsq.nuvla.server.resources.common.utils :as u]
-            [sixsq.nuvla.server.resources.module.utils :as module-utils]
-            [statecharts.core :as fsm]))
+            [tilakone.core :as tk]
+            [sixsq.nuvla.server.resources.module.utils :as module-utils]))
 
-(def action-start :start)
-(def action-stop :stop)
-(def action-update :update)
-(def action-cancel :cancel)
-(def action-edit :edit)
-(def action-delete :delete)
-(def action-ok :ok)
-(def action-nok :nok)
-(def action-force-delete :force-delete)
-(def action-plan :plan)
+(def action-start "start")
+(def action-stop "stop")
+(def action-update "update")
+(def action-cancel "cancel")
+(def action-edit "edit")
+(def action-delete "delete")
+(def action-ok "ok")
+(def action-nok "nok")
+(def action-force-delete "force-delete")
+(def action-plan "plan")
 
-(def actions [action-start action-stop action-update action-cancel
-              action-edit action-delete action-ok action-nok action-force-delete
+(def actions [action-start
+              action-stop
+              action-update
+              action-cancel
+              action-edit
+              action-delete
+              action-ok
+              action-nok
+              action-force-delete
               action-plan])
 
 
-(def state-new :new)
-(def state-starting :starting)
-(def state-started :started)
-(def state-stopping :stopping)
-(def state-stopped :stopped)
-(def state-partially-started :partially-started)
-(def state-partially-updated :partially-updated)
-(def state-partially-stopped :partially-stopped)
-(def state-updating :updating)
-(def state-updated :updated)
+(def state-new "NEW")
+(def state-starting "STARTING")
+(def state-started "STARTED")
+(def state-stopping "STOPPING")
+(def state-stopped "STOPPED")
+(def state-partially-started "PARTIALLY-STARTED")
+(def state-partially-updated "PARTIALLY-UPDATED")
+(def state-partially-stopped "PARTIALLY-STOPPED")
+(def state-updating "UPDATING")
+(def state-updated "UPDATED")
 
-(def states-map {state-new               "NEW"
-                 state-starting          "STARTING"
-                 state-started           "STARTED"
-                 state-stopping          "STOPPING"
-                 state-stopped           "STOPPED"
-                 state-partially-started "PARTIALLY-STARTED"
-                 state-partially-updated "PARTIALLY-UPDATED"
-                 state-partially-stopped "PARTIALLY-STOPPED"
-                 state-updating          "UPDATING"
-                 state-updated           "UPDATED"})
-(def states (vec (vals states-map)))
+(def states [state-new
+             state-starting
+             state-started
+             state-stopping
+             state-stopped
+             state-partially-started
+             state-partially-updated
+             state-partially-stopped
+             state-updating
+             state-updated])
 
 (def state-machine
-  (fsm/machine
-    {:id      :deployment-group
-     :initial state-new
-     :states
-     {state-new               {:on {action-start  state-starting
-                                    action-edit   {}
-                                    action-delete {}}}
-      state-starting          {:on {action-cancel state-partially-started
-                                    action-ok     state-started
-                                    action-nok    state-partially-started}}
-      state-started           {:on {action-edit   {}
-                                    action-update state-updating
-                                    action-stop   state-stopping}}
-      state-stopping          {:on {action-cancel state-partially-stopped
-                                    action-ok     state-stopped
-                                    action-nok    state-partially-stopped}}
-      state-updating          {:on {action-cancel state-partially-updated
-                                    action-ok     state-updated
-                                    action-nok    state-partially-updated}}
-      state-stopped           {:on {action-edit   {}
-                                    action-delete {}
-                                    action-start  state-starting}}
-      state-updated           {:on {action-edit   {}
-                                    action-stop   state-stopping
-                                    action-update state-updating}}
-      state-partially-updated {:on {action-edit   {}
-                                    action-stop   state-stopping
-                                    action-update state-updating}}
-      state-partially-started {:on {action-edit   {}
-                                    action-stop   state-stopping
-                                    action-update state-updating}}
-      state-partially-stopped {:on {action-edit         {}
-                                    action-force-delete {}
-                                    action-start        state-starting}}}}))
+  {::tk/states [{::tk/name        state-new
+                 ::tk/transitions [{::tk/on action-start, ::tk/to state-starting}
+                                   {::tk/on action-edit, ::tk/to tk/_}
+                                   {::tk/on action-delete, ::tk/to tk/_}]}
+                {::tk/name        state-starting
+                 ::tk/transitions [{::tk/on action-cancel, ::tk/to state-partially-started}
+                                   {::tk/on action-nok, ::tk/to state-partially-started}
+                                   {::tk/on action-ok, ::tk/to state-started}]}
+                {::tk/name        state-started
+                 ::tk/transitions [{::tk/on action-edit, ::tk/to tk/_}
+                                   {::tk/on action-update, ::tk/to state-updating}
+                                   {::tk/on action-stop, ::tk/to state-stopping}]}
+                {::tk/name        state-started
+                 ::tk/transitions [{::tk/on action-edit, ::tk/to tk/_}
+                                   {::tk/on action-update, ::tk/to state-updating}
+                                   {::tk/on action-stop, ::tk/to state-stopping}]}
+                {::tk/name        state-stopping
+                 ::tk/transitions [{::tk/on action-cancel, ::tk/to state-partially-stopped}
+                                   {::tk/on action-nok, ::tk/to state-partially-stopped}
+                                   {::tk/on action-ok, ::tk/to state-stopped}]}
+                {::tk/name        state-updating
+                 ::tk/transitions [{::tk/on action-cancel, ::tk/to state-partially-updated}
+                                   {::tk/on action-nok, ::tk/to state-partially-updated}
+                                   {::tk/on action-ok, ::tk/to state-updated}]}
+                {::tk/name        state-stopped
+                 ::tk/transitions [{::tk/on action-start, ::tk/to state-starting}
+                                   {::tk/on action-edit, ::tk/to tk/_}
+                                   {::tk/on action-delete, ::tk/to tk/_}]}
+                {::tk/name        state-updated
+                 ::tk/transitions [{::tk/on action-edit, ::tk/to tk/_}
+                                   {::tk/on action-update, ::tk/to state-updating}
+                                   {::tk/on action-stop, ::tk/to state-stopping}]}
+                {::tk/name        state-partially-updated
+                 ::tk/transitions [{::tk/on action-edit, ::tk/to tk/_}
+                                   {::tk/on action-update, ::tk/to state-updating}
+                                   {::tk/on action-stop, ::tk/to state-stopping}]}
+                {::tk/name        state-partially-started
+                 ::tk/transitions [{::tk/on action-edit, ::tk/to tk/_}
+                                   {::tk/on action-update, ::tk/to state-updating}
+                                   {::tk/on action-stop, ::tk/to state-stopping}]}
+                {::tk/name        state-partially-stopped
+                 ::tk/transitions [{::tk/on action-edit, ::tk/to tk/_}
+                                   {::tk/on action-force-delete, ::tk/to tk/_}
+                                   {::tk/on action-start, ::tk/to state-starting}]}]
+   ::tk/state  state-new})
 
 (defn get-extra-operations
   [{:keys [id] :as resource}]

@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.common.state-machine
-  (:require [clojure.string :as str]
-            [sixsq.nuvla.server.util.response :as r]
-            [statecharts.core :as fsm]))
+  (:require [sixsq.nuvla.server.util.response :as r]
+            [tilakone.core :as tk]
+            [tilakone.util :as tku]))
 
 (defmulti state-machine :resource-type)
 
@@ -9,36 +9,36 @@
   [_resource]
   nil)
 
-(defn -state->fsm-state
-  [^String state]
-  {:_state (-> state str/lower-case keyword)})
+(defn force-state
+  [fsm state]
+  (assoc fsm ::tk/state state))
 
-(defn -fsm-state->state
-  [{:keys [_state]}]
-  (-> _state name str/upper-case))
+(defn get-state
+  [fsm]
+  (::tk/state fsm))
+
+(defn fsm-resource
+  [{:keys [state] :as resource}]
+  (when-let [fsm (state-machine resource)]
+    (force-state fsm state)))
 
 (defn transition
   [resource action]
-  (if-let [fsm (state-machine resource)]
-    (update resource :state
-            #(-> fsm
-                 (fsm/transition (-state->fsm-state %) {:type (keyword action)})
-                 -fsm-state->state))
+  (if-let [fsm (fsm-resource resource)]
+    (assoc resource :state (get-state (tk/apply-signal fsm action)))
     resource))
 
 (defn initialize
   [resource]
   (if-let [fsm (state-machine resource)]
-    (assoc resource :state (-fsm-state->state (fsm/initialize fsm)))
+    (assoc resource :state (get-state fsm))
     resource))
 
 (defn can-do-action?
   [resource action]
-  (try
-    (transition resource action)
-    true
-    (catch Exception _
-      false)))
+  (if-let [fsm (fsm-resource resource)]
+    (some? (tk/transfers-to fsm action))
+    true))
 
 (defn throw-can-not-do-action
   [{:keys [id state] :as resource} {{:keys [action]} :params :as _request}]
