@@ -1,0 +1,167 @@
+(ns sixsq.nuvla.server.resources.deployment-set.operational-status-test
+  (:require [clojure.test :refer [deftest testing is]]
+            [sixsq.nuvla.server.resources.common.utils :as u]
+            [sixsq.nuvla.server.resources.deployment-set.operational-status :as t]))
+
+
+(def app1-id "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8")
+(def app2-id "module/188555b1-2006-4766-b287-f60e5e908197")
+
+
+(def app1-env-vars [{:name  "var_1_value"
+                     :value "overwritten var1 overwritten in deployment set"}
+                    {:name  "var_2"
+                     :value "overwritten in deployment set"}])
+(def app1-env-vars* [{:name  "var_1_value"
+                      :value "overwritten var1 overwritten in deployment set"}
+                     {:name  "var_2"
+                      :value "modified later in deployment set"}])
+
+(def target1-id "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316")
+(def target2-id "credential/bc258c46-4771-45d3-9b38-97afdf185f44")
+(def target3-id "credential/53b7ab49-3c4e-48eb-922b-e3067597b1cc")
+
+
+(def deployment1
+  {:app-set     "set-1"
+   :application {:id                      app1-id
+                 :version                 1
+                 :environmental-variables app1-env-vars}
+   :target      target1-id})
+(def deployment2
+  {:app-set     "set-1"
+   :application {:id                      app1-id
+                 :version                 1
+                 :environmental-variables app1-env-vars}
+   :target      target2-id})
+(def deployment3
+  {:app-set     "set-1"
+   :application {:id      app2-id
+                 :version 0}
+   :target      target1-id})
+
+;;
+;; Expected deployment configurations
+;;
+
+(def expected #{deployment1 deployment2 deployment3})
+
+
+;;
+;; Utils
+;;
+
+(defn set-random-deployment-id
+  [{:keys [id] :as deployment}]
+  (cond-> deployment
+          (nil? id) (assoc :id (u/random-uuid))))
+
+
+(defn set-random-deployment-ids
+  [deployments]
+  (->> deployments
+       (map set-random-deployment-id)
+       set))
+
+;;
+;; Extra deployment
+;;
+
+(def extra-deployment-id "extra-deployment-id")
+(def extra-deployment
+  {:id          extra-deployment-id
+   :app-set     "set-1"
+   :application {:id                      app1-id
+                 :version                 1
+                 :environmental-variables app1-env-vars}
+   :target      target3-id})
+
+;;
+;; Updated deployments
+;;
+
+(def deployment1*
+  (-> deployment1
+      (update-in [:application :environmental-variables]
+                 (constantly app1-env-vars*))
+      set-random-deployment-id))
+
+(def deployment2*
+  (-> deployment2
+      (update-in [:application :version] inc)
+      set-random-deployment-id))
+
+
+;;
+;; Current deployment configurations
+;;
+;; + suffix indicates additional deployment (with respect to expected)
+;; - suffix indicates missing deployment    (with respect to expected)
+;; * suffix indicates updated deployment    (with respect to expected)
+;;
+
+(def =expected
+  (set-random-deployment-ids expected))
+
+
+(def extra-deployment+
+  (-> #{deployment1 deployment2 deployment3 extra-deployment}
+      set-random-deployment-ids))
+
+
+(def deployment1*_deployment2*
+  (->> #{deployment1* deployment2* deployment3}
+       set-random-deployment-ids))
+
+
+(def deployment1-_extra-deployment+
+  (-> #{deployment2 deployment3 extra-deployment}
+      set-random-deployment-ids))
+
+(def deployment1-_deployment2*
+  (->> #{deployment2* deployment3}
+       set-random-deployment-ids))
+
+(def deployment2*_extra-deployment+
+  (-> #{deployment1 deployment2* deployment3 extra-deployment}
+      set-random-deployment-ids))
+
+(def deployment1-_deployment2*_extra-deployment+
+  (-> #{deployment2* deployment3 extra-deployment}
+      set-random-deployment-ids))
+
+
+;;
+;; Divergence map tests
+;;
+
+(deftest divergence-map
+  (testing "Current matches expected"
+    (is (= {}
+           (t/divergence-map expected =expected))))
+  (testing "Empty current"
+    (is (= {:deployments-to-add expected}
+           (t/divergence-map expected #{}))))
+  (testing "Current contains a deployment that should not exist"
+    (is (= {:deployments-to-remove #{extra-deployment-id}}
+           (t/divergence-map expected extra-deployment+))))
+  (testing "Some deployments need to be updated"
+    (is (= {:deployments-to-update {(:id deployment1*) deployment1*
+                                    (:id deployment2*) deployment2*}}
+           (t/divergence-map expected deployment1*_deployment2*))))
+  (testing "More combinations"
+    (is (= {:deployments-to-add    #{deployment1}
+            :deployments-to-remove #{extra-deployment-id}}
+           (t/divergence-map expected deployment1-_extra-deployment+)))
+    (is (= {:deployments-to-add    #{deployment1}
+            :deployments-to-update {(:id deployment2*) deployment2*}}
+           (t/divergence-map expected deployment1-_deployment2*)))
+    (is (= {:deployments-to-remove #{extra-deployment-id}
+            :deployments-to-update {(:id deployment2*) deployment2*}}
+           (t/divergence-map expected deployment2*_extra-deployment+)))
+    (is (= {:deployments-to-add    #{deployment1}
+            :deployments-to-remove #{extra-deployment-id}
+            :deployments-to-update {(:id deployment2*) deployment2*}}
+           (t/divergence-map expected deployment1-_deployment2*_extra-deployment+)))))
+
+
