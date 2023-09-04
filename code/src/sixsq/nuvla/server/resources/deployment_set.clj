@@ -7,7 +7,9 @@ These resources represent a deployment set that regroups deployments.
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.job.utils :as job-utils]
     [sixsq.nuvla.server.resources.common.state-machine :as sm]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -110,7 +112,7 @@ These resources represent a deployment set that regroups deployments.
     (r/map-response job-msg 202 id job-id)))
 
 (defn action-bulk
-  [id request action]
+  [{:keys [id] :as _resource} {{:keys [action]} :params :as request}]
   (let [authn-info (auth/current-authentication request)
         acl        {:owners   ["group/nuvla-admin"]
                     :view-acl [(auth/current-active-claim request)]}
@@ -120,14 +122,15 @@ These resources represent a deployment set that regroups deployments.
       (utils/action-job-name action) id authn-info acl payload)))
 
 (defn standard-action
-  [{{uuid :uuid} :params :as request} action]
-  (let [id (str resource-type "/" uuid)]
-    (-> (crud/retrieve-by-id-as-admin id)
-        (a/throw-cannot-manage request)
-        (sm/throw-can-not-do-action request)
-        (sm/transition action)
-        utils/save-deployment-set)
-    (action-bulk id request (name action))))
+  [{{uuid :uuid action :action} :params :as request} f]
+  (let [id       (str resource-type "/" uuid)
+        resource (-> (crud/retrieve-by-id-as-admin id)
+                     (a/throw-cannot-manage request)
+                     (sm/throw-can-not-do-action request)
+                     (sm/transition action)
+                     utils/save-deployment-set
+                     :body)]
+    (f resource request)))
 
 (defmethod crud/do-action [resource-type utils/action-plan]
   [{{uuid :uuid} :params :as request}]
@@ -142,20 +145,32 @@ These resources represent a deployment set that regroups deployments.
 
 (defmethod crud/do-action [resource-type utils/action-start]
   [request]
-  (standard-action request utils/action-start))
+  (standard-action request action-bulk))
 
 (defmethod crud/do-action [resource-type utils/action-update]
   [request]
-  (standard-action request utils/action-update))
+  (standard-action request action-bulk))
 
 (defmethod crud/do-action [resource-type utils/action-stop]
   [request]
-  (standard-action request utils/action-stop))
+  (standard-action request action-bulk))
+
+(defn cancel-latest-job
+  [{:keys [id] :as _resource} _request]
+  (let [filter-str (format "target-resource/href='%s' and (state='%s' or state='%s')" id
+                           job-utils/state-queued job-utils/state-running)
+        [_ [{job-id :id}]]
+        (crud/query-as-admin
+          job/resource-type
+          {:cimi-params {:filter  (parser/parse-cimi-filter filter-str)
+                         :orderby [["created" :desc]]
+                         :last    1}})]
+    (crud/do-action-as-admin job-id job-utils/action-cancel))
+  (r/map-response "operation canceled" 200))
 
 (defmethod crud/do-action [resource-type utils/action-cancel]
   [request]
-  ;fixme cancel job
-  (standard-action request utils/action-cancel))
+  (standard-action request cancel-latest-job))
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 

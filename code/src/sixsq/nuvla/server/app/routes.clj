@@ -28,9 +28,9 @@
     (GET uri request
       (crud/retrieve request))
     (PUT uri request
-      (crud/edit (assoc-in request [:params :action] "edit")))
+      (crud/edit (assoc-in request [:params :action] crud/action-edit)))
     (DELETE uri request
-      (crud/delete (assoc-in request [:params :action] "delete")))
+      (crud/delete (assoc-in request [:params :action] crud/action-delete)))
     (ANY uri request
       (throw (r/ex-bad-method request)))))
 

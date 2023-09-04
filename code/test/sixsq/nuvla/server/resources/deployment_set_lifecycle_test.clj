@@ -13,6 +13,7 @@
     [sixsq.nuvla.server.resources.deployment-set :as t]
     [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
     [sixsq.nuvla.server.resources.deployment-set.utils :as dep-set-utils]
+    [sixsq.nuvla.server.resources.job.utils :as job-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.module :as module]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
@@ -536,49 +537,44 @@
                 (ltu/is-status 200)
                 (ltu/is-key-value :href :target-resource resource-id)
                 (ltu/is-key-value :action "update_deployment_set")
-                (ltu/is-key-value json/read-str :payload job-payload))))
-
-        (testing "cancel action will cancel the running job"
-          (let [cancel-op-url (-> session-user
-                                  (request dep-set-url)
-                                  ltu/body->edn
-                                  (ltu/is-status 200)
-                                  (ltu/is-operation-absent :edit)
-                                  (ltu/is-operation-absent :delete)
-                                  (ltu/is-operation-absent :start)
-                                  (ltu/is-operation-absent :stop)
-                                  (ltu/is-operation-absent :update)
-                                  (ltu/is-operation-present :cancel)
-                                  (ltu/get-op-url :cancel))
-                job-url       (-> session-user
-                                  (request cancel-op-url)
-                                  ltu/body->edn
-                                  ;(ltu/is-status 202)
-                                  ;ltu/location-url
-                                  )
-                ]
-            #_(-> session-user
-                (request job-url)
-                ltu/body->edn
-                (ltu/is-status 200)
-                (ltu/is-key-value :href :target-resource resource-id)
-                (ltu/is-key-value :action "update_deployment_set")
                 (ltu/is-key-value json/read-str :payload job-payload))
+            (testing "cancel action will cancel the running job"
+              (let [cancel-op-url (-> session-user
+                                      (request dep-set-url)
+                                      ltu/body->edn
+                                      (ltu/is-status 200)
+                                      (ltu/is-operation-absent :edit)
+                                      (ltu/is-operation-absent :delete)
+                                      (ltu/is-operation-absent :start)
+                                      (ltu/is-operation-absent :stop)
+                                      (ltu/is-operation-absent :update)
+                                      (ltu/is-operation-present :cancel)
+                                      (ltu/get-op-url :cancel))]
+                (-> session-user
+                    (request cancel-op-url)
+                    ltu/body->edn
+                    (ltu/is-status 200))
 
-            (-> session-user
-                (request dep-set-url)
-                ltu/body->edn
-                (ltu/is-status 200)
-                (ltu/is-operation-present :edit)
-                (ltu/is-operation-absent :delete)
-                (ltu/is-operation-absent :start)
-                (ltu/is-operation-present :stop)
-                (ltu/is-operation-present :update)
-                (ltu/is-operation-absent :cancel)
-                (ltu/is-key-value :state dep-set-utils/state-partially-updated))
-            )
+                (-> session-user
+                    (request job-url)
+                    ltu/body->edn
+                    (ltu/is-status 200)
+                    (ltu/is-key-value :href :target-resource resource-id)
+                    (ltu/is-key-value :action "update_deployment_set")
+                    (ltu/is-key-value :state job-utils/state-canceled))
 
-          )
+                (-> session-user
+                    (request dep-set-url)
+                    ltu/body->edn
+                    (ltu/is-status 200)
+                    (ltu/is-operation-present :edit)
+                    (ltu/is-operation-absent :delete)
+                    (ltu/is-operation-absent :start)
+                    (ltu/is-operation-present :stop)
+                    (ltu/is-operation-present :update)
+                    (ltu/is-operation-absent :cancel)
+                    (ltu/is-key-value :state dep-set-utils/state-partially-updated))
+                ))))
 
         (testing "stop action will create a stop_deployment_set job"
           (let [stop-op-url (-> session-user

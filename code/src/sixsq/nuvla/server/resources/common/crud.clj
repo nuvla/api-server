@@ -208,12 +208,12 @@
 (def action-delete "delete")
 
 (defn set-standard-resource-operations
-  [{:keys [id] :as resource} {{:keys [action]} :params :as request}]
+  [{:keys [id] :as resource} request]
   (let [ops (cond-> []
                     (and (a/can-edit? resource request)
-                         (sm/can-do-action? resource action)) (conj (u/operation-map id action-edit))
+                         (sm/can-do-action? resource action-edit)) (conj (u/operation-map id action-edit))
                     (and (a/can-delete? resource request)
-                         (sm/can-do-action? resource action)) (conj (u/operation-map id action-delete)))]
+                         (sm/can-do-action? resource action-delete)) (conj (u/operation-map id action-delete)))]
     (if (seq ops)
       (assoc resource :operations ops)
       (dissoc resource :operations))))
