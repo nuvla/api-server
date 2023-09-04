@@ -40,9 +40,13 @@
     (some? (tk/transfers-to fsm action))
     true))
 
+(defn throw-action-not-allowed-in-state
+  [id action state]
+  (throw (r/ex-response (format "%s action is not allowed in state [%s]"
+                                action state id) 409 id)))
+
 (defn throw-can-not-do-action
   [{:keys [id state] :as resource} {{:keys [action]} :params :as _request}]
   (if (can-do-action? resource action)
     resource
-    (throw (r/ex-response (format "%s action is not allowed in state [%s]"
-                                  action state id) 409 id))))
+    (throw-action-not-allowed-in-state id action state)))

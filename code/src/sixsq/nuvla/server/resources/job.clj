@@ -177,15 +177,19 @@ request.
 (defmethod crud/do-action [resource-type utils/action-cancel]
   [{{uuid :uuid} :params :as request}]
   (try
-    (-> (str resource-type "/" uuid)
-        (db/retrieve request)
-        (a/throw-cannot-manage request)
-        (utils/cancel)
-        (u/update-timestamps)
-        (u/set-updated-by request)
-        (utils/job-cond->edition)
-        (crud/validate)
-        (db/edit {:nuvla/authn auth/internal-identity}))
+    (let [id       (str resource-type "/" uuid)
+          response (-> id
+                       (db/retrieve request)
+                       (a/throw-cannot-manage request)
+                       (utils/throw-cannot-cancel)
+                       (assoc :state utils/state-canceled)
+                       (u/update-timestamps)
+                       (u/set-updated-by request)
+                       (utils/job-cond->edition)
+                       (crud/validate)
+                       (db/edit {:nuvla/authn auth/internal-identity}))]
+      (log/warn "Canceled job : " id)
+      response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

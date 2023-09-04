@@ -4,6 +4,7 @@
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.server.resources.common.state-machine :as sm]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time]
     [sixsq.nuvla.server.util.zookeeper :as uzk]))
@@ -26,15 +27,13 @@
 
 (defn can-cancel?
   [{:keys [state] :as _resource}]
-  (= state state-queued))
+  (boolean (#{state-queued state-running} state)))
 
-(defn cancel
-  [{:keys [id] :as job}]
-  (if (can-cancel? job)
-    (do
-      (log/warn "Canceled job : " id)
-      (assoc job :state state-canceled))
-    job))
+(defn throw-cannot-cancel
+  [{:keys [id state] :as resource}]
+  (if (can-cancel? resource)
+    resource
+    (sm/throw-action-not-allowed-in-state id action-cancel state)))
 
 
 (defn add-job-to-queue

@@ -12,8 +12,6 @@
 (def action-stop "stop")
 (def action-update "update")
 (def action-cancel "cancel")
-(def action-edit "edit")
-(def action-delete "delete")
 (def action-ok "ok")
 (def action-nok "nok")
 (def action-force-delete "force-delete")
@@ -23,8 +21,6 @@
               action-stop
               action-update
               action-cancel
-              action-edit
-              action-delete
               action-ok
               action-nok
               action-force-delete
@@ -56,18 +52,18 @@
 (def state-machine
   {::tk/states [{::tk/name        state-new
                  ::tk/transitions [{::tk/on action-start, ::tk/to state-starting}
-                                   {::tk/on action-edit, ::tk/to tk/_}
-                                   {::tk/on action-delete, ::tk/to tk/_}]}
+                                   {::tk/on crud/action-edit, ::tk/to tk/_}
+                                   {::tk/on crud/action-delete, ::tk/to tk/_}]}
                 {::tk/name        state-starting
                  ::tk/transitions [{::tk/on action-cancel, ::tk/to state-partially-started}
                                    {::tk/on action-nok, ::tk/to state-partially-started}
                                    {::tk/on action-ok, ::tk/to state-started}]}
                 {::tk/name        state-started
-                 ::tk/transitions [{::tk/on action-edit, ::tk/to tk/_}
+                 ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
                                    {::tk/on action-update, ::tk/to state-updating}
                                    {::tk/on action-stop, ::tk/to state-stopping}]}
                 {::tk/name        state-started
-                 ::tk/transitions [{::tk/on action-edit, ::tk/to tk/_}
+                 ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
                                    {::tk/on action-update, ::tk/to state-updating}
                                    {::tk/on action-stop, ::tk/to state-stopping}]}
                 {::tk/name        state-stopping
@@ -80,22 +76,22 @@
                                    {::tk/on action-ok, ::tk/to state-updated}]}
                 {::tk/name        state-stopped
                  ::tk/transitions [{::tk/on action-start, ::tk/to state-starting}
-                                   {::tk/on action-edit, ::tk/to tk/_}
-                                   {::tk/on action-delete, ::tk/to tk/_}]}
+                                   {::tk/on crud/action-edit, ::tk/to tk/_}
+                                   {::tk/on crud/action-delete, ::tk/to tk/_}]}
                 {::tk/name        state-updated
-                 ::tk/transitions [{::tk/on action-edit, ::tk/to tk/_}
+                 ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
                                    {::tk/on action-update, ::tk/to state-updating}
                                    {::tk/on action-stop, ::tk/to state-stopping}]}
                 {::tk/name        state-partially-updated
-                 ::tk/transitions [{::tk/on action-edit, ::tk/to tk/_}
+                 ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
                                    {::tk/on action-update, ::tk/to state-updating}
                                    {::tk/on action-stop, ::tk/to state-stopping}]}
                 {::tk/name        state-partially-started
-                 ::tk/transitions [{::tk/on action-edit, ::tk/to tk/_}
+                 ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
                                    {::tk/on action-update, ::tk/to state-updating}
                                    {::tk/on action-stop, ::tk/to state-stopping}]}
                 {::tk/name        state-partially-stopped
-                 ::tk/transitions [{::tk/on action-edit, ::tk/to tk/_}
+                 ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
                                    {::tk/on action-force-delete, ::tk/to tk/_}
                                    {::tk/on action-start, ::tk/to state-starting}]}]
    ::tk/state  state-new})
