@@ -2,7 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.test :refer [deftest is use-fixtures testing]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -42,69 +42,69 @@
 
     (is (uzk/exists ju/locking-queue-path))
 
-    ;; anonymous create should fail
-    (-> session-anon
-        (request base-uri
-                 :request-method :post
-                 :body (json/write-str valid-job))
-        (ltu/body->edn)
-        (ltu/is-status 403))
+    (testing "anonymous create should fail"
+      (-> session-anon
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str valid-job))
+          (ltu/body->edn)
+          (ltu/is-status 403)))
 
-    ;; user create should fail
-    (-> session-user
-        (request base-uri
-                 :request-method :post
-                 :body (json/write-str valid-job))
-        (ltu/body->edn)
-        (ltu/is-status 403))
-
-    (let [uri            (-> session-admin
-                             (request base-uri
-                                      :request-method :post
-                                      :body (json/write-str valid-job))
-                             (ltu/body->edn)
-                             (ltu/is-status 201)
-                             (ltu/location))
-          abs-uri        (str p/service-context uri)]
-
+    (testing "user create should fail"
       (-> session-user
-          (request abs-uri)
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str valid-job))
           (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-operation-present :stop)
-          (ltu/is-key-value (fn [job] (some #(str/starts-with? % "/job/entries") job)) :tags true)
-          (ltu/is-key-value :state "QUEUED"))
+          (ltu/is-status 403)))
 
-      (-> session-user
-          (request "/api/job")
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/body))
+    (let [uri        (-> session-admin
+                         (request base-uri
+                                  :request-method :post
+                                  :body (json/write-str valid-job))
+                         (ltu/body->edn)
+                         (ltu/is-status 201)
+                         (ltu/location))
+          abs-uri    (str p/service-context uri)
+          cancel-url (-> session-user
+                         (request abs-uri)
+                         (ltu/body->edn)
+                         (ltu/is-status 200)
+                         (ltu/is-operation-present ju/action-cancel)
+                         (ltu/is-key-value (fn [job] (some #(str/starts-with? % "/job/entries") job)) :tags true)
+                         (ltu/is-key-value :state "QUEUED")
+                         (ltu/get-op-url ju/action-cancel))]
 
-      (-> session-admin
-          (request abs-uri :request-method :put
-                   :body (json/write-str {:state ju/state-running}))
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-key-value string? :started true))
-
-      ;; set state to a final state make progress to set 100 automatically and set duration
-      (-> session-admin
-          (request abs-uri :request-method :put
-                   :body (json/write-str {:state ju/state-success}))
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-key-value :progress 100)
-          (ltu/is-key-value nat-int? :duration true))
+      (testing "user can cancel a job"
+        (-> session-user
+            (request cancel-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-operation-absent ju/action-cancel)
+            (ltu/is-key-value :progress 100)
+            (ltu/is-key-value :state ju/state-canceled)
+            (ltu/is-key-value nil? :started true)))
 
       (-> session-admin
           (request abs-uri :request-method :delete)
           (ltu/body->edn)
           (ltu/is-status 200)))
 
-    (-> session-admin
-        (request base-uri
-                 :request-method :post
-                 :body (json/write-str (assoc valid-job :priority 50)))
-        (ltu/body->edn)
-        (ltu/is-status 201))))
+    (testing "Admin is able to create a job and set his priority"
+      (let [job-url (-> session-admin
+                        (request base-uri
+                                 :request-method :post
+                                 :body (json/write-str (assoc valid-job :priority 50)))
+                        (ltu/body->edn)
+                        (ltu/is-status 201)
+                        (ltu/location-url))]
+        (testing "Setting state to running will also set the started timestamp"
+          (-> session-admin
+             (request job-url :request-method :put
+                      :body (json/write-str {:state ju/state-running}))
+             (ltu/body->edn)
+             (ltu/is-status 200)
+             (ltu/is-operation-absent ju/action-cancel)
+              (ltu/is-key-value :state ju/state-running)
+              (ltu/is-key-value :progress 0)
+             (ltu/is-key-value string? :started true)))))))

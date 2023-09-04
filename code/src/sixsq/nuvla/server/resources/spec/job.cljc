@@ -4,17 +4,17 @@
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.common-operation :as common-operation]
     [sixsq.nuvla.server.resources.spec.core :as core]
+    [sixsq.nuvla.server.resources.job.utils :as utils]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
 (s/def ::state
-  (-> (st/spec #{"QUEUED" "RUNNING" "FAILED" "SUCCESS" "STOPPING" "STOPPED"})
+  (-> (st/spec (set utils/states))
       (assoc :name "state"
              :json-schema/type "string"
              :json-schema/description "job state"
-             :json-schema/value-scope {:values ["QUEUED" "RUNNING" "FAILED" "SUCCESS"
-                                                "STOPPING" "STOPPED"]}
+             :json-schema/value-scope {:values utils/states}
 
              :json-schema/order 20)))
 

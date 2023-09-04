@@ -8,25 +8,32 @@
     [sixsq.nuvla.server.util.time :as time]
     [sixsq.nuvla.server.util.zookeeper :as uzk]))
 
+(def state-queued "QUEUED")
 (def state-running "RUNNING")
 (def state-failed "FAILED")
-(def state-stopping "STOPPING")
-(def state-stopped "STOPPED")
+(def state-canceled "CANCELED")
 (def state-success "SUCCESS")
-(def state-queued "QUEUED")
+
+(def states [state-queued state-running state-failed state-canceled state-success])
+
+(def action-cancel "cancel")
+(def action-get-context "get-context")
 
 (def kazoo-queue-prefix "entry-")
 (def job-base-node "/job")
 (def locking-queue "/entries")
 (def locking-queue-path (str job-base-node locking-queue))
 
+(defn can-cancel?
+  [{:keys [state] :as _resource}]
+  (= state state-queued))
 
-(defn stop
-  [{state :state id :id :as job}]
-  (if (= state state-running)
+(defn cancel
+  [{:keys [id] :as job}]
+  (if (can-cancel? job)
     (do
-      (log/warn "Stopping job : " id)
-      (assoc job :state state-stopped))
+      (log/warn "Canceled job : " id)
+      (assoc job :state state-canceled))
     job))
 
 
@@ -44,13 +51,7 @@
 
 (defn is-final-state?
   [{:keys [state] :as _job}]
-  (contains? #{state-failed state-success} state))
-
-
-(defn should_insert_target-resource-in-affected-resources?
-  [{:keys [target-resource affected-resources] :as _job}]
-  (when target-resource
-    (not-any? #(= target-resource %) affected-resources)))
+  (contains? #{state-failed state-success state-canceled} state))
 
 
 (defn update-time-of-status-change
