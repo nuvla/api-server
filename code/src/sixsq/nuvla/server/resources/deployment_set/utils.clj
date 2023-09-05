@@ -17,6 +17,8 @@
 (def action-force-delete "force-delete")
 (def action-plan "plan")
 
+(def action-operational-status "operational-status")
+
 (def actions [action-start
               action-stop
               action-update
@@ -24,7 +26,8 @@
               action-ok
               action-nok
               action-force-delete
-              action-plan])
+              action-plan
+              action-operational-status])
 
 
 (def state-new "NEW")
@@ -53,47 +56,63 @@
   {::tk/states [{::tk/name        state-new
                  ::tk/transitions [{::tk/on action-start, ::tk/to state-starting}
                                    {::tk/on crud/action-edit, ::tk/to tk/_}
-                                   {::tk/on crud/action-delete, ::tk/to tk/_}]}
+                                   {::tk/on crud/action-delete, ::tk/to tk/_}
+                                   {::tk/on action-plan, ::tk/to tk/_}
+                                   {::tk/on action-operational-status, ::tk/to tk/_}]}
                 {::tk/name        state-starting
                  ::tk/transitions [{::tk/on action-cancel, ::tk/to state-partially-started}
                                    {::tk/on action-nok, ::tk/to state-partially-started}
-                                   {::tk/on action-ok, ::tk/to state-started}]}
+                                   {::tk/on action-ok, ::tk/to state-started}
+                                   {::tk/on action-plan, ::tk/to tk/_}
+                                   {::tk/on action-operational-status, ::tk/to tk/_}]}
                 {::tk/name        state-started
                  ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
                                    {::tk/on action-update, ::tk/to state-updating}
-                                   {::tk/on action-stop, ::tk/to state-stopping}]}
-                {::tk/name        state-started
-                 ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
-                                   {::tk/on action-update, ::tk/to state-updating}
-                                   {::tk/on action-stop, ::tk/to state-stopping}]}
+                                   {::tk/on action-stop, ::tk/to state-stopping}
+                                   {::tk/on action-plan, ::tk/to tk/_}
+                                   {::tk/on action-operational-status, ::tk/to tk/_}]}
                 {::tk/name        state-stopping
                  ::tk/transitions [{::tk/on action-cancel, ::tk/to state-partially-stopped}
                                    {::tk/on action-nok, ::tk/to state-partially-stopped}
-                                   {::tk/on action-ok, ::tk/to state-stopped}]}
+                                   {::tk/on action-ok, ::tk/to state-stopped}
+                                   {::tk/on action-plan, ::tk/to tk/_}
+                                   {::tk/on action-operational-status, ::tk/to tk/_}]}
                 {::tk/name        state-updating
                  ::tk/transitions [{::tk/on action-cancel, ::tk/to state-partially-updated}
                                    {::tk/on action-nok, ::tk/to state-partially-updated}
-                                   {::tk/on action-ok, ::tk/to state-updated}]}
+                                   {::tk/on action-ok, ::tk/to state-updated}
+                                   {::tk/on action-plan, ::tk/to tk/_}
+                                   {::tk/on action-operational-status, ::tk/to tk/_}]}
                 {::tk/name        state-stopped
                  ::tk/transitions [{::tk/on action-start, ::tk/to state-starting}
                                    {::tk/on crud/action-edit, ::tk/to tk/_}
-                                   {::tk/on crud/action-delete, ::tk/to tk/_}]}
+                                   {::tk/on crud/action-delete, ::tk/to tk/_}
+                                   {::tk/on action-plan, ::tk/to tk/_}
+                                   {::tk/on action-operational-status, ::tk/to tk/_}]}
                 {::tk/name        state-updated
                  ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
                                    {::tk/on action-update, ::tk/to state-updating}
-                                   {::tk/on action-stop, ::tk/to state-stopping}]}
+                                   {::tk/on action-stop, ::tk/to state-stopping}
+                                   {::tk/on action-plan, ::tk/to tk/_}
+                                   {::tk/on action-operational-status, ::tk/to tk/_}]}
                 {::tk/name        state-partially-updated
                  ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
                                    {::tk/on action-update, ::tk/to state-updating}
-                                   {::tk/on action-stop, ::tk/to state-stopping}]}
+                                   {::tk/on action-stop, ::tk/to state-stopping}
+                                   {::tk/on action-plan, ::tk/to tk/_}
+                                   {::tk/on action-operational-status, ::tk/to tk/_}]}
                 {::tk/name        state-partially-started
                  ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
                                    {::tk/on action-update, ::tk/to state-updating}
-                                   {::tk/on action-stop, ::tk/to state-stopping}]}
+                                   {::tk/on action-stop, ::tk/to state-stopping}
+                                   {::tk/on action-plan, ::tk/to tk/_}
+                                   {::tk/on action-operational-status, ::tk/to tk/_}]}
                 {::tk/name        state-partially-stopped
                  ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
                                    {::tk/on action-force-delete, ::tk/to tk/_}
-                                   {::tk/on action-start, ::tk/to state-starting}]}]
+                                   {::tk/on action-start, ::tk/to state-starting}
+                                   {::tk/on action-plan, ::tk/to tk/_}
+                                   {::tk/on action-operational-status, ::tk/to tk/_}]}]
    ::tk/state  state-new})
 
 (defn get-extra-operations

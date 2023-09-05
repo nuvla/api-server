@@ -101,4 +101,3 @@
       {:deployments-to-add    (deployments-to-add expected1 current1)
        :deployments-to-remove (deployments-to-remove expected1 current1)
        :deployments-to-update (deployments-to-update expected1 current1)})))
-
