@@ -106,6 +106,10 @@
   [nuvlabox]
   (u/is-state-within? #{state-new state-activated state-commissioned} nuvlabox))
 
+(defn set-default-heartbeat-interval
+  [nuvlabox]
+  (update nuvlabox :heartbeat-interval #(or % default-heartbeat-interval)))
+
 (defn update-last-heartbeat
   [nuvlabox]
   (assoc nuvlabox :last-heartbeat (time/now-str)))

@@ -1029,6 +1029,7 @@ particular NuvlaBox release.
       (-> (db/retrieve id request)
           (a/throw-cannot-manage request)
           (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
+          utils/set-default-heartbeat-interval
           utils/update-last-heartbeat
           utils/update-next-heartbeat
           u/update-timestamps
