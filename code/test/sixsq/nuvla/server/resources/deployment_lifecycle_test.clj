@@ -395,9 +395,11 @@
                         (ltu/is-status 200))
 
                     ;; try to stop the deployment and check the stop job was created
-                    (let [job-url (-> session-user
+                    (let [parent-job "job/foo"
+                          job-url (-> session-user
                                       (request stop-url
-                                               :request-method :post)
+                                               :request-method :post
+                                               :body (json/write-str {:parent-job parent-job}))
                                       (ltu/body->edn)
                                       (ltu/is-status 202)
                                       (ltu/location-url))]
@@ -407,6 +409,7 @@
                           (ltu/body->edn)
                           (ltu/is-status 200)
                           (ltu/is-key-value :state "QUEUED")
+                          (ltu/is-key-value :parent-job parent-job)
                           (ltu/is-key-value :action "stop_deployment")))
 
                     ;; verify that the state has been updated

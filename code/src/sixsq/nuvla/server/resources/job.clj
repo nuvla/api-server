@@ -208,11 +208,14 @@ request.
 ;;
 
 (defn create-job
-  [target-resource action acl & {:keys [priority affected-resources execution-mode payload]}]
+  [target-resource action acl & {:keys [priority affected-resources
+                                        execution-mode payload
+                                        parent-job]}]
   (let [job-map        (cond-> {:action          action
                                 :target-resource {:href target-resource}
                                 :acl             acl}
                                priority (assoc :priority priority)
+                               parent-job (assoc :parent-job parent-job)
                                affected-resources (assoc :affected-resources affected-resources)
                                execution-mode (assoc :execution-mode execution-mode)
                                payload (assoc :payload payload))
