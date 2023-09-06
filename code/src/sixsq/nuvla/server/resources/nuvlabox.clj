@@ -1032,7 +1032,7 @@ particular NuvlaBox release.
           utils/set-default-heartbeat-interval
           utils/update-last-heartbeat
           utils/update-next-heartbeat
-          u/update-timestamps
+          ;u/update-timestamps
           (utils/set-online-resource true)
           (db/edit request))
       (r/json-response {:jobs (utils/get-jobs id)}))

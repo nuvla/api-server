@@ -128,6 +128,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                                        (assoc :jobs jobs)
                                        (cond-> (contains? body :resources)
                                                (assoc :resources-prev (:resources current)))
+                                       (u/update-timestamps)
                                        (crud/validate))
           response                 (db/edit new-status request)]
       (status-utils/denormalize-changes-nuvlabox new-status)
