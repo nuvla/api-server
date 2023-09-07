@@ -431,13 +431,22 @@
                 (ltu/is-key-value :href :target-resource resource-id))))
 
         (testing "force state transition to simulate job action"
-          (-> session-user
-              (request dep-set-url)
+          (-> session-admin
+              (request (-> session-admin
+                           (request dep-set-url)
+                           ltu/body->edn
+                           (ltu/is-status 200)
+                           (ltu/is-operation-absent :edit)
+                           (ltu/is-operation-absent :delete)
+                           (ltu/is-operation-absent :start)
+                           (ltu/is-operation-absent :stop)
+                           (ltu/is-operation-absent :update)
+                           (ltu/is-operation-present :cancel)
+                           (ltu/is-operation-present :ok)
+                           (ltu/is-operation-present :nok)
+                           (ltu/get-op-url :ok)))
               ltu/body->edn
-              (ltu/is-status 200)
-              ltu/body
-              (assoc :state utils/state-started)
-              dep-set-utils/save-deployment-set)
+              (ltu/is-status 200))
           (-> session-user
               (request dep-set-url)
               ltu/body->edn
@@ -494,14 +503,22 @@
               (ltu/message-matches "edit action is not allowed in state [UPDATING]")))
 
         (testing "force state transition to simulate job action"
-          (-> session-user
-              (request dep-set-url)
+          (-> session-admin
+              (request (-> session-admin
+                           (request dep-set-url)
+                           ltu/body->edn
+                           (ltu/is-status 200)
+                           (ltu/is-operation-absent :edit)
+                           (ltu/is-operation-absent :delete)
+                           (ltu/is-operation-absent :start)
+                           (ltu/is-operation-absent :stop)
+                           (ltu/is-operation-absent :update)
+                           (ltu/is-operation-present :cancel)
+                           (ltu/is-operation-present :ok)
+                           (ltu/is-operation-present :nok)
+                           (ltu/get-op-url :ok)))
               ltu/body->edn
-              (ltu/is-status 200)
-              ltu/body
-              (assoc :state utils/state-updated)
-              dep-set-utils/save-deployment-set)
-
+              (ltu/is-status 200))
           (-> session-user
               (request dep-set-url)
               ltu/body->edn

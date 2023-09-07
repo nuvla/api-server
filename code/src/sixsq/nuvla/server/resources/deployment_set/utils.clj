@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.server.resources.deployment-set.utils
   (:require [clojure.string :as str]
+            [sixsq.nuvla.auth.acl-resource :as a]
             [sixsq.nuvla.auth.utils :as auth]
             [sixsq.nuvla.db.impl :as db]
             [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -17,7 +18,9 @@
 (def action-force-delete "force-delete")
 (def action-plan "plan")
 
-(def actions [action-start
+(def actions [crud/action-edit
+              crud/action-delete
+              action-start
               action-stop
               action-update
               action-cancel
@@ -49,58 +52,74 @@
              state-updating
              state-updated])
 
+(defn transition-ok
+  [to-state]
+  {::tk/on action-ok ::tk/to to-state ::tk/guards [sm/guard-is-admin?]})
+
+(defn transition-nok
+  [to-state]
+  {::tk/on action-nok ::tk/to to-state ::tk/guards [sm/guard-is-admin?]})
+
+(defn transition-cancel
+  [to-state]
+  {::tk/on action-cancel ::tk/to to-state ::tk/guards [sm/guard-can-manage?]})
+
+(def transition-start {::tk/on action-start ::tk/to state-starting ::tk/guards [sm/guard-can-manage?]})
+(def transition-update {::tk/on action-update ::tk/to state-updating ::tk/guards [sm/guard-can-manage?]})
+(def transition-stop {::tk/on action-stop ::tk/to state-stopping ::tk/guards [sm/guard-can-manage?]})
+(def transition-edit {::tk/on crud/action-edit ::tk/to tk/_ ::tk/guards [sm/guard-can-edit?]})
+(def transition-delete {::tk/on crud/action-delete ::tk/to tk/_ ::tk/guards [sm/guard-can-delete?]})
+(def transition-force-delete {::tk/on action-force-delete ::tk/to tk/_ ::tk/guards [sm/guard-can-delete?]})
+
 (def state-machine
   {::tk/states [{::tk/name        state-new
-                 ::tk/transitions [{::tk/on action-start, ::tk/to state-starting}
-                                   {::tk/on crud/action-edit, ::tk/to tk/_}
-                                   {::tk/on crud/action-delete, ::tk/to tk/_}]}
+                 ::tk/transitions [transition-start
+                                   transition-edit
+                                   transition-delete]}
                 {::tk/name        state-starting
-                 ::tk/transitions [{::tk/on action-cancel, ::tk/to state-partially-started}
-                                   {::tk/on action-nok, ::tk/to state-partially-started}
-                                   {::tk/on action-ok, ::tk/to state-started}]}
+                 ::tk/transitions [(transition-cancel state-partially-started)
+                                   (transition-nok state-partially-started)
+                                   (transition-ok state-started)]}
                 {::tk/name        state-started
-                 ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
-                                   {::tk/on action-update, ::tk/to state-updating}
-                                   {::tk/on action-stop, ::tk/to state-stopping}]}
-                {::tk/name        state-started
-                 ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
-                                   {::tk/on action-update, ::tk/to state-updating}
-                                   {::tk/on action-stop, ::tk/to state-stopping}]}
-                {::tk/name        state-stopping
-                 ::tk/transitions [{::tk/on action-cancel, ::tk/to state-partially-stopped}
-                                   {::tk/on action-nok, ::tk/to state-partially-stopped}
-                                   {::tk/on action-ok, ::tk/to state-stopped}]}
-                {::tk/name        state-updating
-                 ::tk/transitions [{::tk/on action-cancel, ::tk/to state-partially-updated}
-                                   {::tk/on action-nok, ::tk/to state-partially-updated}
-                                   {::tk/on action-ok, ::tk/to state-updated}]}
-                {::tk/name        state-stopped
-                 ::tk/transitions [{::tk/on action-start, ::tk/to state-starting}
-                                   {::tk/on crud/action-edit, ::tk/to tk/_}
-                                   {::tk/on crud/action-delete, ::tk/to tk/_}]}
-                {::tk/name        state-updated
-                 ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
-                                   {::tk/on action-update, ::tk/to state-updating}
-                                   {::tk/on action-stop, ::tk/to state-stopping}]}
-                {::tk/name        state-partially-updated
-                 ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
-                                   {::tk/on action-update, ::tk/to state-updating}
-                                   {::tk/on action-stop, ::tk/to state-stopping}]}
+                 ::tk/transitions [transition-edit
+                                   transition-update
+                                   transition-stop]}
                 {::tk/name        state-partially-started
-                 ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
-                                   {::tk/on action-update, ::tk/to state-updating}
-                                   {::tk/on action-stop, ::tk/to state-stopping}]}
+                 ::tk/transitions [transition-edit
+                                   transition-update
+                                   transition-stop]}
+                {::tk/name        state-stopping
+                 ::tk/transitions [(transition-cancel state-partially-stopped)
+                                   (transition-nok state-partially-stopped)
+                                   (transition-ok state-stopped)]}
+                {::tk/name        state-stopped
+                 ::tk/transitions [transition-start
+                                   transition-edit
+                                   transition-delete]}
                 {::tk/name        state-partially-stopped
-                 ::tk/transitions [{::tk/on crud/action-edit, ::tk/to tk/_}
-                                   {::tk/on action-force-delete, ::tk/to tk/_}
-                                   {::tk/on action-start, ::tk/to state-starting}]}]
+                 ::tk/transitions [transition-edit
+                                   transition-force-delete
+                                   transition-start]}
+                {::tk/name        state-updating
+                 ::tk/transitions [(transition-cancel state-partially-updated)
+                                   (transition-nok state-partially-updated)
+                                   (transition-ok state-updated)]}
+                {::tk/name        state-updated
+                 ::tk/transitions [transition-edit
+                                   transition-update
+                                   transition-stop]}
+                {::tk/name        state-partially-updated
+                 ::tk/transitions [transition-edit
+                                   transition-update
+                                   transition-stop]}]
+   ::tk/guard? sm/guard?
    ::tk/state  state-new})
 
-(defn get-extra-operations
-  [{:keys [id] :as resource}]
+(defn get-operations
+  [{:keys [id] :as resource} request]
   (->> actions
        (map (fn [action]
-              (when (sm/can-do-action? resource action)
+              (when (sm/can-do-action? action resource request)
                 (u/action-map id action))))
        (remove nil?)))
 

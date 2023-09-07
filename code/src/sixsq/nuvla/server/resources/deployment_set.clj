@@ -122,12 +122,12 @@ These resources represent a deployment set that regroups deployments.
       (utils/action-job-name action) id authn-info acl payload)))
 
 (defn standard-action
-  [{{uuid :uuid action :action} :params :as request} f]
+  [{{uuid :uuid} :params :as request} f]
   (let [id       (str resource-type "/" uuid)
         resource (-> (crud/retrieve-by-id-as-admin id)
                      (a/throw-cannot-manage request)
                      (sm/throw-can-not-do-action request)
-                     (sm/transition action)
+                     (sm/transition request)
                      utils/save-deployment-set
                      :body)]
     (f resource request)))
@@ -154,6 +154,16 @@ These resources represent a deployment set that regroups deployments.
 (defmethod crud/do-action [resource-type utils/action-stop]
   [request]
   (standard-action request action-bulk))
+
+(defmethod crud/do-action [resource-type utils/action-ok]
+  [request]
+  (standard-action request (fn [_resource _request]
+                             (r/map-response "running action done" 200))))
+
+(defmethod crud/do-action [resource-type utils/action-nok]
+  [request]
+  (standard-action request (fn [_resource _request]
+                             (r/map-response "running action failed" 200))))
 
 (defn cancel-latest-job
   [{:keys [id] :as _resource} _request]
@@ -267,12 +277,9 @@ These resources represent a deployment set that regroups deployments.
 
 (defmethod crud/set-operations resource-type
   [resource request]
-  (let [can-manage? (a/can-manage? resource request)
-        operations  (if can-manage?
-                      (utils/get-extra-operations resource)
-                      [])]
-    (cond-> (crud/set-standard-operations resource request)
-            (seq operations) (update :operations concat operations))))
+  (if-let [operations (seq (utils/get-operations resource request))]
+    (assoc resource :operations operations)
+    resource))
 
 ;;
 ;; initialization
