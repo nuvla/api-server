@@ -18,9 +18,9 @@
 
 
 (defn update-app?
-  [{{v1 :version env1 :environmental-variables} :application :as _deployment1}
-   {{v2 :version env2 :environmental-variables} :application :as _deployment2}]
-  (or (not= v1 v2) (not= env1 env2)))
+  [{{v1 :version env1 :environmental-variables} :application :as _expected-deployment}
+   {{v2 :version env2 :environmental-variables} :application :keys [state] :as _current-deployment}]
+  (or (not= v1 v2) (not= env1 env2) (not= "STARTED" state)))
 
 
 (defn deployments-to-update
@@ -28,9 +28,9 @@
   (->> expected
        (keep (fn [[k d]]
                (when-let [current-deployment (get current k)]
-                 (when (update-app? current-deployment d)
-                   [(:id current-deployment) current-deployment]))))
-       (into {})))
+                 (when (update-app? d current-deployment)
+                   [current-deployment d]))))
+       set))
 
 
 (defn index-by
@@ -74,7 +74,8 @@
    A map with the following keys is returned:
    - `:deployments-to-add` is the set of deployments to be added;
    - `:deployments-to-remove` is the set of deployment ids to be removed;
-   - `:deployments-to-update` is a map from deployment id to updated definition of the deployments to update.\n
+   - `:deployments-to-update` is a set of pairs of current deployment and desired deployment for deployments that
+      already exist but need to be updated.\n
    For example:
    ```
    {:deployments-to-add #{{:app-set     \"set-1\"
@@ -84,13 +85,22 @@
                                          :version                 1}
                            :target      \"credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316\"}}
     :deployments-to-remove #{\"id1\" \"id2\" \"id3\"}
-    :deployments-to-update {\"id4\" {:app-set     \"set-1\"
-                                     :application {:environmental-variables [{:name  \"var_1\" :value \"val1\"}
-                                                                             {:name  \"var_2\" :value \"val2\"}]
-                                                   :id                      \"module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8\"
-                                                   :version                 1}
-                                     :target      \"credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316\"}}
-                             \"id5\" ...}
+    :deployments-to-update #{[{:id          \"12345\"
+                               :state       \"STARTING\"
+                               :app-set     \"set-1\"
+                               :application {:environmental-variables [{:name  \"var_1\" :value \"val1\"}
+                                                                       {:name  \"var_2\" :value \"val2\"}]
+                                             :id                      \"module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8\"
+                                             :version                 1}
+                               :target      \"credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316\"}}
+                              {:app-set     \"set-1\"
+                               :application {:environmental-variables [{:name  \"var_1\" :value \"val1\"}
+                                                                       {:name  \"var_2\" :value \"val2\"}]
+                                             :id                      \"module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8\"
+                                             :version                 1}
+                              :target      \"credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316\"}}
+                             ....
+                             [...]}
    }
    ```
   "

@@ -167,14 +167,13 @@ These resources represent a deployment set that regroups deployments.
 
 (defmethod crud/do-action [resource-type utils/action-operational-status]
   [request]
-  (let [deployment-set    (load-resource-throw-not-allowed-action request)
+  (let [deployment-set (load-resource-throw-not-allowed-action request)
         applications-sets (-> deployment-set
                               utils/get-applications-sets-href
                               (crud/get-resource-throw-nok request))
-        ;TODO _ (current-state)
         divergence        (os/divergence-map
                             (utils/plan deployment-set applications-sets)
-                            nil)
+                            (utils/current-state deployment-set applications-sets))
         status            (if (some (comp pos? count) (vals divergence))
                             "NOK"
                             "OK")]

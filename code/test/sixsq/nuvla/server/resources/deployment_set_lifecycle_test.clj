@@ -34,9 +34,8 @@
 (def dep-apps-sets [{:id      "module/ff0e0e39-4c22-411b-8c39-868aa50da1f5",
                      :version 11,
                      :overwrites
-                     [{:targets
-                       ["credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"
-                        "credential/bc258c46-4771-45d3-9b38-97afdf185f44"],
+                     [{:targets ["credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"
+                                 "credential/bc258c46-4771-45d3-9b38-97afdf185f44"]
                        :applications
                        [{:id      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8",
                          :version 1,
@@ -127,9 +126,8 @@
    :subtype                   "applications_sets"})
 
 
-(def app-set-dep-set {:targets
-                      ["credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"
-                       "credential/bc258c46-4771-45d3-9b38-97afdf185f44"],
+(def app-set-dep-set {:targets ["credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"
+                                "credential/bc258c46-4771-45d3-9b38-97afdf185f44"]
                       :applications
                       [{:id      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8",
                         :version 1,
@@ -243,9 +241,8 @@
           {}])))
 
 (deftest dep-set-utils_get-targets
-  (is (= (utils/app-set-targets app-set-dep-set)
-         ["credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"
-          "credential/bc258c46-4771-45d3-9b38-97afdf185f44"])))
+  (is (= (utils/app-set-targets app-set-dep-set) ["credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"
+                                                  "credential/bc258c46-4771-45d3-9b38-97afdf185f44"])))
 
 (deftest dep-set-utils_get-applications
   (is (= (utils/app-set-applications {}) []))
@@ -256,6 +253,7 @@
                                       :value "overwritten in deployment set"}]
            :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
            :version                 1}])))
+
 
 (deftest lifecycle
   (let [session-anon  (-> (ltu/ring-app)
@@ -399,61 +397,71 @@
 
         ;; Deployment set operational status lifecycle test
 
-        (testing "user should be able to call operational-status NOK"
-          (with-redefs [crud/get-resource-throw-nok
-                        (constantly u-applications-sets-v11)]
-            (-> session-user
-                (request (-> session-user
-                             (request dep-set-url)
-                             (ltu/body->edn)
-                             (ltu/is-status 200)
-                             (ltu/get-op-url utils/action-operational-status)))
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-key-value :status "NOK")
-                (ltu/is-key-value count :deployments-to-add 8)
-                (ltu/is-key-value count :deployments-to-remove 0)
-                (ltu/is-key-value count :deployments-to-update 0))))
+        (testing "operational-status"
+          (testing "user should be able to call operational-status NOK"
+            (with-redefs [crud/get-resource-throw-nok
+                          (constantly u-applications-sets-v11)]
+              (-> session-user
+                  (request (-> session-user
+                               (request dep-set-url)
+                               (ltu/body->edn)
+                               (ltu/is-status 200)
+                               (ltu/get-op-url utils/action-operational-status)))
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/is-key-value :status "NOK")
+                  (ltu/is-key-value count :deployments-to-add 8)
+                  (ltu/is-key-value count :deployments-to-remove 0)
+                  (ltu/is-key-value count :deployments-to-update 0))))
 
-        (testing "create deployments or redefs of get-deployments"
+          (let [plan             (utils/plan u-deployment-set u-applications-sets-v11)
+                fake-deployment  (fn [{:keys [target] {app-id :id app-ver :version :keys [environmental-variables]} :application}]
+                                   {:id                  (u/random-uuid)
+                                    :parent              target
+                                    :state               "STARTED"
+                                    :module              {:content       {:environmental-variables environmental-variables}
+                                                          :published     true
+                                                          :id            app-id
+                                                          :href          (cond-> app-id (pos? app-ver) (str "_" app-ver))
+                                                          :resource-type "module"
+                                                          :subtype       "application"}
+                                    :deployment-set      resource-id
+                                    :deployment-set-name "Test Deployment Set"})
+                fake-deployments (map fake-deployment plan)]
 
-          )
+            (testing "user should be able to call operational-status"
+              (with-redefs [utils/current-deployments
+                            (constantly fake-deployments)
+                            crud/get-resource-throw-nok
+                            (constantly u-applications-sets-v11)]
+                (-> session-user
+                    (request (-> session-user
+                                 (request dep-set-url)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/get-op-url utils/action-operational-status)))
+                    (ltu/body->edn)
+                    (ltu/is-status 200)
+                    (ltu/is-key-value :status "OK")
+                    (ltu/is-key-value :deployments-to-add nil)
+                    (ltu/is-key-value :deployments-to-remove nil)
+                    (ltu/is-key-value :deployments-to-update nil))))
 
-        (testing "user should be able to call operational-status"
-          (with-redefs [crud/get-resource-throw-nok
-                        (constantly u-applications-sets-v11)]
-            (-> session-user
-                (request (-> session-user
-                             (request dep-set-url)
-                             (ltu/body->edn)
-                             (ltu/is-status 200)
-                             (ltu/get-op-url utils/action-operational-status)))
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-key-value :status "OK")
-                (ltu/is-key-value :deployments-to-add nil)
-                (ltu/is-key-value :deployments-to-remove nil)
-                (ltu/is-key-value :deployments-to-update nil))))
-
-
-        (testing "delete a deployment or redefs of get-deployments"
-
-          )
-
-        (testing "user should be able to call operational-status and see a divergence"
-          (with-redefs [crud/get-resource-throw-nok
-                        (constantly u-applications-sets-v11)]
-            (-> session-user
-                (request (-> session-user
-                             (request dep-set-url)
-                             (ltu/body->edn)
-                             (ltu/is-status 200)
-                             (ltu/get-op-url utils/action-operational-status)))
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-key-value :status "OK")
-                (ltu/is-key-value :deployments-to-add [#_deployment-deleted]))))
-
+            (testing "delete a deployment: user should be able to call operational-status and see a divergence"
+              (with-redefs [utils/current-deployments
+                            (constantly (drop 1 fake-deployments))
+                            crud/get-resource-throw-nok
+                            (constantly u-applications-sets-v11)]
+                (-> session-user
+                    (request (-> session-user
+                                 (request dep-set-url)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/get-op-url utils/action-operational-status)))
+                    (ltu/body->edn)
+                    (ltu/is-status 200)
+                    (ltu/is-key-value :status "NOK")
+                    (ltu/is-key-value :deployments-to-add [(first plan)]))))))
 
 
         (testing "update action will create a update_deployment_set job"

@@ -63,6 +63,20 @@
        (map set-random-deployment-id)
        set))
 
+
+(defn set-deployment-state
+  [{:keys [state] :as deployment} new-state]
+  (cond-> deployment
+          (nil? state) (assoc :state new-state)))
+
+
+(defn set-deployment-states
+  [deployments state]
+  (->> deployments
+       (map #(set-deployment-state % state))
+       set))
+
+
 ;;
 ;; Extra deployment
 ;;
@@ -84,13 +98,20 @@
   (-> deployment1
       (update-in [:application :environmental-variables]
                  (constantly app1-env-vars*))
-      set-random-deployment-id))
+      set-random-deployment-id
+      (set-deployment-state "STARTED")))
 
 (def deployment2*
   (-> deployment2
       (update-in [:application :version] inc)
-      set-random-deployment-id))
+      set-random-deployment-id
+      (set-deployment-state "STARTED")))
 
+(def deployment2**
+  (-> deployment2
+      set-random-deployment-id
+      (set-deployment-state (rand-nth ["CREATED", "STARTING", "STOPPING", "STOPPED", "PAUSING", "PAUSED",
+                                       "SUSPENDING", "SUSPENDED", "UPDATING", "UPDATED", "PENDING", "ERROR"]))))
 
 ;;
 ;; Current deployment configurations
@@ -100,35 +121,47 @@
 ;; * suffix indicates updated deployment    (with respect to expected)
 ;;
 
+(defn ->current
+  "Converts an expected deployment entry to a current deployment entry
+   by adding `id` and state keys."
+  [deployments]
+  (-> deployments
+      set-random-deployment-ids
+      (set-deployment-states "STARTED")))
+
+
 (def =expected
-  (set-random-deployment-ids expected))
+  (->current expected))
 
 
 (def extra-deployment+
   (-> #{deployment1 deployment2 deployment3 extra-deployment}
-      set-random-deployment-ids))
+      ->current))
 
 
 (def deployment1*_deployment2*
   (->> #{deployment1* deployment2* deployment3}
-       set-random-deployment-ids))
+       ->current))
 
+(def deployment1*_deployment2**
+  (->> #{deployment1* deployment2** deployment3}
+       ->current))
 
 (def deployment1-_extra-deployment+
   (-> #{deployment2 deployment3 extra-deployment}
-      set-random-deployment-ids))
+      ->current))
 
 (def deployment1-_deployment2*
   (->> #{deployment2* deployment3}
-       set-random-deployment-ids))
+       ->current))
 
 (def deployment2*_extra-deployment+
   (-> #{deployment1 deployment2* deployment3 extra-deployment}
-      set-random-deployment-ids))
+      ->current))
 
 (def deployment1-_deployment2*_extra-deployment+
   (-> #{deployment2* deployment3 extra-deployment}
-      set-random-deployment-ids))
+      ->current))
 
 
 ;;
@@ -146,22 +179,23 @@
     (is (= {:deployments-to-remove #{extra-deployment-id}}
            (t/divergence-map expected extra-deployment+))))
   (testing "Some deployments need to be updated"
-    (is (= {:deployments-to-update {(:id deployment1*) deployment1*
-                                    (:id deployment2*) deployment2*}}
-           (t/divergence-map expected deployment1*_deployment2*))))
+    (is (= {:deployments-to-update #{[deployment1* deployment1]
+                                     [deployment2* deployment2]}}
+           (t/divergence-map expected deployment1*_deployment2*)))
+    (is (= {:deployments-to-update #{[deployment1* deployment1]
+                                     [deployment2** deployment2]}}
+           (t/divergence-map expected deployment1*_deployment2**))))
   (testing "More combinations"
     (is (= {:deployments-to-add    #{deployment1}
             :deployments-to-remove #{extra-deployment-id}}
            (t/divergence-map expected deployment1-_extra-deployment+)))
     (is (= {:deployments-to-add    #{deployment1}
-            :deployments-to-update {(:id deployment2*) deployment2*}}
+            :deployments-to-update #{[deployment2* deployment2]}}
            (t/divergence-map expected deployment1-_deployment2*)))
     (is (= {:deployments-to-remove #{extra-deployment-id}
-            :deployments-to-update {(:id deployment2*) deployment2*}}
+            :deployments-to-update #{[deployment2* deployment2]}}
            (t/divergence-map expected deployment2*_extra-deployment+)))
     (is (= {:deployments-to-add    #{deployment1}
             :deployments-to-remove #{extra-deployment-id}
-            :deployments-to-update {(:id deployment2*) deployment2*}}
+            :deployments-to-update #{[deployment2* deployment2]}}
            (t/divergence-map expected deployment1-_deployment2*_extra-deployment+)))))
-
-

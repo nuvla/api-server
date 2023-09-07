@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.deployment-set.utils
   (:require [clojure.string :as str]
             [sixsq.nuvla.auth.utils :as auth]
+            [sixsq.nuvla.db.filter.parser :as parser]
             [sixsq.nuvla.db.impl :as db]
             [sixsq.nuvla.server.resources.common.crud :as crud]
             [sixsq.nuvla.server.resources.common.state-machine :as sm]
@@ -233,3 +234,30 @@
     (mapcat plan-set
             (module-utils/get-applications-sets applications-sets)
             (get-applications-sets deployment-set))))
+
+(defn current-deployments
+  [deployment-set-id]
+  (let [filter-req (str "deployment-set='" deployment-set-id "'")
+        options    {:cimi-params {:filter (parser/parse-cimi-filter filter-req)
+                                  :select ["id" "module" "nuvlabox" "parent" "state"]
+                                  :last   10000}}]
+    (second (crud/query-as-admin "deployment" options))))
+
+
+(defn current-state
+  [{:keys [id] :as _deployment-set} application-sets]
+  (let [deployments  (current-deployments id)
+        app-set-name (-> application-sets
+                         module-utils/get-applications-sets
+                         first
+                         :name)]
+    (for [{:keys [nuvlabox parent state] deployment-id :id {application-href :href {:keys [environmental-variables]} :content} :module} deployments
+          :let [[_ app-id app-version] (re-matches #"([^_]+)(?:_(.*))?" application-href)]]
+      {:id          deployment-id
+       :app-set     app-set-name
+       :application (cond-> {:id      app-id
+                             :version (or (some-> app-version Integer/parseInt) 0)}
+                            (seq environmental-variables)
+                            (assoc :environmental-variables environmental-variables))
+       :target      (or nuvlabox parent)
+       :state       state})))
