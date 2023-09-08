@@ -1,13 +1,13 @@
 (ns sixsq.nuvla.server.resources.deployment-set.utils
   (:require [clojure.string :as str]
-            [sixsq.nuvla.auth.acl-resource :as a]
             [sixsq.nuvla.auth.utils :as auth]
+            [sixsq.nuvla.db.filter.parser :as parser]
             [sixsq.nuvla.db.impl :as db]
             [sixsq.nuvla.server.resources.common.crud :as crud]
             [sixsq.nuvla.server.resources.common.state-machine :as sm]
             [sixsq.nuvla.server.resources.common.utils :as u]
-            [tilakone.core :as tk]
-            [sixsq.nuvla.server.resources.module.utils :as module-utils]))
+            [sixsq.nuvla.server.resources.module.utils :as module-utils]
+            [tilakone.core :as tk]))
 
 (def action-start "start")
 (def action-stop "stop")
@@ -17,6 +17,7 @@
 (def action-nok "nok")
 (def action-force-delete "force-delete")
 (def action-plan "plan")
+(def action-operational-status "operational-status")
 
 (def actions [crud/action-edit
               crud/action-delete
@@ -27,7 +28,8 @@
               action-ok
               action-nok
               action-force-delete
-              action-plan])
+              action-plan
+              action-operational-status])
 
 
 (def state-new "NEW")
@@ -70,48 +72,70 @@
 (def transition-edit {::tk/on crud/action-edit ::tk/to tk/_ ::tk/guards [sm/guard-can-edit?]})
 (def transition-delete {::tk/on crud/action-delete ::tk/to tk/_ ::tk/guards [sm/guard-can-delete?]})
 (def transition-force-delete {::tk/on action-force-delete ::tk/to tk/_ ::tk/guards [sm/guard-can-delete?]})
+(def transition-plan {::tk/on action-plan ::tk/to tk/_ ::tk/guards [sm/guard-can-manage?]})
+(def transition-operational-status {::tk/on action-operational-status ::tk/to tk/_ ::tk/guards [sm/guard-can-manage?]})
 
 (def state-machine
   {::tk/states [{::tk/name        state-new
                  ::tk/transitions [transition-start
                                    transition-edit
-                                   transition-delete]}
+                                   transition-delete
+                                   transition-plan
+                                   transition-operational-status]}
                 {::tk/name        state-starting
                  ::tk/transitions [(transition-cancel state-partially-started)
                                    (transition-nok state-partially-started)
-                                   (transition-ok state-started)]}
+                                   (transition-ok state-started)
+                                   transition-plan
+                                   transition-operational-status]}
                 {::tk/name        state-started
                  ::tk/transitions [transition-edit
                                    transition-update
-                                   transition-stop]}
+                                   transition-stop
+                                   transition-plan
+                                   transition-operational-status]}
                 {::tk/name        state-partially-started
                  ::tk/transitions [transition-edit
                                    transition-update
-                                   transition-stop]}
+                                   transition-stop
+                                   transition-plan
+                                   transition-operational-status]}
                 {::tk/name        state-stopping
                  ::tk/transitions [(transition-cancel state-partially-stopped)
                                    (transition-nok state-partially-stopped)
-                                   (transition-ok state-stopped)]}
+                                   (transition-ok state-stopped)
+                                   transition-plan
+                                   transition-operational-status]}
                 {::tk/name        state-stopped
                  ::tk/transitions [transition-start
                                    transition-edit
-                                   transition-delete]}
+                                   transition-delete
+                                   transition-plan
+                                   transition-operational-status]}
                 {::tk/name        state-partially-stopped
                  ::tk/transitions [transition-edit
                                    transition-force-delete
-                                   transition-start]}
+                                   transition-start
+                                   transition-plan
+                                   transition-operational-status]}
                 {::tk/name        state-updating
                  ::tk/transitions [(transition-cancel state-partially-updated)
                                    (transition-nok state-partially-updated)
-                                   (transition-ok state-updated)]}
+                                   (transition-ok state-updated)
+                                   transition-plan
+                                   transition-operational-status]}
                 {::tk/name        state-updated
                  ::tk/transitions [transition-edit
                                    transition-update
-                                   transition-stop]}
+                                   transition-stop
+                                   transition-plan
+                                   transition-operational-status]}
                 {::tk/name        state-partially-updated
                  ::tk/transitions [transition-edit
                                    transition-update
-                                   transition-stop]}]
+                                   transition-stop
+                                   transition-plan
+                                   transition-operational-status]}]
    ::tk/guard? sm/guard?
    ::tk/state  state-new})
 
@@ -209,27 +233,34 @@
 
 (defn plan
   [deployment-set applications-sets]
-  ;; plan what to create
-  ;; get existing deployments
-  ;; diff to extract list of action to get to the plan
-
-  ;; idea for difference algorithm
-  #_(let [uno #{{:app-set     "set-1"
-                 :application {:id      "module/fcc71f74-1898-4e38-a284-5997141801a7"
-                               :version 0}
-                 :credential  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
-                {:app-set     "set-2"
-                 :application {:id      "module/fcc71f74-1898-4e38-a284-5997141801a7"
-                               :version 0}
-                 :credential  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}}
-          dos #{{:app-set     "set-2"
-                 :application {:id      "module/fcc71f74-1898-4e38-a284-5997141801a7"
-                               :version 0}
-                 :credential  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}}
-          ]
-      (clojure.data/diff uno dos))
-
   (set
     (mapcat plan-set
             (module-utils/get-applications-sets applications-sets)
             (get-applications-sets deployment-set))))
+
+(defn current-deployments
+  [deployment-set-id]
+  (let [filter-req (str "deployment-set='" deployment-set-id "'")
+        options    {:cimi-params {:filter (parser/parse-cimi-filter filter-req)
+                                  :select ["id" "module" "nuvlabox" "parent" "state"]
+                                  :last   10000}}]
+    (second (crud/query-as-admin "deployment" options))))
+
+
+(defn current-state
+  [{:keys [id] :as _deployment-set} application-sets]
+  (let [deployments  (current-deployments id)
+        app-set-name (-> application-sets
+                         module-utils/get-applications-sets
+                         first
+                         :name)]
+    (for [{:keys [nuvlabox parent state] deployment-id :id {application-href :href {:keys [environmental-variables]} :content} :module} deployments
+          :let [[_ app-id app-version] (re-matches #"([^_]+)(?:_(.*))?" application-href)]]
+      {:id          deployment-id
+       :app-set     app-set-name
+       :application (cond-> {:id      app-id
+                             :version (or (some-> app-version Integer/parseInt) 0)}
+                            (seq environmental-variables)
+                            (assoc :environmental-variables environmental-variables))
+       :target      (or nuvlabox parent)
+       :state       state})))

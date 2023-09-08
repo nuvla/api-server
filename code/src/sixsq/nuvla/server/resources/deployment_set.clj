@@ -9,13 +9,14 @@ These resources represent a deployment set that regroups deployments.
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.job.utils :as job-utils]
     [sixsq.nuvla.server.resources.common.state-machine :as sm]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.deployment-set.operational-status :as os]
     [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
+    [sixsq.nuvla.server.resources.job.utils :as job-utils]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment-set :as spec]
@@ -121,27 +122,43 @@ These resources represent a deployment set that regroups deployments.
     (std-crud/create-bulk-job
       (utils/action-job-name action) id authn-info acl payload)))
 
+(defn load-resource-throw-not-allowed-action
+  [{{:keys [uuid]} :params :as request}]
+  (-> (str resource-type "/" uuid)
+      crud/retrieve-by-id-as-admin
+      (a/throw-cannot-manage request)
+      (sm/throw-can-not-do-action request)))
+
 (defn standard-action
-  [{{uuid :uuid} :params :as request} f]
-  (let [id       (str resource-type "/" uuid)
-        resource (-> (crud/retrieve-by-id-as-admin id)
-                     (a/throw-cannot-manage request)
-                     (sm/throw-can-not-do-action request)
+  [request f]
+  (let [resource (-> request
+                     load-resource-throw-not-allowed-action
                      (sm/transition request)
                      utils/save-deployment-set
                      :body)]
     (f resource request)))
 
 (defmethod crud/do-action [resource-type utils/action-plan]
-  [{{uuid :uuid} :params :as request}]
-  (let [id                (str resource-type "/" uuid)
-        deployment-set    (-> id
-                              crud/retrieve-by-id-as-admin
-                              (a/throw-cannot-manage request))
+  [request]
+  (let [deployment-set    (load-resource-throw-not-allowed-action request)
         applications-sets (-> deployment-set
                               utils/get-applications-sets-href
                               (crud/get-resource-throw-nok request))]
     (r/json-response (utils/plan deployment-set applications-sets))))
+
+(defmethod crud/do-action [resource-type utils/action-operational-status]
+  [request]
+  (let [deployment-set (load-resource-throw-not-allowed-action request)
+        applications-sets (-> deployment-set
+                              utils/get-applications-sets-href
+                              (crud/get-resource-throw-nok request))
+        divergence        (os/divergence-map
+                            (utils/plan deployment-set applications-sets)
+                            (utils/current-state deployment-set applications-sets))
+        status            (if (some (comp pos? count) (vals divergence))
+                            "NOK"
+                            "OK")]
+    (r/json-response (assoc divergence :status status))))
 
 (defmethod crud/do-action [resource-type utils/action-start]
   [request]
