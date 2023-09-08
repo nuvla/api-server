@@ -321,6 +321,14 @@
 
     :json-schema/section "meta"))
 
+(s/def ::app-set
+  (assoc (st/spec string?)
+    :name "app set"
+    :json-schema/type "string"
+    :json-schema/description "app set name"
+
+    :json-schema/section "meta"))
+
 (def deployment-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::module
@@ -339,6 +347,7 @@
                                   ::infrastructure-service-name
                                   ::deployment-set
                                   ::deployment-set-name
+                                  ::app-set
                                   ::data-objects            ;; deprecated
                                   ::data-records            ;; deprecated
                                   ::data-records-filter     ;; deprecated

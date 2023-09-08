@@ -327,7 +327,7 @@
               (ltu/is-operation-present utils/action-operational-status)
               (ltu/is-key-value :applications-sets dep-apps-sets)))
 
-        (testing "start action will create a start_deployment_set job"
+        (testing "start action will create a bulk_deployment_set_start job"
           (let [start-op-url  (-> session-user
                                   (request dep-set-url)
                                   ltu/body->edn
@@ -361,7 +361,7 @@
                 (request start-job-url)
                 ltu/body->edn
                 (ltu/is-status 200)
-                (ltu/is-key-value :action "start_deployment_set")
+                (ltu/is-key-value :action "bulk_deployment_set_start")
                 (ltu/is-key-value :href :target-resource resource-id))))
 
         (testing "force state transition to simulate job action"
@@ -421,17 +421,18 @@
 
           (let [plan             (utils/plan u-deployment-set u-applications-sets-v11)
                 fake-deployment  (fn [{:keys [target] {app-id :id app-ver :version :keys [environmental-variables]} :application}]
-                                   {:id                  (u/random-uuid)
+                                   {:id                  (str "deployment/" (u/random-uuid))
                                     :parent              target
                                     :state               "STARTED"
                                     :module              {:content       {:environmental-variables environmental-variables}
                                                           :published     true
                                                           :id            app-id
-                                                          :href          (cond-> app-id (pos? app-ver) (str "_" app-ver))
+                                                          :href          (str app-id "_" app-ver)
                                                           :resource-type "module"
                                                           :subtype       "application"}
                                     :deployment-set      resource-id
-                                    :deployment-set-name "Test Deployment Set"})
+                                    :deployment-set-name "Test Deployment Set"
+                                    :app-set             "set-1"})
                 fake-deployments (map fake-deployment plan)]
 
             (testing "user should be able to call operational-status"
@@ -469,7 +470,7 @@
                     (ltu/is-key-value :deployments-to-add [(first plan)]))))))
 
 
-        (testing "update action will create a update_deployment_set job"
+        (testing "update action will create a bulk_deployment_set_update job"
           (let [update-op-url (-> session-user
                                   (request dep-set-url)
                                   ltu/body->edn
@@ -491,7 +492,7 @@
                 ltu/body->edn
                 (ltu/is-status 200)
                 (ltu/is-key-value :href :target-resource resource-id)
-                (ltu/is-key-value :action "update_deployment_set")
+                (ltu/is-key-value :action "bulk_deployment_set_update")
                 (ltu/is-key-value json/read-str :payload job-payload))))
 
         (testing "edit action is not allowed in a transitional state"
@@ -532,7 +533,7 @@
               (ltu/is-operation-absent utils/action-cancel)
               (ltu/is-key-value :state utils/state-updated)))
 
-        (testing "a second update action will create a new update_deployment_set job"
+        (testing "a second update action will create a new bulk_deployment_set_update job"
           (let [update-op-url (-> session-user
                                   (request dep-set-url)
                                   ltu/body->edn
@@ -554,7 +555,7 @@
                 ltu/body->edn
                 (ltu/is-status 200)
                 (ltu/is-key-value :href :target-resource resource-id)
-                (ltu/is-key-value :action "update_deployment_set")
+                (ltu/is-key-value :action "bulk_deployment_set_update")
                 (ltu/is-key-value json/read-str :payload job-payload))
             (testing "cancel action will cancel the running job"
               (let [cancel-op-url (-> session-user
@@ -578,7 +579,7 @@
                     ltu/body->edn
                     (ltu/is-status 200)
                     (ltu/is-key-value :href :target-resource resource-id)
-                    (ltu/is-key-value :action "update_deployment_set")
+                    (ltu/is-key-value :action "bulk_deployment_set_update")
                     (ltu/is-key-value :state job-utils/state-canceled))
 
                 (-> session-user
@@ -594,7 +595,7 @@
                     (ltu/is-key-value :state utils/state-partially-updated))
                 ))))
 
-        (testing "stop action will create a stop_deployment_set job"
+        (testing "stop action will create a bulk_deployment_set_stop job"
           (let [stop-op-url (-> session-user
                                 (request dep-set-url)
                                 ltu/body->edn
@@ -616,7 +617,7 @@
                 (ltu/body->edn)
                 (ltu/is-status 200)
                 (ltu/is-key-value :href :target-resource resource-id)
-                (ltu/is-key-value :action "stop_deployment_set")
+                (ltu/is-key-value :action "bulk_deployment_set_stop")
                 (ltu/is-key-value json/read-str :payload job-payload))))))))
 
 (deftest lifecycle-create-apps-sets

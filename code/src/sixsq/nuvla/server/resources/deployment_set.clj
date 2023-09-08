@@ -148,13 +148,13 @@ These resources represent a deployment set that regroups deployments.
 
 (defmethod crud/do-action [resource-type utils/action-operational-status]
   [request]
-  (let [deployment-set (load-resource-throw-not-allowed-action request)
+  (let [deployment-set    (load-resource-throw-not-allowed-action request)
         applications-sets (-> deployment-set
                               utils/get-applications-sets-href
                               (crud/get-resource-throw-nok request))
         divergence        (os/divergence-map
                             (utils/plan deployment-set applications-sets)
-                            (utils/current-state deployment-set applications-sets))
+                            (utils/current-state deployment-set))
         status            (if (some (comp pos? count) (vals divergence))
                             "NOK"
                             "OK")]
@@ -257,8 +257,10 @@ These resources represent a deployment set that regroups deployments.
                      add-impl)
         id       (get-in response [:body :resource-id])]
     (if start
-      (create-job (crud/get-resource-throw-nok id request)
-                  request utils/action-start)
+      (crud/do-action {:params      {:resource-name resource-type
+                                     :uuid          (u/id->uuid id)
+                                     :action        utils/action-start}
+                       :nuvla/authn auth/internal-identity})
       response)))
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))

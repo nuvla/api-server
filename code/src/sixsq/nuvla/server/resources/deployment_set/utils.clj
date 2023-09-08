@@ -149,7 +149,7 @@
 
 (defn action-job-name
   [action]
-  (str action "_deployment_set"))
+  (str "bulk_deployment_set_" action))
 
 (defn save-deployment-set
   [deployment-set]
@@ -248,18 +248,14 @@
 
 
 (defn current-state
-  [{:keys [id] :as _deployment-set} application-sets]
-  (let [deployments  (current-deployments id)
-        app-set-name (-> application-sets
-                         module-utils/get-applications-sets
-                         first
-                         :name)]
-    (for [{:keys [nuvlabox parent state] deployment-id :id {application-href :href {:keys [environmental-variables]} :content} :module} deployments
-          :let [[_ app-id app-version] (re-matches #"([^_]+)(?:_(.*))?" application-href)]]
+  [{:keys [id] :as _deployment-set}]
+  (let [deployments (current-deployments id)]
+    (for [{:keys [nuvlabox parent state app-set] deployment-id :id
+           {application-href :href {:keys [environmental-variables]} :content} :module} deployments]
       {:id          deployment-id
-       :app-set     app-set-name
-       :application (cond-> {:id      app-id
-                             :version (or (some-> app-version Integer/parseInt) 0)}
+       :app-set     app-set
+       :application (cond-> {:id      (module-utils/full-uuid->uuid application-href)
+                             :version (module-utils/full-uuid->version-index application-href)}
                             (seq environmental-variables)
                             (assoc :environmental-variables environmental-variables))
        :target      (or nuvlabox parent)

@@ -134,40 +134,41 @@ a container orchestration engine.
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defn create-deployment
-  [{:keys [parent deployment-set] :as deployment} {:keys [base-uri] :as request}]
+  [{:keys [parent] :as deployment} {:keys [base-uri] :as request}]
   (some-> parent (crud/get-resource-throw-nok request))
-  (let [authn-info          (auth/current-authentication request)
-        deployment-set-name (some-> deployment-set
-                                    crud/retrieve-by-id-as-admin
-                                    :name)
+  (let [authn-info      (auth/current-authentication request)
         ;; FIXME: Correct the value passed to the python API.
-        deployment          (-> deployment
-                                (assoc :resource-type resource-type
-                                       :state "CREATED"
-                                       :api-endpoint (str/replace-first base-uri #"/api/" "")
-                                       :owner (auth/current-active-claim request))
-                                (cond-> deployment-set-name (assoc :deployment-set-name deployment-set-name))
-                                (utils/throw-when-payment-required request))
-        create-response     (add-impl (assoc request :body deployment))
+        deployment      (-> deployment
+                            (assoc :resource-type resource-type
+                                   :state "CREATED"
+                                   :api-endpoint (str/replace-first base-uri #"/api/" "")
+                                   :owner (auth/current-active-claim request))
+                            (utils/throw-when-payment-required request))
+        create-response (add-impl (assoc request :body deployment))
 
-        deployment-id       (get-in create-response [:body :resource-id])
+        deployment-id   (get-in create-response [:body :resource-id])
 
-        msg                 (get-in create-response [:body :message])]
+        msg             (get-in create-response [:body :message])]
 
     (event-utils/create-event deployment-id msg (a/default-acl authn-info))
 
     create-response))
 
 (defmethod crud/add resource-type
-  [{{:keys [parent execution-mode deployment-set]
+  [{{:keys [parent execution-mode deployment-set app-set]
      :or   {execution-mode "mixed"}} :body :as request}]
   (a/throw-cannot-add collection-acl request)
-  (-> request
-      module-utils/resolve-from-module
-      (assoc :execution-mode execution-mode)
-      (cond-> deployment-set (assoc :deployment-set deployment-set))
-      (cond-> parent (assoc :parent parent))
-      (create-deployment request)))
+  (let [deployment-set-name (some-> deployment-set
+                                    crud/retrieve-by-id-as-admin
+                                    :name)]
+    (-> request
+        module-utils/resolve-from-module
+        (assoc :execution-mode execution-mode)
+        (cond-> deployment-set (assoc :deployment-set deployment-set))
+        (cond-> deployment-set-name (assoc :deployment-set-name deployment-set))
+        (cond-> app-set (assoc :app-set app-set))
+        (cond-> parent (assoc :parent parent))
+        (create-deployment request))))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -265,18 +266,18 @@ a container orchestration engine.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [start-op            (u/action-map id :start)
-        stop-op             (u/action-map id :stop)
-        update-op           (u/action-map id :update)
-        create-log-op       (u/action-map id :create-log)
-        clone-op            (u/action-map id :clone)
-        check-dct-op        (u/action-map id :check-dct)
-        fetch-module-op     (u/action-map id :fetch-module)
-        force-delete-op     (u/action-map id :force-delete)
-        detach-op           (u/action-map id :detach)
-        can-manage?         (a/can-manage? resource request)
-        can-edit-data?      (a/can-edit-data? resource request)
-        can-clone?          (a/can-view-data? resource request)]
+  (let [start-op        (u/action-map id :start)
+        stop-op         (u/action-map id :stop)
+        update-op       (u/action-map id :update)
+        create-log-op   (u/action-map id :create-log)
+        clone-op        (u/action-map id :clone)
+        check-dct-op    (u/action-map id :check-dct)
+        fetch-module-op (u/action-map id :fetch-module)
+        force-delete-op (u/action-map id :force-delete)
+        detach-op       (u/action-map id :detach)
+        can-manage?     (a/can-manage? resource request)
+        can-edit-data?  (a/can-edit-data? resource request)
+        can-clone?      (a/can-view-data? resource request)]
     (cond-> (crud/set-standard-operations resource request)
 
             (and can-manage? (utils/can-start? resource)) (update :operations conj start-op)
@@ -401,22 +402,22 @@ a container orchestration engine.
 (defn update-deployment-impl
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [current         (-> (str resource-type "/" uuid)
-                              (crud/retrieve-by-id-as-admin)
-                              (a/throw-cannot-manage request)
-                              (utils/throw-can-not-do-action-invalid-state
-                                utils/can-update? "update_deployment")
-                              (utils/throw-when-payment-required request))
-          module-href     (get-in current [:module :href])
+    (let [current     (-> (str resource-type "/" uuid)
+                          (crud/retrieve-by-id-as-admin)
+                          (a/throw-cannot-manage request)
+                          (utils/throw-can-not-do-action-invalid-state
+                            utils/can-update? "update_deployment")
+                          (utils/throw-when-payment-required request))
+          module-href (get-in current [:module :href])
           ;; update price, license, etc. from source module during update
           {:keys [name description price license]} (module-utils/resolve-module module-href request)
-          new             (-> current
-                              (assoc :state "UPDATING")
-                              (cond-> name (assoc-in [:module :name] name)
-                                      description (assoc-in [:module :description] description)
-                                      price (assoc-in [:module :price] price)
-                                      license (assoc-in [:module :license] license))
-                              (edit-deployment request))]
+          new         (-> current
+                          (assoc :state "UPDATING")
+                          (cond-> name (assoc-in [:module :name] name)
+                                  description (assoc-in [:module :description] description)
+                                  price (assoc-in [:module :price] price)
+                                  license (assoc-in [:module :license] license))
+                          (edit-deployment request))]
       (utils/create-job new request "update_deployment" (:execution-mode new)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
