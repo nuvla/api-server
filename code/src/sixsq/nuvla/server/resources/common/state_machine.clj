@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.common.state-machine
-  (:require [sixsq.nuvla.server.util.response :as r]
-            [tilakone.core :as tk]
-            [tilakone.util :as tku]))
+  (:require [sixsq.nuvla.auth.acl-resource :as a]
+            [sixsq.nuvla.server.util.response :as r]
+            [tilakone.core :as tk]))
 
 (defmulti state-machine :resource-type)
 
@@ -9,22 +9,20 @@
   [_resource]
   nil)
 
-(defn force-state
-  [fsm state]
-  (assoc fsm ::tk/state state))
-
 (defn get-state
   [fsm]
   (::tk/state fsm))
 
-(defn fsm-resource
-  [{:keys [state] :as resource}]
+(defn fsm-resource-request
+  [{:keys [state] :as resource} request]
   (when-let [fsm (state-machine resource)]
-    (force-state fsm state)))
+    (assoc fsm ::tk/state state
+               :resource resource
+               :request request)))
 
 (defn transition
-  [resource action]
-  (if-let [fsm (fsm-resource resource)]
+  [resource {{:keys [action]} :params :as request}]
+  (if-let [fsm (fsm-resource-request resource request)]
     (assoc resource :state (get-state (tk/apply-signal fsm action)))
     resource))
 
@@ -35,8 +33,8 @@
     resource))
 
 (defn can-do-action?
-  [resource action]
-  (if-let [fsm (fsm-resource resource)]
+  [action resource request]
+  (if-let [fsm (fsm-resource-request resource request)]
     (some? (tk/transfers-to fsm action))
     true))
 
@@ -46,7 +44,23 @@
                                 action state id) 409 id)))
 
 (defn throw-can-not-do-action
-  [{:keys [id state] :as resource} {{:keys [action]} :params :as _request}]
-  (if (can-do-action? resource action)
+  [{:keys [id state] :as resource} {{:keys [action]} :params :as request}]
+  (if (can-do-action? action resource request)
     resource
     (throw-action-not-allowed-in-state id action state)))
+
+
+(def guard-is-admin? :is-admin?)
+(def guard-can-manage? :can-manage?)
+(def guard-can-edit? :can-edit?)
+(def guard-can-delete? :can-delete?)
+
+(defn guard?
+  [{{:keys [resource request]} ::tk/process
+    guard                      ::tk/guard}]
+  (condp = guard
+    guard-can-manage? (a/can-manage? resource request)
+    guard-is-admin? (a/is-admin-request? request)
+    guard-can-edit? (a/can-edit? resource request)
+    guard-can-delete? (a/can-delete? resource request)
+    false))

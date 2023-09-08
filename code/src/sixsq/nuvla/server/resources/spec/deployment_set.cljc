@@ -1,10 +1,10 @@
 (ns sixsq.nuvla.server.resources.spec.deployment-set
   (:require
     [clojure.spec.alpha :as s]
+    [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
     [sixsq.nuvla.server.resources.spec.module-applications-sets :as module-sets]
-    [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 

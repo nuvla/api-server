@@ -1,5 +1,5 @@
 (ns sixsq.nuvla.server.resources.deployment-set.operational-status-test
-  (:require [clojure.test :refer [deftest testing is]]
+  (:require [clojure.test :refer [deftest is testing]]
             [sixsq.nuvla.server.resources.common.utils :as u]
             [sixsq.nuvla.server.resources.deployment-set.operational-status :as t]))
 

@@ -9,17 +9,17 @@ These resources represent a deployment set that regroups deployments.
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.job.utils :as job-utils]
     [sixsq.nuvla.server.resources.common.state-machine :as sm]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.deployment-set.operational-status :as os]
     [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
+    [sixsq.nuvla.server.resources.job.utils :as job-utils]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment-set :as spec]
-    [sixsq.nuvla.server.resources.deployment-set.operational-status :as os]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -130,11 +130,10 @@ These resources represent a deployment set that regroups deployments.
       (sm/throw-can-not-do-action request)))
 
 (defn standard-action
-  [{{:keys [uuid action]} :params :as request} f]
-  (let [id       (str resource-type "/" uuid)
-        resource (-> request
+  [request f]
+  (let [resource (-> request
                      load-resource-throw-not-allowed-action
-                     (sm/transition action)
+                     (sm/transition request)
                      utils/save-deployment-set
                      :body)]
     (f resource request)))
@@ -146,24 +145,6 @@ These resources represent a deployment set that regroups deployments.
                               utils/get-applications-sets-href
                               (crud/get-resource-throw-nok request))]
     (r/json-response (utils/plan deployment-set applications-sets))))
-
-;; current state
-;; query to deployment resource filter on deployment-set id
-;; target + app-set + env + app id + app version
-;; 10000
-
-;; (sugestion for later scrolling es support OR (multiple query + filters mak). Now only 10'000 deployments is ok)
-;; (OR compute a hash state hash(app id + version + ...) and we save it in deployment. Optimization)
-
-;; build the current state with what we get from the query
-;; what we do with target of different types. In case deployment is pointing to an edge id we take it, if not we put as target the credential.
-
-;; create deployment set
-;; start it starting state
-;; force state STARTED + create 3 deployments that match the expected state OR we do with-redefs of query-as-admin
-;; operational status OK
-;; delete a deployment
-;; operational status NOK + divergent map
 
 (defmethod crud/do-action [resource-type utils/action-operational-status]
   [request]
@@ -190,6 +171,16 @@ These resources represent a deployment set that regroups deployments.
 (defmethod crud/do-action [resource-type utils/action-stop]
   [request]
   (standard-action request action-bulk))
+
+(defmethod crud/do-action [resource-type utils/action-ok]
+  [request]
+  (standard-action request (fn [_resource _request]
+                             (r/map-response "running action done" 200))))
+
+(defmethod crud/do-action [resource-type utils/action-nok]
+  [request]
+  (standard-action request (fn [_resource _request]
+                             (r/map-response "running action failed" 200))))
 
 (defn cancel-latest-job
   [{:keys [id] :as _resource} _request]
@@ -303,12 +294,9 @@ These resources represent a deployment set that regroups deployments.
 
 (defmethod crud/set-operations resource-type
   [resource request]
-  (let [can-manage? (a/can-manage? resource request)
-        operations  (if can-manage?
-                      (utils/get-extra-operations resource)
-                      [])]
-    (cond-> (crud/set-standard-operations resource request)
-            (seq operations) (update :operations concat operations))))
+  (if-let [operations (seq (utils/get-operations resource request))]
+    (assoc resource :operations operations)
+    resource))
 
 ;;
 ;; initialization

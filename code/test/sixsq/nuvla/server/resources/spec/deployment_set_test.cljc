@@ -2,8 +2,8 @@
   (:require
     [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.deployment-set :as deployment-set-resource]
-    [sixsq.nuvla.server.resources.spec.deployment-set :as t]
     [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
+    [sixsq.nuvla.server.resources.spec.deployment-set :as t]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
