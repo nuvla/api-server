@@ -19,6 +19,7 @@ These resources represent a deployment set that regroups deployments.
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment-set :as spec]
+    [sixsq.nuvla.server.resources.deployment-set.operational-status :as os]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -121,27 +122,62 @@ These resources represent a deployment set that regroups deployments.
     (std-crud/create-bulk-job
       (utils/action-job-name action) id authn-info acl payload)))
 
+(defn load-resource-throw-not-allowed-action
+  [{{:keys [uuid]} :params :as request}]
+  (-> (str resource-type "/" uuid)
+      crud/retrieve-by-id-as-admin
+      (a/throw-cannot-manage request)
+      (sm/throw-can-not-do-action request)))
+
 (defn standard-action
-  [{{uuid :uuid action :action} :params :as request} f]
+  [{{:keys [uuid action]} :params :as request} f]
   (let [id       (str resource-type "/" uuid)
-        resource (-> (crud/retrieve-by-id-as-admin id)
-                     (a/throw-cannot-manage request)
-                     (sm/throw-can-not-do-action request)
+        resource (-> request
+                     load-resource-throw-not-allowed-action
                      (sm/transition action)
                      utils/save-deployment-set
                      :body)]
     (f resource request)))
 
 (defmethod crud/do-action [resource-type utils/action-plan]
-  [{{uuid :uuid} :params :as request}]
-  (let [id                (str resource-type "/" uuid)
-        deployment-set    (-> id
-                              crud/retrieve-by-id-as-admin
-                              (a/throw-cannot-manage request))
+  [request]
+  (let [deployment-set    (load-resource-throw-not-allowed-action request)
         applications-sets (-> deployment-set
                               utils/get-applications-sets-href
                               (crud/get-resource-throw-nok request))]
     (r/json-response (utils/plan deployment-set applications-sets))))
+
+;; current state
+;; query to deployment resource filter on deployment-set id
+;; target + app-set + env + app id + app version
+;; 10000
+
+;; (sugestion for later scrolling es support OR (multiple query + filters mak). Now only 10'000 deployments is ok)
+;; (OR compute a hash state hash(app id + version + ...) and we save it in deployment. Optimization)
+
+;; build the current state with what we get from the query
+;; what we do with target of different types. In case deployment is pointing to an edge id we take it, if not we put as target the credential.
+
+;; create deployment set
+;; start it starting state
+;; force state STARTED + create 3 deployments that match the expected state OR we do with-redefs of query-as-admin
+;; operational status OK
+;; delete a deployment
+;; operational status NOK + divergent map
+
+(defmethod crud/do-action [resource-type utils/action-operational-status]
+  [request]
+  (let [deployment-set (load-resource-throw-not-allowed-action request)
+        applications-sets (-> deployment-set
+                              utils/get-applications-sets-href
+                              (crud/get-resource-throw-nok request))
+        divergence        (os/divergence-map
+                            (utils/plan deployment-set applications-sets)
+                            (utils/current-state deployment-set applications-sets))
+        status            (if (some (comp pos? count) (vals divergence))
+                            "NOK"
+                            "OK")]
+    (r/json-response (assoc divergence :status status))))
 
 (defmethod crud/do-action [resource-type utils/action-start]
   [request]
