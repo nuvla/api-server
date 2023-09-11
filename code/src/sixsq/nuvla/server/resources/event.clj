@@ -134,6 +134,9 @@ an application.
 (def resource-metadata (gen-md/generate-metadata ::ns ::event/schema))
 
 
+(def initialization-order 100)
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::event/schema)

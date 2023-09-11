@@ -42,6 +42,8 @@ notifications will not work.
 (def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::ct-nuvla/schema-create "create"))
 
 
+(def initialization-order 10)
+
 (defn initialize
   []
   (p/register resource)

@@ -327,6 +327,8 @@ that start with 'nuvla-' are reserved for the server.
   (add-default-groups-users))
 
 
+(def initialization-order 120)
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::group/schema)
