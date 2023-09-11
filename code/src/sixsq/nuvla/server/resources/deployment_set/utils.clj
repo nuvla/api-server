@@ -242,7 +242,7 @@
   [deployment-set-id]
   (let [filter-req (str "deployment-set='" deployment-set-id "'")
         options    {:cimi-params {:filter (parser/parse-cimi-filter filter-req)
-                                  :select ["id" "module" "nuvlabox" "parent" "state"]
+                                  :select ["id" "module" "nuvlabox" "parent" "state" "app-set"]
                                   :last   10000}}]
     (second (crud/query-as-admin "deployment" options))))
 

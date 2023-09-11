@@ -165,7 +165,7 @@ a container orchestration engine.
         module-utils/resolve-from-module
         (assoc :execution-mode execution-mode)
         (cond-> deployment-set (assoc :deployment-set deployment-set))
-        (cond-> deployment-set-name (assoc :deployment-set-name deployment-set))
+        (cond-> deployment-set-name (assoc :deployment-set-name deployment-set-name))
         (cond-> app-set (assoc :app-set app-set))
         (cond-> parent (assoc :parent parent))
         (create-deployment request))))
