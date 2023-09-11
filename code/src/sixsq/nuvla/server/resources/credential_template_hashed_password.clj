@@ -48,6 +48,8 @@ changing it.
 (def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::hashed-password/schema-create "create"))
 
 
+(def initialization-order 30)
+
 (defn initialize
   []
   (p/register template)

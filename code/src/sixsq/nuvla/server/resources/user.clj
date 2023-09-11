@@ -22,7 +22,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.credential :as credential]
-    [sixsq.nuvla.server.resources.credential-template-hashed-password :as cred-tmpl-pass]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -322,12 +321,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (defn create-super-user
   [password]
-  ;; FIXME: nasty hack to ensure username-password user-template, user-identifier and group index are available
-  (credential/initialize)
-  (group/initialize)
-  (username-password/initialize)
-  (user-identifier/initialize)
-  (cred-tmpl-pass/initialize)
   (if (nil? (password/identifier->user-id "super"))
     (do
       (log/info "user 'super' does not exist; attempting to create it")

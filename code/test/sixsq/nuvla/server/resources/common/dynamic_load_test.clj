@@ -30,9 +30,9 @@
         (let [init-resources (fn []
                                (reset! init-seq [])
                                (dyn/initialize))]
-          (testing "Event resource initialized first"
+          (testing "Configuration template nuvla resource initialized first"
             (init-resources)
-            (is (= 'sixsq.nuvla.server.resources.event
+            (is (= 'sixsq.nuvla.server.resources.configuration-template-nuvla
                    (ffirst @init-seq))))
           (testing "Initialization order is respected in general"
             ;; set random initialization order on every ns that does not define it already
