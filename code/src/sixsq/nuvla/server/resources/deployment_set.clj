@@ -93,25 +93,6 @@ These resources represent a deployment set that regroups deployments.
 ;; CRUD operations
 ;;
 
-(defn create-job
-  [{:keys [id] :as resource} request action]
-  (a/throw-cannot-manage resource request)
-  (let [authn-info   (auth/current-authentication request)
-        active-claim (auth/current-active-claim request)
-        {{job-id     :resource-id
-          job-status :status} :body} (job/create-job
-                                       id (utils/action-job-name action)
-                                       {:owners   ["group/nuvla-admin"]
-                                        :edit-acl [active-claim]}
-                                       :payload (json/write-str
-                                                  {:authn-info authn-info}))
-        job-msg      (str action " " id " with async " job-id)]
-    (when (not= job-status 201)
-      (throw (r/ex-response
-               (format "unable to create async job to %s deployment set" action) 500 id)))
-    (event-utils/create-event id action (a/default-acl (auth/current-authentication request)))
-    (r/map-response job-msg 202 id job-id)))
-
 (defn action-bulk
   [{:keys [id] :as _resource} {{:keys [action]} :params :as request}]
   (let [authn-info (auth/current-authentication request)

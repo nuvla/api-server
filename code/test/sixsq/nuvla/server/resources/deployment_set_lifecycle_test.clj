@@ -518,7 +518,7 @@
                            (ltu/is-operation-present utils/action-cancel)
                            (ltu/is-operation-present utils/action-ok)
                            (ltu/is-operation-present utils/action-nok)
-                           (ltu/get-op-url utils/action-ok)))
+                           (ltu/get-op-url utils/action-nok)))
               ltu/body->edn
               (ltu/is-status 200))
           (-> session-user
@@ -531,7 +531,7 @@
               (ltu/is-operation-present utils/action-stop)
               (ltu/is-operation-present utils/action-update)
               (ltu/is-operation-absent utils/action-cancel)
-              (ltu/is-key-value :state utils/state-updated)))
+              (ltu/is-key-value :state utils/state-partially-updated)))
 
         (testing "a second update action will create a new bulk_deployment_set_update job"
           (let [update-op-url (-> session-user
