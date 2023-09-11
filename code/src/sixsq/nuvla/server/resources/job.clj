@@ -174,12 +174,23 @@ request.
                  (utils/can-cancel? resource)) (update :operations conj stop-op)
             (utils/can-get-context? resource request) (update :operations conj get-context-op))))
 
+
+(declare create-cancel-children-jobs-job)
+
+
+(defn cancel-children-jobs-async [{parent-job-id :id :as job}]
+  (let [jobs-to-cancel (->> (utils/fetch-children-jobs parent-job-id)
+                            (filter utils/can-cancel?))]
+    (when (seq jobs-to-cancel)
+      (create-cancel-children-jobs-job job (map :id jobs-to-cancel)))))
+
+
 (defmethod crud/do-action [resource-type utils/action-cancel]
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id       (str resource-type "/" uuid)
-          response (-> id
-                       (db/retrieve request)
+          job      (db/retrieve id request)
+          response (-> job
                        (a/throw-cannot-manage request)
                        (utils/throw-cannot-cancel)
                        (assoc :state utils/state-canceled)
@@ -188,6 +199,7 @@ request.
                        (utils/job-cond->edition)
                        (crud/validate)
                        (db/edit {:nuvla/authn auth/internal-identity}))]
+      (cancel-children-jobs-async job)
       (log/warn "Canceled job : " id)
       response)
     (catch Exception e
@@ -223,3 +235,13 @@ request.
                         :body        job-map
                         :nuvla/authn auth/internal-identity}]
     (crud/add create-request)))
+
+
+(defn create-cancel-children-jobs-job
+  [{:keys [acl] parent-job-id :id :as _parent-job} children-job-ids-to-cancel]
+  (create-job
+    parent-job-id
+    "cancel_child_jobs"
+    acl
+    :affected-resources (mapv (fn [job-id] {:href job-id}) children-job-ids-to-cancel)))
+

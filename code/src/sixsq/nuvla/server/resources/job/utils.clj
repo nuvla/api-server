@@ -4,6 +4,8 @@
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.state-machine :as sm]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time]
@@ -97,3 +99,11 @@
   (if (can-get-context? resource request)
     resource
     (throw (r/ex-unauthorized (:id resource)))))
+
+
+(defn fetch-children-jobs [job-id]
+  (let [filter-req (str "parent-job='" job-id "'")
+        options    {:cimi-params {:filter (parser/parse-cimi-filter filter-req)
+                                  :select ["id" "state"]
+                                  :last   10000}}]
+    (second (crud/query-as-admin "job" options))))

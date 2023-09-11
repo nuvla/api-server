@@ -7,6 +7,7 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.job :as t]
+    [sixsq.nuvla.server.resources.job.test-utils :as test-utils]
     [sixsq.nuvla.server.resources.job.utils :as ju]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
@@ -91,20 +92,62 @@
           (ltu/is-status 200)))
 
     (testing "Admin is able to create a job and set his priority"
-      (let [job-url (-> session-admin
+      (let [job-id  (-> session-admin
                         (request base-uri
                                  :request-method :post
                                  :body (json/write-str (assoc valid-job :priority 50)))
                         (ltu/body->edn)
                         (ltu/is-status 201)
-                        (ltu/location-url))]
+                        (ltu/location))
+            job-url (ltu/href->url job-id)]
         (testing "Setting state to running will also set the started timestamp"
           (-> session-admin
-             (request job-url :request-method :put
-                      :body (json/write-str {:state ju/state-running}))
-             (ltu/body->edn)
-             (ltu/is-status 200)
-             (ltu/is-operation-absent ju/action-cancel)
+              (request job-url :request-method :put
+                       :body (json/write-str {:state ju/state-running}))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-operation-absent ju/action-cancel)
               (ltu/is-key-value :state ju/state-running)
               (ltu/is-key-value :progress 0)
-             (ltu/is-key-value string? :started true)))))))
+              (ltu/is-key-value string? :started true)))
+
+        (testing "Children jobs"
+          (let [child-job1-id (-> session-admin
+                                  (request base-uri
+                                           :request-method :post
+                                           :body (json/write-str (assoc valid-job
+                                                                   :priority 50
+                                                                   :parent-job job-id)))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 201)
+                                  (ltu/location))
+                child-job2-id (-> session-admin
+                                  (request base-uri
+                                           :request-method :post
+                                           :body (json/write-str (assoc valid-job
+                                                                   :priority 50
+                                                                   :parent-job job-id)))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 201)
+                                  (ltu/location))]
+            (testing "Cancel job with children"
+              (let [cancel-url (-> session-admin
+                                   (request job-url)
+                                   (ltu/body->edn)
+                                   (ltu/is-status 200)
+                                   (ltu/is-operation-present ju/action-cancel)
+                                   (ltu/get-op-url ju/action-cancel))]
+                (-> session-admin
+                    (request cancel-url)
+                    (ltu/body->edn)
+                    (ltu/is-status 200))
+
+                (let [last-job (last (test-utils/query-jobs {:target-resource job-id
+                                                             :action          "cancel_child_jobs"
+                                                             :orderby         [["created" :desc]]
+                                                             :last 1}))]
+                  (is (= #{job-id child-job1-id child-job2-id}
+                         (->> (:affected-resources last-job)
+                              (map :href)
+                              set))))))))))))
+
