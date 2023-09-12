@@ -3,7 +3,6 @@
 These resources represent a deployment set that regroups deployments.
 "
   (:require
-    [clojure.data.json :as json]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]

@@ -370,22 +370,6 @@
                                              :action utils/action-ok)
                               :nuvla/authn auth/internal-identity}
                              (constantly nil))
-          #_(-> session-admin
-                (request (-> session-admin
-                             (request dep-set-url)
-                             ltu/body->edn
-                             (ltu/is-status 200)
-                             (ltu/is-operation-absent crud/action-edit)
-                             (ltu/is-operation-absent crud/action-delete)
-                             (ltu/is-operation-absent utils/action-start)
-                             (ltu/is-operation-absent utils/action-stop)
-                             (ltu/is-operation-absent utils/action-update)
-                             (ltu/is-operation-present utils/action-cancel)
-                             (ltu/is-operation-present utils/action-ok)
-                             (ltu/is-operation-present utils/action-nok)
-                             (ltu/get-op-url utils/action-ok)))
-                ltu/body->edn
-                (ltu/is-status 200))
           (-> session-user
               (request dep-set-url)
               ltu/body->edn
@@ -514,22 +498,6 @@
                                              :action utils/action-nok)
                               :nuvla/authn auth/internal-identity}
                              (constantly nil))
-          #_(-> session-admin
-              (request (-> session-admin
-                           (request dep-set-url)
-                           ltu/body->edn
-                           (ltu/is-status 200)
-                           (ltu/is-operation-absent crud/action-edit)
-                           (ltu/is-operation-absent crud/action-delete)
-                           (ltu/is-operation-absent utils/action-start)
-                           (ltu/is-operation-absent utils/action-stop)
-                           (ltu/is-operation-absent utils/action-update)
-                           (ltu/is-operation-present utils/action-cancel)
-                           (ltu/is-operation-present utils/action-ok)
-                           (ltu/is-operation-present utils/action-nok)
-                           (ltu/get-op-url utils/action-nok)))
-              ltu/body->edn
-              (ltu/is-status 200))
           (-> session-user
               (request dep-set-url)
               ltu/body->edn

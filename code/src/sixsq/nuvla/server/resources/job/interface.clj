@@ -28,8 +28,8 @@
 (defmulti on-cancel dispatch-on-target-type-and-action)
 
 (defmethod on-cancel :default
-  [_resource]
-  (r/json-response {}))
+  [resource]
+  (r/json-response resource))
 
 
 (defmulti on-timeout dispatch-on-target-type-and-action)
