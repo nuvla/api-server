@@ -13,6 +13,7 @@
     [sixsq.nuvla.server.resources.deployment :as deployment]
     [sixsq.nuvla.server.resources.deployment-set :as t]
     [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
+    [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.job.utils :as job-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.module :as module]
@@ -299,15 +300,13 @@
                             (ltu/body->edn)
                             (ltu/is-status 201))
 
-            dep-set-url   (str p/service-context resource-id)
-            authn-payload {"authn-info" {"active-claim" "user/jane"
-                                         "claims"       ["group/nuvla-anon"
-                                                         "user/jane"
-                                                         "group/nuvla-user"
-                                                         session-id]
-                                         "user-id"      "user/jane"}}
-            job-payload   (merge authn-payload
-                                 {"filter" (str "deployment-set='" resource-id "'")})]
+            dep-set-url (str p/service-context resource-id)
+            job-payload {"authn-info" {"active-claim" "user/jane"
+                                       "claims"       ["group/nuvla-anon"
+                                                       "user/jane"
+                                                       "group/nuvla-user"
+                                                       session-id]
+                                       "user-id"      "user/jane"}}]
 
         (testing "user query should see one document"
           (-> session-user
@@ -326,6 +325,8 @@
               (ltu/is-operation-present utils/action-start)
               (ltu/is-operation-present utils/action-plan)
               (ltu/is-operation-present utils/action-operational-status)
+              (ltu/is-operation-present crud/action-delete)
+              (ltu/is-operation-absent utils/action-force-delete)
               (ltu/is-key-value :applications-sets dep-apps-sets)))
 
         (testing "start action will create a bulk_deployment_set_start job"
@@ -352,6 +353,7 @@
                 (ltu/is-status 200)
                 (ltu/is-operation-absent crud/action-edit)
                 (ltu/is-operation-absent crud/action-delete)
+                (ltu/is-operation-absent utils/action-force-delete)
                 (ltu/is-operation-absent utils/action-start)
                 (ltu/is-operation-absent utils/action-stop)
                 (ltu/is-operation-absent utils/action-update)
@@ -597,7 +599,48 @@
                 (ltu/is-status 200)
                 (ltu/is-key-value :href :target-resource resource-id)
                 (ltu/is-key-value :action "bulk_deployment_set_stop")
-                (ltu/is-key-value json/read-str :payload job-payload))))))))
+                (ltu/is-key-value json/read-str :payload job-payload))
+            (-> session-user
+                (request dep-set-url)
+                ltu/body->edn
+                (ltu/is-status 200)
+                (ltu/is-operation-absent crud/action-edit)
+                (ltu/is-operation-absent crud/action-delete)
+                (ltu/is-operation-absent utils/action-start)
+                (ltu/is-operation-absent utils/action-stop)
+                (ltu/is-operation-present utils/action-cancel)
+                (ltu/is-key-value :state utils/state-stopping))))
+
+        (testing "force state transition to simulate job action"
+          (t/standard-action {:params      (assoc (u/id->request-params resource-id)
+                                             :action utils/action-nok)
+                              :nuvla/authn auth/internal-identity}
+                             (constantly nil))
+          (-> session-user
+              (request dep-set-url)
+              ltu/body->edn
+              (ltu/is-status 200)
+              (ltu/is-operation-present crud/action-edit)
+              (ltu/is-operation-absent crud/action-delete)
+              (ltu/is-operation-present utils/action-start)
+              (ltu/is-operation-present utils/action-stop)
+              (ltu/is-operation-present utils/action-force-delete)
+              (ltu/is-operation-absent utils/action-update)
+              (ltu/is-operation-absent utils/action-cancel)
+              (ltu/is-key-value :state utils/state-partially-stopped)))
+
+        (testing "force delete deployment set will create a job"
+          (let [force-delete-op (-> session-user
+                                    (request dep-set-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/get-op-url utils/action-force-delete))]
+            (-> session-user
+               (request force-delete-op)
+               (ltu/body->edn)
+               (ltu/is-status 202))))
+
+        ))))
 
 (deftest lifecycle-create-apps-sets
   (let [session-anon (-> (ltu/ring-app)
@@ -831,42 +874,42 @@
                                      :body (json/write-str valid-deployment-set))
                             (ltu/body->edn)
                             (ltu/is-status 201))
-            dep-set-url         (str p/service-context resource-id)
-            start-op-url        (-> session-admin
-                                    (request dep-set-url)
-                                    ltu/body->edn
-                                    (ltu/is-status 200)
-                                    (ltu/is-operation-present utils/action-start)
-                                    (ltu/get-op-url utils/action-start))
-            _                   (-> session-admin
-                                    (request start-op-url)
-                                    ltu/body->edn
-                                    (ltu/is-status 202)
-                                    ltu/location-url)
+            dep-set-url           (str p/service-context resource-id)
+            start-op-url          (-> session-admin
+                                      (request dep-set-url)
+                                      ltu/body->edn
+                                      (ltu/is-status 200)
+                                      (ltu/is-operation-present utils/action-start)
+                                      (ltu/get-op-url utils/action-start))
+            _                     (-> session-admin
+                                      (request start-op-url)
+                                      ltu/body->edn
+                                      (ltu/is-status 202)
+                                      ltu/location-url)
             ;; force deployment state
-            _                   (t/standard-action {:params      (assoc (u/id->request-params resource-id)
-                                                                   :action utils/action-ok)
-                                                    :nuvla/authn auth/internal-identity}
-                                                   (constantly nil))
-            update-op-url       (-> session-admin
-                                    (request dep-set-url)
-                                    ltu/body->edn
-                                    (ltu/is-status 200)
-                                    (ltu/is-operation-present utils/action-update)
-                                    (ltu/get-op-url utils/action-update))
+            _                     (t/standard-action {:params      (assoc (u/id->request-params resource-id)
+                                                                     :action utils/action-ok)
+                                                      :nuvla/authn auth/internal-identity}
+                                                     (constantly nil))
+            update-op-url         (-> session-admin
+                                      (request dep-set-url)
+                                      ltu/body->edn
+                                      (ltu/is-status 200)
+                                      (ltu/is-operation-present utils/action-update)
+                                      (ltu/get-op-url utils/action-update))
             update-job-url        (-> session-admin
-                                    (request update-op-url)
-                                    ltu/body->edn
-                                    (ltu/is-status 202)
-                                    ltu/location-url)
+                                      (request update-op-url)
+                                      ltu/body->edn
+                                      (ltu/is-status 202)
+                                      ltu/location-url)
             cancel-update-job-url (-> session-admin
-                                    (request update-job-url)
-                                    ltu/body->edn
-                                    (ltu/is-status 200)
-                                    (ltu/is-key-value :state job-utils/state-queued)
-                                    (ltu/is-key-value :action "bulk_deployment_set_update")
-                                    (ltu/is-operation-present job-utils/action-cancel)
-                                    (ltu/get-op-url job-utils/action-cancel))]
+                                      (request update-job-url)
+                                      ltu/body->edn
+                                      (ltu/is-status 200)
+                                      (ltu/is-key-value :state job-utils/state-queued)
+                                      (ltu/is-key-value :action "bulk_deployment_set_update")
+                                      (ltu/is-operation-present job-utils/action-cancel)
+                                      (ltu/get-op-url job-utils/action-cancel))]
         (with-redefs [crud/get-resource-throw-nok
                       (constantly u-applications-sets-v11)]
           ;; cancel the update_deployment job

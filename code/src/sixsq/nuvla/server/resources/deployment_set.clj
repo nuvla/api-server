@@ -7,13 +7,13 @@ These resources represent a deployment set that regroups deployments.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.state-machine :as sm]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.deployment-set.operational-status :as os]
     [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
-    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.job.utils :as job-utils]
@@ -97,11 +97,21 @@ These resources represent a deployment set that regroups deployments.
   [{:keys [id] :as _resource} {{:keys [action]} :params :as request}]
   (let [authn-info (auth/current-authentication request)
         acl        {:owners   ["group/nuvla-admin"]
-                    :view-acl [(auth/current-active-claim request)]}
-        payload    {:filter (str "deployment-set='" id "'")}]
-    (event-utils/create-event id action (a/default-acl authn-info))
+                    :view-acl [(auth/current-active-claim request)]}]
     (std-crud/create-bulk-job
-      (utils/action-job-name action) id authn-info acl payload)))
+      (utils/bulk-action-job-name action) id authn-info acl {})))
+
+(defn action-simple
+  [{:keys [id] :as _resource} {{:keys [action]} :params :as request}]
+  (let [job-action (utils/action-job-name action)
+        {{job-id     :resource-id
+          job-status :status} :body} (job/create-job id (utils/action-job-name action)
+                                                     {:owners   ["group/nuvla-admin"]
+                                                      :view-acl [(auth/current-active-claim request)]})
+        job-msg  (str action " on " id " with async " job-id)]
+    (if (not= job-status 201)
+      (throw (r/ex-response (format "unable to create async job to %s" job-action) 500 id))
+      (r/map-response job-msg 202 id job-id))))
 
 (defn load-resource-throw-not-allowed-action
   [{{:keys [uuid]} :params :as request}]
@@ -207,6 +217,30 @@ These resources represent a deployment set that regroups deployments.
   [job]
   (job-transition job))
 
+(defn job-delete-deployment-set-done
+  [{{id :href} :target-resource
+    state      :state
+    :as        _job}]
+  (when (= state job-utils/state-success)
+    (let [deployment-set (crud/retrieve-by-id-as-admin id)]
+      (db/delete deployment-set
+                 {:request-method :delete
+                  :params         (assoc (u/id->request-params id)
+                                    :action crud/action-delete)
+                  :authn-info     auth/internal-identity}))))
+
+(defmethod job-interface/on-done [resource-type "deployment_set_delete"]
+  [job]
+  (job-delete-deployment-set-done job))
+
+(defmethod job-interface/on-done [resource-type "deployment_set_force-delete"]
+  [job]
+  (job-delete-deployment-set-done job))
+
+(defmethod crud/do-action [resource-type utils/action-force-delete]
+  [request]
+  (standard-action request action-simple))
+
 (defn cancel-latest-job
   [{:keys [id] :as _resource} _request]
   (let [filter-str (format "target-resource/href='%s' and (state='%s' or state='%s')" id
@@ -304,15 +338,8 @@ These resources represent a deployment set that regroups deployments.
 (def delete-impl (std-crud/delete-fn resource-type))
 
 (defmethod crud/delete resource-type
-  [{{uuid :uuid} :params :as request}]
-  (-> (str resource-type "/" uuid)
-      crud/retrieve-by-id-as-admin
-      (a/throw-cannot-delete request)
-      (sm/throw-can-not-do-action request))
-  ;; todo : need to delete deployments
-  (delete-impl request))
-
-;; todo : action force delete
+  [request]
+  (standard-action request action-simple))
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 

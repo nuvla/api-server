@@ -67,19 +67,19 @@
 (def transition-start {::tk/on action-start ::tk/to state-starting ::tk/guards [sm/guard-can-manage?]})
 (def transition-update {::tk/on action-update ::tk/to state-updating ::tk/guards [sm/guard-can-manage?]})
 (def transition-stop {::tk/on action-stop ::tk/to state-stopping ::tk/guards [sm/guard-can-manage?]})
-(def transition-edit {::tk/on crud/action-edit ::tk/to tk/_ ::tk/guards [sm/guard-can-edit?]})
-(def transition-delete {::tk/on crud/action-delete ::tk/to tk/_ ::tk/guards [sm/guard-can-delete?]})
-(def transition-force-delete {::tk/on action-force-delete ::tk/to tk/_ ::tk/guards [sm/guard-can-delete?]})
-(def transition-plan {::tk/on action-plan ::tk/to tk/_ ::tk/guards [sm/guard-can-manage?]})
-(def transition-operational-status {::tk/on action-operational-status ::tk/to tk/_ ::tk/guards [sm/guard-can-manage?]})
+(def transition-edit {::tk/on crud/action-edit ::tk/guards [sm/guard-can-edit?]})
+(def transition-delete {::tk/on crud/action-delete ::tk/guards [sm/guard-can-delete?]})
+(def transition-force-delete {::tk/on action-force-delete ::tk/guards [sm/guard-can-delete?]})
+(def transition-plan {::tk/on action-plan ::tk/guards [sm/guard-can-manage?]})
+(def transition-operational-status {::tk/on action-operational-status ::tk/guards [sm/guard-can-manage?]})
 
 (def state-machine
   {::tk/states [{::tk/name        state-new
                  ::tk/transitions [transition-start
                                    transition-edit
-                                   transition-delete
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-delete]}
                 {::tk/name        state-starting
                  ::tk/transitions [(transition-cancel state-partially-started)
                                    (transition-nok state-partially-started)
@@ -91,13 +91,15 @@
                                    transition-update
                                    transition-stop
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-force-delete]}
                 {::tk/name        state-partially-started
                  ::tk/transitions [transition-edit
                                    transition-update
                                    transition-stop
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-force-delete]}
                 {::tk/name        state-stopping
                  ::tk/transitions [(transition-cancel state-partially-stopped)
                                    (transition-nok state-partially-stopped)
@@ -107,15 +109,16 @@
                 {::tk/name        state-stopped
                  ::tk/transitions [transition-start
                                    transition-edit
-                                   transition-delete
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-delete]}
                 {::tk/name        state-partially-stopped
                  ::tk/transitions [transition-edit
-                                   transition-force-delete
                                    transition-start
+                                   transition-stop
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-force-delete]}
                 {::tk/name        state-updating
                  ::tk/transitions [(transition-cancel state-partially-updated)
                                    (transition-nok state-partially-updated)
@@ -127,13 +130,15 @@
                                    transition-update
                                    transition-stop
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-force-delete]}
                 {::tk/name        state-partially-updated
                  ::tk/transitions [transition-edit
                                    transition-update
                                    transition-stop
                                    transition-plan
-                                   transition-operational-status]}]
+                                   transition-operational-status
+                                   transition-force-delete]}]
    ::tk/guard? sm/guard?
    ::tk/state  state-new})
 
@@ -147,7 +152,11 @@
 
 (defn action-job-name
   [action]
-  (str "bulk_deployment_set_" action))
+  (str "deployment_set_" action))
+
+(defn bulk-action-job-name
+  [action]
+  (str "bulk_" (action-job-name action)))
 
 (defn save-deployment-set
   [deployment-set]
