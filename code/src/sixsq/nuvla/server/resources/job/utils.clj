@@ -21,6 +21,7 @@
 
 (def action-cancel "cancel")
 (def action-get-context "get-context")
+(def action-timeout "timeout")
 
 (def kazoo-queue-prefix "entry-")
 (def job-base-node "/job")
@@ -36,6 +37,18 @@
   (if (can-cancel? resource)
     resource
     (sm/throw-action-not-allowed-in-state id action-cancel state)))
+
+
+(defn can-timeout?
+  [{:keys [state] :as _resource}]
+  (boolean (#{state-running} state)))
+
+(defn throw-cannot-timeout
+  [{:keys [id state] :as resource}]
+  (if (can-timeout? resource)
+    resource
+    (sm/throw-action-not-allowed-in-state id action-timeout state)))
+
 
 
 (defn add-job-to-queue

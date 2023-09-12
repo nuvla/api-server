@@ -241,6 +241,14 @@
       registries-creds
       registries-infra)))
 
+(defn on-cancel
+  [{:keys [target-resource] :as _job}]
+  (let [deployment-id (some-> target-resource :href)
+        deployment    (some-> deployment-id crud/retrieve-by-id-as-admin)
+        edit-request  {:params      (u/id->request-params deployment-id)
+                       :body        (assoc deployment :state "ERROR")
+                       :nuvla/authn auth/internal-identity}]
+    (crud/edit edit-request)))
 
 (defn merge-module-element
   [key-fn current-val-fn current resolved]

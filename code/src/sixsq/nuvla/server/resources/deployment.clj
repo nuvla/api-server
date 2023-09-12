@@ -472,6 +472,18 @@ a container orchestration engine.
   [resource]
   (utils/get-context resource false))
 
+(defmethod job-interface/on-cancel ["deployment" "start_deployment"]
+  [resource]
+  (utils/on-cancel resource))
+
+(defmethod job-interface/on-cancel ["deployment" "update_deployment"]
+  [resource]
+  (utils/on-cancel resource))
+
+(defmethod job-interface/on-cancel ["deployment" "stop_deployment"]
+  [resource]
+  (utils/on-cancel resource))
+
 (def validate-edit-tags-body (u/create-spec-validation-request-body-fn
                                ::common-body/bulk-edit-tags-body))
 

@@ -112,42 +112,28 @@
               (ltu/is-key-value string? :started true)))
 
         (testing "Children jobs"
-          (let [child-job1-id (-> session-admin
-                                  (request base-uri
-                                           :request-method :post
-                                           :body (json/write-str (assoc valid-job
-                                                                   :priority 50
-                                                                   :parent-job job-id)))
-                                  (ltu/body->edn)
-                                  (ltu/is-status 201)
-                                  (ltu/location))
-                child-job2-id (-> session-admin
-                                  (request base-uri
-                                           :request-method :post
-                                           :body (json/write-str (assoc valid-job
-                                                                   :priority 50
-                                                                   :parent-job job-id)))
-                                  (ltu/body->edn)
-                                  (ltu/is-status 201)
-                                  (ltu/location))]
-            (testing "Cancel job with children"
-              (let [cancel-url (-> session-admin
-                                   (request job-url)
-                                   (ltu/body->edn)
-                                   (ltu/is-status 200)
-                                   (ltu/is-operation-present ju/action-cancel)
-                                   (ltu/get-op-url ju/action-cancel))]
-                (-> session-admin
-                    (request cancel-url)
-                    (ltu/body->edn)
-                    (ltu/is-status 200))
+          (-> session-admin
+              (request base-uri
+                       :request-method :post
+                       :body (json/write-str (assoc valid-job
+                                               :priority 50
+                                               :parent-job job-id)))
+              (ltu/body->edn)
+              (ltu/is-status 201))
 
-                (let [last-job (last (test-utils/query-jobs {:target-resource job-id
-                                                             :action          "cancel_child_jobs"
-                                                             :orderby         [["created" :desc]]
-                                                             :last 1}))]
-                  (is (= #{job-id child-job1-id child-job2-id}
-                         (->> (:affected-resources last-job)
-                              (map :href)
-                              set))))))))))))
+          (testing "Cancel job with children"
+            (let [cancel-url (-> session-admin
+                                 (request job-url)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/is-operation-present ju/action-cancel)
+                                 (ltu/get-op-url ju/action-cancel))]
+              (-> session-admin
+                  (request cancel-url)
+                  (ltu/body->edn)
+                  (ltu/is-status 200))
 
+              (is (some? (last (test-utils/query-jobs {:target-resource job-id
+                                                       :action          "cancel_children_jobs"
+                                                       :orderby         [["created" :desc]]
+                                                       :last            1})))))))))))

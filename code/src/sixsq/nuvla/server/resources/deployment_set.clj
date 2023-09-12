@@ -16,6 +16,7 @@ These resources represent a deployment set that regroups deployments.
     [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
+    [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.job.utils :as job-utils]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -127,7 +128,7 @@ These resources represent a deployment set that regroups deployments.
                               (crud/get-resource-throw-nok request))]
     (r/json-response (utils/plan deployment-set applications-sets))))
 
-(defmethod crud/do-action [resource-type utils/action-operational-status]
+(defn divergence-map
   [request]
   (let [deployment-set    (load-resource-throw-not-allowed-action request)
         applications-sets (-> deployment-set
@@ -139,7 +140,11 @@ These resources represent a deployment set that regroups deployments.
         status            (if (some (comp pos? count) (vals divergence))
                             "NOK"
                             "OK")]
-    (r/json-response (assoc divergence :status status))))
+    (assoc divergence :status status)))
+
+(defmethod crud/do-action [resource-type utils/action-operational-status]
+  [request]
+  (r/json-response (divergence-map request)))
 
 (defmethod crud/do-action [resource-type utils/action-start]
   [request]
@@ -153,15 +158,55 @@ These resources represent a deployment set that regroups deployments.
   [request]
   (standard-action request action-bulk))
 
-(defmethod crud/do-action [resource-type utils/action-ok]
-  [request]
-  (standard-action request (fn [_resource _request]
-                             (r/map-response "running action done" 200))))
 
-(defmethod crud/do-action [resource-type utils/action-nok]
-  [request]
-  (standard-action request (fn [_resource _request]
-                             (r/map-response "running action failed" 200))))
+(defn job-transition
+  [{:keys [target-resource] :as _job}]
+  (let [request        {:params      (u/id->request-params (:href target-resource))
+                        :nuvla/authn auth/internal-identity}
+        {:keys [status]} (divergence-map (assoc-in request [:params :action] utils/action-operational-status))]
+    (if (= "OK" status)
+      (standard-action (assoc-in request [:params :action] utils/action-ok)
+                       (fn [_resource _request]
+                         (r/map-response "running action done" 200)))
+      (standard-action (assoc-in request [:params :action] utils/action-nok)
+                       (fn [_resource _request]
+                         (r/map-response "running action done" 200))))))
+
+(defmethod job-interface/on-timeout [resource-type "bulk_deployment_set_start"]
+  [job]
+  (job-transition job))
+
+(defmethod job-interface/on-timeout [resource-type "bulk_deployment_set_stop"]
+  [job]
+  (job-transition job))
+
+(defmethod job-interface/on-timeout [resource-type "bulk_deployment_set_update"]
+  [job]
+  (job-transition job))
+
+(defmethod job-interface/on-cancel [resource-type "bulk_deployment_set_start"]
+  [job]
+  (job-transition job))
+
+(defmethod job-interface/on-cancel [resource-type "bulk_deployment_set_stop"]
+  [job]
+  (job-transition job))
+
+(defmethod job-interface/on-cancel [resource-type "bulk_deployment_set_update"]
+  [job]
+  (job-transition job))
+
+(defmethod job-interface/on-done [resource-type "bulk_deployment_set_start"]
+  [job]
+  (job-transition job))
+
+(defmethod job-interface/on-done [resource-type "bulk_deployment_set_stop"]
+  [job]
+  (job-transition job))
+
+(defmethod job-interface/on-done [resource-type "bulk_deployment_set_update"]
+  [job]
+  (job-transition job))
 
 (defn cancel-latest-job
   [{:keys [id] :as _resource} _request]
@@ -178,7 +223,10 @@ These resources represent a deployment set that regroups deployments.
 
 (defmethod crud/do-action [resource-type utils/action-cancel]
   [request]
-  (standard-action request cancel-latest-job))
+  (let [resource (-> request
+                     load-resource-throw-not-allowed-action
+                     :body)]
+    (cancel-latest-job resource request)))
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 

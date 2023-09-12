@@ -117,17 +117,20 @@ request.
 (defn edit-impl
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [current (-> (str resource-type "/" uuid)
-                      (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                      (a/throw-cannot-edit request))]
-      (-> request
-          (update :body dissoc :target-resource :action)
-          (u/delete-attributes current)
-          (u/update-timestamps)
-          (u/set-updated-by request)
-          (utils/job-cond->edition)
-          (crud/validate)
-          (db/edit request)))
+    (let [current  (-> (str resource-type "/" uuid)
+                       (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                       (a/throw-cannot-edit request))
+          job (-> request
+                  (update :body dissoc :target-resource :action)
+                  (u/delete-attributes current)
+                  (u/update-timestamps)
+                  (u/set-updated-by request)
+                  (utils/job-cond->edition)
+                  (crud/validate))
+          response (db/edit job request)]
+      (when (utils/is-final-state? job)
+        (interface/on-done job))
+      response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -182,10 +185,41 @@ request.
   (let [jobs-to-cancel (->> (utils/fetch-children-jobs parent-job-id)
                             (filter utils/can-cancel?))]
     (when (seq jobs-to-cancel)
-      (create-cancel-children-jobs-job job (map :id jobs-to-cancel)))))
+      (create-cancel-children-jobs-job job))))
 
 
 (defmethod crud/do-action [resource-type utils/action-cancel]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id  (str resource-type "/" uuid)
+          job (-> (db/retrieve id request)
+                  (a/throw-cannot-manage request)
+                  (utils/throw-cannot-cancel)
+                  (assoc :state utils/state-canceled)
+                  (u/update-timestamps)
+                  (u/set-updated-by request)
+                  (utils/job-cond->edition)
+                  (crud/validate)
+                  (db/edit {:nuvla/authn auth/internal-identity})
+                  :body)]
+      (cancel-children-jobs-async job)
+      (log/warn "Canceled job : " id)
+      (interface/on-cancel job))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+(defmethod crud/do-action [resource-type utils/action-get-context]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (-> (str resource-type "/" uuid)
+        (db/retrieve request)
+        (utils/throw-cannot-get-context request)
+        (interface/get-context))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/do-action [resource-type utils/action-timeout]
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id       (str resource-type "/" uuid)
@@ -198,20 +232,8 @@ request.
                        (u/set-updated-by request)
                        (utils/job-cond->edition)
                        (crud/validate)
-                       (db/edit {:nuvla/authn auth/internal-identity}))]
-      (cancel-children-jobs-async job)
-      (log/warn "Canceled job : " id)
+                       (interface/on-timeout))]
       response)
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
-
-(defmethod crud/do-action [resource-type utils/action-get-context]
-  [{{uuid :uuid} :params :as request}]
-  (try
-    (-> (str resource-type "/" uuid)
-        (db/retrieve request)
-        (utils/throw-cannot-get-context request)
-        (interface/get-context))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -238,10 +260,9 @@ request.
 
 
 (defn create-cancel-children-jobs-job
-  [{:keys [acl] parent-job-id :id :as _parent-job} children-job-ids-to-cancel]
+  [{:keys [acl] parent-job-id :id :as _parent-job}]
   (create-job
     parent-job-id
-    "cancel_child_jobs"
-    acl
-    :affected-resources (mapv (fn [job-id] {:href job-id}) children-job-ids-to-cancel)))
+    "cancel_children_jobs"
+    acl))
 
