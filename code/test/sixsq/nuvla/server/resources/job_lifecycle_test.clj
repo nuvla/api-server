@@ -136,4 +136,35 @@
               (is (some? (last (test-utils/query-jobs {:target-resource job-id
                                                        :action          "cancel_children_jobs"
                                                        :orderby         [["created" :desc]]
-                                                       :last            1})))))))))))
+                                                       :last            1})))))))))
+
+    (testing "Job timeout"
+      (let [uri         (-> session-admin
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-job))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
+            abs-uri     (str p/service-context uri)
+            timeout-url (-> session-user
+                            (request abs-uri)
+                            (ltu/body->edn)
+                            (ltu/is-status 200)
+                            (ltu/is-operation-present ju/action-timeout)
+                            (ltu/is-key-value :state "QUEUED")
+                            (ltu/get-op-url ju/action-timeout))]
+
+        (-> session-user
+            (request timeout-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-operation-absent ju/action-cancel)
+            (ltu/is-key-value :progress 100)
+            (ltu/is-key-value :state ju/state-canceled)
+            (ltu/is-key-value nil? :started true))
+
+        (-> session-admin
+            (request abs-uri :request-method :delete)
+            (ltu/body->edn)
+            (ltu/is-status 200))))))

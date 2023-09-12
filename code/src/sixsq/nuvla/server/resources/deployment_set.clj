@@ -222,8 +222,7 @@ These resources represent a deployment set that regroups deployments.
 
 (defmethod crud/do-action [resource-type utils/action-cancel]
   [request]
-  (let [resource (-> request
-                     load-resource-throw-not-allowed-action)]
+  (let [resource (load-resource-throw-not-allowed-action request)]
     (cancel-latest-job resource request)))
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))

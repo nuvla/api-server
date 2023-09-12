@@ -171,10 +171,11 @@ request.
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
   (let [stop-op        (u/action-map id utils/action-cancel)
-        get-context-op (u/action-map id utils/action-get-context)]
+        get-context-op (u/action-map id utils/action-get-context)
+        timeout-op     (u/action-map id utils/action-timeout)]
     (cond-> (crud/set-standard-operations resource request)
             (and (a/can-manage? resource request)
-                 (utils/can-cancel? resource)) (update :operations conj stop-op)
+                 (utils/can-cancel? resource)) (update :operations conj stop-op timeout-op)
             (utils/can-get-context? resource request) (update :operations conj get-context-op))))
 
 
@@ -182,8 +183,7 @@ request.
 
 
 (defn cancel-children-jobs-async [{parent-job-id :id :as job}]
-  (let [jobs-to-cancel (->> (utils/fetch-children-jobs parent-job-id)
-                            (filter utils/can-cancel?))]
+  (let [jobs-to-cancel (filter utils/can-cancel? (utils/fetch-children-jobs parent-job-id))]
     (when (seq jobs-to-cancel)
       (create-cancel-children-jobs-job job))))
 

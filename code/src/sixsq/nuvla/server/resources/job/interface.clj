@@ -35,13 +35,13 @@
 (defmulti on-timeout dispatch-on-target-type-and-action)
 
 (defmethod on-timeout :default
-  [_resource]
-  (r/json-response {}))
+  [resource]
+  (r/json-response resource))
 
 
 (defmulti on-done dispatch-on-target-type-and-action)
 
 (defmethod on-done :default
-  [_resource]
-  (r/json-response _resource))
+  [resource]
+  (r/json-response resource))
 
