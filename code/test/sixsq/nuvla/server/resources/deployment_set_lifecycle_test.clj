@@ -578,10 +578,12 @@
                                       (ltu/is-operation-absent utils/action-update)
                                       (ltu/is-operation-present utils/action-cancel)
                                       (ltu/get-op-url utils/action-cancel))]
-                (-> session-user
-                    (request cancel-op-url)
-                    ltu/body->edn
-                    (ltu/is-status 200))
+                (with-redefs [crud/get-resource-throw-nok
+                              (constantly u-applications-sets-v11)]
+                  (-> session-user
+                      (request cancel-op-url)
+                      ltu/body->edn
+                      (ltu/is-status 200)))
 
                 (-> session-user
                     (request job-url)

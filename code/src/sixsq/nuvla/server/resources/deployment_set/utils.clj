@@ -25,8 +25,6 @@
               action-stop
               action-update
               action-cancel
-              action-ok
-              action-nok
               action-force-delete
               action-plan
               action-operational-status])

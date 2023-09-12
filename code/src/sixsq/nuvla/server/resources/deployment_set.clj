@@ -161,8 +161,8 @@ These resources represent a deployment set that regroups deployments.
 
 (defn job-transition
   [{:keys [target-resource] :as _job}]
-  (let [request        {:params      (u/id->request-params (:href target-resource))
-                        :nuvla/authn auth/internal-identity}
+  (let [request {:params      (u/id->request-params (:href target-resource))
+                 :nuvla/authn auth/internal-identity}
         {:keys [status]} (divergence-map (assoc-in request [:params :action] utils/action-operational-status))]
     (if (= "OK" status)
       (standard-action (assoc-in request [:params :action] utils/action-ok)
@@ -224,8 +224,7 @@ These resources represent a deployment set that regroups deployments.
 (defmethod crud/do-action [resource-type utils/action-cancel]
   [request]
   (let [resource (-> request
-                     load-resource-throw-not-allowed-action
-                     :body)]
+                     load-resource-throw-not-allowed-action)]
     (cancel-latest-job resource request)))
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
