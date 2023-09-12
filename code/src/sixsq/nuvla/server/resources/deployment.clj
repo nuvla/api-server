@@ -182,36 +182,37 @@ a container orchestration engine.
 
 
 (defmethod crud/edit resource-type
-  [{{:keys [acl parent module deployment-set]} :body
-    {:keys [select]}                           :cimi-params :as request}]
+  [{{:keys [acl parent module deployment-set execution-mode]} :body
+    {:keys [select]}                                          :cimi-params :as request}]
   (let [{:keys [id] :as current} (crud/get-resource-throw-nok request)
-        authn-info   (auth/current-authentication request)
-        cred-id      (or parent (:parent current))
-        cred-edited? (utils/cred-edited? parent (:parent current))
-        cred         (some-> cred-id
-                             crud/retrieve-by-id-as-admin
-                             (cond-> cred-edited? (a/throw-cannot-view request)))
-        infra-id     (:parent cred)
-        cred-name    (:name cred)
-        infra        (some-> infra-id crud/retrieve-by-id-as-admin)
-        infra-name   (:name cred)
-        nb-id        (utils/infra->nb-id infra)
-        nb-name      (some-> nb-id crud/retrieve-by-id-as-admin :name)
-        dep-set-id   (when-not (contains? select "deployment-set")
-                       (or deployment-set (:deployment-set current)))
-        dep-set-name (some-> dep-set-id crud/retrieve-by-id-as-admin :name)
-        fixed-attr   (select-keys (:module current) [:href :price :license :acl])
-        is-user?     (not (a/is-admin? authn-info))
-        new-acl      (-> (or acl (:acl current))
-                         (a/acl-append :owners (:owner current))
-                         (a/acl-append :view-acl id)
-                         (a/acl-append :edit-data id)
-                         (a/acl-append :edit-data nb-id)
-                         (cond->
-                           (and (some? (:nuvlabox current))
-                                (not= nb-id (:nuvlabox current)))
-                           (a/acl-remove (:nuvlabox current))))
-        acl-updated? (not= new-acl (:acl current))]
+        authn-info     (auth/current-authentication request)
+        cred-id        (or parent (:parent current))
+        cred-edited?   (utils/cred-edited? parent (:parent current))
+        cred           (some-> cred-id
+                               crud/retrieve-by-id-as-admin
+                               (cond-> cred-edited? (a/throw-cannot-view request)))
+        infra-id       (:parent cred)
+        cred-name      (:name cred)
+        infra          (some-> infra-id crud/retrieve-by-id-as-admin)
+        infra-name     (:name cred)
+        nb-id          (utils/infra->nb-id infra)
+        nb-name        (some-> nb-id crud/retrieve-by-id-as-admin :name)
+        dep-set-id     (when-not (contains? select "deployment-set")
+                         (or deployment-set (:deployment-set current)))
+        dep-set-name   (some-> dep-set-id crud/retrieve-by-id-as-admin :name)
+        fixed-attr     (select-keys (:module current) [:href :price :license :acl])
+        is-user?       (not (a/is-admin? authn-info))
+        new-acl          (-> (or acl (:acl current))
+                             (a/acl-append :owners (:owner current))
+                             (a/acl-append :view-acl id)
+                             (a/acl-append :edit-data id)
+                             (a/acl-append :edit-data nb-id)
+                             (cond->
+                               (and (some? (:nuvlabox current))
+                                    (not= nb-id (:nuvlabox current)))
+                               (a/acl-remove (:nuvlabox current))))
+        execution-mode (or execution-mode (utils/default-execution-mode nb-id))
+        acl-updated?   (not= new-acl (:acl current))]
     (when acl-updated?
       (utils/propagate-acl-to-dep-parameters id new-acl))
     (edit-impl
@@ -228,6 +229,7 @@ a container orchestration engine.
               infra-name (assoc-in [:body :infrastructure-service-name] infra-name)
               nb-id (assoc-in [:body :nuvlabox] nb-id)
               nb-name (assoc-in [:body :nuvlabox-name] nb-name)
+              execution-mode (assoc-in [:body :execution-mode] execution-mode)
               dep-set-name (assoc-in [:body :deployment-set-name] dep-set-name)))))
 
 

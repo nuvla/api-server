@@ -16,6 +16,7 @@
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as nuvlabox-utils]
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -293,3 +294,10 @@
 (defn cred-edited?
   [parent current-parent]
   (boolean (and parent (not= parent current-parent))))
+
+(defn default-execution-mode
+  [nuvlabox-id]
+  (if nuvlabox-id
+    (let [nuvlabox (crud/retrieve-by-id-as-admin nuvlabox-id)]
+      (nuvlabox-utils/get-execution-mode nuvlabox))
+    "push"))
