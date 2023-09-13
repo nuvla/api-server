@@ -182,39 +182,39 @@ These resources represent a deployment set that regroups deployments.
       (state-transition id utils/action-ok)
       (state-transition id utils/action-nok))))
 
-(defmethod job-interface/on-timeout [resource-type "bulk_deployment_set_start"]
+(defmethod job-interface/on-timeout [resource-type (utils/bulk-action-job-name utils/action-start)]
   [job]
   (job-transition job))
 
-(defmethod job-interface/on-timeout [resource-type "bulk_deployment_set_stop"]
+(defmethod job-interface/on-timeout [resource-type (utils/bulk-action-job-name utils/action-stop)]
   [job]
   (job-transition job))
 
-(defmethod job-interface/on-timeout [resource-type "bulk_deployment_set_update"]
+(defmethod job-interface/on-timeout [resource-type (utils/bulk-action-job-name utils/action-update)]
   [job]
   (job-transition job))
 
-(defmethod job-interface/on-cancel [resource-type "bulk_deployment_set_start"]
+(defmethod job-interface/on-cancel [resource-type (utils/bulk-action-job-name utils/action-start)]
   [job]
   (job-transition job))
 
-(defmethod job-interface/on-cancel [resource-type "bulk_deployment_set_stop"]
+(defmethod job-interface/on-cancel [resource-type (utils/bulk-action-job-name utils/action-stop)]
   [job]
   (job-transition job))
 
-(defmethod job-interface/on-cancel [resource-type "bulk_deployment_set_update"]
+(defmethod job-interface/on-cancel [resource-type (utils/bulk-action-job-name utils/action-update)]
   [job]
   (job-transition job))
 
-(defmethod job-interface/on-done [resource-type "bulk_deployment_set_start"]
+(defmethod job-interface/on-done [resource-type (utils/bulk-action-job-name utils/action-start)]
   [job]
   (job-transition job))
 
-(defmethod job-interface/on-done [resource-type "bulk_deployment_set_stop"]
+(defmethod job-interface/on-done [resource-type (utils/bulk-action-job-name utils/action-stop)]
   [job]
   (job-transition job))
 
-(defmethod job-interface/on-done [resource-type "bulk_deployment_set_update"]
+(defmethod job-interface/on-done [resource-type (utils/bulk-action-job-name utils/action-update)]
   [job]
   (job-transition job))
 
@@ -230,11 +230,11 @@ These resources represent a deployment set that regroups deployments.
                                     :action crud/action-delete)
                   :authn-info     auth/internal-identity}))))
 
-(defmethod job-interface/on-done [resource-type "deployment_set_delete"]
+(defmethod job-interface/on-done [resource-type (utils/action-job-name crud/action-delete)]
   [job]
   (job-delete-deployment-set-done job))
 
-(defmethod job-interface/on-done [resource-type "deployment_set_force_delete"]
+(defmethod job-interface/on-done [resource-type (utils/action-job-name utils/action-force-delete)]
   [job]
   (job-delete-deployment-set-done job))
 
