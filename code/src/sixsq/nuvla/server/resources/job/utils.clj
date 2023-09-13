@@ -110,3 +110,9 @@
   (if (can-get-context? resource request)
     resource
     (throw (r/ex-unauthorized (:id resource)))))
+
+(defn throw-cannot-edit-in-final-state
+  [{:keys [id] :as job}]
+  (if (is-final-state? job)
+    (throw (r/ex-response "edit is not allowed in final state" 409 id))
+    job))

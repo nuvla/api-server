@@ -115,12 +115,13 @@ request.
   (retrieve-impl request))
 
 
-(defn edit-impl
+(defmethod crud/edit resource-type
   [{{uuid :uuid} :params :as request}]
   (try
     (let [current  (-> (str resource-type "/" uuid)
                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                       (a/throw-cannot-edit request))
+                       (a/throw-cannot-edit request)
+                       utils/throw-cannot-edit-in-final-state)
           job      (-> request
                        (update :body dissoc :target-resource :action)
                        (u/delete-attributes current)
@@ -134,11 +135,6 @@ request.
       response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
-
-
-(defmethod crud/edit resource-type
-  [request]
-  (edit-impl request))
 
 
 (def delete-impl (std-crud/delete-fn resource-type))
@@ -260,8 +256,6 @@ request.
 
 (defn create-cancel-children-jobs-job
   [{:keys [acl] parent-job-id :id :as _parent-job}]
-  (create-job
-    parent-job-id
-    "cancel_children_jobs"
-    acl))
+  (create-job parent-job-id "cancel_children_jobs" acl
+              :priority 10))
 

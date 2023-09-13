@@ -86,6 +86,15 @@
             (ltu/is-key-value :state ju/state-canceled)
             (ltu/is-key-value nil? :started true)))
 
+      (testing "edit is not allowed in a final state"
+        (-> session-admin
+            (request abs-uri
+                     :request-method :put
+                     :body (json/write-str {:state "SUCCESS"}))
+            (ltu/body->edn)
+            (ltu/is-status 409)
+            (ltu/message-matches "edit is not allowed in final state")))
+
       (-> session-admin
           (request abs-uri :request-method :delete)
           (ltu/body->edn)
@@ -113,15 +122,15 @@
 
         (testing "Bulk job cancel also children jobs"
           (let [bulk-job-resp (-> session-admin
-                                (request base-uri
-                                         :request-method :post
-                                         :body (json/write-str (assoc valid-job
-                                                                 :action "bulk-action"
-                                                                 :priority 50)))
-                                (ltu/body->edn)
-                                (ltu/is-status 201))
-                bulk-job-id (ltu/location bulk-job-resp)
-                bulk-job-url (ltu/location-url bulk-job-resp)]
+                                  (request base-uri
+                                           :request-method :post
+                                           :body (json/write-str (assoc valid-job
+                                                                   :action "bulk-action"
+                                                                   :priority 50)))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 201))
+                bulk-job-id   (ltu/location bulk-job-resp)
+                bulk-job-url  (ltu/location-url bulk-job-resp)]
 
             (testing "Cancel job with children"
               (let [cancel-url (-> session-admin
@@ -135,19 +144,22 @@
                     (ltu/body->edn)
                     (ltu/is-status 200))
 
-                (is (some? (last (test-utils/query-jobs {:target-resource bulk-job-id
-                                                         :action          "cancel_children_jobs"
-                                                         :orderby         [["created" :desc]]
-                                                         :last            1}))))))))))
+                (let [cancel-job (first (test-utils/query-jobs
+                                          {:target-resource bulk-job-id
+                                           :action          "cancel_children_jobs"
+                                           :orderby         [["created" :desc]]
+                                           :last            1}))]
+                  (is (some? cancel-job))
+                  (is (= (:priority cancel-job) 10)))))))))
 
     (testing "Job timeout"
       (let [job-resp (-> session-admin
-                              (request base-uri
-                                       :request-method :post
-                                       :body (json/write-str valid-job))
-                              (ltu/body->edn)
-                              (ltu/is-status 201))
-            job-url (ltu/location-url job-resp)]
+                         (request base-uri
+                                  :request-method :post
+                                  :body (json/write-str valid-job))
+                         (ltu/body->edn)
+                         (ltu/is-status 201))
+            job-url  (ltu/location-url job-resp)]
 
         (-> session-admin
             (request job-url)

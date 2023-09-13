@@ -623,36 +623,40 @@
                                     (request dep-set-url)
                                     (ltu/body->edn)
                                     (ltu/is-status 200)
-                                    (ltu/get-op-url utils/action-force-delete))
-                job-url         (-> session-user
-                                    (request force-delete-op)
-                                    (ltu/body->edn)
-                                    (ltu/is-status 202)
-                                    ltu/location-url)]
+                                    (ltu/get-op-url utils/action-force-delete))]
             (testing "on-done of job without success deployment-set is not deleted"
-              (-> session-admin
-                  (request job-url
-                           :request-method :put
-                           :body (json/write-str {:state "FAILED"}))
-                  (ltu/body->edn)
-                  (ltu/is-status 200))
+              (let [job-url (-> session-user
+                                (request force-delete-op)
+                                (ltu/body->edn)
+                                (ltu/is-status 202)
+                                ltu/location-url)]
+                (-> session-admin
+                    (request job-url
+                             :request-method :put
+                             :body (json/write-str {:state "FAILED"}))
+                    (ltu/body->edn)
+                    (ltu/is-status 200)))
               (-> session-user
                   (request dep-set-url)
                   (ltu/body->edn)
                   (ltu/is-status 200)))
 
             (testing "on-done of job with success deployment-set is deleted"
-              (-> session-admin
-                  (request job-url
-                           :request-method :put
-                           :body (json/write-str {:state "SUCCESS"}))
-                  (ltu/body->edn)
-                  (ltu/is-status 200))
+              (let [job-url (-> session-user
+                                (request force-delete-op)
+                                (ltu/body->edn)
+                                (ltu/is-status 202)
+                                ltu/location-url)]
+                (-> session-admin
+                   (request job-url
+                            :request-method :put
+                            :body (json/write-str {:state "SUCCESS"}))
+                   (ltu/body->edn)
+                   (ltu/is-status 200)))
               (-> session-user
                   (request dep-set-url)
                   (ltu/body->edn)
-                  (ltu/is-status 404)))))
-        ))))
+                  (ltu/is-status 404)))))))))
 
 (deftest lifecycle-create-apps-sets
   (let [session-anon (-> (ltu/ring-app)
