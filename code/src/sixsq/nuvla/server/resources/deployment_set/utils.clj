@@ -41,6 +41,9 @@
 (def state-updating "UPDATING")
 (def state-updated "UPDATED")
 
+(def operational-status-ok "OK")
+(def operational-status-nok "NOK")
+
 (def states [state-new
              state-starting
              state-started
@@ -152,18 +155,21 @@
 
 (defn action-job-name
   [action]
-  (str "deployment_set_" action))
+  (str "deployment_set_" (str/replace action #"-" "_")))
 
 (defn bulk-action-job-name
   [action]
   (str "bulk_" (action-job-name action)))
 
 (defn save-deployment-set
-  [deployment-set]
-  (-> deployment-set
-      (u/update-timestamps)
-      (crud/validate)
-      (db/edit {:nuvla/authn auth/internal-identity})))
+  [next current]
+  (if (not= next current)
+    (-> next
+        (u/update-timestamps)
+        (crud/validate)
+        (db/edit {:nuvla/authn auth/internal-identity})
+        :body)
+    current))
 
 (defn get-first-applications-sets
   [deployment-set]

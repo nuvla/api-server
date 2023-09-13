@@ -3,7 +3,6 @@
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
-    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -13,7 +12,6 @@
     [sixsq.nuvla.server.resources.deployment :as deployment]
     [sixsq.nuvla.server.resources.deployment-set :as t]
     [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
-    [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.job.utils :as job-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.module :as module]
@@ -368,10 +366,7 @@
                 (ltu/is-key-value :href :target-resource resource-id))))
 
         (testing "force state transition to simulate job action"
-          (t/standard-action {:params      (assoc (u/id->request-params resource-id)
-                                             :action utils/action-ok)
-                              :nuvla/authn auth/internal-identity}
-                             (constantly nil))
+          (t/state-transition resource-id utils/action-ok)
           (-> session-user
               (request dep-set-url)
               ltu/body->edn
@@ -496,10 +491,7 @@
               (ltu/message-matches "edit action is not allowed in state [UPDATING]")))
 
         (testing "force state transition to simulate job action"
-          (t/standard-action {:params      (assoc (u/id->request-params resource-id)
-                                             :action utils/action-nok)
-                              :nuvla/authn auth/internal-identity}
-                             (constantly nil))
+          (t/state-transition resource-id utils/action-nok)
           (-> session-user
               (request dep-set-url)
               ltu/body->edn
@@ -612,10 +604,7 @@
                 (ltu/is-key-value :state utils/state-stopping))))
 
         (testing "force state transition to simulate job action"
-          (t/standard-action {:params      (assoc (u/id->request-params resource-id)
-                                             :action utils/action-nok)
-                              :nuvla/authn auth/internal-identity}
-                             (constantly nil))
+          (t/state-transition resource-id utils/action-nok)
           (-> session-user
               (request dep-set-url)
               ltu/body->edn
@@ -634,12 +623,35 @@
                                     (request dep-set-url)
                                     (ltu/body->edn)
                                     (ltu/is-status 200)
-                                    (ltu/get-op-url utils/action-force-delete))]
-            (-> session-user
-               (request force-delete-op)
-               (ltu/body->edn)
-               (ltu/is-status 202))))
+                                    (ltu/get-op-url utils/action-force-delete))
+                job-url         (-> session-user
+                                    (request force-delete-op)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 202)
+                                    ltu/location-url)]
+            (testing "on-done of job without success deployment-set is not deleted"
+              (-> session-admin
+                  (request job-url
+                           :request-method :put
+                           :body (json/write-str {:state "FAILED"}))
+                  (ltu/body->edn)
+                  (ltu/is-status 200))
+              (-> session-user
+                  (request dep-set-url)
+                  (ltu/body->edn)
+                  (ltu/is-status 200)))
 
+            (testing "on-done of job with success deployment-set is deleted"
+              (-> session-admin
+                  (request job-url
+                           :request-method :put
+                           :body (json/write-str {:state "SUCCESS"}))
+                  (ltu/body->edn)
+                  (ltu/is-status 200))
+              (-> session-user
+                  (request dep-set-url)
+                  (ltu/body->edn)
+                  (ltu/is-status 404)))))
         ))))
 
 (deftest lifecycle-create-apps-sets
@@ -829,11 +841,7 @@
                                     ltu/body->edn
                                     (ltu/is-status 202)
                                     ltu/location-url)
-            ;; force deployment state
-            _                   (t/standard-action {:params      (assoc (u/id->request-params resource-id)
-                                                                   :action utils/action-ok)
-                                                    :nuvla/authn auth/internal-identity}
-                                                   (constantly nil))
+            _                   (t/state-transition resource-id utils/action-ok)
             stop-op-url         (-> session-admin
                                     (request dep-set-url)
                                     ltu/body->edn
@@ -886,11 +894,7 @@
                                       ltu/body->edn
                                       (ltu/is-status 202)
                                       ltu/location-url)
-            ;; force deployment state
-            _                     (t/standard-action {:params      (assoc (u/id->request-params resource-id)
-                                                                     :action utils/action-ok)
-                                                      :nuvla/authn auth/internal-identity}
-                                                     (constantly nil))
+            _                     (t/state-transition resource-id utils/action-ok)
             update-op-url         (-> session-admin
                                       (request dep-set-url)
                                       ltu/body->edn
@@ -912,17 +916,18 @@
                                       (ltu/get-op-url job-utils/action-cancel))]
         (with-redefs [crud/get-resource-throw-nok
                       (constantly u-applications-sets-v11)]
-          ;; cancel the update_deployment job
-          (-> session-admin
-              (request cancel-update-job-url)
-              (ltu/body->edn)
-              (ltu/is-status 200))
-          ;; the deployment set should go in PARTIALLY_UPDATED state
-          (-> session-admin
-              (request dep-set-url)
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value :state utils/state-partially-updated)))))))
+          (testing "cancel the update_deployment job"
+            (-> session-admin
+                (request cancel-update-job-url)
+                (ltu/body->edn)
+                (ltu/is-status 200)))
+
+          (testing "the deployment set should go in PARTIALLY_UPDATED state"
+            (-> session-admin
+                (request dep-set-url)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-key-value :state utils/state-partially-updated))))))))
 
 
 (deftest bad-methods

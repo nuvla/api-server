@@ -120,13 +120,13 @@ request.
     (let [current  (-> (str resource-type "/" uuid)
                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
                        (a/throw-cannot-edit request))
-          job (-> request
-                  (update :body dissoc :target-resource :action)
-                  (u/delete-attributes current)
-                  (u/update-timestamps)
-                  (u/set-updated-by request)
-                  (utils/job-cond->edition)
-                  (crud/validate))
+          job      (-> request
+                       (update :body dissoc :target-resource :action)
+                       (u/delete-attributes current)
+                       (u/update-timestamps)
+                       (u/set-updated-by request)
+                       (utils/job-cond->edition)
+                       (crud/validate))
           response (db/edit job request)]
       (when (utils/is-final-state? job)
         (interface/on-done job))
@@ -191,20 +191,21 @@ request.
 (defmethod crud/do-action [resource-type utils/action-cancel]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id  (str resource-type "/" uuid)
-          job (-> (db/retrieve id request)
-                  (a/throw-cannot-manage request)
-                  (utils/throw-cannot-cancel)
-                  (assoc :state utils/state-canceled)
-                  (u/update-timestamps)
-                  (u/set-updated-by request)
-                  (utils/job-cond->edition)
-                  (crud/validate)
-                  (db/edit {:nuvla/authn auth/internal-identity})
-                  :body)]
+    (let [id       (str resource-type "/" uuid)
+          response (-> (db/retrieve id request)
+                       (a/throw-cannot-manage request)
+                       (utils/throw-cannot-cancel)
+                       (assoc :state utils/state-canceled)
+                       (u/update-timestamps)
+                       (u/set-updated-by request)
+                       (utils/job-cond->edition)
+                       (crud/validate)
+                       (db/edit {:nuvla/authn auth/internal-identity}))
+          job      (:body response)]
       (cancel-children-jobs-async job)
       (log/warn "Canceled job : " id)
-      (interface/on-cancel job))
+      (interface/on-cancel job)
+      response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -232,7 +233,8 @@ request.
                        (u/set-updated-by request)
                        (utils/job-cond->edition)
                        (crud/validate)
-                       (interface/on-timeout))]
+                       (db/edit {:nuvla/authn auth/internal-identity}))]
+      (interface/on-timeout (:body response))
       response)
     (catch Exception e
       (or (ex-data e) (throw e)))))

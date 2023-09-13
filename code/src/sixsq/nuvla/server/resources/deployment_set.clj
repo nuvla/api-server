@@ -108,7 +108,7 @@ These resources represent a deployment set that regroups deployments.
           job-status :status} :body} (job/create-job id (utils/action-job-name action)
                                                      {:owners   ["group/nuvla-admin"]
                                                       :view-acl [(auth/current-active-claim request)]})
-        job-msg  (str action " on " id " with async " job-id)]
+        job-msg    (str action " on " id " with async " job-id)]
     (if (not= job-status 201)
       (throw (r/ex-response (format "unable to create async job to %s" job-action) 500 id))
       (r/map-response job-msg 202 id job-id))))
@@ -121,13 +121,19 @@ These resources represent a deployment set that regroups deployments.
       (sm/throw-can-not-do-action request)))
 
 (defn standard-action
-  [request f]
-  (let [resource (-> request
-                     load-resource-throw-not-allowed-action
-                     (sm/transition request)
-                     utils/save-deployment-set
-                     :body)]
-    (f resource request)))
+  ([request]
+   (standard-action request (fn [resource _request] resource)))
+  ([request f]
+   (let [current (load-resource-throw-not-allowed-action request)]
+     (-> current
+         (sm/transition request)
+         (utils/save-deployment-set current)
+         (f request)))))
+(defn state-transition
+  [id action]
+  (standard-action {:params      (assoc (u/id->request-params id)
+                                   :action action)
+                    :nuvla/authn auth/internal-identity}))
 
 (defmethod crud/do-action [resource-type utils/action-plan]
   [request]
@@ -147,8 +153,8 @@ These resources represent a deployment set that regroups deployments.
                             (utils/plan deployment-set applications-sets)
                             (utils/current-state deployment-set))
         status            (if (some (comp pos? count) (vals divergence))
-                            "NOK"
-                            "OK")]
+                            utils/operational-status-nok
+                            utils/operational-status-ok)]
     (assoc divergence :status status)))
 
 (defmethod crud/do-action [resource-type utils/action-operational-status]
@@ -170,16 +176,11 @@ These resources represent a deployment set that regroups deployments.
 
 (defn job-transition
   [{:keys [target-resource] :as _job}]
-  (let [request {:params      (u/id->request-params (:href target-resource))
-                 :nuvla/authn auth/internal-identity}
-        {:keys [status]} (divergence-map (assoc-in request [:params :action] utils/action-operational-status))]
-    (if (= "OK" status)
-      (standard-action (assoc-in request [:params :action] utils/action-ok)
-                       (fn [_resource _request]
-                         (r/map-response "running action done" 200)))
-      (standard-action (assoc-in request [:params :action] utils/action-nok)
-                       (fn [_resource _request]
-                         (r/map-response "running action done" 200))))))
+  (let [id (:href target-resource)
+        operational-status (crud/do-action-as-admin id utils/action-operational-status)]
+    (if (= (:status operational-status) utils/operational-status-ok)
+      (state-transition id utils/action-ok)
+      (state-transition id utils/action-nok))))
 
 (defmethod job-interface/on-timeout [resource-type "bulk_deployment_set_start"]
   [job]
@@ -233,7 +234,7 @@ These resources represent a deployment set that regroups deployments.
   [job]
   (job-delete-deployment-set-done job))
 
-(defmethod job-interface/on-done [resource-type "deployment_set_force-delete"]
+(defmethod job-interface/on-done [resource-type "deployment_set_force_delete"]
   [job]
   (job-delete-deployment-set-done job))
 
@@ -256,8 +257,7 @@ These resources represent a deployment set that regroups deployments.
 
 (defmethod crud/do-action [resource-type utils/action-cancel]
   [request]
-  (let [resource (load-resource-throw-not-allowed-action request)]
-    (cancel-latest-job resource request)))
+  (standard-action request cancel-latest-job))
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
@@ -334,8 +334,6 @@ These resources represent a deployment set that regroups deployments.
 (defmethod crud/edit resource-type
   [request]
   (edit-impl request))
-
-(def delete-impl (std-crud/delete-fn resource-type))
 
 (defmethod crud/delete resource-type
   [request]
