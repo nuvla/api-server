@@ -10,6 +10,7 @@ represents a task that will be executed only when triggered by an external
 request.
 "
   (:require
+    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
@@ -170,22 +171,21 @@ request.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [stop-op        (u/action-map id utils/action-cancel)
-        get-context-op (u/action-map id utils/action-get-context)
-        timeout-op     (u/action-map id utils/action-timeout)]
+  (let [cancel-op            (u/action-map id utils/action-cancel)
+        get-context-op       (u/action-map id utils/action-get-context)
+        timeout-op           (u/action-map id utils/action-timeout)]
     (cond-> (crud/set-standard-operations resource request)
-            (and (a/can-manage? resource request)
-                 (utils/can-cancel? resource)) (update :operations conj stop-op timeout-op)
+            (utils/can-cancel? resource request) (update :operations conj cancel-op)
+            (utils/can-timeout? resource request) (update :operations conj timeout-op)
             (utils/can-get-context? resource request) (update :operations conj get-context-op))))
 
 
 (declare create-cancel-children-jobs-job)
 
 
-(defn cancel-children-jobs-async [{parent-job-id :id :as job}]
-  (let [jobs-to-cancel (filter utils/can-cancel? (utils/fetch-children-jobs parent-job-id))]
-    (when (seq jobs-to-cancel)
-      (create-cancel-children-jobs-job job))))
+(defn cancel-children-jobs-async [{action :action :as job}]
+  (when (str/starts-with? action "bulk")
+    (create-cancel-children-jobs-job job)))
 
 
 (defmethod crud/do-action [resource-type utils/action-cancel]
@@ -193,8 +193,7 @@ request.
   (try
     (let [id       (str resource-type "/" uuid)
           response (-> (db/retrieve id request)
-                       (a/throw-cannot-manage request)
-                       (utils/throw-cannot-cancel)
+                       (utils/throw-cannot-cancel request)
                        (assoc :state utils/state-canceled)
                        (u/update-timestamps)
                        (u/set-updated-by request)
@@ -223,11 +222,9 @@ request.
 (defmethod crud/do-action [resource-type utils/action-timeout]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id       (str resource-type "/" uuid)
-          job      (db/retrieve id request)
-          response (-> job
-                       (a/throw-cannot-manage request)
-                       (utils/throw-cannot-cancel)
+    (let [response (-> (str resource-type "/" uuid)
+                       (db/retrieve request)
+                       (utils/throw-cannot-timeout request)
                        (assoc :state utils/state-canceled)
                        (u/update-timestamps)
                        (u/set-updated-by request)
