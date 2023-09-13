@@ -789,6 +789,16 @@
                             (ltu/body->edn)
                             (ltu/is-status 201))
             dep-set-url          (str p/service-context resource-id)
+            valid-deployment     {:module         {:href "module/x"}
+                                  :deployment-set resource-id}
+            _dep-url             (with-redefs [module-utils/resolve-module (constantly {:href "module/x"})]
+                                   (-> session-admin
+                                       (request deployment-base-uri
+                                                :request-method :post
+                                                :body (json/write-str valid-deployment))
+                                       (ltu/body->edn)
+                                       (ltu/is-status 201)
+                                       (ltu/location-url)))
             start-op-url         (-> session-admin
                                      (request dep-set-url)
                                      ltu/body->edn
@@ -821,7 +831,7 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-key-value :state utils/state-partially-started)))))
-    (testing "Canceling stop action"
+    (testing "Canceling stop action - not all deployments stopped"
       (let [{{{:keys [resource-id]} :body}
              :response} (-> session-admin
                             (request base-uri
@@ -830,6 +840,16 @@
                             (ltu/body->edn)
                             (ltu/is-status 201))
             dep-set-url         (str p/service-context resource-id)
+            valid-deployment    {:module         {:href "module/x"}
+                                 :deployment-set resource-id}
+            _dep-url            (with-redefs [module-utils/resolve-module (constantly {:href "module/x"})]
+                                  (-> session-admin
+                                      (request deployment-base-uri
+                                               :request-method :post
+                                               :body (json/write-str valid-deployment))
+                                      (ltu/body->edn)
+                                      (ltu/is-status 201)
+                                      (ltu/location-url)))
             start-op-url        (-> session-admin
                                     (request dep-set-url)
                                     ltu/body->edn
@@ -874,6 +894,76 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-key-value :state utils/state-partially-stopped)))))
+    (testing "Canceling stop action - all deployments stopped"
+      (let [{{{:keys [resource-id]} :body}
+             :response} (-> session-admin
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-deployment-set))
+                            (ltu/body->edn)
+                            (ltu/is-status 201))
+            dep-set-url         (str p/service-context resource-id)
+            valid-deployment    {:module         {:href "module/x"}
+                                 :deployment-set resource-id}
+            dep-url             (with-redefs [module-utils/resolve-module (constantly {:href "module/x"})]
+                                  (-> session-admin
+                                      (request deployment-base-uri
+                                               :request-method :post
+                                               :body (json/write-str valid-deployment))
+                                      (ltu/body->edn)
+                                      (ltu/is-status 201)
+                                      (ltu/location-url)))
+            ;; force deployment status to STOPPED
+            _                   (-> session-admin
+                                    (request dep-url
+                                             :request-method :put
+                                             :body (json/write-str {:state "STOPPED"}))
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200))
+            start-op-url        (-> session-admin
+                                    (request dep-set-url)
+                                    ltu/body->edn
+                                    (ltu/is-status 200)
+                                    (ltu/is-operation-present utils/action-start)
+                                    (ltu/get-op-url utils/action-start))
+            _                   (-> session-admin
+                                    (request start-op-url)
+                                    ltu/body->edn
+                                    (ltu/is-status 202)
+                                    ltu/location-url)
+            _                   (t/state-transition resource-id utils/action-ok)
+            stop-op-url         (-> session-admin
+                                    (request dep-set-url)
+                                    ltu/body->edn
+                                    (ltu/is-status 200)
+                                    (ltu/is-operation-present utils/action-stop)
+                                    (ltu/get-op-url utils/action-stop))
+            stop-job-url        (-> session-admin
+                                    (request stop-op-url)
+                                    ltu/body->edn
+                                    (ltu/is-status 202)
+                                    ltu/location-url)
+            cancel-stop-job-url (-> session-admin
+                                    (request stop-job-url)
+                                    ltu/body->edn
+                                    (ltu/is-status 200)
+                                    (ltu/is-key-value :state job-utils/state-queued)
+                                    (ltu/is-key-value :action "bulk_deployment_set_stop")
+                                    (ltu/is-operation-present job-utils/action-cancel)
+                                    (ltu/get-op-url job-utils/action-cancel))]
+        (with-redefs [crud/get-resource-throw-nok
+                      (constantly u-applications-sets-v11)]
+          ;; cancel the stop_deployment job
+          (-> session-admin
+              (request cancel-stop-job-url)
+              (ltu/body->edn)
+              (ltu/is-status 200))
+          ;; the deployment set should go in PARTIALLY_STOPPED state
+          (-> session-admin
+              (request dep-set-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :state utils/state-stopped)))))
     (testing "Canceling update action"
       (let [{{{:keys [resource-id]} :body}
              :response} (-> session-admin
@@ -883,6 +973,16 @@
                             (ltu/body->edn)
                             (ltu/is-status 201))
             dep-set-url           (str p/service-context resource-id)
+            valid-deployment      {:module         {:href "module/x"}
+                                   :deployment-set resource-id}
+            _dep-url              (with-redefs [module-utils/resolve-module (constantly {:href "module/x"})]
+                                    (-> session-admin
+                                        (request deployment-base-uri
+                                                 :request-method :post
+                                                 :body (json/write-str valid-deployment))
+                                        (ltu/body->edn)
+                                        (ltu/is-status 201)
+                                        (ltu/location-url)))
             start-op-url          (-> session-admin
                                       (request dep-set-url)
                                       ltu/body->edn

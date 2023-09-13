@@ -174,7 +174,7 @@ These resources represent a deployment set that regroups deployments.
   (standard-action request action-bulk))
 
 
-(defn job-transition
+(defn start-update-job-transition
   [{:keys [target-resource] :as _job}]
   (let [id (:href target-resource)
         operational-status (crud/do-action-as-admin id utils/action-operational-status)]
@@ -182,41 +182,50 @@ These resources represent a deployment set that regroups deployments.
       (state-transition id utils/action-ok)
       (state-transition id utils/action-nok))))
 
+
+(defn stop-job-transition
+  [{:keys [target-resource] :as _job}]
+  (let [id (:href target-resource)]
+    (if (utils/all-deployments-stopped? id)
+      (state-transition id utils/action-ok)
+      (state-transition id utils/action-nok))))
+
+
 (defmethod job-interface/on-timeout [resource-type (utils/bulk-action-job-name utils/action-start)]
   [job]
-  (job-transition job))
+  (start-update-job-transition job))
 
 (defmethod job-interface/on-timeout [resource-type (utils/bulk-action-job-name utils/action-stop)]
   [job]
-  (job-transition job))
+  (stop-job-transition job))
 
 (defmethod job-interface/on-timeout [resource-type (utils/bulk-action-job-name utils/action-update)]
   [job]
-  (job-transition job))
+  (start-update-job-transition job))
 
 (defmethod job-interface/on-cancel [resource-type (utils/bulk-action-job-name utils/action-start)]
   [job]
-  (job-transition job))
+  (start-update-job-transition job))
 
 (defmethod job-interface/on-cancel [resource-type (utils/bulk-action-job-name utils/action-stop)]
   [job]
-  (job-transition job))
+  (stop-job-transition job))
 
 (defmethod job-interface/on-cancel [resource-type (utils/bulk-action-job-name utils/action-update)]
   [job]
-  (job-transition job))
+  (start-update-job-transition job))
 
 (defmethod job-interface/on-done [resource-type (utils/bulk-action-job-name utils/action-start)]
   [job]
-  (job-transition job))
+  (start-update-job-transition job))
 
 (defmethod job-interface/on-done [resource-type (utils/bulk-action-job-name utils/action-stop)]
   [job]
-  (job-transition job))
+  (stop-job-transition job))
 
 (defmethod job-interface/on-done [resource-type (utils/bulk-action-job-name utils/action-update)]
   [job]
-  (job-transition job))
+  (start-update-job-transition job))
 
 (defn job-delete-deployment-set-done
   [{{id :href} :target-resource

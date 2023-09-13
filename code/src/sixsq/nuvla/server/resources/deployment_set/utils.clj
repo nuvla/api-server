@@ -6,6 +6,7 @@
             [sixsq.nuvla.server.resources.common.crud :as crud]
             [sixsq.nuvla.server.resources.common.state-machine :as sm]
             [sixsq.nuvla.server.resources.common.utils :as u]
+            [sixsq.nuvla.server.resources.deployment.utils :as du]
             [sixsq.nuvla.server.resources.module.utils :as module-utils]
             [tilakone.core :as tk]))
 
@@ -273,3 +274,8 @@
                             (assoc :environmental-variables environmental-variables))
        :target      (or nuvlabox parent)
        :state       state})))
+
+
+(defn all-deployments-stopped?
+  [deployment-set-id]
+  (every? (comp #(= "STOPPED" %) :state) (current-deployments deployment-set-id)))
