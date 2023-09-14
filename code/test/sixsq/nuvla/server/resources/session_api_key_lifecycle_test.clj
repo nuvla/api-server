@@ -123,7 +123,10 @@
                                                :key    uuid
                                                :secret secret}}
             unauthorized-create (update-in valid-create [:template :secret] (constantly bad-digest))
-            invalid-create      (assoc-in valid-create [:template :invalid] "BAD")]
+            invalid-create      (assoc-in valid-create [:template :invalid] "BAD")
+            event-authn-info    {:user-id      "user/unknown"
+                                 :active-claim "user/unknown"
+                                 :claims       ["user/unknown" "group/nuvla-anon"]}]
 
         ;; anonymous query should succeed but have no entries
         (-> session-anon
@@ -140,6 +143,14 @@
             (ltu/body->edn)
             (ltu/is-status 403))
 
+        (ltu/is-last-event uuid {:name               "session.add"
+                                 :description        "Login attempt failed."
+                                 :category           "add"
+                                 :success            false
+                                 :linked-identifiers [(str "credential/" uuid)]
+                                 :authn-info         event-authn-info
+                                 :acl                {:owners ["group/nuvla-admin"]}})
+
         ;; anonymous create must succeed; also with redirect
         (let [resp        (-> session-anon
                               (request base-uri
@@ -149,6 +160,13 @@
                               (ltu/is-set-cookie)
                               (ltu/is-status 201))
               id          (ltu/body-resource-id resp)
+              _           (ltu/is-last-event id {:name         "session.add"
+                                                 :description        (str (:id valid-api-key) " logged in.")
+                                                 :category           "add"
+                                                 :success            true
+                                                 :linked-identifiers [(str "credential/" uuid)]
+                                                 :authn-info         event-authn-info
+                                                 :acl                {:owners ["group/nuvla-admin" id]}})
 
               token       (get-in resp [:response :cookies authn-cookie :value])
               cookie-info (if token (sign/unsign-cookie-info token) {})
@@ -221,7 +239,7 @@
 
           ;; user with session role can delete resource
           (-> (session app)
-              (header authn-info-header (str "user group/nuvla-user " id))
+              (header authn-info-header (str "user/user group/nuvla-user " id))
               (request abs-uri
                        :request-method :delete)
               (ltu/is-unset-cookie)

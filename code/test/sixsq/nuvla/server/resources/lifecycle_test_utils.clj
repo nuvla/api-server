@@ -25,8 +25,10 @@
     [sixsq.nuvla.server.middleware.base-uri :refer [wrap-base-uri]]
     [sixsq.nuvla.server.middleware.cimi-params :refer [wrap-cimi-params]]
     [sixsq.nuvla.server.middleware.exception-handler :refer [wrap-exceptions]]
+    [sixsq.nuvla.server.middleware.eventer :refer [wrap-eventer]]
     [sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
+    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.util.kafka :as ka]
     [sixsq.nuvla.server.util.zookeeper :as uzk]
     [zookeeper :as zk])
@@ -308,7 +310,7 @@
       [client server])))
 
 
-(def ^:private zk-client-server-cache (atom nil))
+(defonce ^:private zk-client-server-cache (atom nil))
 
 
 (defn set-zk-client-server-cache
@@ -387,7 +389,7 @@
     [node client sniffer]))
 
 
-(def ^:private es-node-client-cache (atom nil))
+(defonce ^:private es-node-client-cache (atom nil))
 
 (defn es-node
   []
@@ -469,14 +471,15 @@
       wrap-nested-params
       wrap-params
       wrap-base-uri
-      wrap-authn-info
       wrap-exceptions
       (wrap-json-body {:keywords? true})
+      wrap-eventer
+      wrap-authn-info
       (wrap-json-response {:pretty true :escape-non-ascii true})
       wrap-logger))
 
 
-(def ^:private ring-app-cache (atom nil))
+(defonce ^:private ring-app-cache (atom nil))
 
 (defn set-ring-app-cache
   "Sets the value of the cached ring application. If the current value is nil,
@@ -538,7 +541,7 @@
           (let [ts (System/currentTimeMillis)]
             (.close kafka)
             (log/debug (str "--->: close kafka done in: "
-                            (- (System/currentTimeMillis) ts))) )
+                            (- (System/currentTimeMillis) ts))))
           (ke/delete-dir log-dir))))))
 
 
@@ -599,4 +602,73 @@
                    :body (json/write-str {:dummy "value"}))
           (is-status 405)))))
 
+;;
+;; ACL
+;;
 
+(defmacro is-acl
+  [expected-acl actual-acl]
+  `(do
+     (when (:owners ~expected-acl)
+       (is (= (set (:owners ~expected-acl)) (set (:owners ~actual-acl)))))
+     (when (:edit-acl ~expected-acl)
+       (is (= (set (:edit-acl ~expected-acl)) (set (:edit-acl ~actual-acl)))))
+     (when (:edit-data ~expected-acl)
+       (is (= (set (:edit-data ~expected-acl)) (set (:edit-data ~actual-acl)))))
+     (when (:edit-meta ~expected-acl)
+       (is (= (set (:edit-meta ~expected-acl)) (set (:edit-meta ~actual-acl)))))
+     (when (:view-acl ~expected-acl)
+       (is (= (set (:view-acl ~expected-acl)) (set (:view-acl ~actual-acl)))))
+     (when (:view-data ~expected-acl)
+       (is (= (set (:view-data ~expected-acl)) (set (:view-data ~actual-acl)))))
+     (when (:view-meta ~expected-acl)
+       (is (= (set (:view-meta ~expected-acl)) (set (:view-meta ~actual-acl)))))
+     (when (:manage ~expected-acl)
+       (is (= (set (:manage ~expected-acl)) (set (:manage ~actual-acl)))))
+     (when (:delete ~expected-acl)
+       (is (= (set (:delete ~expected-acl)) (set (:delete ~actual-acl)))))))
+
+
+;;
+;; events
+;;
+
+(defmacro is-event
+  [expected-event actual-event]
+  `(let [expected-authn-info# (:authn-info ~expected-event)
+         authn-info#          (:authn-info ~actual-event)]
+     (is (some? ~actual-event))
+     (when (:name ~expected-event)
+       (is (= (:name ~expected-event) (:name ~actual-event))))
+     (when (:description ~expected-event)
+       (is (= (:description ~expected-event) (:description ~actual-event))))
+     (when (:category ~expected-event)
+       (is (= (:category ~expected-event) (:category ~actual-event))))
+     (when expected-authn-info#
+       (is (= (:user-id expected-authn-info#) (:user-id authn-info#)))
+       (is (= (:active-claim expected-authn-info#) (:active-claim authn-info#)))
+       (is (= (set (:claims expected-authn-info#)) (set (:claims authn-info#)))))
+     (when (:linked-identifiers ~expected-event)
+       (is (= (set (:linked-identifiers ~expected-event))
+              (set (get-in ~actual-event [:content :linked-identifiers])))))
+     (when (some? (:success ~expected-event))
+       (is (= (:success ~expected-event) (:success ~actual-event))))
+     (when (some? (:acl ~expected-event))
+       (is-acl (:acl ~expected-event) (:acl ~actual-event)))))
+
+
+(defmacro is-last-event
+  [resource-id expected-event]
+  `(let [event# (last (event-utils/query-events ~resource-id {:orderby [["timestamp" :desc]] :last 1}))]
+     (is-event ~expected-event event#)))
+
+
+(defmacro are-last-events
+  [resource-id expected-events]
+  `(let [events# (take (count ~expected-events) (event-utils/query-events ~resource-id {:orderby [["timestamp" :desc]]
+                                                                                        :last    (count ~expected-events)}))]
+     (is (= (count ~expected-events) (count events#)))
+     (doall (map (fn [expected-event# actual-event#]
+                   (is-event expected-event# actual-event#))
+                 ~expected-events
+                 events#))))

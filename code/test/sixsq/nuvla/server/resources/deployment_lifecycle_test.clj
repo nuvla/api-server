@@ -34,15 +34,15 @@
 
 (defn- setup-module
   [session-owner module-data]
-  (let [_                (create-parent-projects (:path module-data) session-owner)
-        module-id        (-> session-owner
-                             (request module-base-uri
-                                      :request-method :post
-                                      :body (json/write-str
-                                             module-data))
-                             (ltu/body->edn)
-                             (ltu/is-status 201)
-                             (ltu/location))]
+  (let [_         (create-parent-projects (:path module-data) session-owner)
+        module-id (-> session-owner
+                      (request module-base-uri
+                               :request-method :post
+                               :body (json/write-str
+                                       module-data))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))]
     module-id))
 
 (defn valid-module
@@ -113,7 +113,11 @@
           ;; setup a module that can be referenced from the deployment
           module-id          (setup-module session-user (valid-module subtype valid-module-content))
           valid-deployment   {:module {:href module-id}}
-          invalid-deployment {:module {:href "module/doesnt-exist"}}]
+          invalid-deployment {:module {:href "module/doesnt-exist"}}
+          authn-info-jane    {:user-id      "user/jane"
+                              :active-claim "user/jane"
+                              :claims       ["group/nuvla-anon" "user/jane" "group/nuvla-user" session-id]}
+          event-owners-jane  ["group/nuvla-admin" "user/jane"]]
 
       ;; admin/user query succeeds but is empty
       (doseq [session [session-admin session-user]]
@@ -160,6 +164,15 @@
 
             deployment-url (str p/service-context deployment-id)]
 
+        (ltu/is-last-event deployment-id
+                           {:name               "deployment.add"
+                            :description        (str "user/jane added deployment " deployment-id ".")
+                            :category           "add"
+                            :success            true
+                            :linked-identifiers []
+                            :authn-info         authn-info-jane
+                            :acl                {:owners event-owners-jane}})
+
         ;; admin/user should see one deployment
         (doseq [session [session-user session-admin]]
           (-> session
@@ -197,6 +210,15 @@
               (ltu/is-key-value :owner "user/jane")
               (ltu/is-key-value :owners :acl ["user/jane" "user/tarzan"]))
 
+          (ltu/is-last-event deployment-id
+                             {:name               "deployment.edit"
+                              :description        (str "user/jane edited deployment " deployment-id ".")
+                              :category           "edit"
+                              :success            true
+                              :linked-identifiers []
+                              :authn-info         authn-info-jane
+                              :acl                {:owners (conj event-owners-jane deployment-id "user/tarzan")}})
+
           (testing "user should not be able to change parent credential to something not accessible"
             (with-redefs [crud/retrieve-by-id-as-admin (fn [id]
                                                          (if (= id "credential/x")
@@ -208,15 +230,35 @@
                            :request-method :put
                            :body (json/write-str {:parent "credential/x"}))
                   (ltu/body->edn)
-                  (ltu/is-status 403))))
+                  (ltu/is-status 403))
+
+              (ltu/is-last-event deployment-id
+                                 {:name               "deployment.edit"
+                                  :description        "deployment.edit attempt failed."
+                                  :category           "edit"
+                                  :success            false
+                                  :linked-identifiers []
+                                  :authn-info         authn-info-jane
+                                  :acl                {:owners (conj event-owners-jane deployment-id "user/tarzan")}})))
 
           ;; attempt to start the deployment and check the start job was created
-          (let [job-url (-> session-user
+          (let [job-id  (-> session-user
                             (request start-url
                                      :request-method :post)
                             (ltu/body->edn)
                             (ltu/is-status 202)
-                            (ltu/location-url))]
+                            (ltu/location))
+                job-url (ltu/href->url job-id)]
+
+            (ltu/is-last-event deployment-id
+                               {:name               "deployment.start"
+                                :description        "user/jane started deployment."
+                                :category           "action"
+                                :success            true
+                                :linked-identifiers [job-id]
+                                :authn-info         authn-info-jane
+                                :acl                {:owners (conj event-owners-jane deployment-id "user/tarzan")}})
+
             (-> session-user
                 (request job-url)
                 (ltu/body->edn)
@@ -395,12 +437,23 @@
                         (ltu/is-status 200))
 
                     ;; try to stop the deployment and check the stop job was created
-                    (let [job-url (-> session-user
+                    (let [job-id  (-> session-user
                                       (request stop-url
                                                :request-method :post)
                                       (ltu/body->edn)
                                       (ltu/is-status 202)
-                                      (ltu/location-url))]
+                                      (ltu/location))
+                          job-url (ltu/href->url job-id)]
+
+                      (ltu/is-last-event deployment-id
+                                         {:name               "deployment.stop"
+                                          :description        "user/jane stopped deployment."
+                                          :category           "action"
+                                          :success            true
+                                          :linked-identifiers [job-id]
+                                          :authn-info         authn-info-jane
+                                          :acl                {:owners (conj event-owners-jane deployment-id "user/tarzan")}})
+
                       (-> session-user
                           (request job-url
                                    :request-method :get)
@@ -467,18 +520,37 @@
                                               :acl "user/shared")))
 
                     ;; verify user can create another deployment from existing one by using clone action
-                    (let [deployment-url-from-dep (-> session-user
+                    (let [deployment-id-from-dep  (-> session-user
                                                       (request (str deployment-url "/clone")
                                                                :request-method :post
                                                                :body (json/write-str {:deployment {:href deployment-id}}))
                                                       (ltu/body->edn)
                                                       (ltu/is-status 201)
-                                                      (ltu/location-url))]
+                                                      (ltu/location))
+                          deployment-url-from-dep (ltu/href->url deployment-id-from-dep)]
+
+                      (ltu/is-last-event deployment-id
+                                         {:name               "deployment.clone"
+                                          :description        "user/jane cloned deployment."
+                                          :category           "action"
+                                          :success            true
+                                          :linked-identifiers [deployment-id-from-dep]
+                                          :authn-info         authn-info-jane
+                                          :acl                {:owners (conj event-owners-jane deployment-id "user/tarzan")}})
+
                       (-> session-user
                           (request deployment-url-from-dep
                                    :request-method :delete)
                           (ltu/body->edn)
-                          (ltu/is-status 200)))
+                          (ltu/is-status 200))
+
+                      (ltu/is-last-event deployment-id-from-dep
+                                         {:name        "deployment.delete"
+                                          :description (str "user/jane deleted deployment " deployment-id-from-dep ".")
+                                          :category    "delete"
+                                          :success     true
+                                          :authn-info  authn-info-jane
+                                          :acl         {:owners event-owners-jane}}))
 
                     ;; verify that the user can delete the deployment
                     (-> session-user
@@ -486,6 +558,14 @@
                                  :request-method :delete)
                         (ltu/body->edn)
                         (ltu/is-status 200))
+
+                    (ltu/is-last-event deployment-id
+                                       {:name        "deployment.delete"
+                                        :description (str "user/jane deleted deployment API credential for " deployment-id ".")
+                                        :category    "delete"
+                                        :success     true
+                                        :authn-info  authn-info-jane
+                                        :acl         {:owners (conj ["group/nuvla-admin"] deployment-id)}})
 
                     ;; verify that the deployment has disappeared
                     (-> session-user
@@ -690,26 +770,30 @@
 
 (deftest lifecycle-bulk-update-force-delete
   (binding [config-nuvla/*stripe-api-key* nil]
-    (let [session-anon     (-> (ltu/ring-app)
-                               session
-                               (content-type "application/json"))
-          session-user     (header session-anon authn-info-header
-                                   "user/jane user/jane group/nuvla-user group/nuvla-anon")
+    (let [session-anon      (-> (ltu/ring-app)
+                                session
+                                (content-type "application/json"))
+          session-user      (header session-anon authn-info-header
+                                    "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
           ;; setup a module that can be referenced from the deployment
-          module-id        (setup-module session-user (valid-module "component" valid-component))
+          module-id         (setup-module session-user (valid-module "component" valid-component))
 
 
-          valid-deployment {:module {:href module-id}}
-          deployment-id    (-> session-user
-                               (request base-uri
-                                        :request-method :post
-                                        :body (json/write-str valid-deployment))
-                               (ltu/body->edn)
-                               (ltu/is-status 201)
-                               (ltu/location))
+          valid-deployment  {:module {:href module-id}}
+          deployment-id     (-> session-user
+                                (request base-uri
+                                         :request-method :post
+                                         :body (json/write-str valid-deployment))
+                                (ltu/body->edn)
+                                (ltu/is-status 201)
+                                (ltu/location))
 
-          deployment-url   (str p/service-context deployment-id)]
+          deployment-url    (str p/service-context deployment-id)
+          authn-info-jane   {:user-id      "user/jane"
+                             :active-claim "user/jane"
+                             :claims       ["group/nuvla-anon" "user/jane" "group/nuvla-user"]}
+          event-owners-jane ["group/nuvla-admin" "user/jane"]]
 
       ;; check deployment creation
       (-> session-user
@@ -816,6 +900,13 @@
             (ltu/body->edn)
             (ltu/is-status 200)))
 
+      (ltu/is-last-event deployment-id
+                         {:name       "deployment.force-delete"
+                          :category   "action"
+                          :success    true
+                          :authn-info authn-info-jane
+                          :acl        {:owners event-owners-jane}})
+
       (-> session-user
           (request (str p/service-context module-id)
                    :request-method :delete)
@@ -842,7 +933,7 @@
         (request deployment-url
                  :request-method :put
                  :body (json/write-str (cond->
-                                        {:name depl-name}
+                                         {:name depl-name}
                                          depl-tags (assoc :tags depl-tags))))
         (ltu/body->edn)
         (ltu/is-status 200)
@@ -875,16 +966,16 @@
           (request endpoint
                    :request-method :patch
                    :body (json/write-str (cond-> {:doc {:tags tags}}
-                                           filter (assoc :filter filter))))
+                                                 filter (assoc :filter filter))))
           (ltu/is-status 200))
       (run!
-       (fn [url]
-         (let [ne (-> session-owner
-                      (request url)
-                      (ltu/body->edn))]
-           (testing (:name ne)
-             (ltu/is-key-value ne :tags (expected-fn (-> ne :response :body))))))
-       ne-urls))))
+        (fn [url]
+          (let [ne (-> session-owner
+                       (request url)
+                       (ltu/body->edn))]
+            (testing (:name ne)
+              (ltu/is-key-value ne :tags (expected-fn (-> ne :response :body))))))
+        ne-urls))))
 
 (def endpoint-set-tags (str base-uri "/" "set-tags"))
 (def endpoint-add-tags (str base-uri "/" "add-tags"))

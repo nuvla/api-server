@@ -13,10 +13,11 @@ particular NuvlaBox release.
     [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.event-config :as ec]
+    [sixsq.nuvla.server.resources.common.event-context :as ectx]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
-    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
@@ -331,9 +332,12 @@ particular NuvlaBox release.
 
 (defmethod crud/delete resource-type
   [{{uuid :uuid} :params :as request}]
-  (let [id (str resource-type "/" uuid)]
+  (let [id       (str resource-type "/" uuid)
+        nuvlabox (db/retrieve id request)]
+    (ectx/add-to-context :acl (:acl nuvlabox))
+    (ectx/add-to-context :resource nuvlabox)
     (try
-      (-> (db/retrieve id request)
+      (-> nuvlabox
           (a/throw-cannot-delete request)
           (u/throw-can-not-do-action utils/can-delete? "delete"))
       (let [resp (delete-impl request)]
@@ -500,7 +504,9 @@ particular NuvlaBox release.
       (when (not= job-status 201)
         (throw (r/ex-response
                  "unable to create async job to decommission nuvlabox resources" 500 id)))
-      (event-utils/create-event id job-msg acl)
+      (ectx/add-linked-identifier job-id)
+      ;; Legacy event
+      ;; (event-utils/create-event id job-msg acl)
       (r/map-response job-msg 202 id job-id))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -542,7 +548,9 @@ particular NuvlaBox release.
       (when (not= job-status 201)
         (throw (r/ex-response
                  "unable to create async job to check nuvlabox api" 500 id)))
-      (event-utils/create-event id job-msg acl)
+      (ectx/add-linked-identifier job-id)
+      ;; Legacy event
+      ;; (event-utils/create-event id job-msg acl)
       (r/map-response job-msg 202 id job-id))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -580,7 +588,9 @@ particular NuvlaBox release.
       (when (not= job-status 201)
         (throw (r/ex-response
                  "unable to create async job to reboot nuvlabox" 500 id)))
-      (event-utils/create-event id job-msg acl)
+      (ectx/add-linked-identifier job-id)
+      ;; Legacy event
+      ;; (event-utils/create-event id job-msg acl)
       (r/map-response job-msg 202 id job-id))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -629,7 +639,9 @@ particular NuvlaBox release.
                        ", with async " job-id)]
       (when (not= job-status 201)
         (throw (r/ex-response "unable to create async job to cluster NuvlaBox" 500 id)))
-      (event-utils/create-event id job-msg acl)
+      (ectx/add-linked-identifier job-id)
+      ;; Legacy event
+      ;; (event-utils/create-event id job-msg acl)
       (r/map-response job-msg 202 id job-id))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -676,7 +688,9 @@ particular NuvlaBox release.
       (when (not= job-status 201)
         (throw (r/ex-response
                  "unable to create async job to add SSH key to NuvlaBox" 500 id)))
-      (event-utils/create-event id job-msg acl)
+      (ectx/add-linked-identifier job-id)
+      ;; Legacy event
+      ;; (event-utils/create-event id job-msg acl)
       (r/map-response (or (:private-key ssh-credential) job-msg) 202 id job-id))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -745,7 +759,9 @@ particular NuvlaBox release.
           (when (not= job-status 201)
             (throw (r/ex-response
                      "unable to create async job to remove SSH key from NuvlaBox" 500 id)))
-          (event-utils/create-event id job-msg acl)
+          (ectx/add-linked-identifier job-id)
+          ;; Legacy event
+          ;; (event-utils/create-event id job-msg acl)
           (r/map-response job-msg 202 id job-id))
         (catch Exception e
           (or (ex-data e) (throw e)))))))
@@ -797,7 +813,9 @@ particular NuvlaBox release.
                            ", with async " job-id)]
           (when (not= job-status 201)
             (throw (r/ex-response "unable to create async job to update NuvlaBox" 500 id)))
-          (event-utils/create-event id job-msg acl)
+          (ectx/add-linked-identifier job-id)
+          ;; Legacy event
+          ;; (event-utils/create-event id job-msg acl)
           (r/map-response job-msg 202 id job-id))
         (catch Exception e
           (or (ex-data e) (throw e)))))))
@@ -1073,6 +1091,106 @@ particular NuvlaBox release.
                       (utils/can-generate-new-api-key? resource) (conj generate-new-key-op)
                       (utils/can-unsuspend? resource) (conj unsuspend-op)
                       )))))
+
+
+;;
+;; Events
+;;
+
+(defmethod ec/events-enabled? resource-type
+  [_resource-type]
+  true)
+
+
+(defmethod ec/log-event? "nuvlabox.check-api"
+  [_event _response]
+  false)
+
+
+(defmethod ec/log-event? "nuvlabox.assemble-playbooks"
+  [_event _response]
+  false)
+
+
+(defmethod ec/event-description "nuvlabox.activate"
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " activated nuvlabox."))
+    "Nuvlabox activation attempt failed."))
+
+
+(defmethod ec/event-description "nuvlabox.commission"
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " commissioned nuvlabox."))
+    "Nuvlabox commissioning attempt failed."))
+
+
+(defmethod ec/event-description "nuvlabox.decommission"
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " decommissioned nuvlabox."))
+    "Nuvlabox decommission attempt failed."))
+
+
+(defmethod ec/event-description "nuvlabox.reboot"
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " rebooted nuvlabox."))
+    "Nuvlabox reboot attempt failed."))
+
+
+(defmethod ec/event-description "nuvlabox.add-ssh-key"
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " added ssh key to nuvlabox."))
+    "Nuvlabox ssh key addition attempt failed."))
+
+
+(defmethod ec/event-description "nuvlabox.revoke-ssh-key"
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " revoked ssh key from nuvlabox."))
+    "Nuvlabox commission attempt failed."))
+
+
+(defmethod ec/event-description "nuvlabox.update-nuvlabox"
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " updated nuvlabox."))
+    "Nuvlabox update attempt failed."))
+
+
+(defmethod ec/event-description "nuvlabox.enable-host-level-management"
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " enabled host-level management on nuvlabox."))
+    "Nuvlabox host-level management enabling attempt failed."))
+
+
+(defmethod ec/event-description "nuvlabox.disable-host-level-management"
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " disabled host-level management on nuvlabox."))
+    "Nuvlabox host-level management disabling attempt failed."))
+
+
+(defmethod ec/event-description "nuvlabox.unsuspend"
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " unsuspended nuvlabox."))
+    "Nuvlabox unsuspend attempt failed."))
+
 
 ;;
 ;; initialization

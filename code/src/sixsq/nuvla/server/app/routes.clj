@@ -6,18 +6,24 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
+    [sixsq.nuvla.server.resources.common.event-context :as ec]
     [sixsq.nuvla.server.util.response :as r]))
 
 
 (def collection-routes
   (let-routes [uri (str p/service-context ":resource-name")]
     (POST uri request
+      (ec/add-to-context :params (:params request))
+      (ec/add-to-context :category "add")
       (crud/add request))
     (PUT uri request
+      (ec/add-to-context :params (:params request))
       (crud/query request))
     (GET uri request
+      (ec/add-to-context :params (:params request))
       (crud/query request))
     (DELETE uri request
+      (ec/add-to-context :params (:params request))
       (crud/bulk-delete request))
     (ANY uri request
       (throw (r/ex-bad-method request)))))
@@ -26,10 +32,15 @@
 (def resource-routes
   (let-routes [uri (str p/service-context ":resource-name/:uuid")]
     (GET uri request
+      (ec/add-to-context :params (:params request))
       (crud/retrieve request))
     (PUT uri request
+      (ec/add-to-context :params (:params request))
+      (ec/add-to-context :category "edit")
       (crud/edit request))
     (DELETE uri request
+      (ec/add-to-context :params (:params request))
+      (ec/add-to-context :category "delete")
       (crud/delete request))
     (ANY uri request
       (throw (r/ex-bad-method request)))))
@@ -38,12 +49,15 @@
 (def action-routes
   (let-routes [uri (str p/service-context ":resource-name/:uuid/:action")]
     (ANY uri request
+      (ec/add-to-context :params (:params request))
+      (ec/add-to-context :category "action")
       (crud/do-action request))))
 
 
 (def bulk-action-routes
   (let-routes [uri (str p/service-context ":resource-name/:action")]
     (PATCH uri request
+      (ec/add-to-context :params (:params request))
       (crud/bulk-action request))))
 
 
@@ -76,3 +90,4 @@
                                 (route/resources (str p/service-context "static"))]
                                (dyn/resource-routes)
                                final-routes))))
+

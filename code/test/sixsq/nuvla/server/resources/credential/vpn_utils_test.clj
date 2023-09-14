@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.credential.vpn-utils-test
   (:require
     [clojure.data.json :as json]
+    [clojure.string :as string]
     [clojure.string :as str]
     [clojure.test :refer [is]]
     [peridot.core :refer [content-type header request session]]
@@ -76,7 +77,18 @@
                                :description description-attr
                                :tags        tags-attr
                                :template    {:href   href
-                                             :parent infra-service-id}}]
+                                             :parent infra-service-id}}
+
+        authn-info-admin      {:user-id      "group/nuvla-admin"
+                               :active-claim "group/nuvla-admin"
+                               :claims       ["group/nuvla-admin" "group/nuvla-anon" "group/nuvla-user"]}
+        test-claims           (-> claims (string/split #"\s"))
+        authn-info-test       {:user-id      (first test-claims)
+                               :active-claim (second test-claims)
+                               :claims       (set test-claims)}
+        authn-info-anon       {:user-id      "user/unknown"
+                               :active-claim "user/unknown"
+                               :claims       #{"user/unknown" "group/nuvla-anon"}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-test]]
@@ -96,13 +108,25 @@
         (ltu/is-status 403))
 
     ;; creating a new credential without reference will fail for all types of users
-    (doseq [session [session-admin session-test session-anon]]
+    (doseq [[session event-owners authn-info]
+            [[session-admin ["group/nuvla-admin"] authn-info-admin]
+             [session-test ["group/nuvla-admin"] authn-info-test]
+             [session-anon ["group/nuvla-admin"] authn-info-anon]]]
       (-> session
           (request base-uri
                    :request-method :post
                    :body (json/write-str create-import-no-href))
           (ltu/body->edn)
-          (ltu/is-status 400)))
+          (ltu/is-status 400))
+
+      (ltu/is-last-event nil
+                         {:name               "credential.add"
+                          :description        "credential.add attempt failed."
+                          :category           "add"
+                          :success            false
+                          :linked-identifiers []
+                          :authn-info         authn-info
+                          :acl                {:owners event-owners}}))
 
     ;; creating a new credential as anon will fail; expect 400 because href cannot be accessed
     (-> session-anon
@@ -161,6 +185,15 @@
 
         ;; resource id and the uri (location) should be the same
         (is (= id uri))
+
+        (ltu/is-last-event uri
+                           {:name               "credential.add"
+                            :description        (str user-id " added credential " name-attr ".")
+                            :category           "add"
+                            :success            true
+                            :linked-identifiers []
+                            :authn-info         authn-info-test
+                            :acl                {:owners ["group/nuvla-admin"]}})
 
         ;; admin should be able to see and delete credential
         (-> session-admin
@@ -226,7 +259,15 @@
               (request abs-uri
                        :request-method :delete)
               (ltu/body->edn)
-              (ltu/is-status 200)))
+              (ltu/is-status 200))
 
+          (ltu/is-last-event uri
+                             {:name               "credential.delete"
+                              :description        (str user-id " deleted credential " name-attr ".")
+                              :category           "delete"
+                              :success            true
+                              :linked-identifiers []
+                              :authn-info         authn-info-test
+                              :acl                {:owners ["group/nuvla-admin"]}}))
         ))
     ))

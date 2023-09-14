@@ -90,9 +90,12 @@ status, a 'set-cookie' header, and a 'location' header with the created
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
+    [sixsq.nuvla.server.resources.common.event-config :as ec]
+    [sixsq.nuvla.server.resources.common.event-context :as ectx]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.email :as email]
+    [sixsq.nuvla.server.resources.event.utils :as eu]
     [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.session :as session]
@@ -302,6 +305,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 (defmethod crud/delete resource-type
   [request]
+  (ectx/add-to-visible-to (auth/current-user-id request))
   (let [response (delete-impl request)
         cookies  (delete-cookie response)]
     (merge response cookies)))
@@ -461,9 +465,16 @@ status, a 'set-cookie' header, and a 'location' header with the created
         (format "Switch group cannot be done to requested group: %s!" claim) 403))))
 
 
+(defn set-event-context
+  [{{:keys [claim]} :body :as _request}]
+  (ectx/add-linked-identifier claim)
+  (ectx/add-to-visible-to claim))
+
+
 (defmethod crud/do-action [resource-type "switch-group"]
   [{{uuid :uuid} :params :as request}]
   (try
+    (set-event-context request)
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve id request)
           (a/throw-cannot-edit request)
@@ -505,6 +516,54 @@ status, a 'set-cookie' header, and a 'location' header with the created
           {})))
     (catch Exception e
       (or (ex-data e) (throw e)))))
+
+;;
+;; Events
+;;
+
+(defmethod ec/events-enabled? resource-type
+  [_resource-type]
+  true)
+
+
+(defmethod ec/log-event? "session.get-peers"
+  [_event _response]
+  false)
+
+
+(defmethod ec/log-event? "session.get-groups"
+  [_event _response]
+  false)
+
+
+(defmethod ec/event-description "session.add"
+  [{:keys [success] :as event} & _]
+  (if success
+    (when-let [user-name-or-credential (or (some-> (eu/get-linked-resources event "user") first :name)
+                                           (some-> (eu/get-linked-resource-ids event "user") first)
+                                           (some-> (eu/get-linked-resources event "credential") first :id)
+                                           (some-> (eu/get-linked-resource-ids event "credential") first))]
+      (str user-name-or-credential " logged in."))
+    "Login attempt failed."))
+
+
+(defmethod ec/event-description "session.delete"
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " logged out."))
+    "Logout attempt failed."))
+
+
+(defmethod ec/event-description "session.switch-group"
+  [{:keys [success] {:keys [user-id]} :authn-info {:keys [linked-identifiers]} :content :as event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " switched to group "
+           (or (some-> (eu/get-linked-resources event) first :name)
+               (first linked-identifiers))
+           "."))
+    "Switch group attempt failed."))
 
 
 ;;

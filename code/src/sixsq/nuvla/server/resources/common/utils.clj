@@ -67,6 +67,11 @@
   (str resource-name "/" (random-uuid)))
 
 
+(defn resource-id
+  [resource-type uuid]
+  (str resource-type "/" uuid))
+
+
 (defn parse-id
   "Parses a resource id to provide a tuple of [resource-type uuid] for an id.
    For ids that don't have an identifier part (e.g. the cloud-entry-point), the
@@ -84,6 +89,25 @@
   (when-let [[resource-type uuid] (parse-id id)]
     (cond-> {:resource-name resource-type}                  ;; resource-name is historical
             uuid (assoc :uuid uuid))))
+
+
+(defn request->resource-type
+  "Extracts the resource type from a request map."
+  [request]
+  (get-in request [:params :resource-name]))
+
+
+(defn request->resource-uuid
+  "Extracts the resource uuid from a request map."
+  [request]
+  (get-in request [:params :uuid]))
+
+
+(defn request->resource-id
+  "Extracts the resource id from a request map."
+  [request]
+  (some->> (request->resource-uuid request)
+           (resource-id (request->resource-type request))))
 
 
 (defn id->resource-type
