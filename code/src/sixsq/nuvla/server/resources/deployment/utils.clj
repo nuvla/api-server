@@ -299,5 +299,5 @@
   [nuvlabox-id]
   (if nuvlabox-id
     (let [nuvlabox (crud/retrieve-by-id-as-admin nuvlabox-id)]
-      (nuvlabox-utils/get-execution-mode nuvlabox))
+      (if (nuvlabox-utils/has-job-pull-support? nuvlabox) "pull" "mixed"))
     "push"))
