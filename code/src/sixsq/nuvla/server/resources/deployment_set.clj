@@ -177,7 +177,8 @@ These resources represent a deployment set that regroups deployments.
 (defn start-update-job-transition
   [{:keys [target-resource] :as _job}]
   (let [id (:href target-resource)
-        operational-status (crud/do-action-as-admin id utils/action-operational-status)]
+        operational-status (-> id (crud/do-action-as-admin utils/action-operational-status)
+                               :body)]
     (if (= (:status operational-status) utils/operational-status-ok)
       (state-transition id utils/action-ok)
       (state-transition id utils/action-nok))))

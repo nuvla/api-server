@@ -265,11 +265,12 @@
   [{:keys [id] :as _deployment-set}]
   (let [deployments (current-deployments id)]
     (for [{:keys [nuvlabox parent state app-set] deployment-id :id
-           {application-href :href {:keys [environmental-variables]} :content} :module} deployments]
+           {application-href :href {:keys [environmental-variables]} :content
+            :as module} :module} deployments]
       {:id          deployment-id
        :app-set     app-set
        :application (cond-> {:id      (module-utils/full-uuid->uuid application-href)
-                             :version (module-utils/full-uuid->version-index application-href)}
+                             :version (module-utils/module-current-version module)}
                             (seq environmental-variables)
                             (assoc :environmental-variables environmental-variables))
        :target      (or nuvlabox parent)

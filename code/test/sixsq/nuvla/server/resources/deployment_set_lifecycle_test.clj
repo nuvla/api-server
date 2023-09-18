@@ -410,10 +410,12 @@
                                    {:id                  (str "deployment/" (u/random-uuid))
                                     :parent              target
                                     :state               "STARTED"
-                                    :module              {:content       {:environmental-variables environmental-variables}
+                                    :module              {:content       {:id                      (str "module/" app-ver)
+                                                                          :environmental-variables environmental-variables}
+                                                          :versions      (map (fn [i] {:href (str "module/" i)}) (range 3))
                                                           :published     true
                                                           :id            app-id
-                                                          :href          (str app-id "_" app-ver)
+                                                          :href          app-id
                                                           :resource-type "module"
                                                           :subtype       "application"}
                                     :deployment-set      resource-id
@@ -648,11 +650,11 @@
                                 (ltu/is-status 202)
                                 ltu/location-url)]
                 (-> session-admin
-                   (request job-url
-                            :request-method :put
-                            :body (json/write-str {:state "SUCCESS"}))
-                   (ltu/body->edn)
-                   (ltu/is-status 200)))
+                    (request job-url
+                             :request-method :put
+                             :body (json/write-str {:state "SUCCESS"}))
+                    (ltu/body->edn)
+                    (ltu/is-status 200)))
               (-> session-user
                   (request dep-set-url)
                   (ltu/body->edn)
