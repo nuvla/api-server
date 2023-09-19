@@ -151,7 +151,9 @@
   (->> actions
        (map (fn [action]
               (when (sm/can-do-action? action resource request)
-                (u/action-map id action))))
+                (if (#{crud/action-delete crud/action-edit} action)
+                  (u/operation-map id action)
+                  (u/action-map id action)))))
        (remove nil?)))
 
 (defn action-job-name
