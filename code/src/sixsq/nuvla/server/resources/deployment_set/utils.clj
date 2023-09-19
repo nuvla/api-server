@@ -6,7 +6,6 @@
             [sixsq.nuvla.server.resources.common.crud :as crud]
             [sixsq.nuvla.server.resources.common.state-machine :as sm]
             [sixsq.nuvla.server.resources.common.utils :as u]
-            [sixsq.nuvla.server.resources.deployment.utils :as du]
             [sixsq.nuvla.server.resources.module.utils :as module-utils]
             [tilakone.core :as tk]))
 
@@ -222,13 +221,16 @@
            (env-to-map overwrite-environmental-variables))))
 
 (defn merge-app
-  [{:keys [environmental-variables] :as application}
+  [{:keys [environmental-variables
+           version] :as application}
    application-overwrite]
   (let [env (merge-env
               environmental-variables
               (:environmental-variables application-overwrite))]
-    (cond-> application
-            (seq env) (assoc :environmental-variables env))))
+    (-> application
+        (assoc :version (or (:version application-overwrite) version))
+        (cond->
+          (seq env) (assoc :environmental-variables env)))))
 
 (defn merge-apps
   [app-set app-set-overwrite]
@@ -266,15 +268,16 @@
 (defn current-state
   [{:keys [id] :as _deployment-set}]
   (let [deployments (current-deployments id)]
-    (for [{:keys [nuvlabox parent state app-set] deployment-id :id
+    (for [{:keys                     [nuvlabox parent state app-set] deployment-id :id
            {application-href :href {:keys [environmental-variables]} :content
-            :as module} :module} deployments]
+            :as              module} :module} deployments
+          :let [env-vars (map #(select-keys % [:name :value]) environmental-variables)]]
       {:id          deployment-id
        :app-set     app-set
        :application (cond-> {:id      (module-utils/full-uuid->uuid application-href)
                              :version (module-utils/module-current-version module)}
-                            (seq environmental-variables)
-                            (assoc :environmental-variables environmental-variables))
+                            (seq env-vars)
+                            (assoc :environmental-variables env-vars))
        :target      (or nuvlabox parent)
        :state       state})))
 
