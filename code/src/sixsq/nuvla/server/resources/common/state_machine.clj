@@ -32,10 +32,17 @@
     (assoc resource :state (get-state fsm))
     resource))
 
+(defn- allowed-transition?
+  [fsm signal]
+  (try
+    (tk/apply-signal fsm signal)
+    (catch Exception _
+      nil)))
+
 (defn can-do-action?
   [action resource request]
   (if-let [fsm (fsm-resource-request resource request)]
-    (some? (tk/transfers-to fsm action))
+    (boolean (allowed-transition? fsm action))
     true))
 
 (defn throw-action-not-allowed-in-state

@@ -10,6 +10,7 @@ represents a task that will be executed only when triggered by an external
 request.
 "
   (:require
+    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
@@ -114,27 +115,26 @@ request.
   (retrieve-impl request))
 
 
-(defn edit-impl
+(defmethod crud/edit resource-type
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [current (-> (str resource-type "/" uuid)
-                      (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                      (a/throw-cannot-edit request))]
-      (-> request
-          (update :body dissoc :target-resource :action)
-          (u/delete-attributes current)
-          (u/update-timestamps)
-          (u/set-updated-by request)
-          (utils/job-cond->edition)
-          (crud/validate)
-          (db/edit request)))
+    (let [current  (-> (str resource-type "/" uuid)
+                       (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                       (a/throw-cannot-edit request)
+                       utils/throw-cannot-edit-in-final-state)
+          job      (-> request
+                       (update :body dissoc :target-resource :action)
+                       (u/delete-attributes current)
+                       (u/update-timestamps)
+                       (u/set-updated-by request)
+                       (utils/job-cond->edition)
+                       (crud/validate))
+          response (db/edit job request)]
+      (when (utils/is-final-state? job)
+        (interface/on-done job))
+      response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
-
-
-(defmethod crud/edit resource-type
-  [request]
-  (edit-impl request))
 
 
 (def delete-impl (std-crud/delete-fn resource-type))
@@ -167,28 +167,39 @@ request.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [stop-op        (u/action-map id utils/action-cancel)
-        get-context-op (u/action-map id utils/action-get-context)]
+  (let [cancel-op            (u/action-map id utils/action-cancel)
+        get-context-op       (u/action-map id utils/action-get-context)
+        timeout-op           (u/action-map id utils/action-timeout)]
     (cond-> (crud/set-standard-operations resource request)
-            (and (a/can-manage? resource request)
-                 (utils/can-cancel? resource)) (update :operations conj stop-op)
+            (utils/can-cancel? resource request) (update :operations conj cancel-op)
+            (utils/can-timeout? resource request) (update :operations conj timeout-op)
             (utils/can-get-context? resource request) (update :operations conj get-context-op))))
+
+
+(declare create-cancel-children-jobs-job)
+
+
+(defn cancel-children-jobs-async [{action :action :as job}]
+  (when (str/starts-with? action "bulk")
+    (create-cancel-children-jobs-job job)))
+
 
 (defmethod crud/do-action [resource-type utils/action-cancel]
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id       (str resource-type "/" uuid)
-          response (-> id
-                       (db/retrieve request)
-                       (a/throw-cannot-manage request)
-                       (utils/throw-cannot-cancel)
+          response (-> (db/retrieve id request)
+                       (utils/throw-cannot-cancel request)
                        (assoc :state utils/state-canceled)
                        (u/update-timestamps)
                        (u/set-updated-by request)
                        (utils/job-cond->edition)
                        (crud/validate)
-                       (db/edit {:nuvla/authn auth/internal-identity}))]
+                       (db/edit {:nuvla/authn auth/internal-identity}))
+          job      (:body response)]
+      (cancel-children-jobs-async job)
       (log/warn "Canceled job : " id)
+      (interface/on-cancel job)
       response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -200,6 +211,24 @@ request.
         (db/retrieve request)
         (utils/throw-cannot-get-context request)
         (interface/get-context))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/do-action [resource-type utils/action-timeout]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [response (-> (str resource-type "/" uuid)
+                       (db/retrieve request)
+                       (utils/throw-cannot-timeout request)
+                       (assoc :state utils/state-canceled)
+                       (u/update-timestamps)
+                       (u/set-updated-by request)
+                       (utils/job-cond->edition)
+                       (crud/validate)
+                       (db/edit {:nuvla/authn auth/internal-identity}))]
+      (interface/on-timeout (:body response))
+      response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -223,3 +252,10 @@ request.
                         :body        job-map
                         :nuvla/authn auth/internal-identity}]
     (crud/add create-request)))
+
+
+(defn create-cancel-children-jobs-job
+  [{:keys [acl] parent-job-id :id :as _parent-job}]
+  (create-job parent-job-id "cancel_children_jobs" acl
+              :priority 10))
+

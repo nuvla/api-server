@@ -1,10 +1,10 @@
 (ns sixsq.nuvla.server.resources.job.utils
   (:require
     [clojure.string :as str]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.server.resources.common.state-machine :as sm]
+    [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time]
     [sixsq.nuvla.server.util.zookeeper :as uzk]))
@@ -19,6 +19,7 @@
 
 (def action-cancel "cancel")
 (def action-get-context "get-context")
+(def action-timeout "timeout")
 
 (def kazoo-queue-prefix "entry-")
 (def job-base-node "/job")
@@ -26,15 +27,28 @@
 (def locking-queue-path (str job-base-node locking-queue))
 
 (defn can-cancel?
-  [{:keys [state] :as _resource}]
-  (boolean (#{state-queued state-running} state)))
+  [{:keys [state] :as resource} request]
+  (and (boolean (#{state-queued state-running} state))
+       (a/can-manage? resource request)))
 
 (defn throw-cannot-cancel
-  [{:keys [id state] :as resource}]
-  (if (can-cancel? resource)
+  [resource request]
+  (if (can-cancel? resource request)
     resource
-    (sm/throw-action-not-allowed-in-state id action-cancel state)))
+    (throw (r/ex-unauthorized (:id resource)))))
 
+
+(defn can-timeout?
+  [{:keys [state] :as resource} request]
+  (and (boolean (#{state-running} state))
+       (a/can-manage? resource request)
+       (a/is-admin-request? request)))
+
+(defn throw-cannot-timeout
+  [resource request]
+  (if (can-timeout? resource request)
+    resource
+    (throw (r/ex-unauthorized (:id resource)))))
 
 (defn add-job-to-queue
   [job-id priority]
@@ -85,11 +99,10 @@
 
 (defn can-get-context?
   [resource request]
-  (let [authn-info   (auth/current-authentication request)
-        active-claim (auth/current-active-claim request)]
+  (let [active-claim (auth/current-active-claim request)]
     (or (and (a/can-manage? resource request)
              (str/starts-with? active-claim "nuvlabox/"))
-        (a/is-admin? authn-info))))
+        (a/is-admin-request? request))))
 
 
 (defn throw-cannot-get-context
@@ -97,3 +110,9 @@
   (if (can-get-context? resource request)
     resource
     (throw (r/ex-unauthorized (:id resource)))))
+
+(defn throw-cannot-edit-in-final-state
+  [{:keys [id] :as job}]
+  (if (is-final-state? job)
+    (throw (r/ex-response "edit is not allowed in final state" 409 id))
+    job))

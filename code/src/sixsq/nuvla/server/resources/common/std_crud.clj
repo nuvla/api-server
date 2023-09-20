@@ -66,6 +66,7 @@
             u/update-timestamps
             (u/set-updated-by request)
             crud/validate
+            (crud/set-operations request)
             (db/edit request)))
       (catch Exception e
         (or (ex-data e) (throw e))))))

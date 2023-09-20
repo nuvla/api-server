@@ -25,8 +25,6 @@
               action-stop
               action-update
               action-cancel
-              action-ok
-              action-nok
               action-force-delete
               action-plan
               action-operational-status])
@@ -42,6 +40,9 @@
 (def state-partially-stopped "PARTIALLY-STOPPED")
 (def state-updating "UPDATING")
 (def state-updated "UPDATED")
+
+(def operational-status-ok "OK")
+(def operational-status-nok "NOK")
 
 (def states [state-new
              state-starting
@@ -69,19 +70,19 @@
 (def transition-start {::tk/on action-start ::tk/to state-starting ::tk/guards [sm/guard-can-manage?]})
 (def transition-update {::tk/on action-update ::tk/to state-updating ::tk/guards [sm/guard-can-manage?]})
 (def transition-stop {::tk/on action-stop ::tk/to state-stopping ::tk/guards [sm/guard-can-manage?]})
-(def transition-edit {::tk/on crud/action-edit ::tk/to tk/_ ::tk/guards [sm/guard-can-edit?]})
-(def transition-delete {::tk/on crud/action-delete ::tk/to tk/_ ::tk/guards [sm/guard-can-delete?]})
-(def transition-force-delete {::tk/on action-force-delete ::tk/to tk/_ ::tk/guards [sm/guard-can-delete?]})
-(def transition-plan {::tk/on action-plan ::tk/to tk/_ ::tk/guards [sm/guard-can-manage?]})
-(def transition-operational-status {::tk/on action-operational-status ::tk/to tk/_ ::tk/guards [sm/guard-can-manage?]})
+(def transition-edit {::tk/on crud/action-edit ::tk/guards [sm/guard-can-edit?]})
+(def transition-delete {::tk/on crud/action-delete ::tk/guards [sm/guard-can-delete?]})
+(def transition-force-delete {::tk/on action-force-delete ::tk/guards [sm/guard-can-delete?]})
+(def transition-plan {::tk/on action-plan ::tk/guards [sm/guard-can-manage?]})
+(def transition-operational-status {::tk/on action-operational-status ::tk/guards [sm/guard-can-manage?]})
 
 (def state-machine
   {::tk/states [{::tk/name        state-new
                  ::tk/transitions [transition-start
                                    transition-edit
-                                   transition-delete
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-delete]}
                 {::tk/name        state-starting
                  ::tk/transitions [(transition-cancel state-partially-started)
                                    (transition-nok state-partially-started)
@@ -93,13 +94,15 @@
                                    transition-update
                                    transition-stop
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-force-delete]}
                 {::tk/name        state-partially-started
                  ::tk/transitions [transition-edit
                                    transition-update
                                    transition-stop
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-force-delete]}
                 {::tk/name        state-stopping
                  ::tk/transitions [(transition-cancel state-partially-stopped)
                                    (transition-nok state-partially-stopped)
@@ -109,15 +112,16 @@
                 {::tk/name        state-stopped
                  ::tk/transitions [transition-start
                                    transition-edit
-                                   transition-delete
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-delete]}
                 {::tk/name        state-partially-stopped
                  ::tk/transitions [transition-edit
-                                   transition-force-delete
                                    transition-start
+                                   transition-stop
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-force-delete]}
                 {::tk/name        state-updating
                  ::tk/transitions [(transition-cancel state-partially-updated)
                                    (transition-nok state-partially-updated)
@@ -129,13 +133,15 @@
                                    transition-update
                                    transition-stop
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-force-delete]}
                 {::tk/name        state-partially-updated
                  ::tk/transitions [transition-edit
                                    transition-update
                                    transition-stop
                                    transition-plan
-                                   transition-operational-status]}]
+                                   transition-operational-status
+                                   transition-force-delete]}]
    ::tk/guard? sm/guard?
    ::tk/state  state-new})
 
@@ -144,19 +150,28 @@
   (->> actions
        (map (fn [action]
               (when (sm/can-do-action? action resource request)
-                (u/action-map id action))))
+                (if (#{crud/action-delete crud/action-edit} action)
+                  (u/operation-map id action)
+                  (u/action-map id action)))))
        (remove nil?)))
 
 (defn action-job-name
   [action]
-  (str action "_deployment_set"))
+  (str "deployment_set_" (str/replace action #"-" "_")))
+
+(defn bulk-action-job-name
+  [action]
+  (str "bulk_" (action-job-name action)))
 
 (defn save-deployment-set
-  [deployment-set]
-  (-> deployment-set
-      (u/update-timestamps)
-      (crud/validate)
-      (db/edit {:nuvla/authn auth/internal-identity})))
+  [next current]
+  (if (not= next current)
+    (-> next
+        (u/update-timestamps)
+        (crud/validate)
+        (db/edit {:nuvla/authn auth/internal-identity})
+        :body)
+    current))
 
 (defn get-first-applications-sets
   [deployment-set]
@@ -206,13 +221,16 @@
            (env-to-map overwrite-environmental-variables))))
 
 (defn merge-app
-  [{:keys [environmental-variables] :as application}
+  [{:keys [environmental-variables
+           version] :as application}
    application-overwrite]
   (let [env (merge-env
               environmental-variables
               (:environmental-variables application-overwrite))]
-    (cond-> application
-            (seq env) (assoc :environmental-variables env))))
+    (-> application
+        (assoc :version (or (:version application-overwrite) version))
+        (cond->
+          (seq env) (assoc :environmental-variables env)))))
 
 (defn merge-apps
   [app-set app-set-overwrite]
@@ -242,25 +260,28 @@
   [deployment-set-id]
   (let [filter-req (str "deployment-set='" deployment-set-id "'")
         options    {:cimi-params {:filter (parser/parse-cimi-filter filter-req)
-                                  :select ["id" "module" "nuvlabox" "parent" "state"]
+                                  :select ["id" "module" "nuvlabox" "parent" "state" "app-set"]
                                   :last   10000}}]
     (second (crud/query-as-admin "deployment" options))))
 
 
 (defn current-state
-  [{:keys [id] :as _deployment-set} application-sets]
-  (let [deployments  (current-deployments id)
-        app-set-name (-> application-sets
-                         module-utils/get-applications-sets
-                         first
-                         :name)]
-    (for [{:keys [nuvlabox parent state] deployment-id :id {application-href :href {:keys [environmental-variables]} :content} :module} deployments
-          :let [[_ app-id app-version] (re-matches #"([^_]+)(?:_(.*))?" application-href)]]
+  [{:keys [id] :as _deployment-set}]
+  (let [deployments (current-deployments id)]
+    (for [{:keys                     [nuvlabox parent state app-set] deployment-id :id
+           {application-href :href {:keys [environmental-variables]} :content
+            :as              module} :module} deployments
+          :let [env-vars (map #(select-keys % [:name :value]) environmental-variables)]]
       {:id          deployment-id
-       :app-set     app-set-name
-       :application (cond-> {:id      app-id
-                             :version (or (some-> app-version Integer/parseInt) 0)}
-                            (seq environmental-variables)
-                            (assoc :environmental-variables environmental-variables))
+       :app-set     app-set
+       :application (cond-> {:id      (module-utils/full-uuid->uuid application-href)
+                             :version (module-utils/module-current-version module)}
+                            (seq env-vars)
+                            (assoc :environmental-variables env-vars))
        :target      (or nuvlabox parent)
        :state       state})))
+
+
+(defn all-deployments-stopped?
+  [deployment-set-id]
+  (every? (comp #(= "STOPPED" %) :state) (current-deployments deployment-set-id)))

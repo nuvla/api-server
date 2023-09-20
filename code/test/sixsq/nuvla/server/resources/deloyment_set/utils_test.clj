@@ -30,3 +30,7 @@
       (is-state-after-action t/action-ok t/state-started)
       (is-transition-not-allowed t/action-nok)
       (is-state-after-action t/action-update t/state-updating)))
+
+(deftest action-name
+  (is (= (t/action-job-name t/action-force-delete) "deployment_set_force_delete"))
+  (is (= (t/action-job-name "multiple-dashes-action") "deployment_set_multiple_dashes_action")))

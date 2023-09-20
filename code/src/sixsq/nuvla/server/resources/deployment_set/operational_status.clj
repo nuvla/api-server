@@ -16,11 +16,12 @@
        (map (comp :id second))
        set))
 
-
 (defn update-app?
   [{{v1 :version env1 :environmental-variables} :application :as _expected-deployment}
    {{v2 :version env2 :environmental-variables} :application :keys [state] :as _current-deployment}]
-  (or (not= v1 v2) (not= env1 env2) (not= "STARTED" state)))
+  (let [relevant-keys (set (map :name env1))
+        env2 (filter #(relevant-keys (:name %)) env2)]
+    (or (not= v1 v2) (not= (seq env1) (seq env2)) (not= "STARTED" state))))
 
 
 (defn deployments-to-update
