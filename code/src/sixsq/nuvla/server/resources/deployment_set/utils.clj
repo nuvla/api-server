@@ -41,9 +41,6 @@
 (def state-updating "UPDATING")
 (def state-updated "UPDATED")
 
-(def operational-status-ok "OK")
-(def operational-status-nok "NOK")
-
 (def states [state-new
              state-starting
              state-started
@@ -54,6 +51,12 @@
              state-partially-stopped
              state-updating
              state-updated])
+
+(def operational-status-ok "OK")
+(def operational-status-nok "NOK")
+
+(def operational-statuses [operational-status-ok
+                           operational-status-nok])
 
 (defn transition-ok
   [to-state]
