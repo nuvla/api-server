@@ -294,13 +294,13 @@
     (testing "create must be possible for user"
       (let [{{{:keys [resource-id]} :body}
              :response} (with-redefs [crud/get-resource-throw-nok
-                                                  (constantly u-applications-sets-v11)]
-                                      (-> session-user
-                                          (request base-uri
-                                                   :request-method :post
-                                                   :body (json/write-str valid-deployment-set))
-                                          (ltu/body->edn)
-                                          (ltu/is-status 201)))
+                                      (constantly u-applications-sets-v11)]
+                          (-> session-user
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str valid-deployment-set))
+                              (ltu/body->edn)
+                              (ltu/is-status 201)))
 
             dep-set-url (str p/service-context resource-id)
             job-payload {"authn-info" {"active-claim" "user/jane"
@@ -465,6 +465,30 @@
                     (ltu/is-key-value :deployments-to-remove nil)
                     (ltu/is-key-value :deployments-to-update nil))))
 
+            (testing "editing deployment set will update the operational status"
+              (with-redefs [crud/get-resource-throw-nok
+                            (constantly u-applications-sets-v11)]
+                (-> session-user
+                    (request dep-set-url
+                             :request-method :put
+                             :body (json/write-str {}))
+                    ltu/body->edn
+                    (ltu/is-status 200)
+                    (ltu/is-key-value :state utils/state-started)
+                    (ltu/is-operation-present utils/action-update))
+
+                (with-redefs [utils/current-deployments
+                              (constantly fake-deployments)]
+                  (-> session-user
+                      (request dep-set-url
+                               :request-method :put
+                               :body (json/write-str {}))
+                      ltu/body->edn
+                      (ltu/is-status 200)
+                      (ltu/is-key-value :state utils/state-started)
+                      (ltu/is-operation-absent utils/action-start)
+                      (ltu/is-operation-absent utils/action-update)))))
+
             (testing "delete a deployment: user should be able to call operational-status and see a divergence"
               (with-redefs [utils/current-deployments
                             (constantly (drop 1 fake-deployments))
@@ -479,7 +503,17 @@
                     (ltu/body->edn)
                     (ltu/is-status 200)
                     (ltu/is-key-value :status "NOK")
-                    (ltu/is-key-value :deployments-to-add [(first plan)]))))))
+                    (ltu/is-key-value :deployments-to-add [(first plan)]))
+
+                ;; edit the deployment again to refresh the operational status
+                (-> session-user
+                    (request dep-set-url
+                             :request-method :put
+                             :body (json/write-str {}))
+                    ltu/body->edn
+                    (ltu/is-status 200)
+                    (ltu/is-key-value :state utils/state-started)
+                    (ltu/is-operation-present utils/action-update))))))
 
 
         (testing "update action will create a bulk_deployment_set_update job"
@@ -753,13 +787,15 @@
                                (content-type "application/json"))
           session-user     (header session-anon authn-info-header
                                    (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
-          {{{:keys [resource-id]} :body}
-           :response} (-> session-user
-                          (request base-uri
-                                   :request-method :post
-                                   :body (json/write-str valid-deployment-set))
-                          (ltu/body->edn)
-                          (ltu/is-status 201))
+          {{{:keys [resource-id]} :body} :response}
+          (with-redefs [crud/get-resource-throw-nok
+                        (constantly u-applications-sets-v11)]
+            (-> session-user
+                (request base-uri
+                         :request-method :post
+                         :body (json/write-str valid-deployment-set))
+                (ltu/body->edn)
+                (ltu/is-status 201)))
 
           dep-set-url      (str p/service-context resource-id)
 
@@ -784,12 +820,14 @@
           new-dep-set-name "dep set name changed"]
 
       (testing "deployment set name is refreshed on edit of deployment"
-        (-> session-user
-            (request dep-set-url
-                     :request-method :put
-                     :body (json/write-str {:name new-dep-set-name}))
-            (ltu/body->edn)
-            (ltu/is-status 200))
+        (with-redefs [crud/get-resource-throw-nok
+                      (constantly u-applications-sets-v11)]
+          (-> session-user
+              (request dep-set-url
+                       :request-method :put
+                       :body (json/write-str {:name new-dep-set-name}))
+              (ltu/body->edn)
+              (ltu/is-status 200)))
 
         (-> session-user
             (request dep-url
@@ -818,45 +856,45 @@
                               (str "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon " session-id))]
 
     (testing "Canceling start action"
-      (let [{{{:keys [resource-id]} :body}
-             :response} (-> session-admin
-                            (request base-uri
-                                     :request-method :post
-                                     :body (json/write-str valid-deployment-set))
-                            (ltu/body->edn)
-                            (ltu/is-status 201))
-            dep-set-url          (str p/service-context resource-id)
-            valid-deployment     {:module         {:href "module/x"}
-                                  :deployment-set resource-id}
-            _dep-url             (with-redefs [module-utils/resolve-module (constantly {:href "module/x"})]
-                                   (-> session-admin
-                                       (request deployment-base-uri
-                                                :request-method :post
-                                                :body (json/write-str valid-deployment))
-                                       (ltu/body->edn)
-                                       (ltu/is-status 201)
-                                       (ltu/location-url)))
-            start-op-url         (-> session-admin
-                                     (request dep-set-url)
-                                     ltu/body->edn
-                                     (ltu/is-status 200)
-                                     (ltu/is-operation-present utils/action-start)
-                                     (ltu/get-op-url utils/action-start))
-            start-job-url        (-> session-admin
-                                     (request start-op-url)
-                                     ltu/body->edn
-                                     (ltu/is-status 202)
-                                     ltu/location-url)
-            cancel-start-job-url (-> session-admin
-                                     (request start-job-url)
-                                     ltu/body->edn
-                                     (ltu/is-status 200)
-                                     (ltu/is-key-value :state job-utils/state-queued)
-                                     (ltu/is-key-value :action "bulk_deployment_set_start")
-                                     (ltu/is-operation-present job-utils/action-cancel)
-                                     (ltu/get-op-url job-utils/action-cancel))]
-        (with-redefs [crud/get-resource-throw-nok
-                      (constantly u-applications-sets-v11)]
+      (with-redefs [crud/get-resource-throw-nok
+                    (constantly u-applications-sets-v11)]
+        (let [{{{:keys [resource-id]} :body}
+               :response} (-> session-admin
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str valid-deployment-set))
+                              (ltu/body->edn)
+                              (ltu/is-status 201))
+              dep-set-url          (str p/service-context resource-id)
+              valid-deployment     {:module         {:href "module/x"}
+                                    :deployment-set resource-id}
+              _dep-url             (with-redefs [module-utils/resolve-module (constantly {:href "module/x"})]
+                                     (-> session-admin
+                                         (request deployment-base-uri
+                                                  :request-method :post
+                                                  :body (json/write-str valid-deployment))
+                                         (ltu/body->edn)
+                                         (ltu/is-status 201)
+                                         (ltu/location-url)))
+              start-op-url         (-> session-admin
+                                       (request dep-set-url)
+                                       ltu/body->edn
+                                       (ltu/is-status 200)
+                                       (ltu/is-operation-present utils/action-start)
+                                       (ltu/get-op-url utils/action-start))
+              start-job-url        (-> session-admin
+                                       (request start-op-url)
+                                       ltu/body->edn
+                                       (ltu/is-status 202)
+                                       ltu/location-url)
+              cancel-start-job-url (-> session-admin
+                                       (request start-job-url)
+                                       ltu/body->edn
+                                       (ltu/is-status 200)
+                                       (ltu/is-key-value :state job-utils/state-queued)
+                                       (ltu/is-key-value :action "bulk_deployment_set_start")
+                                       (ltu/is-operation-present job-utils/action-cancel)
+                                       (ltu/get-op-url job-utils/action-cancel))]
           ;; cancel the start_deployment job
           (-> session-admin
               (request cancel-start-job-url)

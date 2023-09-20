@@ -148,11 +148,17 @@
    ::tk/guard? sm/guard?
    ::tk/state  state-new})
 
+(defn can-do-action?
+  [action {{:keys [status]} :operational-status :as resource} request]
+  (and (sm/can-do-action? action resource request)
+       (or (not (#{action-start action-update} action))
+           (not= operational-status-ok status))))
+
 (defn get-operations
   [{:keys [id] :as resource} request]
   (->> actions
        (map (fn [action]
-              (when (sm/can-do-action? action resource request)
+              (when (can-do-action? action resource request)
                 (if (#{crud/action-delete crud/action-edit} action)
                   (u/operation-map id action)
                   (u/action-map id action)))))
