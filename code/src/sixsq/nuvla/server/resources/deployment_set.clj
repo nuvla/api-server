@@ -135,6 +135,15 @@ These resources represent a deployment set that regroups deployments.
                                    :action action)
                     :nuvla/authn auth/internal-identity}))
 
+(defn state-transition-update-os
+  "Perform a state transition and updates the operational status"
+  [id action]
+  (let [operational-status (-> id (crud/do-action-as-admin utils/action-operational-status)
+                               :body)]
+    (-> (state-transition id action)
+        (assoc :operational-status operational-status)
+        (utils/save-deployment-set nil))))
+
 (defmethod crud/do-action [resource-type utils/action-plan]
   [request]
   (let [deployment-set    (load-resource-throw-not-allowed-action request)
@@ -180,16 +189,16 @@ These resources represent a deployment set that regroups deployments.
         operational-status (-> id (crud/do-action-as-admin utils/action-operational-status)
                                :body)]
     (if (= (:status operational-status) utils/operational-status-ok)
-      (state-transition id utils/action-ok)
-      (state-transition id utils/action-nok))))
+      (state-transition-update-os id utils/action-ok)
+      (state-transition-update-os id utils/action-nok))))
 
 
 (defn stop-job-transition
   [{:keys [target-resource] :as _job}]
   (let [id (:href target-resource)]
     (if (utils/all-deployments-stopped? id)
-      (state-transition id utils/action-ok)
-      (state-transition id utils/action-nok))))
+      (state-transition-update-os id utils/action-ok)
+      (state-transition-update-os id utils/action-nok))))
 
 
 (defmethod job-interface/on-timeout [resource-type (utils/bulk-action-job-name utils/action-start)]

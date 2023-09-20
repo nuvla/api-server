@@ -36,13 +36,13 @@
     :json-schema/description "target deployment"))
 
 (s/def ::deployments-to-add
-  (assoc (st/spec (s/coll-of ::deployment-to-add :kind vector?))
+  (assoc (st/spec (s/coll-of ::deployment-to-add))
     :json-schema/type "array"
     :json-schema/description "deployments to add"
     :json-schema/indexed false))
 
 (s/def ::deployments-to-remove
-  (assoc (st/spec (s/coll-of ::common/id :kind vector?))
+  (assoc (st/spec (s/coll-of ::common/id))
     :json-schema/type "array"
     :json-schema/description "deployments to remove"
     :json-schema/indexed false))
@@ -62,7 +62,7 @@
     :json-schema/description "deployment to update"))
 
 (s/def ::deployments-to-update
-  (assoc (st/spec (s/coll-of ::deployment-to-update :kind vector?))
+  (assoc (st/spec (s/coll-of ::deployment-to-update))
     :json-schema/type "array"
     :json-schema/description "deployments to update"
     :json-schema/indexed false))
