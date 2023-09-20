@@ -282,21 +282,25 @@
           (ltu/is-status 403)))
 
     (testing "anon create must fail"
-      (-> session-anon
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str {}))
-          (ltu/body->edn)
-          (ltu/is-status 403)))
+      (with-redefs [crud/get-resource-throw-nok
+                    (constantly u-applications-sets-v11)]
+        (-> session-anon
+            (request base-uri
+                     :request-method :post
+                     :body (json/write-str {}))
+            (ltu/body->edn)
+            (ltu/is-status 403))))
 
     (testing "create must be possible for user"
       (let [{{{:keys [resource-id]} :body}
-             :response} (-> session-user
-                            (request base-uri
-                                     :request-method :post
-                                     :body (json/write-str valid-deployment-set))
-                            (ltu/body->edn)
-                            (ltu/is-status 201))
+             :response} (with-redefs [crud/get-resource-throw-nok
+                                                  (constantly u-applications-sets-v11)]
+                                      (-> session-user
+                                          (request base-uri
+                                                   :request-method :post
+                                                   :body (json/write-str valid-deployment-set))
+                                          (ltu/body->edn)
+                                          (ltu/is-status 201)))
 
             dep-set-url (str p/service-context resource-id)
             job-payload {"authn-info" {"active-claim" "user/jane"
@@ -325,7 +329,8 @@
               (ltu/is-operation-present utils/action-operational-status)
               (ltu/is-operation-present crud/action-delete)
               (ltu/is-operation-absent utils/action-force-delete)
-              (ltu/is-key-value :applications-sets dep-apps-sets)))
+              (ltu/is-key-value :applications-sets dep-apps-sets)
+              (ltu/has-key :operational-status)))
 
         (testing "start action will create a bulk_deployment_set_start job"
           (let [start-op-url  (-> session-user
@@ -383,13 +388,16 @@
               (ltu/is-key-value :state utils/state-started)))
 
         (testing "edit action is possible"
-          (-> session-user
-              (request dep-set-url
-                       :request-method :put
-                       :body (json/write-str {:description "foo"}))
-              ltu/body->edn
-              (ltu/is-status 200)
-              (ltu/is-key-value :description "foo")))
+          (with-redefs [crud/get-resource-throw-nok
+                        (constantly u-applications-sets-v11)]
+            (-> session-user
+                (request dep-set-url
+                         :request-method :put
+                         :body (json/write-str {:description "foo"}))
+                ltu/body->edn
+                (ltu/is-status 200)
+                (ltu/is-key-value :description "foo")
+                (ltu/has-key :operational-status))))
 
         (testing "operational-status"
           (testing "deployment-set resource contains key operational-status")
@@ -500,13 +508,15 @@
                 (ltu/is-key-value json/read-str :payload job-payload))))
 
         (testing "edit action is not allowed in a transitional state"
-          (-> session-user
-              (request dep-set-url
-                       :request-method :put
-                       :body (json/write-str {:description "bar"}))
-              ltu/body->edn
-              (ltu/is-status 409)
-              (ltu/message-matches "edit action is not allowed in state [UPDATING]")))
+          (with-redefs [crud/get-resource-throw-nok
+                        (constantly u-applications-sets-v11)]
+            (-> session-user
+                (request dep-set-url
+                         :request-method :put
+                         :body (json/write-str {:description "bar"}))
+                ltu/body->edn
+                (ltu/is-status 409)
+                (ltu/message-matches "edit action is not allowed in state [UPDATING]"))))
 
         (testing "force state transition to simulate job action"
           (with-redefs [crud/get-resource-throw-nok

@@ -153,18 +153,20 @@ These resources represent a deployment set that regroups deployments.
     (r/json-response (utils/plan deployment-set applications-sets))))
 
 (defn divergence-map
-  [request]
-  (let [deployment-set    (load-resource-throw-not-allowed-action request)
-        applications-sets (-> deployment-set
-                              utils/get-applications-sets-href
-                              (crud/get-resource-throw-nok request))
-        divergence        (os/divergence-map
-                            (utils/plan deployment-set applications-sets)
-                            (utils/current-state deployment-set))
-        status            (if (some (comp pos? count) (vals divergence))
-                            utils/operational-status-nok
-                            utils/operational-status-ok)]
-    (assoc divergence :status status)))
+  ([request]
+   (divergence-map (load-resource-throw-not-allowed-action request) request))
+  ([{:keys [applications-sets] :as deployment-set} request]
+   (when (seq applications-sets)
+     (let [applications-sets (-> deployment-set
+                                 utils/get-applications-sets-href
+                                 (crud/get-resource-throw-nok request))
+           divergence        (os/divergence-map
+                               (utils/plan deployment-set applications-sets)
+                               (utils/current-state deployment-set))
+           status            (if (some (comp pos? count) (vals divergence))
+                               utils/operational-status-nok
+                               utils/operational-status-ok)]
+       (assoc divergence :status status)))))
 
 (defmethod crud/do-action [resource-type utils/action-operational-status]
   [request]
@@ -329,10 +331,16 @@ These resources represent a deployment set that regroups deployments.
     (replace-modules-by-apps-set request)
     request))
 
+(defn create-request-with-operational-status
+  [{deployment-set :body :as request}]
+  (assoc-in request [:body :operational-status]
+            (divergence-map deployment-set request)))
+
 (defmethod crud/add resource-type
   [{{:keys [start]} :body :as request}]
   (let [response (-> request
                      request-with-create-app-set
+                     create-request-with-operational-status
                      add-impl)
         id       (get-in response [:body :resource-id])]
     (if start
@@ -348,11 +356,18 @@ These resources represent a deployment set that regroups deployments.
   [request]
   (retrieve-impl request))
 
+(defn edit-request-with-operational-status
+  [request]
+  (assoc-in request [:body :operational-status]
+            (divergence-map (:body (crud/retrieve request)) request)))
+
 (def edit-impl (std-crud/edit-fn resource-type))
 
 (defmethod crud/edit resource-type
   [request]
-  (edit-impl request))
+  (-> request
+      edit-request-with-operational-status
+      edit-impl))
 
 (defmethod crud/delete resource-type
   [request]
