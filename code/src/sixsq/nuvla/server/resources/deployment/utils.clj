@@ -107,6 +107,7 @@
   (a/throw-cannot-manage resource request)
   (let [active-claim (auth/current-active-claim request)
         low-priority (get-in request [:body :low-priority] false)
+        parent-job   (get-in request [:body :parent-job])
         {{job-id     :resource-id
           job-status :status} :body} (job/create-job
                                        id action
@@ -114,6 +115,7 @@
                                            (a/acl-append :edit-acl active-claim)
                                            (a/acl-append :edit-data nuvlabox)
                                            (a/acl-append :manage nuvlabox))
+                                       :parent-job parent-job
                                        :priority (if low-priority 999 50)
                                        :execution-mode execution-mode)
         job-msg      (str action " " id " with async " job-id)]
@@ -224,7 +226,7 @@
         credential       (some-> deployment :parent crud/retrieve-by-id-as-admin)
         infra            (some-> credential :parent crud/retrieve-by-id-as-admin)
         nuvlaedge        (some-> deployment :nuvlabox crud/retrieve-by-id-as-admin)
-        nuvlaedge-status (some-> nuvlaedge  :nuvlabox-status crud/retrieve-by-id-as-admin)
+        nuvlaedge-status (some-> nuvlaedge :nuvlabox-status crud/retrieve-by-id-as-admin)
         registries-creds (when full
                            (some->> deployment :registries-credentials
                                     (map crud/retrieve-by-id-as-admin)))
@@ -239,6 +241,14 @@
       registries-creds
       registries-infra)))
 
+(defn on-cancel
+  [{:keys [target-resource] :as _job}]
+  (let [deployment-id (some-> target-resource :href)
+        deployment    (some-> deployment-id crud/retrieve-by-id-as-admin)
+        edit-request  {:params      (u/id->request-params deployment-id)
+                       :body        (assoc deployment :state "ERROR")
+                       :nuvla/authn auth/internal-identity}]
+    (crud/edit edit-request)))
 
 (defn merge-module-element
   [key-fn current-val-fn current resolved]

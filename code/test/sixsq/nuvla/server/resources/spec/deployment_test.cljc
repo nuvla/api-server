@@ -44,7 +44,8 @@
    :subscription-id        "sub_something"
    :coupon                 "coupon-code-xyz"
    :deployment-set         "deployment-set/f2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
-   :deployment-set-name    "deployment set name example"})
+   :deployment-set-name    "deployment set name example"
+   :app-set                "Main"})
 
 
 (deftest test-schema-check
@@ -67,5 +68,6 @@
 
   ;; optional attributes
   (doseq [k #{:data :api-credentials :credential-id :registries-credentials :owner
-              :infrastructure-service :subscription-id :coupon :deployment-set :deployment-set-name}]
+              :infrastructure-service :subscription-id :coupon :deployment-set
+              :deployment-set-name :app-set}]
     (stu/is-valid ::ds/deployment (dissoc valid-deployment k))))

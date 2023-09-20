@@ -11,6 +11,7 @@
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.state-machine :as sm]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
     [sixsq.nuvla.server.util.response :as r]))
@@ -30,6 +31,7 @@
           u/strip-service-attrs
           (crud/new-identifier resource-name)
           (assoc :resource-type resource-uri)
+          sm/initialize
           u/update-timestamps
           (u/set-created-by request)
           (crud/add-acl request)
@@ -57,12 +59,14 @@
     (try
       (let [current (-> (str resource-name "/" uuid)
                         (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                        (a/throw-cannot-edit request))]
+                        (a/throw-cannot-edit request)
+                        (sm/throw-can-not-do-action request))]
         (-> request
             (u/delete-attributes current)
             u/update-timestamps
             (u/set-updated-by request)
             crud/validate
+            (crud/set-operations request)
             (db/edit request)))
       (catch Exception e
         (or (ex-data e) (throw e))))))
@@ -84,6 +88,7 @@
       (-> (str resource-name "/" uuid)
           (db/retrieve request)
           (a/throw-cannot-delete request)
+          (sm/throw-can-not-do-action request)
           (db/delete request))
       (catch Exception e
         (or (ex-data e) (throw e))))))

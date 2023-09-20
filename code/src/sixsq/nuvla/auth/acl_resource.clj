@@ -61,6 +61,10 @@
   [{:keys [claims] :as _authn-info}]
   (contains? (set claims) "group/nuvla-admin"))
 
+(defn is-admin-request?
+  [request]
+  (-> request auth/current-authentication is-admin?))
+
 
 (defn extract-right
   "Given the identity map, this extracts the associated right.
