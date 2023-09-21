@@ -28,7 +28,8 @@
                                                       :environmental-variables [{:name  "env_var"
                                                                                  :value "some value"}]}]
                                       :targets      ["credential/a2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
-                                                     "credential/b2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]}]}]})
+                                                     "credential/b2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]}]}]
+   :operational-status {:status "OK"}})
 
 
 (deftest test-schema-check
@@ -49,5 +50,5 @@
     (stu/is-invalid ::t/deployment-set (dissoc valid-deployment-set k)))
 
   ;; optional attributes
-  #_(doseq [k #{}]
+  (doseq [k #{:operational-status}]
     (stu/is-valid ::t/deployment-set (dissoc valid-deployment-set k))))

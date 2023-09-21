@@ -188,7 +188,7 @@
 
 
 (s/def ::registries-credentials
-  (-> (st/spec (s/coll-of string? :min-count 1 :kind vector?))
+  (-> (st/spec (s/coll-of string? :min-count 1))
       (assoc :name "registries-credentials"
              :json-schema/type "array"
              :json-schema/indexed false

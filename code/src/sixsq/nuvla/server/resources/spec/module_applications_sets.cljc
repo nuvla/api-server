@@ -42,7 +42,7 @@
     "environmental variable name, value and application"))
 
 (s/def ::environmental-variables
-  (assoc (st/spec (s/coll-of ::environmental-variable :kind vector?))
+  (assoc (st/spec (s/coll-of ::environmental-variable))
     :name "environmental-variables"
     :json-schema/type "array"
     :json-schema/display-name "environmental variables"

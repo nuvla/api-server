@@ -4,6 +4,7 @@
     [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
+    [sixsq.nuvla.server.resources.spec.deployment-set-operational-status :as os]
     [sixsq.nuvla.server.resources.spec.module-applications-sets :as module-sets]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -67,7 +68,8 @@
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::state
                                   ::applications-sets]
-                         :opt-un [::start]}]))
+                         :opt-un [::start
+                                  ::os/operational-status]}]))
 
 
 (s/def ::deployment-set (su/only-keys-maps deployment-set-keys-spec))

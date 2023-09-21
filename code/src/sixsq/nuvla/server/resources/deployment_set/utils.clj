@@ -41,9 +41,6 @@
 (def state-updating "UPDATING")
 (def state-updated "UPDATED")
 
-(def operational-status-ok "OK")
-(def operational-status-nok "NOK")
-
 (def states [state-new
              state-starting
              state-started
@@ -54,6 +51,14 @@
              state-partially-stopped
              state-updating
              state-updated])
+
+(def operational-status-ok "OK")
+(def operational-status-nok "NOK")
+
+(def operational-statuses [operational-status-ok
+                           operational-status-nok])
+
+(def guard-operational-status-nok? :operational-status-nok)
 
 (defn transition-ok
   [to-state]
@@ -67,14 +72,20 @@
   [to-state]
   {::tk/on action-cancel ::tk/to to-state ::tk/guards [sm/guard-can-manage?]})
 
-(def transition-start {::tk/on action-start ::tk/to state-starting ::tk/guards [sm/guard-can-manage?]})
-(def transition-update {::tk/on action-update ::tk/to state-updating ::tk/guards [sm/guard-can-manage?]})
+(def transition-start {::tk/on action-start ::tk/to state-starting ::tk/guards [sm/guard-can-manage?
+                                                                                guard-operational-status-nok?]})
+(def transition-update {::tk/on action-update ::tk/to state-updating ::tk/guards [sm/guard-can-manage?
+                                                                                  guard-operational-status-nok?]})
 (def transition-stop {::tk/on action-stop ::tk/to state-stopping ::tk/guards [sm/guard-can-manage?]})
 (def transition-edit {::tk/on crud/action-edit ::tk/guards [sm/guard-can-edit?]})
 (def transition-delete {::tk/on crud/action-delete ::tk/guards [sm/guard-can-delete?]})
 (def transition-force-delete {::tk/on action-force-delete ::tk/guards [sm/guard-can-delete?]})
 (def transition-plan {::tk/on action-plan ::tk/guards [sm/guard-can-manage?]})
 (def transition-operational-status {::tk/on action-operational-status ::tk/guards [sm/guard-can-manage?]})
+
+(defn operational-status-nok?
+  [{{:keys [status]} :operational-status :as _resource}]
+  (= status operational-status-nok))
 
 (def state-machine
   {::tk/states [{::tk/name        state-new
@@ -142,7 +153,12 @@
                                    transition-plan
                                    transition-operational-status
                                    transition-force-delete]}]
-   ::tk/guard? sm/guard?
+   ::tk/guard? (fn [{{:keys [resource _request]} ::tk/process
+                     guard                       ::tk/guard :as ctx}]
+                 (or (sm/guard? ctx)
+                     (condp = guard
+                       guard-operational-status-nok? (operational-status-nok? resource)
+                       false)))
    ::tk/state  state-new})
 
 (defn get-operations
@@ -271,7 +287,9 @@
     (for [{:keys                     [nuvlabox parent state app-set] deployment-id :id
            {application-href :href {:keys [environmental-variables]} :content
             :as              module} :module} deployments
-          :let [env-vars (map #(select-keys % [:name :value]) environmental-variables)]]
+          :let [env-vars (->> environmental-variables
+                              (map #(select-keys % [:name :value]))
+                              (filter :value))]]
       {:id          deployment-id
        :app-set     app-set
        :application (cond-> {:id      (module-utils/full-uuid->uuid application-href)
@@ -281,7 +299,14 @@
        :target      (or nuvlabox parent)
        :state       state})))
 
+(defn operational-status-dependent-action
+  [resource _request]
+  (if (operational-status-nok? resource)
+    action-nok
+    action-ok))
 
-(defn all-deployments-stopped?
-  [deployment-set-id]
-  (every? (comp #(= "STOPPED" %) :state) (current-deployments deployment-set-id)))
+(defn deployments-dependent-action
+  [{deployment-set-id :id} _request]
+  (if (every? (comp #(= "STOPPED" %) :state) (current-deployments deployment-set-id))
+    action-ok
+    action-nok))

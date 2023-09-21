@@ -93,6 +93,87 @@ These resources represent a deployment set that regroups deployments.
 ;; CRUD operations
 ;;
 
+(defn load-resource-throw-not-allowed-action
+  [{{:keys [uuid]} :params :as request}]
+  (-> (str resource-type "/" uuid)
+      crud/retrieve-by-id-as-admin
+      (a/throw-cannot-manage request)
+      (sm/throw-can-not-do-action request)))
+
+(defn divergence-map
+  ([request]
+   (divergence-map (load-resource-throw-not-allowed-action request) request))
+  ([{:keys [applications-sets] :as deployment-set} request]
+   (when (seq applications-sets)
+     (let [applications-sets (-> deployment-set
+                                 utils/get-applications-sets-href
+                                 (crud/get-resource-throw-nok request))
+           divergence        (os/divergence-map
+                               (utils/plan deployment-set applications-sets)
+                               (utils/current-state deployment-set))
+           status            (if (some (comp pos? count) (vals divergence))
+                               utils/operational-status-nok
+                               utils/operational-status-ok)]
+       (assoc divergence :status status)))))
+
+(defn create-module
+  [module]
+  (let [{{:keys [status resource-id]} :body
+         :as                          response} (module-utils/create-module module)]
+    (if (= status 201)
+      resource-id
+      (log/errorf "unexpected status code (%s) when creating %s resource: %s"
+                  (str status) module response))))
+
+(defn retrieve-module
+  [id request]
+  (:body (crud/retrieve {:params         {:uuid          (u/id->uuid id)
+                                          :resource-name module-utils/resource-type}
+                         :request-method :get
+                         :nuvla/authn    (auth/current-authentication request)})))
+
+(defn create-module-apps-set
+  [{:keys [modules]} request]
+  (create-module
+    {:path    (str module-utils/project-apps-sets "/" (u/random-uuid))
+     :subtype module-utils/subtype-apps-sets
+     :acl     {:owners [(auth/current-active-claim request)]}
+     :content {:commit "no commit message"
+               :author (auth/current-active-claim request)
+               :applications-sets
+               [{:name         "Main"
+                 :applications (map #(hash-map :id (module-utils/full-uuid->uuid %)
+                                               :version
+                                               (module-utils/latest-or-version-index
+                                                 (retrieve-module % request) %))
+                                    modules)}]}}))
+
+(defn replace-modules-by-apps-set
+  [{:keys [fleet] :as resource} request]
+  (let [apps-set-id (create-module-apps-set resource request)]
+    (-> resource
+        (dissoc :modules :fleet)
+        (assoc :applications-sets [{:id      apps-set-id,
+                                    :version 0
+                                    :overwrites
+                                    [{:fleet fleet}]}]))))
+
+(defn create-app-set
+  [{:keys [modules] :as resource} request]
+  (if (seq modules)
+    (replace-modules-by-apps-set resource request)
+    resource))
+
+(defn pre-validate-hook
+  [resource request]
+  (assoc resource :operational-status (divergence-map resource request)))
+
+(defn add-pre-validate-hook
+  [resource request]
+  (-> resource
+      (create-app-set request)
+      (pre-validate-hook request)))
+
 (defn action-bulk
   [{:keys [id] :as _resource} {{:keys [action]} :params :as request}]
   (let [authn-info (auth/current-authentication request)
@@ -113,22 +194,17 @@ These resources represent a deployment set that regroups deployments.
       (throw (r/ex-response (format "unable to create async job to %s" job-action) 500 id))
       (r/map-response job-msg 202 id job-id))))
 
-(defn load-resource-throw-not-allowed-action
-  [{{:keys [uuid]} :params :as request}]
-  (-> (str resource-type "/" uuid)
-      crud/retrieve-by-id-as-admin
-      (a/throw-cannot-manage request)
-      (sm/throw-can-not-do-action request)))
-
 (defn standard-action
   ([request]
    (standard-action request (fn [resource _request] resource)))
   ([request f]
    (let [current (load-resource-throw-not-allowed-action request)]
      (-> current
+         (pre-validate-hook request)
          (sm/transition request)
          (utils/save-deployment-set current)
          (f request)))))
+
 (defn state-transition
   [id action]
   (standard-action {:params      (assoc (u/id->request-params id)
@@ -142,20 +218,6 @@ These resources represent a deployment set that regroups deployments.
                               utils/get-applications-sets-href
                               (crud/get-resource-throw-nok request))]
     (r/json-response (utils/plan deployment-set applications-sets))))
-
-(defn divergence-map
-  [request]
-  (let [deployment-set    (load-resource-throw-not-allowed-action request)
-        applications-sets (-> deployment-set
-                              utils/get-applications-sets-href
-                              (crud/get-resource-throw-nok request))
-        divergence        (os/divergence-map
-                            (utils/plan deployment-set applications-sets)
-                            (utils/current-state deployment-set))
-        status            (if (some (comp pos? count) (vals divergence))
-                            utils/operational-status-nok
-                            utils/operational-status-ok)]
-    (assoc divergence :status status)))
 
 (defmethod crud/do-action [resource-type utils/action-operational-status]
   [request]
@@ -173,60 +235,59 @@ These resources represent a deployment set that regroups deployments.
   [request]
   (standard-action request action-bulk))
 
+(defn action-ok-nok-transition-fn
+  [action-selector]
+  (fn [{:keys [target-resource] :as _job}]
+    (let [id            (:href target-resource)
+          admin-request {:params      (u/id->request-params id)
+                         :nuvla/authn auth/internal-identity}
+          current       (crud/retrieve-by-id-as-admin id)
+          next          (pre-validate-hook current admin-request)
+          action        (action-selector next admin-request)]
+      (-> next
+          (sm/transition (assoc-in admin-request [:params :action] action))
+          (utils/save-deployment-set current)))))
 
-(defn start-update-job-transition
-  [{:keys [target-resource] :as _job}]
-  (let [id (:href target-resource)
-        operational-status (-> id (crud/do-action-as-admin utils/action-operational-status)
-                               :body)]
-    (if (= (:status operational-status) utils/operational-status-ok)
-      (state-transition id utils/action-ok)
-      (state-transition id utils/action-nok))))
-
-
-(defn stop-job-transition
-  [{:keys [target-resource] :as _job}]
-  (let [id (:href target-resource)]
-    (if (utils/all-deployments-stopped? id)
-      (state-transition id utils/action-ok)
-      (state-transition id utils/action-nok))))
-
+(def action-ok-nok-transition-op-status
+  (action-ok-nok-transition-fn utils/operational-status-dependent-action))
+(def action-ok-nok-transition-all-deps-stopped?
+  (action-ok-nok-transition-fn utils/deployments-dependent-action))
 
 (defmethod job-interface/on-timeout [resource-type (utils/bulk-action-job-name utils/action-start)]
   [job]
-  (start-update-job-transition job))
+  (action-ok-nok-transition-op-status job))
 
 (defmethod job-interface/on-timeout [resource-type (utils/bulk-action-job-name utils/action-stop)]
   [job]
-  (stop-job-transition job))
+  (action-ok-nok-transition-all-deps-stopped? job))
 
 (defmethod job-interface/on-timeout [resource-type (utils/bulk-action-job-name utils/action-update)]
   [job]
-  (start-update-job-transition job))
+  (action-ok-nok-transition-op-status job))
 
 (defmethod job-interface/on-cancel [resource-type (utils/bulk-action-job-name utils/action-start)]
   [job]
-  (start-update-job-transition job))
+  (action-ok-nok-transition-op-status job))
 
 (defmethod job-interface/on-cancel [resource-type (utils/bulk-action-job-name utils/action-stop)]
   [job]
-  (stop-job-transition job))
+  (action-ok-nok-transition-all-deps-stopped? job))
 
 (defmethod job-interface/on-cancel [resource-type (utils/bulk-action-job-name utils/action-update)]
   [job]
-  (start-update-job-transition job))
+  (action-ok-nok-transition-op-status job))
 
 (defmethod job-interface/on-done [resource-type (utils/bulk-action-job-name utils/action-start)]
   [job]
-  (start-update-job-transition job))
+  (action-ok-nok-transition-op-status job))
 
 (defmethod job-interface/on-done [resource-type (utils/bulk-action-job-name utils/action-stop)]
   [job]
-  (stop-job-transition job))
+  (action-ok-nok-transition-all-deps-stopped? job))
 
 (defmethod job-interface/on-done [resource-type (utils/bulk-action-job-name utils/action-update)]
   [job]
-  (start-update-job-transition job))
+  (action-ok-nok-transition-op-status job))
 
 (defn job-delete-deployment-set-done
   [{{id :href} :target-resource
@@ -269,62 +330,11 @@ These resources represent a deployment set that regroups deployments.
   [request]
   (standard-action request cancel-latest-job))
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
-
-(defn retrieve-module
-  [id request]
-  (:body (crud/retrieve {:params         {:uuid          (u/id->uuid id)
-                                          :resource-name module-utils/resource-type}
-                         :request-method :get
-                         :nuvla/authn    (auth/current-authentication request)})))
-
-(defn create-module
-  [module]
-  (let [{{:keys [status resource-id]} :body
-         :as                          response} (module-utils/create-module module)]
-    (if (= status 201)
-      resource-id
-      (log/errorf "unexpected status code (%s) when creating %s resource: %s"
-                  (str status) module response))))
-
-(defn create-module-apps-set
-  [{{:keys [modules]} :body :as request}]
-  (create-module
-    {:path    (str module-utils/project-apps-sets "/" (u/random-uuid))
-     :subtype module-utils/subtype-apps-sets
-     :acl     {:owners [(auth/current-active-claim request)]}
-     :content {:commit "no commit message"
-               :author (auth/current-active-claim request)
-               :applications-sets
-               [{:name         "Main"
-                 :applications (map #(hash-map :id (module-utils/full-uuid->uuid %)
-                                               :version
-                                               (module-utils/latest-or-version-index
-                                                 (retrieve-module % request) %))
-                                    modules)}]}}))
-
-(defn replace-modules-by-apps-set
-  [{{:keys [fleet] :as body} :body :as request}]
-  (let [apps-set-id (create-module-apps-set request)
-        new-body    (-> body
-                        (dissoc :modules :fleet)
-                        (assoc :applications-sets [{:id      apps-set-id,
-                                                    :version 0
-                                                    :overwrites
-                                                    [{:fleet fleet}]}]))]
-    (assoc request :body new-body)))
-
-(defn request-with-create-app-set
-  [{{:keys [modules]} :body :as request}]
-  (if (seq modules)
-    (replace-modules-by-apps-set request)
-    request))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type add-pre-validate-hook))
 
 (defmethod crud/add resource-type
   [{{:keys [start]} :body :as request}]
-  (let [response (-> request
-                     request-with-create-app-set
-                     add-impl)
+  (let [response (add-impl request)
         id       (get-in response [:body :resource-id])]
     (if start
       (crud/do-action {:params      {:resource-name resource-type
@@ -339,7 +349,7 @@ These resources represent a deployment set that regroups deployments.
   [request]
   (retrieve-impl request))
 
-(def edit-impl (std-crud/edit-fn resource-type))
+(def edit-impl (std-crud/edit-fn resource-type pre-validate-hook))
 
 (defmethod crud/edit resource-type
   [request]
