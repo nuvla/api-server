@@ -154,13 +154,18 @@ a container orchestration engine.
 
     create-response))
 
+(defn get-deployment-set-name
+  [deployment-set-id request]
+  (some-> deployment-set-id
+          crud/retrieve-by-id-as-admin
+          (a/throw-cannot-view-data request)
+          :name))
+
 (defmethod crud/add resource-type
   [{{:keys [parent execution-mode deployment-set app-set]
      :or   {execution-mode "mixed"}} :body :as request}]
   (a/throw-cannot-add collection-acl request)
-  (let [deployment-set-name (some-> deployment-set
-                                    crud/retrieve-by-id-as-admin
-                                    :name)]
+  (let [deployment-set-name (get-deployment-set-name deployment-set request)]
     (-> request
         module-utils/resolve-from-module
         (assoc :execution-mode execution-mode)
@@ -200,7 +205,7 @@ a container orchestration engine.
         nb-name      (some-> nb-id crud/retrieve-by-id-as-admin :name)
         dep-set-id   (when-not (contains? select "deployment-set")
                        (or deployment-set (:deployment-set current)))
-        dep-set-name (some-> dep-set-id crud/retrieve-by-id-as-admin :name)
+        dep-set-name (get-deployment-set-name dep-set-id request)
         fixed-attr   (select-keys (:module current) [:href :price :license :acl])
         is-user?     (not (a/is-admin? authn-info))
         new-acl      (-> (or acl (:acl current))

@@ -57,7 +57,7 @@
       :json-schema/description "current or target deployment"))
 
 (s/def ::deployment-to-update
-  (assoc (st/spec (s/coll-of ::current-or-target-deployment :min-count 2 :max-count 2 :kind vector?))
+  (assoc (st/spec (s/coll-of ::current-or-target-deployment :min-count 2 :max-count 2))
     :json-schema/type "array"
     :json-schema/description "deployment to update"))
 

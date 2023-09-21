@@ -187,7 +187,7 @@ These resources represent a deployment set that regroups deployments.
 
 (defn start-update-job-transition
   [{:keys [target-resource] :as _job}]
-  (let [id (:href target-resource)
+  (let [id                 (:href target-resource)
         operational-status (-> id (crud/do-action-as-admin utils/action-operational-status)
                                :body)]
     (if (= (:status operational-status) utils/operational-status-ok)
@@ -280,8 +280,6 @@ These resources represent a deployment set that regroups deployments.
   [request]
   (standard-action request cancel-latest-job))
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
-
 (defn retrieve-module
   [id request]
   (:body (crud/retrieve {:params         {:uuid          (u/id->uuid id)
@@ -299,7 +297,7 @@ These resources represent a deployment set that regroups deployments.
                   (str status) module response))))
 
 (defn create-module-apps-set
-  [{{:keys [modules]} :body :as request}]
+  [{:keys [modules]} request]
   (create-module
     {:path    (str module-utils/project-apps-sets "/" (u/random-uuid))
      :subtype module-utils/subtype-apps-sets
@@ -315,32 +313,37 @@ These resources represent a deployment set that regroups deployments.
                                     modules)}]}}))
 
 (defn replace-modules-by-apps-set
-  [{{:keys [fleet] :as body} :body :as request}]
-  (let [apps-set-id (create-module-apps-set request)
-        new-body    (-> body
-                        (dissoc :modules :fleet)
-                        (assoc :applications-sets [{:id      apps-set-id,
-                                                    :version 0
-                                                    :overwrites
-                                                    [{:fleet fleet}]}]))]
-    (assoc request :body new-body)))
+  [{:keys [fleet] :as resource} request]
+  (let [apps-set-id (create-module-apps-set resource request)]
+    (-> resource
+        (dissoc :modules :fleet)
+        (assoc :applications-sets [{:id      apps-set-id,
+                                    :version 0
+                                    :overwrites
+                                    [{:fleet fleet}]}]))))
 
-(defn request-with-create-app-set
-  [{{:keys [modules]} :body :as request}]
+(defn create-app-set
+  [{:keys [modules] :as resource} request]
   (if (seq modules)
-    (replace-modules-by-apps-set request)
-    request))
+    (replace-modules-by-apps-set resource request)
+    resource))
 
-(defn create-request-with-operational-status
-  [{deployment-set :body :as request}]
-  (assoc-in request [:body :operational-status]
-            (divergence-map deployment-set request)))
+(defn pre-validate-hook
+  [resource request]
+  (assoc resource :operational-status (divergence-map resource request)))
+
+(defn add-pre-validate-hook
+  [resource request]
+  (-> resource
+      (create-app-set request)
+      (pre-validate-hook request)))
+
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type add-pre-validate-hook))
 
 (defmethod crud/add resource-type
   [{{:keys [start]} :body :as request}]
   (let [response (-> request
-                     request-with-create-app-set
-                     create-request-with-operational-status
+
                      add-impl)
         id       (get-in response [:body :resource-id])]
     (if start
@@ -356,18 +359,11 @@ These resources represent a deployment set that regroups deployments.
   [request]
   (retrieve-impl request))
 
-(defn edit-request-with-operational-status
-  [request]
-  (assoc-in request [:body :operational-status]
-            (divergence-map (:body (crud/retrieve request)) request)))
-
-(def edit-impl (std-crud/edit-fn resource-type))
+(def edit-impl (std-crud/edit-fn resource-type pre-validate-hook))
 
 (defmethod crud/edit resource-type
   [request]
-  (-> request
-      edit-request-with-operational-status
-      edit-impl))
+  (edit-impl request))
 
 (defmethod crud/delete resource-type
   [request]

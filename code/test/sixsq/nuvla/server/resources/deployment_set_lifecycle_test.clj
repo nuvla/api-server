@@ -787,20 +787,20 @@
                                (content-type "application/json"))
           session-user     (header session-anon authn-info-header
                                    (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
-          {{{:keys [resource-id]} :body} :response}
-          (with-redefs [crud/get-resource-throw-nok
-                        (constantly u-applications-sets-v11)]
-            (-> session-user
-                (request base-uri
-                         :request-method :post
-                         :body (json/write-str valid-deployment-set))
-                (ltu/body->edn)
-                (ltu/is-status 201)))
+          dep-set-id       (with-redefs [crud/get-resource-throw-nok
+                                         (constantly u-applications-sets-v11)]
+                             (-> session-user
+                                 (request base-uri
+                                          :request-method :post
+                                          :body (json/write-str valid-deployment-set))
+                                 (ltu/body->edn)
+                                 (ltu/is-status 201)
+                                 (ltu/location)))
 
-          dep-set-url      (str p/service-context resource-id)
+          dep-set-url      (str p/service-context dep-set-id)
 
           valid-deployment {:module         {:href "module/x"}
-                            :deployment-set resource-id}
+                            :deployment-set dep-set-id}
           dep-url          (with-redefs [module-utils/resolve-module (constantly {:href "module/x"})]
                              (-> session-user
                                  (request deployment-base-uri
@@ -813,7 +813,7 @@
                                (request dep-url)
                                (ltu/body->edn)
                                (ltu/is-status 200)
-                               (ltu/is-key-value :deployment-set resource-id)
+                               (ltu/is-key-value :deployment-set dep-set-id)
                                (ltu/is-key-value :deployment-set-name dep-set-name)
                                (ltu/is-operation-present :detach)
                                (ltu/get-op-url :detach))
@@ -835,7 +835,7 @@
                      :body (json/write-str {}))
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-key-value :deployment-set resource-id)
+            (ltu/is-key-value :deployment-set dep-set-id)
             (ltu/is-key-value :deployment-set-name new-dep-set-name)))
 
       (testing "user is able to detach deployment set"
