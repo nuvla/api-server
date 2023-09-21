@@ -93,64 +93,12 @@ These resources represent a deployment set that regroups deployments.
 ;; CRUD operations
 ;;
 
-(defn action-bulk
-  [{:keys [id] :as _resource} {{:keys [action]} :params :as request}]
-  (let [authn-info (auth/current-authentication request)
-        acl        {:owners   ["group/nuvla-admin"]
-                    :view-acl [(auth/current-active-claim request)]}]
-    (std-crud/create-bulk-job
-      (utils/bulk-action-job-name action) id authn-info acl {})))
-
-(defn action-simple
-  [{:keys [id] :as _resource} {{:keys [action]} :params :as request}]
-  (let [job-action (utils/action-job-name action)
-        {{job-id     :resource-id
-          job-status :status} :body} (job/create-job id (utils/action-job-name action)
-                                                     {:owners   ["group/nuvla-admin"]
-                                                      :view-acl [(auth/current-active-claim request)]})
-        job-msg    (str action " on " id " with async " job-id)]
-    (if (not= job-status 201)
-      (throw (r/ex-response (format "unable to create async job to %s" job-action) 500 id))
-      (r/map-response job-msg 202 id job-id))))
-
 (defn load-resource-throw-not-allowed-action
   [{{:keys [uuid]} :params :as request}]
   (-> (str resource-type "/" uuid)
       crud/retrieve-by-id-as-admin
       (a/throw-cannot-manage request)
       (sm/throw-can-not-do-action request)))
-
-(defn standard-action
-  ([request]
-   (standard-action request (fn [resource _request] resource)))
-  ([request f]
-   (let [current (load-resource-throw-not-allowed-action request)]
-     (-> current
-         (sm/transition request)
-         (utils/save-deployment-set current)
-         (f request)))))
-(defn state-transition
-  [id action]
-  (standard-action {:params      (assoc (u/id->request-params id)
-                                   :action action)
-                    :nuvla/authn auth/internal-identity}))
-
-(defn state-transition-update-os
-  "Perform a state transition and updates the operational status"
-  [id action]
-  (let [operational-status (-> id (crud/do-action-as-admin utils/action-operational-status)
-                               :body)]
-    (-> (state-transition id action)
-        (assoc :operational-status operational-status)
-        (utils/save-deployment-set nil))))
-
-(defmethod crud/do-action [resource-type utils/action-plan]
-  [request]
-  (let [deployment-set    (load-resource-throw-not-allowed-action request)
-        applications-sets (-> deployment-set
-                              utils/get-applications-sets-href
-                              (crud/get-resource-throw-nok request))]
-    (r/json-response (utils/plan deployment-set applications-sets))))
 
 (defn divergence-map
   ([request]
@@ -168,125 +116,6 @@ These resources represent a deployment set that regroups deployments.
                                utils/operational-status-ok)]
        (assoc divergence :status status)))))
 
-(defmethod crud/do-action [resource-type utils/action-operational-status]
-  [request]
-  (r/json-response (divergence-map request)))
-
-(defmethod crud/do-action [resource-type utils/action-start]
-  [request]
-  (standard-action request action-bulk))
-
-(defmethod crud/do-action [resource-type utils/action-update]
-  [request]
-  (standard-action request action-bulk))
-
-(defmethod crud/do-action [resource-type utils/action-stop]
-  [request]
-  (standard-action request action-bulk))
-
-
-(defn start-update-job-transition
-  [{:keys [target-resource] :as _job}]
-  (let [id                 (:href target-resource)
-        operational-status (-> id (crud/do-action-as-admin utils/action-operational-status)
-                               :body)]
-    (if (= (:status operational-status) utils/operational-status-ok)
-      (state-transition-update-os id utils/action-ok)
-      (state-transition-update-os id utils/action-nok))))
-
-
-(defn stop-job-transition
-  [{:keys [target-resource] :as _job}]
-  (let [id (:href target-resource)]
-    (if (utils/all-deployments-stopped? id)
-      (state-transition-update-os id utils/action-ok)
-      (state-transition-update-os id utils/action-nok))))
-
-
-(defmethod job-interface/on-timeout [resource-type (utils/bulk-action-job-name utils/action-start)]
-  [job]
-  (start-update-job-transition job))
-
-(defmethod job-interface/on-timeout [resource-type (utils/bulk-action-job-name utils/action-stop)]
-  [job]
-  (stop-job-transition job))
-
-(defmethod job-interface/on-timeout [resource-type (utils/bulk-action-job-name utils/action-update)]
-  [job]
-  (start-update-job-transition job))
-
-(defmethod job-interface/on-cancel [resource-type (utils/bulk-action-job-name utils/action-start)]
-  [job]
-  (start-update-job-transition job))
-
-(defmethod job-interface/on-cancel [resource-type (utils/bulk-action-job-name utils/action-stop)]
-  [job]
-  (stop-job-transition job))
-
-(defmethod job-interface/on-cancel [resource-type (utils/bulk-action-job-name utils/action-update)]
-  [job]
-  (start-update-job-transition job))
-
-(defmethod job-interface/on-done [resource-type (utils/bulk-action-job-name utils/action-start)]
-  [job]
-  (start-update-job-transition job))
-
-(defmethod job-interface/on-done [resource-type (utils/bulk-action-job-name utils/action-stop)]
-  [job]
-  (stop-job-transition job))
-
-(defmethod job-interface/on-done [resource-type (utils/bulk-action-job-name utils/action-update)]
-  [job]
-  (start-update-job-transition job))
-
-(defn job-delete-deployment-set-done
-  [{{id :href} :target-resource
-    state      :state
-    :as        _job}]
-  (when (= state job-utils/state-success)
-    (let [deployment-set (crud/retrieve-by-id-as-admin id)]
-      (db/delete deployment-set
-                 {:request-method :delete
-                  :params         (assoc (u/id->request-params id)
-                                    :action crud/action-delete)
-                  :authn-info     auth/internal-identity}))))
-
-(defmethod job-interface/on-done [resource-type (utils/action-job-name crud/action-delete)]
-  [job]
-  (job-delete-deployment-set-done job))
-
-(defmethod job-interface/on-done [resource-type (utils/action-job-name utils/action-force-delete)]
-  [job]
-  (job-delete-deployment-set-done job))
-
-(defmethod crud/do-action [resource-type utils/action-force-delete]
-  [request]
-  (standard-action request action-simple))
-
-(defn cancel-latest-job
-  [{:keys [id] :as _resource} _request]
-  (let [filter-str (format "target-resource/href='%s' and (state='%s' or state='%s')" id
-                           job-utils/state-queued job-utils/state-running)
-        [_ [{job-id :id}]]
-        (crud/query-as-admin
-          job/resource-type
-          {:cimi-params {:filter  (parser/parse-cimi-filter filter-str)
-                         :orderby [["created" :desc]]
-                         :last    1}})]
-    (crud/do-action-as-admin job-id job-utils/action-cancel))
-  (r/map-response "operation canceled" 200))
-
-(defmethod crud/do-action [resource-type utils/action-cancel]
-  [request]
-  (standard-action request cancel-latest-job))
-
-(defn retrieve-module
-  [id request]
-  (:body (crud/retrieve {:params         {:uuid          (u/id->uuid id)
-                                          :resource-name module-utils/resource-type}
-                         :request-method :get
-                         :nuvla/authn    (auth/current-authentication request)})))
-
 (defn create-module
   [module]
   (let [{{:keys [status resource-id]} :body
@@ -295,6 +124,13 @@ These resources represent a deployment set that regroups deployments.
       resource-id
       (log/errorf "unexpected status code (%s) when creating %s resource: %s"
                   (str status) module response))))
+
+(defn retrieve-module
+  [id request]
+  (:body (crud/retrieve {:params         {:uuid          (u/id->uuid id)
+                                          :resource-name module-utils/resource-type}
+                         :request-method :get
+                         :nuvla/authn    (auth/current-authentication request)})))
 
 (defn create-module-apps-set
   [{:keys [modules]} request]
@@ -338,13 +174,167 @@ These resources represent a deployment set that regroups deployments.
       (create-app-set request)
       (pre-validate-hook request)))
 
+(defn action-bulk
+  [{:keys [id] :as _resource} {{:keys [action]} :params :as request}]
+  (let [authn-info (auth/current-authentication request)
+        acl        {:owners   ["group/nuvla-admin"]
+                    :view-acl [(auth/current-active-claim request)]}]
+    (std-crud/create-bulk-job
+      (utils/bulk-action-job-name action) id authn-info acl {})))
+
+(defn action-simple
+  [{:keys [id] :as _resource} {{:keys [action]} :params :as request}]
+  (let [job-action (utils/action-job-name action)
+        {{job-id     :resource-id
+          job-status :status} :body} (job/create-job id (utils/action-job-name action)
+                                                     {:owners   ["group/nuvla-admin"]
+                                                      :view-acl [(auth/current-active-claim request)]})
+        job-msg    (str action " on " id " with async " job-id)]
+    (if (not= job-status 201)
+      (throw (r/ex-response (format "unable to create async job to %s" job-action) 500 id))
+      (r/map-response job-msg 202 id job-id))))
+
+(defn standard-action
+  ([request]
+   (standard-action request (fn [resource _request] resource)))
+  ([request f]
+   (let [current (load-resource-throw-not-allowed-action request)]
+     (-> current
+         (pre-validate-hook request)
+         (sm/transition request)
+         (utils/save-deployment-set current)
+         (f request)))))
+
+(defn state-transition
+  [id action]
+  (standard-action {:params      (assoc (u/id->request-params id)
+                                   :action action)
+                    :nuvla/authn auth/internal-identity}))
+
+(defmethod crud/do-action [resource-type utils/action-plan]
+  [request]
+  (let [deployment-set    (load-resource-throw-not-allowed-action request)
+        applications-sets (-> deployment-set
+                              utils/get-applications-sets-href
+                              (crud/get-resource-throw-nok request))]
+    (r/json-response (utils/plan deployment-set applications-sets))))
+
+(defmethod crud/do-action [resource-type utils/action-operational-status]
+  [request]
+  (r/json-response (divergence-map request)))
+
+(defmethod crud/do-action [resource-type utils/action-start]
+  [request]
+  (standard-action request action-bulk))
+
+(defmethod crud/do-action [resource-type utils/action-update]
+  [request]
+  (standard-action request action-bulk))
+
+(defmethod crud/do-action [resource-type utils/action-stop]
+  [request]
+  (standard-action request action-bulk))
+
+(defn action-ok-nok-transition-fn
+  [action-selector]
+  (fn [{:keys [target-resource] :as _job}]
+    (let [id            (:href target-resource)
+          admin-request {:params      (u/id->request-params id)
+                         :nuvla/authn auth/internal-identity}
+          current       (crud/retrieve-by-id-as-admin id)
+          next          (pre-validate-hook current admin-request)
+          action        (action-selector next admin-request)]
+      (-> next
+          (sm/transition (assoc-in admin-request [:params :action] action))
+          (utils/save-deployment-set current)))))
+
+(def action-ok-nok-transition-op-status
+  (action-ok-nok-transition-fn utils/operational-status-dependent-action))
+(def action-ok-nok-transition-all-deps-stopped?
+  (action-ok-nok-transition-fn utils/deployments-dependent-action))
+
+(defmethod job-interface/on-timeout [resource-type (utils/bulk-action-job-name utils/action-start)]
+  [job]
+  (action-ok-nok-transition-op-status job))
+
+(defmethod job-interface/on-timeout [resource-type (utils/bulk-action-job-name utils/action-stop)]
+  [job]
+  (action-ok-nok-transition-all-deps-stopped? job))
+
+(defmethod job-interface/on-timeout [resource-type (utils/bulk-action-job-name utils/action-update)]
+  [job]
+  (action-ok-nok-transition-op-status job))
+
+(defmethod job-interface/on-cancel [resource-type (utils/bulk-action-job-name utils/action-start)]
+  [job]
+  (action-ok-nok-transition-op-status job))
+
+(defmethod job-interface/on-cancel [resource-type (utils/bulk-action-job-name utils/action-stop)]
+  [job]
+  (action-ok-nok-transition-all-deps-stopped? job))
+
+(defmethod job-interface/on-cancel [resource-type (utils/bulk-action-job-name utils/action-update)]
+  [job]
+  (action-ok-nok-transition-op-status job))
+
+(defmethod job-interface/on-done [resource-type (utils/bulk-action-job-name utils/action-start)]
+  [job]
+  (action-ok-nok-transition-op-status job))
+
+(defmethod job-interface/on-done [resource-type (utils/bulk-action-job-name utils/action-stop)]
+  [job]
+  (action-ok-nok-transition-all-deps-stopped? job))
+
+(defmethod job-interface/on-done [resource-type (utils/bulk-action-job-name utils/action-update)]
+  [job]
+  (action-ok-nok-transition-op-status job))
+
+(defn job-delete-deployment-set-done
+  [{{id :href} :target-resource
+    state      :state
+    :as        _job}]
+  (when (= state job-utils/state-success)
+    (let [deployment-set (crud/retrieve-by-id-as-admin id)]
+      (db/delete deployment-set
+                 {:request-method :delete
+                  :params         (assoc (u/id->request-params id)
+                                    :action crud/action-delete)
+                  :authn-info     auth/internal-identity}))))
+
+(defmethod job-interface/on-done [resource-type (utils/action-job-name crud/action-delete)]
+  [job]
+  (job-delete-deployment-set-done job))
+
+(defmethod job-interface/on-done [resource-type (utils/action-job-name utils/action-force-delete)]
+  [job]
+  (job-delete-deployment-set-done job))
+
+(defmethod crud/do-action [resource-type utils/action-force-delete]
+  [request]
+  (standard-action request action-simple))
+
+(defn cancel-latest-job
+  [{:keys [id] :as _resource} _request]
+  (let [filter-str (format "target-resource/href='%s' and (state='%s' or state='%s')" id
+                           job-utils/state-queued job-utils/state-running)
+        [_ [{job-id :id}]]
+        (crud/query-as-admin
+          job/resource-type
+          {:cimi-params {:filter  (parser/parse-cimi-filter filter-str)
+                         :orderby [["created" :desc]]
+                         :last    1}})]
+    (crud/do-action-as-admin job-id job-utils/action-cancel))
+  (r/map-response "operation canceled" 200))
+
+(defmethod crud/do-action [resource-type utils/action-cancel]
+  [request]
+  (standard-action request cancel-latest-job))
+
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type add-pre-validate-hook))
 
 (defmethod crud/add resource-type
   [{{:keys [start]} :body :as request}]
-  (let [response (-> request
-
-                     add-impl)
+  (let [response (add-impl request)
         id       (get-in response [:body :resource-id])]
     (if start
       (crud/do-action {:params      {:resource-name resource-type

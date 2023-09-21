@@ -344,11 +344,13 @@
                                   (ltu/is-operation-absent utils/action-update)
                                   (ltu/is-operation-absent utils/action-cancel)
                                   (ltu/get-op-url utils/action-start))
-                start-job-url (-> session-user
-                                  (request start-op-url)
-                                  ltu/body->edn
-                                  (ltu/is-status 202)
-                                  ltu/location-url)]
+                start-job-url (with-redefs [crud/get-resource-throw-nok
+                                            (constantly u-applications-sets-v11)]
+                                (-> session-user
+                                    (request start-op-url)
+                                    ltu/body->edn
+                                    (ltu/is-status 202)
+                                    ltu/location-url))]
 
             (-> session-user
                 (request dep-set-url)
@@ -373,7 +375,7 @@
         (testing "force state transition to simulate job action"
           (with-redefs [crud/get-resource-throw-nok
                         (constantly u-applications-sets-v11)]
-            (t/state-transition-update-os resource-id utils/action-ok))
+            (t/state-transition resource-id utils/action-ok))
 
           (-> session-user
               (request dep-set-url)
@@ -528,11 +530,13 @@
                                   (ltu/is-operation-present utils/action-update)
                                   (ltu/is-operation-absent utils/action-cancel)
                                   (ltu/get-op-url utils/action-update))
-                job-url       (-> session-user
-                                  (request update-op-url)
-                                  ltu/body->edn
-                                  (ltu/is-status 202)
-                                  ltu/location-url)]
+                job-url       (with-redefs [crud/get-resource-throw-nok
+                                            (constantly u-applications-sets-v11)]
+                                (-> session-user
+                                    (request update-op-url)
+                                    ltu/body->edn
+                                    (ltu/is-status 202)
+                                    ltu/location-url))]
             (-> session-user
                 (request job-url)
                 ltu/body->edn
@@ -555,7 +559,7 @@
         (testing "force state transition to simulate job action"
           (with-redefs [crud/get-resource-throw-nok
                         (constantly u-applications-sets-v11)]
-            (t/state-transition-update-os resource-id utils/action-nok))
+            (t/state-transition resource-id utils/action-nok))
           (-> session-user
               (request dep-set-url)
               ltu/body->edn
@@ -580,11 +584,13 @@
                                   (ltu/is-operation-present utils/action-update)
                                   (ltu/is-operation-absent utils/action-cancel)
                                   (ltu/get-op-url utils/action-update))
-                job-url       (-> session-user
-                                  (request update-op-url)
-                                  ltu/body->edn
-                                  (ltu/is-status 202)
-                                  ltu/location-url)]
+                job-url       (with-redefs [crud/get-resource-throw-nok
+                                            (constantly u-applications-sets-v11)]
+                                (-> session-user
+                                   (request update-op-url)
+                                   ltu/body->edn
+                                   (ltu/is-status 202)
+                                   ltu/location-url))]
             (-> session-user
                 (request job-url)
                 ltu/body->edn
@@ -644,11 +650,13 @@
                                 (ltu/is-operation-present utils/action-update)
                                 (ltu/is-operation-absent utils/action-cancel)
                                 (ltu/get-op-url utils/action-stop))
-                job-url     (-> session-user
-                                (request stop-op-url)
-                                (ltu/body->edn)
-                                (ltu/is-status 202)
-                                (ltu/location-url))]
+                job-url     (with-redefs [crud/get-resource-throw-nok
+                                          (constantly u-applications-sets-v11)]
+                              (-> session-user
+                                 (request stop-op-url)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 202)
+                                 (ltu/location-url)))]
             (-> session-user
                 (request job-url)
                 (ltu/body->edn)
@@ -670,7 +678,7 @@
         (testing "force state transition to simulate job action"
           (with-redefs [crud/get-resource-throw-nok
                         (constantly u-applications-sets-v11)]
-            (t/state-transition-update-os resource-id utils/action-nok))
+            (t/state-transition resource-id utils/action-nok))
 
           (-> session-user
               (request dep-set-url)
@@ -692,11 +700,13 @@
                                     (ltu/is-status 200)
                                     (ltu/get-op-url utils/action-force-delete))]
             (testing "on-done of job without success deployment-set is not deleted"
-              (let [job-url (-> session-user
-                                (request force-delete-op)
-                                (ltu/body->edn)
-                                (ltu/is-status 202)
-                                ltu/location-url)]
+              (let [job-url (with-redefs [crud/get-resource-throw-nok
+                                          (constantly u-applications-sets-v11)]
+                              (-> session-user
+                                 (request force-delete-op)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 202)
+                                 ltu/location-url))]
                 (-> session-admin
                     (request job-url
                              :request-method :put
@@ -709,11 +719,13 @@
                   (ltu/is-status 200)))
 
             (testing "on-done of job with success deployment-set is deleted"
-              (let [job-url (-> session-user
-                                (request force-delete-op)
-                                (ltu/body->edn)
-                                (ltu/is-status 202)
-                                ltu/location-url)]
+              (let [job-url (with-redefs [crud/get-resource-throw-nok
+                                          (constantly u-applications-sets-v11)]
+                              (-> session-user
+                                 (request force-delete-op)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 202)
+                                 ltu/location-url))]
                 (-> session-admin
                     (request job-url
                              :request-method :put
@@ -938,7 +950,7 @@
                                       ltu/body->edn
                                       (ltu/is-status 202)
                                       ltu/location-url)
-              _                   (t/state-transition-update-os resource-id utils/action-ok)
+              _                   (t/state-transition resource-id utils/action-ok)
               stop-op-url         (-> session-admin
                                       (request dep-set-url)
                                       ltu/body->edn
@@ -1008,7 +1020,7 @@
                                       ltu/body->edn
                                       (ltu/is-status 202)
                                       ltu/location-url)
-              _                   (t/state-transition-update-os resource-id utils/action-ok)
+              _                   (t/state-transition resource-id utils/action-ok)
               stop-op-url         (-> session-admin
                                       (request dep-set-url)
                                       ltu/body->edn
@@ -1071,7 +1083,7 @@
                                         ltu/body->edn
                                         (ltu/is-status 202)
                                         ltu/location-url)
-              _                     (t/state-transition-update-os resource-id utils/action-ok)
+              _                     (t/state-transition resource-id utils/action-ok)
               update-op-url         (-> session-admin
                                         (request dep-set-url)
                                         ltu/body->edn
