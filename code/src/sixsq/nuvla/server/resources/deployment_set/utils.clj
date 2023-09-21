@@ -280,7 +280,9 @@
     (for [{:keys                     [nuvlabox parent state app-set] deployment-id :id
            {application-href :href {:keys [environmental-variables]} :content
             :as              module} :module} deployments
-          :let [env-vars (map #(select-keys % [:name :value]) environmental-variables)]]
+          :let [env-vars (->> environmental-variables
+                              (map #(select-keys % [:name :value]))
+                              (filter :value))]]
       {:id          deployment-id
        :app-set     app-set
        :application (cond-> {:id      (module-utils/full-uuid->uuid application-href)
