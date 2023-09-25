@@ -4,6 +4,30 @@
 
 ## Released
 
+## [6.1.0] - 2023-09-25
+
+- Resources dynamic load - Make resource initialisation order predictable (#813)
+- Std-crud - Pre-validate-hook for add-fn and edit-fn
+- Std-edit - Call set-operations with updated resource to make operations coherent
+- Job - Allow a job to be cancelled and propagate cancel to children jobs if it has children jobs
+- Job - Introduction of multimethods `on-done` `on-timeout` `on-cancel` of jobs
+- Job - Support `parent-job` to easily query children jobs
+- Job - Do not allow edit in final state avoid
+- Job - Remove stop action and related state
+- Deps - `metosin/tilakone` introduction
+- State machine - Reusable helper to drive state of resources by action and allow to place transition guards
+- Deployment - On-cancel move deployment state to ERROR
+- Deployment - Check if user has access to deployment set when resolving the name of it
+- Deployment set - Complete refactor with a new state machine
+- Deployment set - Cancel operation
+- Deployment set - Operational status
+- Deployment set - Update operations list based on the stored operational status
+- Deployment set - Force delete operation
+- Deployment set - Module version extraction fix
+- Deployment set - On-done for update operational status fix
+- Deployment set - Current deployments should contain only name and value bugfix
+- Deployment set - Env vars comparison should only consider overwritten values
+
 ## [6.0.19] - 2023-08-22
 
 - NuvlaEdge status - propagate name and description of NuvlaEdge when updated or
