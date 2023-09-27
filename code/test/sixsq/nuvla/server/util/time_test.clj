@@ -32,5 +32,5 @@
          (t/unix-timestamp-from-date
            (t/date-from-str "2022-02-25T08:40:18.224Z")))))
 
-(deftest truncated-to-days-test
+(deftest end-of-day-date
   (is (str/ends-with? (t/to-str (t/end-of-day-date)) "T23:59:59.999Z")))

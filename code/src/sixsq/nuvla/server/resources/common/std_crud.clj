@@ -31,19 +31,17 @@
    (validate-collection-acl collection-acl)
    (fn [{:keys [body] :as request}]
      (a/throw-cannot-add collection-acl request)
-     (db/add
-       resource-name
-       (-> body
-           u/strip-service-attrs
-           (crud/new-identifier resource-name)
-           (assoc :resource-type resource-uri)
-           sm/initialize
-           u/update-timestamps
-           (u/set-created-by request)
-           (crud/add-acl request)
-           (pre-validate-hook request)
-           crud/validate)
-       {}))))
+     (-> body
+         u/strip-service-attrs
+         (crud/new-identifier resource-name)
+         (assoc :resource-type resource-uri)
+         sm/initialize
+         u/update-timestamps
+         (u/set-created-by request)
+         (crud/add-acl request)
+         (pre-validate-hook request)
+         crud/validate
+         db/add))))
 
 
 (defn retrieve-fn
@@ -51,7 +49,7 @@
   (fn [{{uuid :uuid} :params :as request}]
     (try
       (-> (str resource-name "/" uuid)
-          (db/retrieve request)
+          db/retrieve
           (a/throw-cannot-view request)
           (crud/set-operations request)
           (a/select-viewable-keys request)
@@ -67,7 +65,7 @@
    (fn [{{uuid :uuid} :params :as request}]
      (try
        (let [current (-> (str resource-name "/" uuid)
-                         (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                         db/retrieve
                          (a/throw-cannot-edit request)
                          (sm/throw-can-not-do-action request))]
          (-> request
@@ -77,7 +75,7 @@
              (pre-validate-hook request)
              crud/validate
              (crud/set-operations request)
-             (db/edit request)))
+             db/edit))
        (catch Exception e
          (or (ex-data e) (throw e)))))))
 
@@ -96,10 +94,10 @@
   (fn [{{uuid :uuid} :params :as request}]
     (try
       (-> (str resource-name "/" uuid)
-          (db/retrieve request)
+          db/retrieve
           (a/throw-cannot-delete request)
           (sm/throw-can-not-do-action request)
-          (db/delete request))
+          db/delete)
       (catch Exception e
         (or (ex-data e) (throw e))))))
 

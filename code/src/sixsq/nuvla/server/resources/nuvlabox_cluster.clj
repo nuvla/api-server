@@ -79,7 +79,7 @@ The `nuvlabox-cluster` resource represents a cluster of at least one NuvlaBox
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params {:keys [workers managers]} :body :as request}]
   (let [current     (-> (str resource-type "/" uuid)
-                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                        db/retrieve
                         (a/throw-cannot-edit request))
         cluster-managers  (or managers (:managers current))
         cluster-workers   (or workers (:workers current))

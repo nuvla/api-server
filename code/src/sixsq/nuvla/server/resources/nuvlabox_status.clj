@@ -130,7 +130,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 (defn edit-impl [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
   (try
     (let [{:keys [parent acl] :as current} (-> (str resource-type "/" uuid)
-                                               (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                                               db/retrieve
                                                (a/throw-cannot-edit request)
                                                (utils/throw-parent-nuvlabox-is-suspended))
 
@@ -146,7 +146,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                                        (str/starts-with? "nuvlabox/"))
           online                   (or is-nuvlabox? (:online body))
           online-prev              (:online current)
-          edit-fn                  #(let [response (db/edit %1 request)]
+          edit-fn                  #(let [response (db/edit %)]
                                       (status-utils/denormalize-changes-nuvlabox %)
                                       (kafka-crud/publish-on-edit resource-type response)
                                       response)

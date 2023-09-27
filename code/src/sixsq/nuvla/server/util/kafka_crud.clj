@@ -11,7 +11,7 @@
   (try
     (when (= 201 (:status add-response))
       (let [resource-id (-> add-response :body :resource-id)
-            resource    (db/retrieve resource-id {})
+            resource    (db/retrieve resource-id)
             msg-key     (if (= key "resource-id")
                           resource-id
                           ((keyword key) resource))]

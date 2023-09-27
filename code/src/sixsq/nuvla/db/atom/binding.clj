@@ -103,23 +103,19 @@
     nil)
 
 
-  (add [_ data _options]
+  (add [_ data]
     (add-data data-atom data))
 
 
-  (add [_ _ data _options]
-    (add-data data-atom data))
-
-
-  (retrieve [_ id _options]
+  (retrieve [_ id]
     (atomic-retrieve data-atom id))
 
 
-  (delete [_ data _options]
+  (delete [_ data]
     (delete-data data-atom data))
 
 
-  (edit [_ data _options]
+  (edit [_ data]
     (update-data data-atom data))
 
 

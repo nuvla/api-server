@@ -243,13 +243,13 @@ a container orchestration engine.
   ([{{uuid :uuid} :params :as request} force-delete]
    (try
      (let [deployment-id   (str resource-type "/" uuid)
-           deployment      (-> (db/retrieve deployment-id request)
+           deployment      (-> (db/retrieve deployment-id)
                                (a/throw-cannot-delete request)
                                (cond-> (not force-delete)
                                        (utils/throw-can-not-do-action-invalid-state
                                          utils/can-delete? "delete")))]
        (utils/delete-all-child-resources deployment-id)
-       (db/delete deployment request))
+       (db/delete deployment))
      (catch Exception e
        (or (ex-data e) (throw e))))))
 

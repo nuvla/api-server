@@ -68,7 +68,7 @@ NuvlaBox Engine software
 (defmethod crud/add resource-type
   [{{:keys [parent]} :body :as request}]
   (some-> parent
-          (db/retrieve request)
+          db/retrieve
           (a/throw-cannot-edit request))
   (-> request
       (update-in [:body] dissoc :output)
@@ -139,7 +139,7 @@ NuvlaBox Engine software
   (try
     (let [id         (str resource-type "/" uuid)
           new-output (:output body)]
-      (-> (db/retrieve id request)
+      (-> (db/retrieve id)
           (a/throw-cannot-manage request)
           (save-output new-output)))
     (catch Exception e

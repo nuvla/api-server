@@ -130,7 +130,7 @@
                                     {:id      "module/c"
                                      :version 2}]}]))
 
-(deftest collect-applications-hrefs
+(deftest inject-resolved-applications
   (are [expected arg]
     (= expected (t/inject-resolved-applications (first arg) (second arg)))
     nil

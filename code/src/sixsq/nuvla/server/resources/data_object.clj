@@ -307,7 +307,7 @@ how the object can be accessed.
           (assoc :state state-uploading)
           (u/update-timestamps)
           (u/set-updated-by request)
-          (db/edit request))
+          db/edit)
       (r/json-response {:uri upload-uri}))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -336,7 +336,7 @@ how the object can be accessed.
       (s3/add-s3-md5sum)
       (u/update-timestamps)
       (u/set-updated-by request)
-      (db/edit request)))
+      db/edit))
 
 (defmethod crud/do-action [resource-type "ready"]
   [{{uuid :uuid} :params :as request}]

@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.status-utils
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.util.time :as time]))
@@ -35,4 +34,4 @@
       (let [nuvlabox     (crud/retrieve-by-id-as-admin parent)
             new-nuvlabox (merge nuvlabox propagate-status)]
         (when (not= nuvlabox new-nuvlabox)
-          (db/edit new-nuvlabox {:nuvla/authn auth/internal-identity}))))))
+          (db/edit new-nuvlabox))))))

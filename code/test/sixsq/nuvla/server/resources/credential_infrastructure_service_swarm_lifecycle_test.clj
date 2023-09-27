@@ -145,8 +145,7 @@
                 (ltu/is-status 202)))))
 
       (testing "Ensure that create and check credential created 2 cred check jobs"
-        (let [descr-changed "descr changed"
-              job-url-filter (str job-base-uri "?filter=action='credential_check'&target-resource/href='" id "'")]
+        (let [job-url-filter (str job-base-uri "?filter=action='credential_check'&target-resource/href='" id "'")]
           (-> session-user
               (request job-url-filter
                        :request-method :put)

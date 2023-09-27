@@ -306,7 +306,7 @@ particular NuvlaBox release.
   (let [authn-info    (auth/current-authentication request)
         is-not-admin? (not (a/is-admin? authn-info))
         current       (-> (str resource-type "/" uuid)
-                          (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                          db/retrieve
                           (a/throw-cannot-edit request))
         {updated-nb :body :as resp} (-> request
                                         (cond-> is-not-admin? (assoc :body (-> request
@@ -333,7 +333,7 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params :as request}]
   (let [id (str resource-type "/" uuid)]
     (try
-      (-> (db/retrieve id request)
+      (-> (db/retrieve id)
           (a/throw-cannot-delete request)
           (u/throw-can-not-do-action utils/can-delete? "delete"))
       (let [resp (delete-impl request)]
@@ -386,16 +386,16 @@ particular NuvlaBox release.
 
 
 (defmethod crud/do-action [resource-type "activate"]
-  [{{uuid :uuid} :params :as request}]
+  [{{uuid :uuid} :params :as _request}]
   (try
     (let [id (str resource-type "/" uuid)
-          [nuvlabox-activated api-secret-info] (-> (db/retrieve id request)
+          [nuvlabox-activated api-secret-info] (-> (db/retrieve id)
                                                    (activate)
                                                    u/update-timestamps
                                                    (wf-utils/create-nuvlabox-api-key ""))]
 
 
-      (db/edit nuvlabox-activated request)
+      (db/edit nuvlabox-activated)
 
       (r/json-response api-secret-info))
     (catch Exception e
@@ -426,7 +426,7 @@ particular NuvlaBox release.
     (try
       (let [capabilities (some-> body :capabilities set vec)
             ssh-keys     (some-> body :ssh-keys set vec)
-            nuvlabox     (-> (db/retrieve id request)
+            nuvlabox     (-> (db/retrieve id)
                              (a/throw-cannot-manage request)
                              (u/throw-can-not-do-action
                                utils/can-commission? "commission")
@@ -437,7 +437,7 @@ particular NuvlaBox release.
                              crud/validate)]
         (commission nuvlabox request)
 
-        (let [resp (db/edit nuvlabox request)]
+        (let [resp (db/edit nuvlabox)]
           (ka-crud/publish-on-edit resource-type resp))
 
         (r/map-response "commission executed successfully" 200))
@@ -477,7 +477,7 @@ particular NuvlaBox release.
                :acl updated-acl)
         u/update-timestamps
         (u/set-updated-by request)
-        (db/edit request))
+        db/edit)
 
     ;; read back the updated resource to ensure that ACL is fully normalized
     (crud/retrieve-by-id-as-admin id)))
@@ -510,7 +510,7 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params :as request}]
   (let [id (str resource-type "/" uuid)]
     (try
-      (-> (db/retrieve id request)
+      (-> (db/retrieve id)
           (a/throw-cannot-manage request)
           (u/throw-can-not-do-action
             utils/can-decommission? "decommission")
@@ -552,7 +552,7 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
+      (-> (db/retrieve id)
           (a/throw-cannot-manage request)
           (u/throw-can-not-do-action
             utils/can-check-api? "check-api")
@@ -590,7 +590,7 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
+      (-> (db/retrieve id)
           (a/throw-cannot-manage request)
           (u/throw-can-not-do-action utils/can-reboot? "reboot")
           (reboot)))
@@ -640,9 +640,9 @@ particular NuvlaBox release.
   (try
     (let [id (str resource-type "/" uuid)]
       (when-not (empty? nuvlabox-manager-status)
-        (-> (db/retrieve (:id nuvlabox-manager-status) request)
+        (-> (db/retrieve (:id nuvlabox-manager-status))
             (a/throw-cannot-view request)))
-      (-> (db/retrieve id request)
+      (-> (db/retrieve id)
           (a/throw-cannot-manage request)
           (u/throw-can-not-do-action
             utils/can-cluster-nuvlabox? "cluster-nuvlabox")
@@ -687,18 +687,18 @@ particular NuvlaBox release.
   (try
     (let [id          (str resource-type "/" uuid)
           ssh-cred-id (:credential body)
-          nuvlabox    (-> (db/retrieve id request)
+          nuvlabox    (-> (db/retrieve id)
                           (a/throw-cannot-manage request)
                           (u/throw-can-not-do-action
                             utils/can-add-ssh-key? "add-ssh-key"))
           acl         (:acl nuvlabox)
           credential  (if ssh-cred-id
-                        (db/retrieve ssh-cred-id request)
+                        (db/retrieve ssh-cred-id)
                         (wf-utils/create-ssh-key
                           {:acl      acl
                            :template {:href "credential-template/generate-ssh-key"}}))]
 
-      (-> (db/retrieve (:id credential) request)
+      (-> (db/retrieve (:id credential))
           (a/throw-cannot-view request))
       (add-ssh-key nuvlabox credential))
     (catch Exception e
@@ -756,9 +756,9 @@ particular NuvlaBox release.
   (try
     (let [id          (str resource-type "/" uuid)
           ssh-cred-id (:credential body)]
-      (-> (db/retrieve ssh-cred-id request)
+      (-> (db/retrieve ssh-cred-id)
           (a/throw-cannot-view request))
-      (-> (db/retrieve id request)
+      (-> (db/retrieve id)
           (a/throw-cannot-manage request)
           (u/throw-can-not-do-action
             utils/can-revoke-ssh-key? "revoke-ssh-key")
@@ -807,9 +807,9 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params {:keys [nuvlabox-release payload]} :body :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve nuvlabox-release request)
+      (-> (db/retrieve nuvlabox-release)
           (a/throw-cannot-view request))
-      (-> (db/retrieve id request)
+      (-> (db/retrieve id)
           (a/throw-cannot-manage request)
           (u/throw-can-not-do-action
             utils/can-update-nuvlabox? "update-nuvlabox")
@@ -845,7 +845,7 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
+      (-> (db/retrieve id)
           (a/throw-cannot-manage request)
           (u/throw-can-not-do-action
             utils/can-assemble-playbooks? "assemble-playbooks")
@@ -860,13 +860,14 @@ particular NuvlaBox release.
 
 
 (defn enable-host-level-management
-  [{:keys [id host-level-management-api-key] :as nuvlabox} {:keys [base-uri] :as request}]
+  [{:keys [id host-level-management-api-key] :as nuvlabox}
+   {:keys [base-uri] :as _request}]
   (if host-level-management-api-key
     (logu/log-and-throw-400 (str "host level management is already enabled for NuvlaBox " id))
     (try
       (let [[_ credential] (wf-utils/create-nuvlabox-api-key nuvlabox "[nuvlabox-playbook]")
             updated_nuvlabox (assoc nuvlabox :host-level-management-api-key (:api-key credential))]
-        (db/edit updated_nuvlabox request)
+        (db/edit updated_nuvlabox)
 
         (r/json-response {:cronjob (utils/compose-cronjob credential id base-uri)}))
       (catch Exception e
@@ -877,7 +878,7 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
+      (-> (db/retrieve id)
           (a/throw-cannot-manage request)
           (enable-host-level-management request)))
     (catch Exception e
@@ -908,7 +909,7 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
+      (-> (db/retrieve id)
           (a/throw-cannot-manage request)
           (u/throw-can-not-do-action utils/can-disable-host-level-management?
                                      "disable-host-level-management")
@@ -940,7 +941,7 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params {:keys [emergency-playbooks-ids]} :body :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
+      (-> (db/retrieve id)
           (a/throw-cannot-manage request)
           (u/throw-can-not-do-action utils/can-enable-emergency-playbooks?
                                      "enable-emergency-playbooks")
@@ -968,7 +969,7 @@ particular NuvlaBox release.
 (defmethod crud/do-action [resource-type "create-log"]
   [{{uuid :uuid} :params :as request}]
   (let [id (str resource-type "/" uuid)]
-    (-> (db/retrieve id request)
+    (-> (db/retrieve id)
         (a/throw-cannot-manage request)
         (u/throw-can-not-do-action utils/can-create-log? "create-log")
         (create-log request))))
@@ -989,7 +990,7 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
+      (-> (db/retrieve id)
           (a/throw-cannot-manage request)
           (u/throw-can-not-do-action utils/can-generate-new-api-key?
                                      "generate-new-api-key")
@@ -1003,7 +1004,7 @@ particular NuvlaBox release.
   (try
     (let [id (str resource-type "/" uuid)]
       (utils/throw-when-payment-required request)
-      (-> (db/retrieve id request)
+      (-> (db/retrieve id)
           (a/throw-cannot-manage request)
           (a/throw-cannot-edit request)
           (u/throw-can-not-do-action utils/can-unsuspend? "unsuspend"))

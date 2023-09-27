@@ -3,7 +3,6 @@
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.server.resources.common.state-machine :as sm]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -82,7 +81,7 @@
 (defmethod retrieve-by-id :default
   [resource-id & [request]]
   (some-> resource-id
-          (db/retrieve (or request {}))
+          db/retrieve
           (a/throw-cannot-view request)))
 
 

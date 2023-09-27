@@ -26,7 +26,7 @@
   [resource-id]
   (when resource-id
     (try
-      (db/retrieve resource-id {})
+      (db/retrieve resource-id)
       (catch Exception _ nil))))
 
 

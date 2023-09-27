@@ -6,9 +6,7 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.notification-method :as t])
-  (:import
-    [java.util UUID]))
+    [sixsq.nuvla.server.resources.notification-method :as t]))
 
 
 (use-fixtures :once ltu/with-test-server-kafka-fixture)

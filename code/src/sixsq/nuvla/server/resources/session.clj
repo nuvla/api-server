@@ -246,17 +246,14 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 (defn add-impl [{:keys [id body] :as request}]
   (a/throw-cannot-add collection-acl request)
-  (db/add
-    resource-type
-    (-> body
-        u/strip-service-attrs
-        (assoc :id id)
-        (assoc :resource-type resource-type)
-        u/update-timestamps
-        (u/set-created-by request)
-        (crud/add-acl request)
-        crud/validate)
-    {}))
+  (db/add (-> body
+              u/strip-service-attrs
+              (assoc :id id)
+              (assoc :resource-type resource-type)
+              u/update-timestamps
+              (u/set-created-by request)
+              (crud/add-acl request)
+              crud/validate)))
 
 
 ;; requires a SessionTemplate to create new Session
@@ -385,8 +382,8 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 
 (defn retrieve-session
-  [{{uuid :uuid} :params :as request}]
-  (db/retrieve (str resource-type "/" uuid) request))
+  [{{uuid :uuid} :params :as _request}]
+  (db/retrieve (str resource-type "/" uuid)))
 
 
 (defn query-group
@@ -464,12 +461,12 @@ status, a 'set-cookie' header, and a 'location' header with the created
 (defmethod crud/do-action [resource-type "switch-group"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
-          (a/throw-cannot-edit request)
-          (resolve-user-groups)
-          (throw-switch-group-not-authorized request)
-          (update-cookie-session request)))
+    (-> (str resource-type "/" uuid)
+        db/retrieve
+        (a/throw-cannot-edit request)
+        (resolve-user-groups)
+        (throw-switch-group-not-authorized request)
+        (update-cookie-session request))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

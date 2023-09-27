@@ -325,7 +325,6 @@ component, or application.
 
 (defn delete-content
   [module-meta content-id]
-  subtype->resource-url
   (crud/delete
     {:params      {:resource-name (subtype->resource-url module-meta)
                    :uuid          (u/id->uuid content-id)}

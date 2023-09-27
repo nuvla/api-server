@@ -130,7 +130,7 @@
   [{{full-uuid     :uuid
      resource-name :resource-name} :params :as request}]
   (-> (str resource-name "/" (full-uuid->uuid full-uuid))
-      (db/retrieve request)
+      db/retrieve
       (a/throw-cannot-view request)))
 
 (defn resolve-content

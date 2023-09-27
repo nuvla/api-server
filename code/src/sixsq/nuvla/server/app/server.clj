@@ -8,7 +8,6 @@
     [ring.middleware.keyword-params :refer [wrap-keyword-params]]
     [ring.middleware.nested-params :refer [wrap-nested-params]]
     [ring.middleware.params :refer [wrap-params]]
-    [sixsq.nuvla.db.ephemeral-impl :as edb]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.db.loader :as db-loader]
     [sixsq.nuvla.server.app.routes :as routes]
@@ -76,8 +75,6 @@
 
   (db/close)
 
-  (edb/close)
-
   (try
     (log/info "removed all instrumentation metrics")
     (catch Exception e
@@ -89,9 +86,6 @@
 
   (db-loader/load-and-set-persistent-db-binding
     (env/env :persistent-db-binding-ns default-db-binding-ns))
-
-  (db-loader/load-and-set-ephemeral-db-binding
-    (env/env :ephemeral-db-binding-ns))
 
   (try
     (zku/set-client! (zku/create-client))

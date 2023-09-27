@@ -171,14 +171,14 @@ provide an explicit ACL that the describes the desired visibility.
     (let [id         (str resource-type "/" uuid)
           not-before (delay->from-now
                        (or (-> request :body defer-param-kw) delay-default))]
-      (-> id
-          (db/retrieve request)
+      (->
+          (db/retrieve id)
           (a/throw-cannot-manage request)
           (assoc :not-before not-before)
           (u/update-timestamps)
           (u/set-updated-by request)
           (crud/validate)
-          (db/edit request))
+          db/edit)
       (r/map-response (str id " deferred until " not-before) 200 id))
     (catch Exception e
       (or (ex-data e) (throw e)))))

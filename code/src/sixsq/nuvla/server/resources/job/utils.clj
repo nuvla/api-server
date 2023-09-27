@@ -3,8 +3,6 @@
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.db.filter.parser :as parser]
-    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time]
     [sixsq.nuvla.server.util.zookeeper :as uzk]))

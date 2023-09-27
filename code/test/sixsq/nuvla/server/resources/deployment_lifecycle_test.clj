@@ -955,173 +955,171 @@
           valid-deployment {:module {:href module-id}}]
 
       (testing "Canceling start_deployment action"
-        (let [deployment-id  (-> session-user
-                                 (request base-uri
-                                          :request-method :post
-                                          :body (json/write-str valid-deployment))
-                                 (ltu/body->edn)
-                                 (ltu/is-status 201)
-                                 (ltu/location))
 
-              deployment-url (str p/service-context deployment-id)]
+        ;; attempt to start the deployment and check the start job was created
+        (let [deployment-id        (-> session-user
+                                       (request base-uri
+                                                :request-method :post
+                                                :body (json/write-str valid-deployment))
+                                       (ltu/body->edn)
+                                       (ltu/is-status 201)
+                                       (ltu/location))
 
-          (let [deployment-response (-> session-user
-                                        (request deployment-url)
-                                        (ltu/body->edn)
-                                        (ltu/is-status 200)
-                                        (ltu/is-operation-present :start))
-                start-url           (ltu/get-op-url deployment-response "start")]
-
-            ;; attempt to start the deployment and check the start job was created
-            (let [job-url              (-> session-user
-                                           (request start-url
-                                                    :request-method :post)
-                                           (ltu/body->edn)
-                                           (ltu/is-status 202)
-                                           (ltu/location-url))
-                  cancel-start-job-url (-> session-user
-                                           (request job-url)
-                                           (ltu/body->edn)
-                                           (ltu/is-status 200)
-                                           (ltu/is-key-value :state "QUEUED")
-                                           (ltu/is-key-value :action "start_deployment")
-                                           (ltu/is-operation-present :cancel)
-                                           (ltu/get-op-url "cancel"))]
-              ;; cancel the start_deployment job
-              (-> session-user
-                  (request cancel-start-job-url)
-                  (ltu/body->edn)
-                  (ltu/is-status 200))
-              ;; the deployment should go in ERROR state
-              (-> session-user
-                  (request deployment-url)
-                  (ltu/body->edn)
-                  (ltu/is-status 200)
-                  (ltu/is-key-value :state "ERROR"))))))
+              deployment-url       (str p/service-context deployment-id)
+              deployment-response  (-> session-user
+                                       (request deployment-url)
+                                       (ltu/body->edn)
+                                       (ltu/is-status 200)
+                                       (ltu/is-operation-present :start))
+              start-url            (ltu/get-op-url deployment-response "start")
+              job-url              (-> session-user
+                                       (request start-url
+                                                :request-method :post)
+                                       (ltu/body->edn)
+                                       (ltu/is-status 202)
+                                       (ltu/location-url))
+              cancel-start-job-url (-> session-user
+                                       (request job-url)
+                                       (ltu/body->edn)
+                                       (ltu/is-status 200)
+                                       (ltu/is-key-value :state "QUEUED")
+                                       (ltu/is-key-value :action "start_deployment")
+                                       (ltu/is-operation-present :cancel)
+                                       (ltu/get-op-url "cancel"))]
+          ;; cancel the start_deployment job
+          (-> session-user
+              (request cancel-start-job-url)
+              (ltu/body->edn)
+              (ltu/is-status 200))
+          ;; the deployment should go in ERROR state
+          (-> session-user
+              (request deployment-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :state "ERROR"))))
 
       (testing "Canceling update_deployment action"
-        (let [deployment-id  (-> session-user
-                                 (request base-uri
-                                          :request-method :post
-                                          :body (json/write-str valid-deployment))
-                                 (ltu/body->edn)
-                                 (ltu/is-status 201)
-                                 (ltu/location))
+        (let [deployment-id         (-> session-user
+                                        (request base-uri
+                                                 :request-method :post
+                                                 :body (json/write-str valid-deployment))
+                                        (ltu/body->edn)
+                                        (ltu/is-status 201)
+                                        (ltu/location))
 
-              deployment-url (str p/service-context deployment-id)]
-
-          (let [start-url             (-> session-user
-                                          (request deployment-url)
-                                          (ltu/body->edn)
-                                          (ltu/is-status 200)
-                                          (ltu/is-operation-present :start)
-                                          (ltu/get-op-url "start"))
-                _                     (-> session-user
-                                          (request start-url
-                                                   :request-method :post)
-                                          (ltu/body->edn)
-                                          (ltu/is-status 202))
-                ;; the deployment would be set to "STARTED" via the job
-                ;; for the tests, set this manually to continue with the workflow
-                _                     (-> session-user
-                                          (request deployment-url
-                                                   :request-method :put
-                                                   :body (json/write-str {:state "STARTED"}))
-                                          (ltu/body->edn)
-                                          (ltu/is-status 200))
-                update-url            (-> session-user
-                                          (request deployment-url)
-                                          (ltu/body->edn)
-                                          (ltu/is-status 200)
-                                          (ltu/is-operation-present :edit)
-                                          (ltu/get-op-url "update"))
-                ;; try to update the deployment and check the update job was created
-                job-url               (-> session-user
-                                          (request update-url
-                                                   :request-method :get)
-                                          (ltu/body->edn)
-                                          (ltu/is-status 202)
-                                          (ltu/location-url))
-                cancel-update-job-url (-> session-user
-                                          (request job-url
-                                                   :request-method :get)
-                                          (ltu/body->edn)
-                                          (ltu/is-status 200)
-                                          (ltu/is-key-value :state "QUEUED")
-                                          (ltu/is-key-value :action "update_deployment")
-                                          (ltu/is-operation-present :cancel)
-                                          (ltu/get-op-url "cancel"))]
-            (-> session-user
-                (request cancel-update-job-url)
-                (ltu/body->edn)
-                (ltu/is-status 200))
-            ;; the deployment should go in ERROR state
-            (-> session-user
-                (request deployment-url)
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-key-value :state "ERROR")))))
-
-      (testing "Canceling stop_deployment action"
-        (let [deployment-id  (-> session-user
-                                 (request base-uri
-                                          :request-method :post
-                                          :body (json/write-str valid-deployment))
-                                 (ltu/body->edn)
-                                 (ltu/is-status 201)
-                                 (ltu/location))
-
-              deployment-url (str p/service-context deployment-id)]
-
-          (let [start-url           (-> session-user
+              deployment-url        (str p/service-context deployment-id)
+              start-url             (-> session-user
                                         (request deployment-url)
                                         (ltu/body->edn)
                                         (ltu/is-status 200)
                                         (ltu/is-operation-present :start)
                                         (ltu/get-op-url "start"))
-                _                   (-> session-user
+              _                     (-> session-user
                                         (request start-url
                                                  :request-method :post)
                                         (ltu/body->edn)
                                         (ltu/is-status 202))
-                ;; the deployment would be set to "STARTED" via the job
-                ;; for the tests, set this manually to continue with the workflow
-                _                   (-> session-user
+              ;; the deployment would be set to "STARTED" via the job
+              ;; for the tests, set this manually to continue with the workflow
+              _                     (-> session-user
                                         (request deployment-url
                                                  :request-method :put
                                                  :body (json/write-str {:state "STARTED"}))
                                         (ltu/body->edn)
                                         (ltu/is-status 200))
-                stop-url            (-> session-user
+              update-url            (-> session-user
                                         (request deployment-url)
                                         (ltu/body->edn)
                                         (ltu/is-status 200)
-                                        (ltu/is-operation-present :stop)
-                                        (ltu/get-op-url "stop"))
-                ;; try to stop the deployment and check the stop job was created
-                job-url             (-> session-user
-                                        (request stop-url
+                                        (ltu/is-operation-present :edit)
+                                        (ltu/get-op-url "update"))
+              ;; try to update the deployment and check the update job was created
+              job-url               (-> session-user
+                                        (request update-url
                                                  :request-method :get)
                                         (ltu/body->edn)
                                         (ltu/is-status 202)
                                         (ltu/location-url))
-                cancel-stop-job-url (-> session-user
+              cancel-update-job-url (-> session-user
                                         (request job-url
                                                  :request-method :get)
                                         (ltu/body->edn)
                                         (ltu/is-status 200)
                                         (ltu/is-key-value :state "QUEUED")
-                                        (ltu/is-key-value :action "stop_deployment")
+                                        (ltu/is-key-value :action "update_deployment")
                                         (ltu/is-operation-present :cancel)
                                         (ltu/get-op-url "cancel"))]
-            (-> session-user
-                (request cancel-stop-job-url)
-                (ltu/body->edn)
-                (ltu/is-status 200))
-            ;; the deployment should go in ERROR state
-            (-> session-user
-                (request deployment-url)
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-key-value :state "ERROR"))))))))
+          (-> session-user
+              (request cancel-update-job-url)
+              (ltu/body->edn)
+              (ltu/is-status 200))
+          ;; the deployment should go in ERROR state
+          (-> session-user
+              (request deployment-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :state "ERROR"))))
+
+      (testing "Canceling stop_deployment action"
+
+        (let [deployment-id       (-> session-user
+                                      (request base-uri
+                                               :request-method :post
+                                               :body (json/write-str valid-deployment))
+                                      (ltu/body->edn)
+                                      (ltu/is-status 201)
+                                      (ltu/location))
+
+              deployment-url      (str p/service-context deployment-id)
+              start-url           (-> session-user
+                                      (request deployment-url)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      (ltu/is-operation-present :start)
+                                      (ltu/get-op-url "start"))
+              _                   (-> session-user
+                                      (request start-url
+                                               :request-method :post)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 202))
+              ;; the deployment would be set to "STARTED" via the job
+              ;; for the tests, set this manually to continue with the workflow
+              _                   (-> session-user
+                                      (request deployment-url
+                                               :request-method :put
+                                               :body (json/write-str {:state "STARTED"}))
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200))
+              stop-url            (-> session-user
+                                      (request deployment-url)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      (ltu/is-operation-present :stop)
+                                      (ltu/get-op-url "stop"))
+              ;; try to stop the deployment and check the stop job was created
+              job-url             (-> session-user
+                                      (request stop-url
+                                               :request-method :get)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 202)
+                                      (ltu/location-url))
+              cancel-stop-job-url (-> session-user
+                                      (request job-url
+                                               :request-method :get)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      (ltu/is-key-value :state "QUEUED")
+                                      (ltu/is-key-value :action "stop_deployment")
+                                      (ltu/is-operation-present :cancel)
+                                      (ltu/get-op-url "cancel"))]
+          (-> session-user
+              (request cancel-stop-job-url)
+              (ltu/body->edn)
+              (ltu/is-status 200))
+          ;; the deployment should go in ERROR state
+          (-> session-user
+              (request deployment-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :state "ERROR")))))))
 

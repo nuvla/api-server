@@ -99,7 +99,7 @@ request.
                     (crud/add-acl request)
                     (cond-> zk-path (assoc :tags [zk-path]))
                     (crud/validate))]
-    (db/add resource-type new-job {})))
+    (db/add new-job)))
 
 
 (defmethod crud/add resource-type
@@ -119,7 +119,7 @@ request.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [current  (-> (str resource-type "/" uuid)
-                       (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                       db/retrieve
                        (a/throw-cannot-edit request)
                        utils/throw-cannot-edit-in-final-state)
           job      (-> request
@@ -129,7 +129,7 @@ request.
                        (u/set-updated-by request)
                        (utils/job-cond->edition)
                        (crud/validate))
-          response (db/edit job request)]
+          response (db/edit job)]
       (when (utils/is-final-state? job)
         (interface/on-done job))
       response)
@@ -188,14 +188,14 @@ request.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id       (str resource-type "/" uuid)
-          response (-> (db/retrieve id request)
+          response (-> (db/retrieve id)
                        (utils/throw-cannot-cancel request)
                        (assoc :state utils/state-canceled)
                        (u/update-timestamps)
                        (u/set-updated-by request)
                        (utils/job-cond->edition)
                        (crud/validate)
-                       (db/edit {:nuvla/authn auth/internal-identity}))
+                       db/edit)
           job      (:body response)]
       (cancel-children-jobs-async job)
       (log/warn "Canceled job : " id)
@@ -208,7 +208,7 @@ request.
   [{{uuid :uuid} :params :as request}]
   (try
     (-> (str resource-type "/" uuid)
-        (db/retrieve request)
+        db/retrieve
         (utils/throw-cannot-get-context request)
         (interface/get-context))
     (catch Exception e
@@ -219,14 +219,14 @@ request.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [response (-> (str resource-type "/" uuid)
-                       (db/retrieve request)
+                       db/retrieve
                        (utils/throw-cannot-timeout request)
                        (assoc :state utils/state-canceled)
                        (u/update-timestamps)
                        (u/set-updated-by request)
                        (utils/job-cond->edition)
                        (crud/validate)
-                       (db/edit {:nuvla/authn auth/internal-identity}))]
+                       db/edit)]
       (interface/on-timeout (:body response))
       response)
     (catch Exception e

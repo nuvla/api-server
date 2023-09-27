@@ -10,9 +10,7 @@
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
     [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu])
-  (:import
-    [java.util UUID]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)

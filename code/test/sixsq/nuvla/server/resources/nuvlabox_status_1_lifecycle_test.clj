@@ -173,7 +173,7 @@
                (ltu/is-key-value :resources resources-updated)
                (ltu/is-key-value :resources-prev nil))
 
-           (is (= resources-prev (:resources-prev (db/retrieve state-id {})))))
+           (is (= resources-prev (:resources-prev (db/retrieve state-id)))))
 
          (let [resources-prev (-> session-nb
                                   (request status-url)
@@ -189,7 +189,7 @@
                (ltu/is-key-value :resources resources-updated)
                (ltu/is-key-value :resources-prev nil))
 
-           (is (= resources-prev (:resources-prev (db/retrieve state-id {})))))
+           (is (= resources-prev (:resources-prev (db/retrieve state-id)))))
 
          ;; verify that the update was written to disk
          (-> session-nb
@@ -338,7 +338,7 @@
               (ltu/is-key-value :online false))
 
           ;; online-prev is extracted from db because this attribute is not visible from cimi (blacklisted)
-          (is (= true (:online-prev (db/retrieve state-id {}))))
+          (is (= true (:online-prev (db/retrieve state-id))))
 
           ;; online flag propagated to nuvlabox
           (-> session-admin
@@ -356,7 +356,7 @@
               (ltu/is-status 200)
               (ltu/is-key-value :online true))
 
-          (is (= false (:online-prev (db/retrieve state-id {}))))
+          (is (= false (:online-prev (db/retrieve state-id))))
 
           ;; when a nuvlabox send telemetry that has a spec validation issue,
           ;; the heartbeat is still updated

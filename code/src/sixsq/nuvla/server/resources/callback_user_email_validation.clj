@@ -5,7 +5,6 @@ visited, the user state is changed from NEW to ACTIVE and the email identifier
 is marked as validated."
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback.email-utils :as email-utils]
@@ -24,7 +23,7 @@ is marked as validated."
     (-> (crud/retrieve-by-id-as-admin user-id)
         (u/update-timestamps)
         (assoc :state "ACTIVE")
-        (db/edit {:nuvla/authn auth/internal-identity}))
+        db/edit)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

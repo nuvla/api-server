@@ -288,7 +288,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params body :body :as request}]
   (let [subtype (-> (str resource-type "/" uuid)
-                    (db/retrieve request)
+                    db/retrieve
                     :subtype)]
     (-> body
         (assoc :subtype subtype)
@@ -317,7 +317,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 (defmethod crud/delete resource-type
   [{{uuid :uuid} :params :as request}]
   (-> (str resource-type "/" uuid)
-      (db/retrieve request)
+      db/retrieve
       (a/throw-cannot-delete request)
       (special-delete request)))
 

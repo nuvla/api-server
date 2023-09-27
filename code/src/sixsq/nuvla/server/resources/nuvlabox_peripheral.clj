@@ -82,7 +82,7 @@ nuvlabox.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
+      (-> (db/retrieve id)
           (a/throw-cannot-manage request)
           (utils/throw-parent-nuvlabox-is-suspended)
           (throw-doesnt-have-video-capability)
@@ -96,7 +96,7 @@ nuvlabox.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
+      (-> (db/retrieve id)
           (a/throw-cannot-manage request)
           (throw-data-gateway-already-disabled)
           (throw-doesnt-have-video-capability)
@@ -164,7 +164,7 @@ nuvlabox.
   [{{uuid :uuid} :params body :body :as request}]
   (try
     (let [id       (str resource-type "/" uuid)
-          resource (db/retrieve id request)]
+          resource (db/retrieve id)]
       (when (and (has-video-capability? body) (:data-gateway-enabled resource))
         (-> resource
             (a/throw-cannot-manage request)
@@ -190,7 +190,7 @@ nuvlabox.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)
-          {:keys [data-gateway-enabled] :as resource} (db/retrieve id request)]
+          {:keys [data-gateway-enabled] :as resource} (db/retrieve id)]
 
       (when (and data-gateway-enabled (has-video-capability? resource))
         (create-job resource request "disable-stream")))

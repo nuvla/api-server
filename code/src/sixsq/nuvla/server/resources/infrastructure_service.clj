@@ -251,7 +251,7 @@ existing `infrastructure-service-template` resource.
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params {new-state :state} :body :as request}]
   (let [id       (str resource-type "/" uuid)
-        resource (when (boolean new-state) (db/retrieve id request))
+        resource (when (boolean new-state) (db/retrieve id))
         ret      (edit-impl request)]
     (try
       (when (and (= 200 (:status ret)) resource)
@@ -285,7 +285,7 @@ existing `infrastructure-service-template` resource.
 
 (defmethod crud/delete resource-type
   [{{uuid :uuid} :params :as request}]
-  (let [resource    (db/retrieve (str resource-type "/" uuid) request)
+  (let [resource    (db/retrieve (str resource-type "/" uuid))
         delete-resp (delete resource request)]
     (post-delete-hooks request delete-resp)
     delete-resp))
