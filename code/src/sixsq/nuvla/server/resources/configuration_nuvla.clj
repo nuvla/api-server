@@ -81,8 +81,6 @@ default values.
 
 (defn initialize
   []
-  ;; FIXME: this is a nasty hack to ensure configuration template is available
-  (tpl-nuvla/initialize)
 
   (std-crud/initialize p/resource-type ::ct-nuvla/schema)
 

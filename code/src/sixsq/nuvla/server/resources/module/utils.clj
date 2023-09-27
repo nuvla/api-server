@@ -328,3 +328,9 @@
       409 (log/infof "project '%s' already exists." project-apps-sets)
       (log/errorf "unexpected status code (%s) when creating %s resource: %s"
                   (str status) project-apps-sets response))))
+
+(defn module-current-version
+  [{{:keys [id]} :content versions :versions}]
+  (->> versions
+       (map-indexed vector)
+       (some (fn [[idx elm]] (when (= (:href elm) id) idx)))))

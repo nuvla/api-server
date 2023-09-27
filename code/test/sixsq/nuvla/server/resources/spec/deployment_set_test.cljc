@@ -2,6 +2,7 @@
   (:require
     [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.deployment-set :as deployment-set-resource]
+    [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
     [sixsq.nuvla.server.resources.spec.deployment-set :as t]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
@@ -19,7 +20,7 @@
    :updated           timestamp
    :acl               valid-acl
 
-   :state             "CREATED"
+   :state             utils/state-new
    :applications-sets [{:id         "module/c2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
                         :version    1
                         :overwrites [{:applications [{:id                      "module/c2dc1733-ac2c-45b1-b68a-0ec02653bc0f"
@@ -27,7 +28,8 @@
                                                       :environmental-variables [{:name  "env_var"
                                                                                  :value "some value"}]}]
                                       :targets      ["credential/a2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
-                                                     "credential/b2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]}]}]})
+                                                     "credential/b2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]}]}]
+   :operational-status {:status "OK"}})
 
 
 (deftest test-schema-check
@@ -48,5 +50,5 @@
     (stu/is-invalid ::t/deployment-set (dissoc valid-deployment-set k)))
 
   ;; optional attributes
-  #_(doseq [k #{}]
+  (doseq [k #{:operational-status}]
     (stu/is-valid ::t/deployment-set (dissoc valid-deployment-set k))))

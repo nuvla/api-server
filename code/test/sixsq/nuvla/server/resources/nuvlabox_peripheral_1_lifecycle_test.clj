@@ -132,7 +132,7 @@
                     :body (json/write-str {:interface "BLUETOOTH"}))
            (ltu/body->edn)
            (ltu/is-status 200)
-           (ltu/is-operation-absent :enable-stream)
+           (ltu/is-operation-present :enable-stream)
            (ltu/is-operation-absent :disable-stream)
            (ltu/is-key-value :interface "BLUETOOTH"))
 

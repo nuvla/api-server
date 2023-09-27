@@ -123,6 +123,7 @@ must delete the old one and create a new one.
 
 (def resource-metadata (gen-md/generate-metadata ::ns ::user-identifier/schema))
 
+(def initialization-order 30)
 
 (defn initialize
   []

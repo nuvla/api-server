@@ -61,6 +61,7 @@ creating new accounts without email addresses or email address validation.
   []
   (add-reg-method))
 
+(def initialization-order 20)
 
 (defn initialize
   []

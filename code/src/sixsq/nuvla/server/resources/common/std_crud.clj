@@ -11,6 +11,7 @@
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.state-machine :as sm]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
     [sixsq.nuvla.server.util.response :as r]))
@@ -19,22 +20,30 @@
 (def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))
 
 
+(defn default-pre-validate-hook
+  [resource _request]
+  resource)
+
 (defn add-fn
-  [resource-name collection-acl resource-uri]
-  (validate-collection-acl collection-acl)
-  (fn [{:keys [body] :as request}]
-    (a/throw-cannot-add collection-acl request)
-    (db/add
-      resource-name
-      (-> body
-          u/strip-service-attrs
-          (crud/new-identifier resource-name)
-          (assoc :resource-type resource-uri)
-          u/update-timestamps
-          (u/set-created-by request)
-          (crud/add-acl request)
-          crud/validate)
-      {})))
+  ([resource-name collection-acl resource-uri]
+   (add-fn resource-name collection-acl resource-uri default-pre-validate-hook))
+  ([resource-name collection-acl resource-uri pre-validate-hook]
+   (validate-collection-acl collection-acl)
+   (fn [{:keys [body] :as request}]
+     (a/throw-cannot-add collection-acl request)
+     (db/add
+       resource-name
+       (-> body
+           u/strip-service-attrs
+           (crud/new-identifier resource-name)
+           (assoc :resource-type resource-uri)
+           sm/initialize
+           u/update-timestamps
+           (u/set-created-by request)
+           (crud/add-acl request)
+           (pre-validate-hook request)
+           crud/validate)
+       {}))))
 
 
 (defn retrieve-fn
@@ -52,20 +61,25 @@
 
 
 (defn edit-fn
-  [resource-name]
-  (fn [{{uuid :uuid} :params :as request}]
-    (try
-      (let [current (-> (str resource-name "/" uuid)
-                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                        (a/throw-cannot-edit request))]
-        (-> request
-            (u/delete-attributes current)
-            u/update-timestamps
-            (u/set-updated-by request)
-            crud/validate
-            (db/edit request)))
-      (catch Exception e
-        (or (ex-data e) (throw e))))))
+  ([resource-name]
+   (edit-fn resource-name default-pre-validate-hook))
+  ([resource-name pre-validate-hook]
+   (fn [{{uuid :uuid} :params :as request}]
+     (try
+       (let [current (-> (str resource-name "/" uuid)
+                         (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                         (a/throw-cannot-edit request)
+                         (sm/throw-can-not-do-action request))]
+         (-> request
+             (u/delete-attributes current)
+             u/update-timestamps
+             (u/set-updated-by request)
+             (pre-validate-hook request)
+             crud/validate
+             (crud/set-operations request)
+             (db/edit request)))
+       (catch Exception e
+         (or (ex-data e) (throw e)))))))
 
 (defn throw-bulk-header-missing
   [{:keys [headers] :as _request}]
@@ -84,6 +98,7 @@
       (-> (str resource-name "/" uuid)
           (db/retrieve request)
           (a/throw-cannot-delete request)
+          (sm/throw-can-not-do-action request)
           (db/delete request))
       (catch Exception e
         (or (ex-data e) (throw e))))))

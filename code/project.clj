@@ -2,7 +2,7 @@
 (def nuvla-ring-version "2.0.8")
 (def kinsky-version "0.3.1")
 
-(defproject sixsq.nuvla.server/api-jar "6.0.20-SNAPSHOT"
+(defproject sixsq.nuvla.server/api-jar "6.1.1-SNAPSHOT"
 
   :description "core api server"
 
@@ -30,7 +30,8 @@
   :pom-location "target/"
 
   :dependencies
-  [[buddy/buddy-core]
+  [[metosin/tilakone "0.0.4"]
+   [buddy/buddy-core]
    [org.clojars.konstan/kinsky ~kinsky-version]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]

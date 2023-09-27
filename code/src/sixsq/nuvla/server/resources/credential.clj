@@ -43,6 +43,8 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 ;; initialization: no schema for this parent resource
 ;;
 
+(def initialization-order 110)
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::credential/schema)
