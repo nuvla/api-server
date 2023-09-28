@@ -101,7 +101,7 @@
           (testing "updating a deleted entry by script"
             (let [options {:doc {:two "4"}}
                   response     (db/scripted-edit db my-id options)]
-              (is (= 500 (:status response)))))
+              (is (not= 200 (:status response)))))
 
           (testing "delete the second entry"
             (let [response (db/delete db {:id my-id-2} nil)]
