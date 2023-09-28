@@ -349,7 +349,7 @@ These resources represent a deployment set that regroups deployments.
   [request]
   (retrieve-impl request))
 
-(def edit-impl (std-crud/edit-fn resource-type pre-validate-hook))
+(def edit-impl (std-crud/edit-fn resource-type :pre-validate-hook pre-validate-hook))
 
 (defmethod crud/edit resource-type
   [request]

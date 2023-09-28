@@ -25,6 +25,7 @@
             :comment                 "some witty comment"
 
             :next-heartbeat          timestamp
+            :last-heartbeat          timestamp
             :current-time            timestamp
 
             :resources               {:cpu               {:capacity 8
@@ -110,7 +111,7 @@
     (stu/is-invalid ::nb-status-0/schema (dissoc state attr)))
 
   ;; optional
-  (doseq [attr #{:next-heartbeat :current-time :resources :peripherals :wifi-password :comment
+  (doseq [attr #{:next-heartbeat :last-heartbeat :current-time :resources :peripherals :wifi-password :comment
                  :nuvlabox-api-endpoint :inferred-location :gpio-pins :nuvlabox-engine-version
                  :docker-plugins :vulnerabilities :installation-parameters :swarm-node-id
                  :power-consumption :jobs :swarm-node-cert-expiry-date

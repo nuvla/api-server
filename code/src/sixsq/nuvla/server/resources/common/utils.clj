@@ -149,6 +149,10 @@
   [s]
   (disj s :id :created :updated :resource-type :acl))
 
+(defn strip-immutable-keys
+  [s ks]
+  (apply disj s ks))
+
 (defn merge-resource
   [resource {:keys [body] :as _request} immutable-attributes]
   (let [new-body (apply dissoc body immutable-attributes)]
@@ -310,14 +314,20 @@
 
 (defn delete-attributes
   [{{select :select} :cimi-params body :body :as request}
-   {:keys [acl] :as current}]
+   {:keys [acl] :as current}
+   immutable-keys]
   (let [rights                   (a/extract-rights (auth/current-authentication request) acl)
         dissoc-keys              (-> (map keyword select)
                                      set
                                      strip-select-from-mandatory-attrs
+                                     (strip-immutable-keys immutable-keys)
                                      (a/editable-keys rights))
         current-without-selected (apply dissoc current dissoc-keys)
-        editable-body            (select-keys body (-> body keys (a/editable-keys rights)))]
+        editable-body            (-> body
+                                     keys
+                                     (a/editable-keys rights)
+                                     (strip-immutable-keys immutable-keys)
+                                     (->> (select-keys body)))]
     (merge current-without-selected editable-body)))
 
 

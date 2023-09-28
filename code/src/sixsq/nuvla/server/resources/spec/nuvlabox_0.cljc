@@ -272,31 +272,6 @@
 
     :json-schema/order 38))
 
-(s/def ::next-heartbeat
-  (assoc (st/spec ::core/timestamp)
-    :name "next-heartbeat"
-    :json-schema/display-name "next heartbeat"
-    :json-schema/description "timestamp for next heartbeat update"
-
-    :json-schema/order 39))
-
-(s/def ::last-heartbeat
-  (assoc (st/spec ::core/timestamp)
-    :name "last-heartbeat"
-    :json-schema/display-name "last heartbeat"
-    :json-schema/description "timestamp for last heartbeat update"
-
-    :json-schema/order 40))
-
-(s/def ::online-prev
-  (-> (st/spec boolean?)
-      (assoc :name "online-prev"
-             :json-schema/type "boolean"
-             :json-schema/description "Indicates previous value of online"
-             :json-schema/server-managed true
-
-             :json-schema/order 41)))
-
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
@@ -327,9 +302,6 @@
                                ::ssh-keys
                                ::capabilities
                                ::online
-                               ::online-prev
                                ::inferred-location
                                ::nuvlabox-engine-version
-                               ::heartbeat-interval
-                               ::last-heartbeat
-                               ::next-heartbeat]}))
+                               ::heartbeat-interval]}))

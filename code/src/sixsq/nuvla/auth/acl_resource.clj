@@ -215,6 +215,12 @@
   [collection-acl request]
   (throw-without-rights #{::add} {:acl collection-acl} request))
 
+(defn throw-not-admin-request
+  [resource request]
+  (if (is-admin-request? request)
+    request
+    (throw (ru/ex-unauthorized (:id resource)))))
+
 
 (defn default-acl
   "Provides a default ACL based on the authentication information.

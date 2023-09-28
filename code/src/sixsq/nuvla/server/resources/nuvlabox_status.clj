@@ -6,12 +6,7 @@ NuvlaBox activation, although they can be created manually by an administrator.
 Versioned subclasses define the attributes for a particular NuvlaBox release.
 "
   (:require
-    [clojure.string :as str]
-    [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -109,39 +104,34 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                     :body        body}]
     (add-impl request)))
 
-(defn edit-impl [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
-  (try
-    (let [{:keys [acl] :as current} (-> (str resource-type "/" uuid)
-                                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                                        (a/throw-cannot-edit request)
-                                        (utils/throw-parent-nuvlabox-is-suspended))
-          rights                   (a/extract-rights (auth/current-authentication request) acl)
-          dissoc-keys              (-> (map keyword select)
-                                       set
-                                       u/strip-select-from-mandatory-attrs
-                                       (a/editable-keys rights))
-          current-without-selected (apply dissoc current dissoc-keys)
-          editable-body            (select-keys body (-> body keys (a/editable-keys rights)))
-          jobs                     (status-utils/heartbeat request current)
-          new-status               (-> current-without-selected
-                                       (merge editable-body)
-                                       (assoc :jobs jobs)
-                                       (cond-> (contains? body :resources)
-                                               (assoc :resources-prev (:resources current)))
-                                       (u/update-timestamps)
-                                       (crud/validate))
-          response                 (db/edit new-status request)]
-      (status-utils/denormalize-changes-nuvlabox new-status)
-      (kafka-crud/publish-on-edit resource-type response)
-      response)
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
+
+(defn pre-validate-hook
+  [{resources-prev :resources :as resource}
+   {{:keys [resources]} :body :as _request}]
+  (-> resource
+      utils/throw-parent-nuvlabox-is-suspended
+      (cond-> (and resources (not= resources-prev resources))
+              (assoc :resources-prev resources-prev))))
+(def edit-impl (std-crud/edit-fn resource-type
+                                 :pre-validate-hook pre-validate-hook
+                                 :immutable-keys [:online
+                                                  :online-prev
+                                                  :last-heartbeat
+                                                  :next-heartbeat]))
 
 
 (defmethod crud/edit resource-type
   [request]
-  (-> (edit-impl request)
-      remove-blacklisted))
+  (try
+    (let [{:keys [body] :as response} (edit-impl request)
+          jobs (status-utils/heartbeat request body)]
+      (status-utils/denormalize-changes-nuvlabox body)
+      (kafka-crud/publish-on-edit resource-type response)
+      (-> response
+          (assoc-in [:body :jobs] jobs)
+          remove-blacklisted))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 
 (defn update-nuvlabox-status
@@ -149,14 +139,13 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
   (let [acl     (merge
                   (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
                   {:owners    ["group/nuvla-admin"]
-                   :edit-data [nuvlabox-id]})
-        request {:params      {:uuid          (u/id->uuid id)
-                               :resource-name resource-type}
-                 :body        (merge
-                                (get-nuvlabox-status-name-description nuvlabox-id nuvlabox-name)
-                                {:acl acl})
-                 :nuvla/authn auth/internal-identity}]
-    (edit-impl request)))
+                   :edit-data [nuvlabox-id]})]
+    (crud/edit {:params      {:uuid          (u/id->uuid id)
+                              :resource-name resource-type}
+                :body        (merge
+                               (get-nuvlabox-status-name-description nuvlabox-id nuvlabox-name)
+                               {:acl acl})
+                :nuvla/authn auth/internal-identity})))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))

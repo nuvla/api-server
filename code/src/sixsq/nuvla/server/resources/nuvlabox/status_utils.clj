@@ -7,19 +7,7 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]))
 
-(defn get-next-heartbeat
-  [nuvlabox-id]
-  (try
-    (some-> nuvlabox-id
-            crud/retrieve-by-id-as-admin
-            :refresh-interval
-            utils/compute-next-heartbeat)
-    (catch Exception ex
-      (log/errorf "Unable to get next heartbeat for %1: %2" nuvlabox-id ex))))
-
-(def DENORMALIZED_FIELD [
-                         ;:online
-                         :inferred-location :nuvlabox-engine-version])
+(def DENORMALIZED_FIELD [:inferred-location :nuvlabox-engine-version])
 
 (defn status-fields-to-denormalize
   [nuvlabox-status]
@@ -35,7 +23,7 @@
       (let [nuvlabox     (crud/retrieve-by-id-as-admin parent)
             new-nuvlabox (merge nuvlabox propagate-status)]
         (when (not= nuvlabox new-nuvlabox)
-          (db/edit new-nuvlabox {:nuvla/authn auth/internal-identity}))))))
+          (db/edit new-nuvlabox nil))))))
 
 (defn nuvlabox-request?
   [request]

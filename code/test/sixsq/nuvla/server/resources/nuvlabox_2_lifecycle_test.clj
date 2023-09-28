@@ -910,9 +910,6 @@
                   (is (= 1 (count creds))))))))))))
 
 
-
-
-
 (deftest create-activate-commission-vpn-lifecycle
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session       (-> (ltu/ring-app)
@@ -1192,8 +1189,6 @@
               (is (= (:name srvc-endpoint) nb-name)))))))))
 
 
-
-
 (deftest execution-mode-action-lifecycle
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session       (-> (ltu/ring-app)
@@ -1244,7 +1239,6 @@
                                     :view-data [nuvlabox-id "user/alpha"],
                                     :manage    [nuvlabox-id "user/alpha"],
                                     :edit-meta [nuvlabox-id "user/alpha"]}))))))
-
 
 
 (deftest create-activate-assemble-playbooks-emergency-lifecycle
