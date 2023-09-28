@@ -18,21 +18,16 @@
             [sixsq.nuvla.server.util.response :as r])
   (:import (java.io Closeable)))
 
-;; FIXME: Need to understand why the refresh parameter must be used to make unit test pass.
-
 (def ^:const sniff-interval-mills 5000)
 (def ^:const sniff-after-failure-delay-mills 1000)
-
 
 (defn create-client
   [options]
   (spandex/client options))
 
-
 (defn create-sniffer
   [client options]
   (spandex/sniffer client (or options {})))
-
 
 (defn create-index
   [client index]
@@ -57,7 +52,6 @@
                   error (:error body)]
               (log/error "unexpected status code when creating" index "index (" status "). " (or error e)))))))))
 
-
 (defn set-index-mapping
   [client index mapping]
   (try
@@ -72,6 +66,13 @@
             error (:error body)]
         (log/warn index "mapping could not be updated (" status "). " (or error e))))))
 
+(defn shards-successful?
+  [response]
+  (pos? (get-in response [:body :_shards :successful])))
+
+(defn no-body-failures?
+  [response]
+  (empty? (get-in response [:body :failures])))
 
 (defn add-data
   [client {:keys [id] :as data}]
@@ -85,7 +86,7 @@
                                                :query-string {:refresh true}
                                                :method       :put
                                                :body         updated-doc})
-          success?    (pos? (get-in response [:body :_shards :successful]))]
+          success? (shards-successful? response)]
       (if success?
         (r/response-created id)
         (r/response-conflict id)))
@@ -95,7 +96,6 @@
         (if (= 409 status)
           (r/response-conflict id)
           (r/response-error (str "unexpected exception: " (or error e))))))))
-
 
 (defn update-data
   [client {:keys [id] :as data}]
@@ -109,7 +109,7 @@
                                                :query-string {:refresh true}
                                                :method       :put
                                                :body         updated-doc})
-          success?    (pos? (get-in response [:body :_shards :successful]))]
+          success? (shards-successful? response)]
       (if success?
         (r/json-response data)
         (r/response-conflict id)))
@@ -118,6 +118,23 @@
             error (:error body)]
         (r/response-error (str "unexpected exception updating " id ": " (or error e)))))))
 
+(defn scripted-update-data
+  [client id options]
+  (try
+    (let [[collection-id uuid] (cu/split-id id)
+          index    (escu/collection-id->index collection-id)
+          response (spandex/request client {:url          [index :_update uuid]
+                                            :query-string {:refresh true}
+                                            :method       :post
+                                            :body         options})
+          success? (shards-successful? response)]
+      (if success?
+        (r/map-response "updated successfully" 200 id)
+        (r/response-conflict id)))
+    (catch Exception e
+      (let [{:keys [body] :as _response} (ex-data e)
+            error (:error body)]
+        (r/response-error (str "unexpected exception scripted updating " id ": " (or error e)))))))
 
 (defn find-data
   [client id]
@@ -136,7 +153,6 @@
           (throw (r/ex-not-found id))
           (throw e))))))
 
-
 (defn delete-data
   [client id]
   (let [[collection-id uuid] (cu/split-id id)
@@ -144,12 +160,11 @@
         response (spandex/request client {:url          [index :_doc uuid]
                                           :query-string {:refresh true}
                                           :method       :delete})
-        success? (pos? (get-in response [:body :_shards :successful]))
+        success? (shards-successful? response)
         deleted? (= "deleted" (get-in response [:body :result]))]
     (if (and success? deleted?)
       (r/response-deleted id)
       (r/response-error (str "could not delete document " id)))))
-
 
 (defn query-data
   [client collection-id {:keys [cimi-params] :as options}]
@@ -164,13 +179,12 @@
           response                (spandex/request client {:url    [index :_search]
                                                            :method :post
                                                            :body   body})
-          success?                (-> response :body :_shards :successful pos?)
           count-before-pagination (-> response :body :hits :total :value)
           aggregations            (-> response :body :aggregations)
           meta                    (cond-> {:count count-before-pagination}
                                           aggregations (assoc :aggregations aggregations))
           hits                    (->> response :body :hits :hits (map :_source))]
-      (if success?
+      (if (shards-successful? response)
         [meta hits]
         (let [msg (str "error when querying: " (:body response))]
           (throw (r/ex-response msg 500)))))
@@ -179,7 +193,6 @@
             error (:error body)
             msg   (str "unexpected exception querying: " (or error e))]
         (throw (r/ex-response msg 500))))))
-
 
 (defn bulk-edit-data
   [client collection-id
@@ -194,7 +207,7 @@
                                                  :query-string {:refresh true}
                                                  :body         body})
           body-response (:body response)
-          success?      (-> body-response :failures empty?)]
+          success?      (no-body-failures? response)]
       (if success?
         body-response
         (let [msg (str "error when updating by query: " body-response)]
@@ -256,6 +269,8 @@
   (edit [_ data _options]
     (update-data client data))
 
+  (scripted-edit [_ id options]
+    (scripted-update-data client id options))
 
   (query [_ collection-id options]
     (query-data client collection-id options))
