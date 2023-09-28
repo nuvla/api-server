@@ -288,7 +288,7 @@
 
 (deftest status-200?
   (are [expect response]
-    (= expect (t/status-200? response))
+    (= expect (t/status-ok? response))
     true {:status 200}
     false {:status 100}
     false {:status 201}
