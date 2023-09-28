@@ -165,6 +165,13 @@
   (let [query (str "?error=" (codec/url-encode msg))]
     (ex-response msg 303 id (str redirect-url query))))
 
+(defn ex-unexpected
+  "Provides an ExceptionInfo exception when an unexpected exception happens.
+  This is a 500 status code. Information from the request and the action
+   are used to provide a reasonable message."
+  [msg]
+  (ex-response (str "unexpected exception: " msg) 500))
+
 (defn rethrow-response
   [{{:keys [resource-id status message]} :body :as response}]
   (if (and (r/response? response)
@@ -173,9 +180,22 @@
     (let [msg "rethrow-response bad argument"]
       (throw (ex-info msg (response-error msg))))))
 
-(defn status-200?
+(defn get-status
   [{:keys [status] :as _response}]
-  (= status 200))
+  status)
+
+(defn get-body
+  [{:keys [body] :as _response}]
+  body)
+
+(defn status?
+  [expected-status response]
+  (= (get-status response) expected-status))
+
+(def status-ok? (partial status? 200))
+(def status-created? (partial status? 201))
+(def status-not-found? (partial status? 404))
+(def status-conflict? (partial status? 409))
 
 (defn configurable-check-response
   [response-ok? on-success on-error]
@@ -186,7 +206,7 @@
 
 (def throw-response-not-200
   (configurable-check-response
-    status-200? identity rethrow-response))
+    status-ok? identity rethrow-response))
 
 (defn response-body
   [response]
@@ -194,4 +214,4 @@
 
 (def ignore-response-not-200
   (configurable-check-response
-    status-200? identity (constantly nil)))
+    status-ok? identity (constantly nil)))

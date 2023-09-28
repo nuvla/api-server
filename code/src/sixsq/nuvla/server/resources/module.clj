@@ -288,7 +288,7 @@ component, or application.
                                      :resource-type resource-type}
                             :body resource)
                      edit-impl)]
-    (if (r/status-200? response)
+    (if (r/status-ok? response)
       response
       (throw (r/ex-response (str error-message ": " response) 500)))))
 
