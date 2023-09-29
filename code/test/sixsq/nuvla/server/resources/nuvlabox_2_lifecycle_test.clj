@@ -5,6 +5,7 @@
     [clojure.test :refer [are deftest is testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
+    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -24,7 +25,8 @@
     [sixsq.nuvla.server.resources.nuvlabox-playbook :as nb-playbook]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.time :as time]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
@@ -121,7 +123,6 @@
                                            :vpn-server-id "infrastructure-service/fake")))
           (ltu/body->edn)
           (ltu/is-status 404)))))
-
 
 
 (deftest create-activate-create-log-decommission-delete-lifecycle
@@ -1189,6 +1190,7 @@
               (is (= (:name srvc-endpoint) nb-name)))))))))
 
 
+;; FIXME
 (deftest execution-mode-action-lifecycle
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session       (-> (ltu/ring-app)
@@ -1627,8 +1629,6 @@
                 (ltu/is-status 403))))))))
 
 
-
-
 (deftest create-activate-commission-suspend-lifecycle
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session       (-> (ltu/ring-app)
@@ -1777,13 +1777,33 @@
               (ltu/body->edn)
               (ltu/is-status 200))
 
-          (let [heartbeat-op     (-> session-nuvlabox
-                                     (request nuvlabox-url)
-                                     (ltu/body->edn)
-                                     (ltu/is-status 200)
-                                     (ltu/is-operation-present :heartbeat)
-                                     (ltu/is-key-value :online nil)
-                                     (ltu/get-op-url :heartbeat))]
+          (let [nuvlabox-status-id  (-> session-owner
+                                        (request nuvlabox-url)
+                                        (ltu/body->edn)
+                                        (ltu/is-status 200)
+                                        ltu/body
+                                        :nuvlabox-status)
+                heartbeat-op        (-> session-nuvlabox
+                                        (request nuvlabox-url)
+                                        (ltu/body->edn)
+                                        (ltu/is-status 200)
+                                        (ltu/is-operation-present utils/action-heartbeat)
+                                        (ltu/is-operation-absent utils/action-set-offline)
+                                        (ltu/is-key-value :online nil)
+                                        (ltu/get-op-url utils/action-heartbeat))
+                set-offline-op      (-> session-admin
+                                        (request nuvlabox-url)
+                                        (ltu/body->edn)
+                                        (ltu/is-status 200)
+                                        (ltu/is-operation-present utils/action-heartbeat)
+                                        (ltu/is-operation-present utils/action-set-offline)
+                                        (ltu/get-op-url utils/action-set-offline))]
+            (let [nb-status (db/retrieve nuvlabox-status-id {})]
+              (is (nil? (:online nb-status)))
+              (is (nil? (:online-prev nb-status)))
+              (is (nil? (:next-heartbeat nb-status)))
+              (is (nil? (:last-heartbeat nb-status))))
+
             (-> session-nuvlabox
                 (request heartbeat-op)
                 (ltu/body->edn)
@@ -1794,13 +1814,16 @@
                 (request nuvlabox-url)
                 (ltu/body->edn)
                 (ltu/is-status 200)
-                (ltu/is-key-value :online true)
-                (ltu/is-key-value :online-prev nil))
+                (ltu/is-key-value :online true))
+
+            (let [nb-status (db/retrieve nuvlabox-status-id {})]
+              (is (true? (:online nb-status)))
+              (is (nil? (:online-prev nb-status)))
+              (is (some? (:next-heartbeat nb-status)))
+              (is (some? (:last-heartbeat nb-status))))
 
             (-> session-admin
-                (request nuvlabox-url
-                         :request-method :put
-                         :body (json/write-str {:online false}))
+                (request set-offline-op)
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -1808,8 +1831,13 @@
                 (request nuvlabox-url)
                 (ltu/body->edn)
                 (ltu/is-status 200)
-                (ltu/is-key-value :online false)
-                (ltu/is-key-value :online-prev true))
+                (ltu/is-key-value :online false))
+
+            (let [nb-status (db/retrieve nuvlabox-status-id nil)]
+              (is (false? (:online nb-status)))
+              (is (true? (:online-prev nb-status)))
+              (is (some? (:next-heartbeat nb-status)))
+              (is (some? (:last-heartbeat nb-status))))
             ))))))
 
 

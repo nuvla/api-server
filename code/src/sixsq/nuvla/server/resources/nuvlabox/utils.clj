@@ -11,6 +11,7 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
+    [sixsq.nuvla.server.resources.nuvlabox.status-utils :as status-utils]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time]))
 
@@ -111,31 +112,6 @@
 (defn can-set-offline?
   [nuvlabox]
   (is-state-commissioned? nuvlabox))
-
-(defn compute-next-heartbeat
-  [interval-in-seconds]
-  (some-> interval-in-seconds
-          (* 2)
-          (+ 10)
-          (time/from-now :seconds)
-          time/to-str))
-
-(defn get-jobs
-  [nb-id]
-  (->> {:params      {:resource-name "job"}
-        :cimi-params {:filter  (cimi-params-impl/cimi-filter
-                                 {:filter (str "execution-mode='pull' and "
-                                               "state!='FAILED' and "
-                                               "state!='SUCCESS' and state!='STOPPED'")})
-                      :select  ["id"]
-                      :orderby [["created" :asc]]}
-        :nuvla/authn {:user-id      nb-id
-                      :active-claim nb-id
-                      :claims       #{nb-id "group/nuvla-user" "group/nuvla-anon"}}}
-       crud/query
-       :body
-       :resources
-       (mapv :id)))
 
 (defn throw-nuvlabox-is-suspended
   [{:keys [id] :as nuvlabox}]
@@ -374,13 +350,6 @@
           request))
     request))
 
-(defn set-online
-  [m online online-prev]
-  (if (some? online)
-    (cond-> (assoc m :online online)
-            (some? online-prev) (assoc :online-prev online-prev))
-    m))
-
 (defn save-nuvlabox-when-changed
   [current next]
   (when (not= current next)
@@ -388,16 +357,68 @@
         u/update-timestamps
         (db/edit nil))))
 
+(defn set-heartbeat-interval
+  [{:keys [id heartbeat-interval] :as nuvlabox}]
+  (if (nil? heartbeat-interval)
+    (do (db/scripted-edit
+          id {:doc {:heartbeat-interval default-heartbeat-interval}})
+        (assoc nuvlabox :heartbeat-interval default-heartbeat-interval))
+    nuvlabox))
+
+(defn nuvlabox-request?
+  [request]
+  (str/starts-with? (auth/current-active-claim request) "nuvlabox/"))
+
+(defn compute-next-heartbeat
+  [interval-in-seconds]
+  (some-> interval-in-seconds
+          (* 2)
+          (+ 10)
+          (time/from-now :seconds)
+          time/to-str))
+
+(defn get-jobs
+  [nb-id]
+  (->> {:params      {:resource-name "job"}
+        :cimi-params {:filter  (cimi-params-impl/cimi-filter
+                                 {:filter (str "execution-mode='pull' and "
+                                               "state!='FAILED' and "
+                                               "state!='SUCCESS' and state!='STOPPED'")})
+                      :select  ["id"]
+                      :orderby [["created" :asc]]}
+        :nuvla/authn {:user-id      nb-id
+                      :active-claim nb-id
+                      :claims       #{nb-id "group/nuvla-user" "group/nuvla-anon"}}}
+       crud/query
+       :body
+       :resources
+       (mapv :id)))
+
+(defn heartbeat-status
+  [nuvlabox-status {:keys [id heartbeat-interval] :as _nuvlabox} online]
+  (merge nuvlabox-status
+         (cond-> {:online online}
+                 online (assoc :last-heartbeat (time/now-str)
+                               :next-heartbeat (compute-next-heartbeat heartbeat-interval)
+                               :jobs (get-jobs id)))))
+
+(defn legacy-heartbeat
+  [{nuvlabox-id :parent :as nuvlabox-status} request]
+  (or
+    (try
+      (and (nuvlabox-request? request)
+           (let [nb (crud/retrieve-by-id-as-admin nuvlabox-id)]
+             (and (not (has-heartbeat-support? nb))
+                  (heartbeat-status nuvlabox-status nb true))))
+      (catch Exception _))
+    nuvlabox-status))
+
+
 (defn set-status
-  [{:keys [nuvlabox-status heartbeat-interval] :as nuvlabox} online]
-  (let [interval (or heartbeat-interval default-heartbeat-interval)
-        body      (cond-> {:online      online
-                          :online-prev (:online nuvlabox)}
-                         online (assoc :last-heartbeat (time/now-str)
-                                       :next-heartbeat (compute-next-heartbeat interval)))]
-    (if nuvlabox-status
-      (crud/edit-by-id-as-admin nuvlabox-status body)
-      (throw (r/ex-response "Not defined nuvlabox-status id!" 500)))
-    (save-nuvlabox-when-changed
-      nuvlabox (assoc nuvlabox :heartbeat-interval interval
-                               :online online))))
+  [{:keys [nuvlabox-status] :as nuvlabox} online]
+  (if nuvlabox-status
+    (->> (heartbeat-status {} nuvlabox online)
+         (crud/edit-by-id-as-admin nuvlabox-status)
+         r/throw-response-not-200
+         :body)
+    (throw (r/ex-response "Not defined nuvlabox-status id!" 500))))

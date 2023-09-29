@@ -529,15 +529,30 @@ particular NuvlaBox release.
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
+(defmethod crud/do-action [resource-type utils/action-heartbeat]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
+          (utils/set-heartbeat-interval)
+          (utils/set-status true)
+          (select-keys [:jobs])
+          r/json-response))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
 (defmethod crud/do-action [resource-type utils/action-set-offline]
   [{{uuid :uuid} :params :as request}]
   (let [id (str resource-type "/" uuid)]
     (try
-      (-> (db/retrieve id request)
+      (-> (db/retrieve id nil)
           (a/throw-not-admin-request request)
           (u/throw-can-not-do-action
             utils/can-set-offline? utils/action-set-offline)
           (utils/set-status false))
+      (r/map-response "offline" 200)
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
@@ -1030,18 +1045,6 @@ particular NuvlaBox release.
           (a/throw-cannot-edit request)
           (u/throw-can-not-do-action utils/can-unsuspend? "unsuspend"))
       (crud/edit-by-id-as-admin id {:state utils/state-commissioned}))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
-
-(defmethod crud/do-action [resource-type utils/action-heartbeat]
-  [{{uuid :uuid} :params :as request}]
-  (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
-          (a/throw-cannot-manage request)
-          (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
-          (utils/set-status true))
-      (r/json-response {:jobs (utils/get-jobs id)}))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

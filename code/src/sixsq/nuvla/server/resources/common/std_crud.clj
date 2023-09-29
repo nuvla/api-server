@@ -62,8 +62,10 @@
 
 (defn edit-fn
   [resource-name & {:keys [pre-validate-hook
+                           pre-delete-attrs-hook
                            immutable-keys]
-                    :or   {pre-validate-hook pass-through
+                    :or   {pre-delete-attrs-hook pass-through
+                           pre-validate-hook pass-through
                            immutable-keys []}}]
   (fn [{{uuid :uuid} :params :as request}]
     (try
@@ -71,6 +73,7 @@
           (db/retrieve nil)
           (a/throw-cannot-edit request)
           (sm/throw-can-not-do-action request)
+          (pre-delete-attrs-hook request)
           (u/delete-attributes request immutable-keys)
           u/update-timestamps
           (u/set-updated-by request)

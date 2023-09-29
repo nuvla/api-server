@@ -218,7 +218,7 @@
 (defn throw-not-admin-request
   [resource request]
   (if (is-admin-request? request)
-    request
+    resource
     (throw (ru/ex-unauthorized (:id resource)))))
 
 

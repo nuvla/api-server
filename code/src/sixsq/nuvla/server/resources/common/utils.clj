@@ -319,15 +319,14 @@
   (let [immutable-keys           (if (a/is-admin-request? request) [] immutable-keys)
         rights                   (a/extract-rights (auth/current-authentication request) acl)
         dissoc-keys              (-> (map keyword select)
-                                     set
+                                     (a/editable-keys rights)
                                      strip-select-from-mandatory-attrs
-                                     (strip-immutable-keys immutable-keys)
-                                     (a/editable-keys rights))
+                                     (strip-immutable-keys immutable-keys))
         current-without-selected (apply dissoc current dissoc-keys)
         editable-body            (-> body
                                      keys
-                                     (strip-immutable-keys immutable-keys)
                                      (a/editable-keys rights)
+                                     (strip-immutable-keys immutable-keys)
                                      (->> (select-keys body)))]
     (merge current-without-selected editable-body)))
 

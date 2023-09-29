@@ -75,14 +75,3 @@
           #"some-key should be bigger than 10!"
           (t/throw-value-should-be-bigger request-user-nok :some-key 10)))
     (is (= request-admin (t/throw-value-should-be-bigger request-admin :some-key 10)))))
-
-(deftest set-online
-  (is (= {} (t/set-online {} nil nil)))
-  (is (= {} (t/set-online {} nil false)))
-  (is (= {:online true} (t/set-online {} true nil)))
-  (is (= {:online      true
-          :online-prev true} (t/set-online {} true true)))
-  (is (= {:online      false
-          :online-prev true} (t/set-online {} false true)))
-  (is (= {:online      false
-          :online-prev false} (t/set-online {} false false))))

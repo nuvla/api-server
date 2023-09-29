@@ -6,12 +6,13 @@ NuvlaBox activation, although they can be created manually by an administrator.
 Versioned subclasses define the attributes for a particular NuvlaBox release.
 "
   (:require
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.nuvlabox.status-utils :as status-utils]
-    [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
+    [sixsq.nuvla.server.resources.nuvlabox.status-utils :as utils]
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.util.kafka-crud :as kafka-crud]
@@ -77,10 +78,10 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 
 (defn get-nuvlabox-status-name-description
   [nuvlabox-id nuvlabox-name]
-  {:name        (utils/format-nb-name
-                  nuvlabox-name (utils/short-nb-id nuvlabox-id))
+  {:name        (nb-utils/format-nb-name
+                  nuvlabox-name (nb-utils/short-nb-id nuvlabox-id))
    :description (str "NuvlaEdge status of "
-                     (utils/format-nb-name nuvlabox-name nuvlabox-id))})
+                     (nb-utils/format-nb-name nuvlabox-name nuvlabox-id))})
 
 (defn create-nuvlabox-status
   "Utility to facilitate creating a new nuvlabox-status resource from the
@@ -105,16 +106,21 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
     (add-impl request)))
 
 
-(defn pre-validate-hook
-  [{resources-prev :resources :as resource}
-   {{:keys [resources]} :body :as _request}]
-  (-> resource
-      utils/throw-parent-nuvlabox-is-suspended
-      (cond-> (and resources (not= resources-prev resources))
-              (assoc :resources-prev resources-prev))))
+(defn pre-delete-attrs-hook
+  [{resources-prev :resources
+    online-prev    :online :as resource}
+   request]
+  (-> (nb-utils/throw-parent-nuvlabox-is-suspended resource)
+      (nb-utils/legacy-heartbeat request)
+      (cond-> (some? resources-prev)
+              (assoc :resources-prev resources-prev)
+
+              (some? online-prev)
+              (assoc :online-prev online-prev))))
 
 (def edit-impl (std-crud/edit-fn resource-type
-                                 :pre-validate-hook pre-validate-hook
+                                 :pre-delete-attrs-hook pre-delete-attrs-hook
+                                 ;:pre-validate-hook minimal-update
                                  :immutable-keys [:online
                                                   :online-prev
                                                   :last-heartbeat
@@ -124,23 +130,21 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 (defmethod crud/edit resource-type
   [request]
   (try
-    (let [{:keys [body] :as response} (edit-impl request)
-          jobs (status-utils/heartbeat request body)]
-      (status-utils/denormalize-changes-nuvlabox body)
+    (let [{:keys [body] :as response} (r/throw-response-not-200
+                                        (edit-impl request))]
+      (utils/denormalize-changes-nuvlabox body)
       (kafka-crud/publish-on-edit resource-type response)
-      (-> response
-          (assoc-in [:body :jobs] jobs)
-          remove-blacklisted))
+      (remove-blacklisted response))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
 
 (defn update-nuvlabox-status
   [id nuvlabox-id nuvlabox-name nuvlabox-acl]
-  (let [acl     (merge
-                  (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
-                  {:owners    ["group/nuvla-admin"]
-                   :edit-data [nuvlabox-id]})]
+  (let [acl (merge
+              (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
+              {:owners    ["group/nuvla-admin"]
+               :edit-data [nuvlabox-id]})]
     (crud/edit {:params      {:uuid          (u/id->uuid id)
                               :resource-name resource-type}
                 :body        (merge

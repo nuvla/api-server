@@ -47,8 +47,6 @@
    :version                     2
    :status                      "OPERATIONAL"
 
-   :next-heartbeat              timestamp
-
    :resources                   {:cpu             {:capacity 8
                                                    :load     4.5}
                                  :ram             {:capacity 4096
@@ -156,16 +154,16 @@
               (ltu/body->edn)
               (ltu/is-status 403))))
 
-      (when-let [state-id (-> session-admin
-                              (request base-uri
-                                       :request-method :post
-                                       :body (json/write-str (assoc valid-state :parent nuvlabox-id
-                                                                                :acl valid-acl)))
-                              (ltu/body->edn)
-                              (ltu/is-status 201)
-                              (ltu/body-resource-id))]
+      (when-let [status-id (-> session-admin
+                               (request base-uri
+                                        :request-method :post
+                                        :body (json/write-str (assoc valid-state :parent nuvlabox-id
+                                                                                 :acl valid-acl)))
+                               (ltu/body->edn)
+                               (ltu/is-status 201)
+                               (ltu/body-resource-id))]
 
-        (let [status-url (str p/service-context state-id)]
+        (let [status-url (str p/service-context status-id)]
           (testing "other users cannot see the state"
             (-> session-user
                 (request status-url)
@@ -186,8 +184,7 @@
                   (ltu/is-status 200)
                   (ltu/is-key-value :resources resources-updated)
                   (ltu/is-key-value :resources-prev nil))
-
-              (is (= resources-prev (:resources-prev (db/retrieve state-id {}))))))
+              (is (= resources-prev (:resources-prev (db/retrieve status-id nil))))))
 
           (let [resources-prev (-> session-nb
                                    (request status-url)
@@ -203,7 +200,7 @@
                 (ltu/is-key-value :resources resources-updated)
                 (ltu/is-key-value :resources-prev nil))
 
-            (is (= resources-prev (:resources-prev (db/retrieve state-id {})))))
+            (is (= resources-prev (:resources-prev (db/retrieve status-id nil)))))
 
           (testing "verify that the update was written to disk"
             (-> session-nb
@@ -410,8 +407,7 @@ is updated"
                        :body (json/write-str {:online false}))
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value :online false)
-              (ltu/is-key-value :online-prev true)))
+              (ltu/is-key-value :online false)))
 
         (testing "when a nuvlabox send telemetry that has a spec validation
           issue, the heartbeat is still updated"
@@ -430,8 +426,148 @@ is updated"
               (ltu/is-key-value string? :last-heartbeat true)
               (ltu/is-key-value string? :next-heartbeat true)))))))
 
+;; FIXME
 (deftest lifecycle-online-next-heartbeat
-  (test-online-next-heartbeat))
+  #_(test-online-next-heartbeat)
+
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session       (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-user  (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
+
+          nuvlabox-id   (-> session-user
+                            (request nuvlabox-base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-nuvlabox))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
+
+          nuvlabox-url  (str p/service-context nuvlabox-id)
+
+          session-nb    (header session authn-info-header (str nuvlabox-id " " nuvlabox-id " group/nuvla-user group/nuvla-anon"))]
+
+      (-> session-nb
+          (request (-> session-nb
+                       (request nuvlabox-url)
+                       (ltu/body->edn)
+                       (ltu/is-status 200)
+                       (ltu/get-op-url :activate)))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      (-> session-nb
+          (request (-> session-nb
+                       (request nuvlabox-url)
+                       (ltu/body->edn)
+                       (ltu/is-status 200)
+                       (ltu/get-op-url :commission))
+                   :request-method :put
+                   :body (json/write-str
+                           {:capabilities [nb-utils/capability-job-pull]}))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      (let [status-url (str p/service-context
+                            (-> session-nb
+                            (request nuvlabox-url)
+                            (ltu/body->edn)
+                            (ltu/is-status 200)
+                            ltu/body
+                            :nuvlabox-status))]
+
+        (testing "admin edition doesn't set online flag"
+          (-> session-admin
+              (request status-url
+                       :request-method :put
+                       :body (json/write-str {}))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :online nil)
+              (ltu/is-key-value :last-heartbeat nil)
+              (ltu/is-key-value :next-heartbeat nil)))
+
+        (testing
+          "nuvlabox can do a legacy heartbeat"
+          (-> session-nb
+              (request status-url
+                       :request-method :put
+                       :body (json/write-str {:nuvlabox-engine-version "1.0.2"}))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :online true)
+              (ltu/is-key-value some? :next-heartbeat true)
+              (ltu/is-key-value some? :last-heartbeat true)
+              (ltu/is-key-value :jobs []))
+
+          (testing
+            "online flag is propagated to nuvlabox"
+            (-> session-admin
+               (request nuvlabox-url)
+               (ltu/body->edn)
+               (ltu/is-status 200)
+               (ltu/is-key-value :online true))))
+
+        (testing
+          "nuvlabox get jobs on heartbeat"
+          (-> session-nb
+              (request (-> session-nb
+                           (request nuvlabox-url)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/get-op-url :reboot)))
+              (ltu/body->edn)
+              (ltu/is-status 202))
+
+          (-> session-nb
+              (request status-url
+                       :request-method :put
+                       :body (json/write-str {:nuvlabox-engine-version "1.0.2"}))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value count :jobs 1)
+              (ltu/is-key-value :online true)
+              (ltu/is-key-value some? :last-heartbeat true)
+              (ltu/is-key-value some? :next-heartbeat true)))
+
+        (testing "admin can set offline"
+          (-> session-admin
+              (request (-> session-admin
+                           (request nuvlabox-url)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/get-op-url nb-utils/action-set-offline)))
+              (ltu/body->edn)
+              (ltu/is-status 200)))
+
+        (-> session-admin
+            (request status-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :online false)
+            (ltu/is-key-value some? :last-heartbeat true)
+            (ltu/is-key-value some? :next-heartbeat true))
+
+        (testing "when a nuvlabox send telemetry that has a spec validation
+          issue, the heartbeat is still updated"
+          (-> session-nb
+              (request status-url
+                       :request-method :put
+                       :body (json/write-str {:wrong 1}))
+              (ltu/body->edn)
+              (ltu/is-status 400))
+
+          (-> session-admin
+              (request nuvlabox-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :online true)
+              (ltu/is-key-value :online-prev false)
+              (ltu/is-key-value string? :last-heartbeat true)
+              (ltu/is-key-value string? :next-heartbeat true))))))
+  )
 
 
 (deftest bad-methods
