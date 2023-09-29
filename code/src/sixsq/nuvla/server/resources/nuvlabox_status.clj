@@ -112,6 +112,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
       utils/throw-parent-nuvlabox-is-suspended
       (cond-> (and resources (not= resources-prev resources))
               (assoc :resources-prev resources-prev))))
+
 (def edit-impl (std-crud/edit-fn resource-type
                                  :pre-validate-hook pre-validate-hook
                                  :immutable-keys [:online

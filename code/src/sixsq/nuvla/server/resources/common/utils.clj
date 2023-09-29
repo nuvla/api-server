@@ -313,10 +313,11 @@
 
 
 (defn delete-attributes
-  [{{select :select} :cimi-params body :body :as request}
-   {:keys [acl] :as current}
+  [{:keys [acl] :as current}
+   {{select :select} :cimi-params body :body :as request}
    immutable-keys]
-  (let [rights                   (a/extract-rights (auth/current-authentication request) acl)
+  (let [immutable-keys           (if (a/is-admin-request? request) [] immutable-keys)
+        rights                   (a/extract-rights (auth/current-authentication request) acl)
         dissoc-keys              (-> (map keyword select)
                                      set
                                      strip-select-from-mandatory-attrs
@@ -325,8 +326,8 @@
         current-without-selected (apply dissoc current dissoc-keys)
         editable-body            (-> body
                                      keys
-                                     (a/editable-keys rights)
                                      (strip-immutable-keys immutable-keys)
+                                     (a/editable-keys rights)
                                      (->> (select-keys body)))]
     (merge current-without-selected editable-body)))
 

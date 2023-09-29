@@ -391,24 +391,13 @@
 (defn set-status
   [{:keys [nuvlabox-status heartbeat-interval] :as nuvlabox} online]
   (let [interval (or heartbeat-interval default-heartbeat-interval)
-        doc      (cond-> {:online      online
+        body      (cond-> {:online      online
                           :online-prev (:online nuvlabox)}
                          online (assoc :last-heartbeat (time/now-str)
                                        :next-heartbeat (compute-next-heartbeat interval)))]
     (if nuvlabox-status
-      (db/scripted-edit
-        nuvlabox-status
-        {:doc doc})
+      (crud/edit-by-id-as-admin nuvlabox-status body)
       (throw (r/ex-response "Not defined nuvlabox-status id!" 500)))
     (save-nuvlabox-when-changed
       nuvlabox (assoc nuvlabox :heartbeat-interval interval
                                :online online))))
-
-
-(defn propagate-status
-  [{{:keys [online]} :body :as request} {online-prev :online :as _current}]
-  (if (and (false? online)
-           (true? online-prev))
-
-    )
-  (update request :body set-online online online-prev))
