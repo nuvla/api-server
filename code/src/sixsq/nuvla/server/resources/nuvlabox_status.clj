@@ -8,6 +8,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -107,20 +108,37 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 
 
 (defn pre-delete-attrs-hook
-  [{resources-prev :resources
-    online-prev    :online :as resource}
+  [{resources-prev :resources :as resource}
    request]
   (-> (nb-utils/throw-parent-nuvlabox-is-suspended resource)
       (nb-utils/legacy-heartbeat request)
       (cond-> (some? resources-prev)
-              (assoc :resources-prev resources-prev)
+              (assoc :resources-prev resources-prev))))
 
-              (some? online-prev)
-              (assoc :online-prev online-prev))))
+(defn post-edit
+  [response]
+  (utils/denormalize-changes-nuvlabox (r/response-body response))
+  (kafka-crud/publish-on-edit resource-type response)
+  response)
+
+(defn pre-validate-hook
+  [{:keys [id] :as resource} request]
+  (let [exception (try
+                    (crud/validate resource)
+                    nil
+                    (catch Exception ex
+                      ex))]
+    (if exception
+      (do (-> (db/retrieve id nil)
+              (nb-utils/legacy-heartbeat request)
+              (db/edit nil)
+              (post-edit))
+          (throw exception))
+      resource)))
 
 (def edit-impl (std-crud/edit-fn resource-type
                                  :pre-delete-attrs-hook pre-delete-attrs-hook
-                                 ;:pre-validate-hook minimal-update
+                                 :pre-validate-hook pre-validate-hook
                                  :immutable-keys [:online
                                                   :online-prev
                                                   :last-heartbeat
@@ -130,11 +148,9 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 (defmethod crud/edit resource-type
   [request]
   (try
-    (let [{:keys [body] :as response} (r/throw-response-not-200
-                                        (edit-impl request))]
-      (utils/denormalize-changes-nuvlabox body)
-      (kafka-crud/publish-on-edit resource-type response)
-      (remove-blacklisted response))
+    (-> (edit-impl request)
+        post-edit
+        remove-blacklisted)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

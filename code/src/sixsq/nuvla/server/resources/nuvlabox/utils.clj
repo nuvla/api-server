@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.utils
   (:require
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
@@ -11,7 +12,7 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
-    [sixsq.nuvla.server.resources.nuvlabox.status-utils :as status-utils]
+    [sixsq.nuvla.server.util.kafka-crud :as kafka-crud]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time]))
 
@@ -350,24 +351,11 @@
           request))
     request))
 
-(defn save-nuvlabox-when-changed
-  [current next]
-  (when (not= current next)
-    (-> next
-        u/update-timestamps
-        (db/edit nil))))
-
 (defn set-heartbeat-interval
-  [{:keys [id heartbeat-interval] :as nuvlabox}]
+  [{:keys [heartbeat-interval] :as nuvlabox}]
   (if (nil? heartbeat-interval)
-    (do (db/scripted-edit
-          id {:doc {:heartbeat-interval default-heartbeat-interval}})
-        (assoc nuvlabox :heartbeat-interval default-heartbeat-interval))
+    (assoc nuvlabox :heartbeat-interval default-heartbeat-interval)
     nuvlabox))
-
-(defn nuvlabox-request?
-  [request]
-  (str/starts-with? (auth/current-active-claim request) "nuvlabox/"))
 
 (defn compute-next-heartbeat
   [interval-in-seconds]
@@ -376,6 +364,32 @@
           (+ 10)
           (time/from-now :seconds)
           time/to-str))
+
+(defn status-online-attributes
+  [{:keys [heartbeat-interval online]
+    :or   {heartbeat-interval default-heartbeat-interval}
+    :as   _nuvlabox} online-new]
+  (cond-> {:online online-new}
+          online-new (assoc :last-heartbeat (time/now-str)
+                            :next-heartbeat (compute-next-heartbeat
+                                              heartbeat-interval))
+          (some? online)
+          (assoc :online-prev online)))
+
+(defn set-online!
+  [{:keys [id nuvlabox-status heartbeat-interval]
+    :or   {heartbeat-interval default-heartbeat-interval}
+    :as   nuvlabox} online-new]
+  (let [nb-status (status-online-attributes nuvlabox online-new)]
+    (r/throw-response-not-200
+      (db/scripted-edit id {:doc {:online             online-new
+                                  :heartbeat-interval heartbeat-interval}}))
+    (r/throw-response-not-200
+      (db/scripted-edit nuvlabox-status {:doc nb-status}))
+    (kafka-crud/publish-on-edit
+      "nuvlabox-status"
+      (r/json-response (assoc nb-status :id nuvlabox-status)))
+    nuvlabox))
 
 (defn get-jobs
   [nb-id]
@@ -394,31 +408,26 @@
        :resources
        (mapv :id)))
 
-(defn heartbeat-status
-  [nuvlabox-status {:keys [id heartbeat-interval] :as _nuvlabox} online]
-  (merge nuvlabox-status
-         (cond-> {:online online}
-                 online (assoc :last-heartbeat (time/now-str)
-                               :next-heartbeat (compute-next-heartbeat heartbeat-interval)
-                               :jobs (get-jobs id)))))
+(defn pending-jobs
+  [{:keys [id] :as _nuvlabox}]
+  {:jobs (get-jobs id)})
+
+(defn nuvlabox-request?
+  [request]
+  (str/starts-with? (auth/current-active-claim request) "nuvlabox/"))
 
 (defn legacy-heartbeat
-  [{nuvlabox-id :parent :as nuvlabox-status} request]
-  (or
+  [{:keys [parent] :as nuvlabox-status} request]
+  (if (nuvlabox-request? request)
     (try
-      (and (nuvlabox-request? request)
-           (let [nb (crud/retrieve-by-id-as-admin nuvlabox-id)]
-             (and (not (has-heartbeat-support? nb))
-                  (heartbeat-status nuvlabox-status nb true))))
-      (catch Exception _))
+      (let [nb (crud/retrieve-by-id-as-admin parent)]
+        (if (has-heartbeat-support? nb)
+          nuvlabox-status
+          (merge nuvlabox-status
+                 (status-online-attributes nb true)
+                 {:jobs (get-jobs parent)})))
+      (catch Exception ex
+        (log/error "Legacy heartbeat failed for" parent ":"
+                   (ex-message ex) "-" (ex-data ex))
+        nuvlabox-status))
     nuvlabox-status))
-
-
-(defn set-status
-  [{:keys [nuvlabox-status] :as nuvlabox} online]
-  (if nuvlabox-status
-    (->> (heartbeat-status {} nuvlabox online)
-         (crud/edit-by-id-as-admin nuvlabox-status)
-         r/throw-response-not-200
-         :body)
-    (throw (r/ex-response "Not defined nuvlabox-status id!" 500))))

@@ -536,9 +536,8 @@ particular NuvlaBox release.
       (-> (db/retrieve id request)
           (a/throw-cannot-manage request)
           (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
-          (utils/set-heartbeat-interval)
-          (utils/set-status true)
-          (select-keys [:jobs])
+          (utils/set-online! true)
+          (utils/pending-jobs)
           r/json-response))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -551,7 +550,7 @@ particular NuvlaBox release.
           (a/throw-not-admin-request request)
           (u/throw-can-not-do-action
             utils/can-set-offline? utils/action-set-offline)
-          (utils/set-status false))
+          (utils/set-online! false))
       (r/map-response "offline" 200)
       (catch Exception e
         (or (ex-data e) (throw e))))))
