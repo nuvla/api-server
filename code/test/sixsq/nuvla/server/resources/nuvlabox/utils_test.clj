@@ -3,6 +3,7 @@
     [clojure.test :refer [deftest is testing]]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.pricing.payment :as payment]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as t]
     [sixsq.nuvla.server.util.time :as time]))
@@ -26,7 +27,6 @@
 (deftest can-heartbeat?
   (is (false? (t/can-heartbeat? {})))
   (is (false? (t/can-heartbeat? {:state t/state-suspended})))
-  (is (true? (t/can-heartbeat? {:state t/state-new})))
   (is (true? (t/can-heartbeat? {:state t/state-commissioned})))
   (is (true? (t/can-heartbeat? {:state        t/state-commissioned
                                  :capabilities ["A"]})))
@@ -76,13 +76,11 @@
           (t/throw-value-should-be-bigger request-user-nok :some-key 10)))
     (is (= request-admin (t/throw-value-should-be-bigger request-admin :some-key 10)))))
 
-(deftest set-online
-  (is (= {} (t/set-online {} nil nil)))
-  (is (= {} (t/set-online {} nil false)))
-  (is (= {:online true} (t/set-online {} true nil)))
-  (is (= {:online      true
-          :online-prev true} (t/set-online {} true true)))
-  (is (= {:online      false
-          :online-prev true} (t/set-online {} false true)))
-  (is (= {:online      false
-          :online-prev false} (t/set-online {} false false))))
+(deftest legacy-heartbeat
+  (with-redefs [t/nuvlabox-request? (constantly true)
+                crud/retrieve-by-id-as-admin #(throw (ex-info "error" {:id %}))]
+    (let [nb-status {:parent "nuvlabox/1"}]
+      (with-redefs [crud/retrieve-by-id-as-admin #(throw (ex-info "error" {:id %}))]
+        (is (= nb-status (t/legacy-heartbeat nb-status {}))))
+      (with-redefs [crud/retrieve-by-id-as-admin #(hash-map :id %)]
+        (is (true? (:online (t/legacy-heartbeat nb-status {}))))))))

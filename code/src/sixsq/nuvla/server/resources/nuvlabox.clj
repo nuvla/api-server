@@ -279,7 +279,7 @@ particular NuvlaBox release.
         (wf-utils/update-playbooks id acl)))))
 
 
-(def edit-impl (std-crud/edit-fn resource-type))
+(def edit-impl (std-crud/edit-fn resource-type :immutable-keys [:online]))
 
 (defn restricted-body
   [{:keys [name description location tags ssh-keys capabilities acl
@@ -322,7 +322,6 @@ particular NuvlaBox release.
                     utils/throw-heartbeat-interval-should-be-bigger
                     utils/throw-vpn-server-id-should-be-vpn
                     (restrict-request-body current)
-                    (utils/set-online-request current)
                     edit-impl)]
     (ka-crud/publish-on-edit resource-type resp)
     (edit-subresources current (:body resp))
@@ -527,6 +526,32 @@ particular NuvlaBox release.
             utils/can-decommission? "decommission")
           (decommission-sync request)
           (decommission-async request))
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
+
+(defmethod crud/do-action [resource-type utils/action-heartbeat]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
+          (utils/set-online! true)
+          (utils/pending-jobs)
+          r/json-response))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+(defmethod crud/do-action [resource-type utils/action-set-offline]
+  [{{uuid :uuid} :params :as request}]
+  (let [id (str resource-type "/" uuid)]
+    (try
+      (-> (db/retrieve id nil)
+          (a/throw-not-admin-request request)
+          (u/throw-can-not-do-action
+            utils/can-set-offline? utils/action-set-offline)
+          (utils/set-online! false))
+      (r/map-response "offline" 200)
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
@@ -1022,23 +1047,6 @@ particular NuvlaBox release.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-(defmethod crud/do-action [resource-type utils/action-heartbeat]
-  [{{uuid :uuid} :params :as request}]
-  (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
-          (a/throw-cannot-manage request)
-          (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
-          utils/set-default-heartbeat-interval
-          utils/update-last-heartbeat
-          utils/update-next-heartbeat
-          ;u/update-timestamps
-          (utils/set-online-resource true)
-          (db/edit request))
-      (r/json-response {:jobs (utils/get-jobs id)}))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
-
 
 ;;
 ;; Set operation
@@ -1077,6 +1085,7 @@ particular NuvlaBox release.
         generate-new-key-op  (u/action-map id :generate-new-api-key)
         unsuspend-op         (u/action-map id :unsuspend)
         heartbeat-op         (u/action-map id utils/action-heartbeat)
+        set-offline-op       (u/action-map id utils/action-set-offline)
         can-manage?          (a/can-manage? resource request)]
     (assoc resource
       :operations
@@ -1084,6 +1093,9 @@ particular NuvlaBox release.
               (a/can-edit? resource request) (conj edit-op)
               (and (a/can-delete? resource request)
                    (utils/can-delete? resource)) (conj delete-op)
+              (and
+                (a/is-admin-request? request)
+                (utils/can-set-offline? resource)) (conj set-offline-op)
               can-manage?
               (cond-> (utils/can-activate? resource) (conj activate-op)
                       (utils/can-commission? resource) (conj commission-op)
@@ -1101,8 +1113,7 @@ particular NuvlaBox release.
                       (utils/can-create-log? resource) (conj create-log-op)
                       (utils/can-generate-new-api-key? resource) (conj generate-new-key-op)
                       (utils/can-unsuspend? resource) (conj unsuspend-op)
-                      (utils/can-heartbeat? resource) (conj heartbeat-op)
-                      )))))
+                      (utils/can-heartbeat? resource) (conj heartbeat-op))))))
 
 ;;
 ;; initialization

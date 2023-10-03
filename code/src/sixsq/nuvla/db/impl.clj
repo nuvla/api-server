@@ -32,6 +32,8 @@
 (defn edit [data options]
   (p/edit *impl* data options))
 
+(defn scripted-edit [id options]
+  (p/scripted-edit *impl* id options))
 
 (defn delete [data options]
   (p/delete *impl* data options))

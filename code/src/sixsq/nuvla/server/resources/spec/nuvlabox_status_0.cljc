@@ -18,6 +18,14 @@
     :json-schema/description "timestamp for next heartbeat update"
     :json-schema/order 31))
 
+(s/def ::last-heartbeat
+  (assoc (st/spec ::core/timestamp)
+    :name "last-heartbeat"
+    :json-schema/display-name "last heartbeat"
+    :json-schema/description "timestamp for last heartbeat update"
+
+    :json-schema/order 40))
+
 (s/def ::current-time
   (assoc (st/spec ::core/timestamp)
     :name "current-time"
@@ -738,7 +746,9 @@
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
                      {:req-un [::status]
-                      :opt-un [::current-time
+                      :opt-un [::next-heartbeat
+                               ::last-heartbeat
+                               ::current-time
                                ::comment
                                ::resources
                                ::resources-prev
@@ -761,10 +771,7 @@
                                ::installation-parameters
                                ::jobs
                                ::swarm-node-cert-expiry-date
-                               ::temperatures
-                               ::container-plugins
-
-                               ;; deprecated
-                               ::next-heartbeat
                                ::online
-                               ::online-prev]}))
+                               ::online-prev
+                               ::temperatures
+                               ::container-plugins]}))

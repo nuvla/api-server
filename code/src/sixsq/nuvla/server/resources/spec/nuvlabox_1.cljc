@@ -39,9 +39,6 @@
                                ::nb-0/ssh-keys
                                ::nb-0/capabilities
                                ::nb-0/online
-                               ::nb-0/online-prev
                                ::nb-0/inferred-location
                                ::nb-0/nuvlabox-engine-version
-                               ::nb-0/heartbeat-interval
-                               ::nb-0/last-heartbeat
-                               ::nb-0/next-heartbeat]}))
+                               ::nb-0/heartbeat-interval]}))

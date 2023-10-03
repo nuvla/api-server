@@ -59,7 +59,8 @@
                :ssh-keys                       ["credential/aaa-bbb-ccc", "credential/111-222-ccc"]
                :capabilities                   ["NUVLA_JOB_PULL", "SYS_ADMIN"]
                :online                         true
-               :host-level-management-api-key  "credential/123-abc"})
+               :host-level-management-api-key  "credential/123-abc"
+               :heartbeat-interval             20})
 
 
 (deftest check-nuvlabox
@@ -99,5 +100,6 @@
                  :ssh-keys
                  :capabilities
                  :online
-                 :host-level-management-api-key}]
+                 :host-level-management-api-key
+                 :heartbeat-interval}]
     (stu/is-valid ::nb-1/schema (dissoc valid-nb attr))))

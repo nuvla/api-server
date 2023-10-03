@@ -222,7 +222,9 @@
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
                      {:req-un [::nb-status-0/status]
-                      :opt-un [::nb-status-0/current-time
+                      :opt-un [::nb-status-0/next-heartbeat
+                               ::nb-status-0/last-heartbeat
+                               ::nb-status-0/current-time
                                ::nb-status-0/resources
                                ::nb-status-0/resources-prev
                                ::nb-status-0/operating-system
@@ -241,6 +243,8 @@
                                ::nb-status-0/installation-parameters
                                ::nb-status-0/jobs
                                ::nb-status-0/swarm-node-cert-expiry-date
+                               ::nb-status-0/online
+                               ::nb-status-0/online-prev
                                ::nb-status-0/kubelet-version
                                ::host-user-home
                                ::node-id
@@ -254,10 +258,5 @@
                                ::orchestrator
                                ::nb-status-0/temperatures
                                ::components
-                               ::network
-
-                               ;; deprecated
-                               ::nb-status-0/next-heartbeat
-                               ::nb-status-0/online
-                               ::nb-status-0/online-prev]}))
+                               ::network]}))
 

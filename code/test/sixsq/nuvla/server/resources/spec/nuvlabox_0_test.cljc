@@ -56,7 +56,8 @@
                :ssh-keys                      []
                :capabilities                  []
                :online                        true
-               :host-level-management-api-key "credential/123-abc"})
+               :host-level-management-api-key "credential/123-abc"
+               :heartbeat-interval            20})
 
 
 (deftest check-nuvlabox
@@ -94,5 +95,6 @@
                  :ssh-keys
                  :capabilities
                  :online
-                 :host-level-management-api-key}]
+                 :host-level-management-api-key
+                 :heartbeat-interval}]
     (stu/is-valid ::nb-0/schema (dissoc valid-nb attr))))
