@@ -202,7 +202,6 @@
             (is (= resources-prev (:resources-prev (db/retrieve state-id {}))))
 
             ;; admin edition can set online flag
-            ;; no :resources rotation as no update is done
             (-> session-admin
                 (request state-url
                          :request-method :put
@@ -210,9 +209,9 @@
                 (ltu/body->edn)
                 (ltu/is-status 200)
                 (ltu/is-key-value :resources resources-updated)
-                (ltu/is-key-value :resources-prev nil))
+                (ltu/is-key-value :resources-prev nil)))
 
-            (is (= resources-prev (:resources-prev (db/retrieve state-id {})))))
+          (is (= resources-updated (:resources-prev (db/retrieve state-id {}))))
 
 
           (let [resources-prev (-> session-nb

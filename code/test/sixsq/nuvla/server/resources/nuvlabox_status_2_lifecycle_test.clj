@@ -144,7 +144,7 @@
 
           session-nb    (header session authn-info-header (str nuvlabox-id " " nuvlabox-id " group/nuvla-user group/nuvla-anon"))]
 
-      (testing "non-admin users cannot create a nuvlabox-status resource"
+      (testing "normal users cannot create a nuvlabox-status resource"
         (doseq [session [session-anon session-user]]
           (-> session
               (request base-uri
