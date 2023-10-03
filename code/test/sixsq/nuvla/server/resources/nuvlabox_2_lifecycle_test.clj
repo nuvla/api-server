@@ -1189,7 +1189,6 @@
               (is (= (:name srvc-endpoint) nb-name)))))))))
 
 
-;; FIXME
 (deftest execution-mode-action-lifecycle
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session       (-> (ltu/ring-app)

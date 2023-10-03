@@ -351,12 +351,6 @@
           request))
     request))
 
-(defn set-heartbeat-interval
-  [{:keys [heartbeat-interval] :as nuvlabox}]
-  (if (nil? heartbeat-interval)
-    (assoc nuvlabox :heartbeat-interval default-heartbeat-interval)
-    nuvlabox))
-
 (defn compute-next-heartbeat
   [interval-in-seconds]
   (some-> interval-in-seconds
@@ -418,16 +412,14 @@
 
 (defn legacy-heartbeat
   [{:keys [parent] :as nuvlabox-status} request]
-  (if (nuvlabox-request? request)
-    (try
-      (let [nb (crud/retrieve-by-id-as-admin parent)]
-        (if (has-heartbeat-support? nb)
-          nuvlabox-status
-          (merge nuvlabox-status
-                 (status-online-attributes nb true)
-                 {:jobs (get-jobs parent)})))
-      (catch Exception ex
-        (log/error "Legacy heartbeat failed for" parent ":"
-                   (ex-message ex) "-" (ex-data ex))
-        nuvlabox-status))
-    nuvlabox-status))
+  (or (and (nuvlabox-request? request)
+           (try
+             (let [nb (crud/retrieve-by-id-as-admin parent)]
+               (when (not (has-heartbeat-support? nb))
+                 (merge nuvlabox-status
+                        (status-online-attributes nb true)
+                        {:jobs (get-jobs parent)})))
+             (catch Exception ex
+               (log/error "Legacy heartbeat failed for" parent ":"
+                          (ex-message ex) "-" (ex-data ex)))))
+      nuvlabox-status))
