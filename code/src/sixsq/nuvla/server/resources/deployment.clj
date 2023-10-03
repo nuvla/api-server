@@ -134,7 +134,7 @@ a container orchestration engine.
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defn pre-validate-hook
-  [current {{:keys [parent acl module execution-mode]} :body :as request}]
+  [current {{:keys [parent module] :as next} :body :as request}]
   (let [id             (:id current)
         cred-id        (or parent (:parent current))
         cred           (some-> cred-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request))
@@ -143,32 +143,18 @@ a container orchestration engine.
         infra          (some-> infra-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request))
         infra-name     (:name infra)
         nb-id          (utils/infra->nb-id infra)
-        nb-name        (some-> nb-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request) :name)
+        nb             (some-> nb-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request))
+        nb-name        (:name nb)
         dep-set-id     (:deployment-set current)
         dep-set-name   (some-> dep-set-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request) :name)
-        execution-mode (or execution-mode
-                           (when (not= parent (:parent current))
-                             (utils/default-execution-mode nb-id))
-                           (:execution-mode current)
-                           (utils/default-execution-mode nb-id))
-        new-acl        (-> (or acl (:acl current))
-                           (a/acl-append :owners (:owner current))
-                           (a/acl-append :view-acl id)
-                           (a/acl-append :edit-data id)
-                           (a/acl-append :edit-data nb-id)
-                           (cond->
-                             (and (some? (:nuvlabox current))
-                                  (not= nb-id (:nuvlabox current)))
-                             (a/acl-remove (:nuvlabox current))))
+        execution-mode (utils/get-execution-mode current next nb)
+        new-acl        (utils/get-acl current next nb-id)
         is-admin?      (a/is-admin-request? request)
         acl-updated?   (not= new-acl (:acl current))]
     (when acl-updated?
       (utils/propagate-acl-to-dep-parameters id new-acl))
     (cond-> current
-            (and (not is-admin?) module) (update :module merge
-                                                 (select-keys
-                                                   (:module current)
-                                                   [:href :price :license :acl]))
+            (and module (not is-admin?)) (utils/restrict-module-changes next)
             new-acl (assoc :acl new-acl)
             cred-name (assoc :credential-name cred-name)
             infra-id (assoc :infrastructure-service infra-id)
@@ -221,7 +207,7 @@ a container orchestration engine.
 
 (def edit-impl (std-crud/edit-fn resource-type
                                  :immutable-keys [:owner :infrastructure-service
-                                                   :subscription-id :deployment-set]
+                                                  :subscription-id :deployment-set]
                                  :pre-validate-hook pre-validate-hook))
 
 
