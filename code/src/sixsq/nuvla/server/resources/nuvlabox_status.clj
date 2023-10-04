@@ -6,7 +6,6 @@ NuvlaBox activation, although they can be created manually by an administrator.
 Versioned subclasses define the attributes for a particular NuvlaBox release.
 "
   (:require
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -108,12 +107,15 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 
 
 (defn pre-delete-attrs-hook
-  [{resources-prev :resources :as resource}
+  [{nb-id          :parent
+    resources-prev :resources :as resource}
    request]
-  (-> (nb-utils/throw-parent-nuvlabox-is-suspended resource)
-      (nb-utils/legacy-heartbeat request)
-      (cond-> (some? resources-prev)
-              (assoc :resources-prev resources-prev))))
+  (let [nb (crud/retrieve-by-id-as-admin nb-id)]
+    (-> (nb-utils/throw-parent-nuvlabox-is-suspended resource nb)
+        (nb-utils/legacy-heartbeat request nb)
+        (utils/status-telemetry-attributes nb)
+        (cond-> (some? resources-prev)
+                (assoc :resources-prev resources-prev)))))
 
 (defn post-edit
   [response]
@@ -122,19 +124,17 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
   response)
 
 (defn pre-validate-hook
-  [{:keys [id] :as resource} request]
+  [{:keys [parent] :as resource} request]
   (let [exception (try
                     (crud/validate resource)
                     nil
                     (catch Exception ex
                       ex))]
     (if exception
-      (do (-> (db/retrieve id nil)
-              (nb-utils/legacy-heartbeat request)
-              (db/edit nil)
-              (post-edit))
-          (throw exception))
-      resource)))
+      (do
+        (crud/edit (dissoc request :body))
+        (throw exception))
+      (assoc resource :jobs (nb-utils/get-jobs parent)))))
 
 (def edit-impl (std-crud/edit-fn resource-type
                                  :pre-delete-attrs-hook pre-delete-attrs-hook
@@ -142,7 +142,9 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                                  :immutable-keys [:online
                                                   :online-prev
                                                   :last-heartbeat
-                                                  :next-heartbeat]))
+                                                  :next-heartbeat
+                                                  :last-telemetry
+                                                  :next-telemetry]))
 
 
 (defmethod crud/edit resource-type

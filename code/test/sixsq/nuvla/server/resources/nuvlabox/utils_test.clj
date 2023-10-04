@@ -34,10 +34,12 @@
                                 :capabilities [t/capability-heartbeat]}))))
 
 (deftest compute-next-heartbeat
-  (is (nil? (t/compute-next-heartbeat nil)))
   (with-redefs [time/now #(time/date-from-str "2023-08-24T13:14:39.121Z")]
-    (is (= (t/compute-next-heartbeat 10) "2023-08-24T13:15:09.121Z"))
-    (is (= (t/compute-next-heartbeat 20) "2023-08-24T13:15:29.121Z"))))
+    (let [tolerance-fn #(-> % (* 2) (+ 10))]
+     (is (nil? (t/compute-next-report nil tolerance-fn)))
+     (is (= (t/compute-next-report 10 tolerance-fn) "2023-08-24T13:15:09.121Z"))
+     (is (= (t/compute-next-report 20 tolerance-fn) "2023-08-24T13:15:29.121Z")))
+    (is (= (t/compute-next-report 10 #(+ % 10)) "2023-08-24T13:14:59.121Z"))))
 
 (deftest throw-when-payment-required
   (testing "stripe is disabled"
@@ -77,10 +79,8 @@
     (is (= request-admin (t/throw-value-should-be-bigger request-admin :some-key 10)))))
 
 (deftest legacy-heartbeat
-  (with-redefs [t/nuvlabox-request? (constantly true)
-                crud/retrieve-by-id-as-admin #(throw (ex-info "error" {:id %}))]
-    (let [nb-status {:parent "nuvlabox/1"}]
-      (with-redefs [crud/retrieve-by-id-as-admin #(throw (ex-info "error" {:id %}))]
-        (is (= nb-status (t/legacy-heartbeat nb-status {}))))
-      (with-redefs [crud/retrieve-by-id-as-admin #(hash-map :id %)]
-        (is (true? (:online (t/legacy-heartbeat nb-status {}))))))))
+  (let [nb-status {:parent "nuvlabox/1"}]
+    (with-redefs [t/nuvlabox-request? (constantly true)]
+      (is (true? (:online (t/legacy-heartbeat nb-status {} #(hash-map :id %))))))
+    (with-redefs [t/nuvlabox-request? (constantly false)]
+      (is (nil? (:online (t/legacy-heartbeat nb-status {} #(hash-map :id %))))))))

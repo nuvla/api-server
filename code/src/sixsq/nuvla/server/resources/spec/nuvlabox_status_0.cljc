@@ -26,6 +26,21 @@
 
     :json-schema/order 40))
 
+(s/def ::next-telemetry
+  (assoc (st/spec ::core/timestamp)
+    :name "next-telemetryt"
+    :json-schema/display-name "next telemetry"
+    :json-schema/description "timestamp for next telemetry update"
+    :json-schema/order 41))
+
+(s/def ::last-telemetry
+  (assoc (st/spec ::core/timestamp)
+    :name "last-telemetry"
+    :json-schema/display-name "last telemetry"
+    :json-schema/description "timestamp for last telemetry update"
+
+    :json-schema/order 42))
+
 (s/def ::current-time
   (assoc (st/spec ::core/timestamp)
     :name "current-time"
@@ -748,6 +763,8 @@
                      {:req-un [::status]
                       :opt-un [::next-heartbeat
                                ::last-heartbeat
+                               ::next-telemetry
+                               ::last-telemetry
                                ::current-time
                                ::comment
                                ::resources

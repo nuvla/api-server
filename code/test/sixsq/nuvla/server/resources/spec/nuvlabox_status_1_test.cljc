@@ -26,6 +26,9 @@
 
             :next-heartbeat          timestamp
             :last-heartbeat          timestamp
+            :next-telemetry              timestamp
+            :last-telemetry              timestamp
+
             :current-time            timestamp
 
             :resources               {:cpu               {:capacity 8
@@ -90,7 +93,8 @@
     (stu/is-invalid ::nb-status-1/schema (dissoc state attr)))
 
   ;; optional
-  (doseq [attr #{:next-heartbeat :last-heartbeat :current-time :resources :wifi-password :comment
+  (doseq [attr #{:next-heartbeat :last-heartbeat  :next-telemetry :last-telemetry
+                 :current-time :resources :wifi-password :comment
                  :inferred-location :nuvlabox-api-endpoint :gpio-pins :nuvlabox-engine-version
                  :docker-plugins :vulnerabilities :swarm-node-id :installation-parameters
                  :power-consumption ::jobs :swarm-node-cert-expiry-date :online}]

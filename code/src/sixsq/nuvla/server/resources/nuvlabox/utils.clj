@@ -124,10 +124,12 @@
     nuvlabox))
 
 (defn throw-parent-nuvlabox-is-suspended
-  [{:keys [parent] :as resource}]
-  (let [nuvlabox (crud/retrieve-by-id-as-admin parent)]
-    (throw-nuvlabox-is-suspended nuvlabox)
-    resource))
+  ([{:keys [parent] :as resource}]
+   (throw-parent-nuvlabox-is-suspended
+     resource (crud/retrieve-by-id-as-admin parent)))
+  ([resource nuvlabox]
+   (throw-nuvlabox-is-suspended nuvlabox)
+   resource))
 
 (defn set-acl-nuvlabox-view-only
   ([nuvlabox-acl]
@@ -351,11 +353,10 @@
           request))
     request))
 
-(defn compute-next-heartbeat
-  [interval-in-seconds]
+(defn compute-next-report
+  [interval-in-seconds tolerance-fn]
   (some-> interval-in-seconds
-          (* 2)
-          (+ 10)
+          tolerance-fn
           (time/from-now :seconds)
           time/to-str))
 
@@ -363,10 +364,12 @@
   [{:keys [heartbeat-interval online]
     :or   {heartbeat-interval default-heartbeat-interval}
     :as   _nuvlabox} online-new]
-  (cond-> {:online online-new}
+  (cond-> {:online  online-new
+           :updated (time/now-str)}
           online-new (assoc :last-heartbeat (time/now-str)
-                            :next-heartbeat (compute-next-heartbeat
-                                              heartbeat-interval))
+                            :next-heartbeat (compute-next-report
+                                              heartbeat-interval
+                                              #(-> % (* 2) (+ 10))))
           (some? online)
           (assoc :online-prev online)))
 
@@ -377,7 +380,8 @@
   (let [nb-status (status-online-attributes nuvlabox online-new)]
     (r/throw-response-not-200
       (db/scripted-edit id {:doc {:online             online-new
-                                  :heartbeat-interval heartbeat-interval}}))
+                                  :heartbeat-interval heartbeat-interval
+                                  :updated            (time/now-str)}}))
     (r/throw-response-not-200
       (db/scripted-edit nuvlabox-status {:doc nb-status}))
     (kafka-crud/publish-on-edit
@@ -411,15 +415,8 @@
   (str/starts-with? (auth/current-active-claim request) "nuvlabox/"))
 
 (defn legacy-heartbeat
-  [{:keys [parent] :as nuvlabox-status} request]
-  (or (and (nuvlabox-request? request)
-           (try
-             (let [nb (crud/retrieve-by-id-as-admin parent)]
-               (when (not (has-heartbeat-support? nb))
-                 (merge nuvlabox-status
-                        (status-online-attributes nb true)
-                        {:jobs (get-jobs parent)})))
-             (catch Exception ex
-               (log/error "Legacy heartbeat failed for" parent ":"
-                          (ex-message ex) "-" (ex-data ex)))))
-      nuvlabox-status))
+  [nuvlabox-status request nuvlabox]
+  (if (and (nuvlabox-request? request)
+           (not (has-heartbeat-support? nuvlabox)))
+    (merge nuvlabox-status (status-online-attributes nuvlabox true))
+    nuvlabox-status))
