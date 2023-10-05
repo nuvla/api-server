@@ -26,4 +26,4 @@
     :as   _nuvlabox}]
   (assoc nuvlabox-status
     :last-telemetry (time/now-str)
-    :next-telemetry (nb-utils/compute-next-report refresh-interval #(+ % 10))))
+    :next-telemetry (nb-utils/compute-next-report refresh-interval #(+ % 30))))
