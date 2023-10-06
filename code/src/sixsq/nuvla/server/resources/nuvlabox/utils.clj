@@ -334,7 +334,7 @@
             (>= v min-value))
       request
       (throw (r/ex-response
-               (str (name k) " should be bigger than " min-value "!")
+               (str (name k) " should not be less than " min-value "!")
                400)))))
 
 (defn throw-refresh-interval-should-be-bigger

@@ -74,7 +74,7 @@
     (is (= request (t/throw-value-should-be-bigger request :some-key 10)))
     (is (thrown-with-msg?
           Exception
-          #"some-key should be bigger than 10!"
+          #"some-key should not be less than 10!"
           (t/throw-value-should-be-bigger request-user-nok :some-key 10)))
     (is (= request-admin (t/throw-value-should-be-bigger request-admin :some-key 10)))))
 
