@@ -587,10 +587,10 @@
                 job-url       (with-redefs [crud/get-resource-throw-nok
                                             (constantly u-applications-sets-v11)]
                                 (-> session-user
-                                   (request update-op-url)
-                                   ltu/body->edn
-                                   (ltu/is-status 202)
-                                   ltu/location-url))]
+                                    (request update-op-url)
+                                    ltu/body->edn
+                                    (ltu/is-status 202)
+                                    ltu/location-url))]
             (-> session-user
                 (request job-url)
                 ltu/body->edn
@@ -653,10 +653,10 @@
                 job-url     (with-redefs [crud/get-resource-throw-nok
                                           (constantly u-applications-sets-v11)]
                               (-> session-user
-                                 (request stop-op-url)
-                                 (ltu/body->edn)
-                                 (ltu/is-status 202)
-                                 (ltu/location-url)))]
+                                  (request stop-op-url)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 202)
+                                  (ltu/location-url)))]
             (-> session-user
                 (request job-url)
                 (ltu/body->edn)
@@ -703,10 +703,10 @@
               (let [job-url (with-redefs [crud/get-resource-throw-nok
                                           (constantly u-applications-sets-v11)]
                               (-> session-user
-                                 (request force-delete-op)
-                                 (ltu/body->edn)
-                                 (ltu/is-status 202)
-                                 ltu/location-url))]
+                                  (request force-delete-op)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 202)
+                                  ltu/location-url))]
                 (-> session-admin
                     (request job-url
                              :request-method :put
@@ -722,10 +722,10 @@
               (let [job-url (with-redefs [crud/get-resource-throw-nok
                                           (constantly u-applications-sets-v11)]
                               (-> session-user
-                                 (request force-delete-op)
-                                 (ltu/body->edn)
-                                 (ltu/is-status 202)
-                                 ltu/location-url))]
+                                  (request force-delete-op)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 202)
+                                  ltu/location-url))]
                 (-> session-admin
                     (request job-url
                              :request-method :put
@@ -767,14 +767,15 @@
                             ltu/body->edn
                             (ltu/is-status 201)
                             ltu/location-url)
-            app-set-id  (-> session-user
+            dep-set     (-> session-user
                             (request dep-set-url)
                             ltu/body->edn
                             (ltu/is-status 200)
                             (ltu/is-key-value
                               (comp :fleet first :overwrites first)
                               :applications-sets fleet)
-                            ltu/body
+                            ltu/body)
+            app-set-id  (-> dep-set
                             :applications-sets
                             first
                             :id)
@@ -790,7 +791,47 @@
               (ltu/is-key-value (comp first :applications first :applications-sets)
                                 :content {:id      module-id
                                           :version expected-version})
-              (ltu/is-key-value :parent-path module-utils/project-apps-sets)))))))
+              (ltu/is-key-value :parent-path module-utils/project-apps-sets)))
+
+        (testing
+          "In edit call application set is replaced by a new one only when :modules key is specified"
+          (-> session-user
+              (request dep-set-url
+                       :request-method :put
+                       :body (json/write-str dep-set))
+              ltu/body->edn
+              (ltu/is-status 200))
+          (let [new-app-set-id (-> session-user
+                                   (request dep-set-url)
+                                   ltu/body->edn
+                                   (ltu/is-status 200)
+                                   (ltu/is-key-value
+                                     (comp :fleet first :overwrites first)
+                                     :applications-sets fleet)
+                                   ltu/body
+                                   :applications-sets
+                                   first
+                                   :id)]
+            (is (= new-app-set-id app-set-id)))
+          (-> session-user
+              (request dep-set-url
+                       :request-method :put
+                       :body (json/write-str (assoc dep-set :modules [m-id]
+                                                            :fleet   fleet)))
+              ltu/body->edn
+              (ltu/is-status 200))
+          (let [new-app-set-id (-> session-user
+                                   (request dep-set-url)
+                                   ltu/body->edn
+                                   (ltu/is-status 200)
+                                   (ltu/is-key-value
+                                     (comp :fleet first :overwrites first)
+                                     :applications-sets fleet)
+                                   ltu/body
+                                   :applications-sets
+                                   first
+                                   :id)]
+            (is (not= new-app-set-id app-set-id))))))))
 
 (deftest lifecycle-deployment-detach
   (binding [config-nuvla/*stripe-api-key* nil]

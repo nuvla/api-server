@@ -168,7 +168,7 @@ These resources represent a deployment set that regroups deployments.
   [resource request]
   (assoc resource :operational-status (divergence-map resource request)))
 
-(defn add-pre-validate-hook
+(defn add-edit-pre-validate-hook
   [resource request]
   (-> resource
       (create-app-set request)
@@ -330,7 +330,7 @@ These resources represent a deployment set that regroups deployments.
   [request]
   (standard-action request cancel-latest-job))
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-type add-pre-validate-hook))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type add-edit-pre-validate-hook))
 
 (defmethod crud/add resource-type
   [{{:keys [start]} :body :as request}]
@@ -349,7 +349,7 @@ These resources represent a deployment set that regroups deployments.
   [request]
   (retrieve-impl request))
 
-(def edit-impl (std-crud/edit-fn resource-type :pre-validate-hook pre-validate-hook))
+(def edit-impl (std-crud/edit-fn resource-type :pre-validate-hook add-edit-pre-validate-hook))
 
 (defmethod crud/edit resource-type
   [request]
