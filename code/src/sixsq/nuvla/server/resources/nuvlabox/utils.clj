@@ -1,15 +1,20 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.utils
   (:require
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.pricing.payment :as payment]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
+    [sixsq.nuvla.server.util.kafka-crud :as kafka-crud]
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.time :as time]))
 
 (def ^:const state-new "NEW")
 (def ^:const state-activated "ACTIVATED")
@@ -19,9 +24,26 @@
 (def ^:const state-suspended "SUSPENDED")
 (def ^:const state-error "ERROR")
 
+(def ^:const capability-job-pull "NUVLA_JOB_PULL")
+(def ^:const capability-heartbeat "NUVLA_HEARTBEAT")
+
+(def ^:const action-heartbeat "heartbeat")
+(def ^:const action-set-offline "set-offline")
+
+(def ^:const default-refresh-interval 60)
+(def ^:const default-heartbeat-interval 20)
+
 (defn is-version-before-2?
   [nuvlabox]
   (< (:version nuvlabox) 2))
+
+(defn has-capability?
+  [capability {:keys [capabilities] :as _nuvlabox}]
+  (contains? (set capabilities) capability))
+
+(def has-job-pull-support? (partial has-capability? capability-job-pull))
+
+(def has-heartbeat-support? (partial has-capability? capability-heartbeat))
 
 (def is-state-commissioned? (partial u/is-state? state-commissioned))
 
@@ -84,6 +106,14 @@
 
 (def can-unsuspend? (partial u/is-state? state-suspended))
 
+(defn can-heartbeat?
+  [nuvlabox]
+  (is-state-commissioned? nuvlabox))
+
+(defn can-set-offline?
+  [nuvlabox]
+  (is-state-commissioned? nuvlabox))
+
 (defn throw-nuvlabox-is-suspended
   [{:keys [id] :as nuvlabox}]
   (if (u/is-state? state-suspended nuvlabox)
@@ -94,10 +124,12 @@
     nuvlabox))
 
 (defn throw-parent-nuvlabox-is-suspended
-  [{:keys [parent] :as resource}]
-  (let [nuvlabox (crud/retrieve-by-id-as-admin parent)]
-    (throw-nuvlabox-is-suspended nuvlabox)
-    resource))
+  ([{:keys [parent] :as resource}]
+   (throw-parent-nuvlabox-is-suspended
+     resource (crud/retrieve-by-id-as-admin parent)))
+  ([resource nuvlabox]
+   (throw-nuvlabox-is-suspended nuvlabox)
+   resource))
 
 (defn set-acl-nuvlabox-view-only
   ([nuvlabox-acl]
@@ -189,16 +221,9 @@
                          (not-empty status-notes) (assoc :status-notes status-notes))]
     (action (assoc request :body new-body))))
 
-
-(defn has-capability?
-  [capability {:keys [capabilities] :as _nuvlabox}]
-  (contains? (set capabilities) capability))
-
-(def has-pull-support? (partial has-capability? "NUVLA_JOB_PULL"))
-
 (defn get-execution-mode
   [nuvlabox]
-  (if (has-pull-support? nuvlabox) "pull" "push"))
+  (if (has-job-pull-support? nuvlabox) "pull" "push"))
 
 (defn get-playbooks
   ([nuvlabox-id] (get-playbooks nuvlabox-id "MANAGEMENT"))
@@ -299,3 +324,99 @@
             (#{"active" "past_due" "trialing"} subs-status)))
     request
     (payment/throw-payment-required)))
+
+
+(defn throw-value-should-be-bigger
+  [request k min-value]
+  (let [v (get-in request [:body k])]
+    (if (or (nil? v)
+            (a/is-admin-request? request)
+            (>= v min-value))
+      request
+      (throw (r/ex-response
+               (str (name k) " should not be less than " min-value "!")
+               400)))))
+
+(defn throw-refresh-interval-should-be-bigger
+  [request]
+  (throw-value-should-be-bigger request :refresh-interval 60))
+
+(defn throw-heartbeat-interval-should-be-bigger
+  [request]
+  (throw-value-should-be-bigger request :heartbeat-interval 10))
+
+(defn throw-vpn-server-id-should-be-vpn
+  [{{:keys [vpn-server-id]} :body :as request}]
+  (if vpn-server-id
+    (let [vpn-service (vpn-utils/get-service vpn-server-id)]
+      (or (vpn-utils/check-service-subtype vpn-service)
+          request))
+    request))
+
+(defn compute-next-report
+  [interval-in-seconds tolerance-fn]
+  (some-> interval-in-seconds
+          tolerance-fn
+          (time/from-now :seconds)
+          time/to-str))
+
+(defn status-online-attributes
+  [{:keys [heartbeat-interval online]
+    :or   {heartbeat-interval default-heartbeat-interval}
+    :as   _nuvlabox} online-new]
+  (cond-> {:online  online-new
+           :updated (time/now-str)}
+          online-new (assoc :last-heartbeat (time/now-str)
+                            :next-heartbeat (compute-next-report
+                                              heartbeat-interval
+                                              #(-> % (* 2) (+ 10))))
+          (some? online)
+          (assoc :online-prev online)))
+
+(defn set-online!
+  [{:keys [id nuvlabox-status heartbeat-interval]
+    :or   {heartbeat-interval default-heartbeat-interval}
+    :as   nuvlabox} online-new]
+  (let [nb-status (status-online-attributes nuvlabox online-new)]
+    (r/throw-response-not-200
+      (db/scripted-edit id {:doc {:online             online-new
+                                  :heartbeat-interval heartbeat-interval
+                                  :updated            (time/now-str)}}))
+    (r/throw-response-not-200
+      (db/scripted-edit nuvlabox-status {:doc nb-status}))
+    (kafka-crud/publish-on-edit
+      "nuvlabox-status"
+      (r/json-response (assoc nb-status :id nuvlabox-status)))
+    nuvlabox))
+
+(defn get-jobs
+  [nb-id]
+  (->> {:params      {:resource-name "job"}
+        :cimi-params {:filter  (cimi-params-impl/cimi-filter
+                                 {:filter (str "execution-mode='pull' and "
+                                               "state!='FAILED' and "
+                                               "state!='SUCCESS' and state!='STOPPED'")})
+                      :select  ["id"]
+                      :orderby [["created" :asc]]}
+        :nuvla/authn {:user-id      nb-id
+                      :active-claim nb-id
+                      :claims       #{nb-id "group/nuvla-user" "group/nuvla-anon"}}}
+       crud/query
+       :body
+       :resources
+       (mapv :id)))
+
+(defn pending-jobs
+  [{:keys [id] :as _nuvlabox}]
+  {:jobs (get-jobs id)})
+
+(defn nuvlabox-request?
+  [request]
+  (str/starts-with? (auth/current-active-claim request) "nuvlabox/"))
+
+(defn legacy-heartbeat
+  [nuvlabox-status request nuvlabox]
+  (if (and (nuvlabox-request? request)
+           (not (has-heartbeat-support? nuvlabox)))
+    (merge nuvlabox-status (status-online-attributes nuvlabox true))
+    nuvlabox-status))

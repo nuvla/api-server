@@ -178,7 +178,7 @@
                                       (ltu/is-operation-present :start)
                                       (ltu/is-operation-present :clone)
                                       (ltu/is-operation-present :check-dct)
-                                      (ltu/is-key-value :execution-mode "mixed")
+                                      (ltu/is-key-value :execution-mode "push")
                                       (ltu/is-key-value :state "CREATED")
                                       (ltu/is-key-value :owner "user/jane"))
 

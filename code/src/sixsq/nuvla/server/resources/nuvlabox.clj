@@ -49,10 +49,6 @@ particular NuvlaBox release.
 ;;
 (def ^:const latest-version 2)
 
-
-(def ^:const default-refresh-interval 90)
-
-
 (def actions [{:name           "activate"
                :uri            "activate"
                :description    "activate the nuvlabox"
@@ -145,6 +141,20 @@ particular NuvlaBox release.
                :description    "unsuspend the nuvlabox"
                :method         "POST"
                :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           utils/action-heartbeat
+               :uri            utils/action-heartbeat
+               :description    "allow to receive heartbeat from nuvlabox"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           utils/action-set-offline
+               :uri            utils/action-set-offline
+               :description    "allow to job executor as admin to set nuvlabox as offline"
+               :method         "POST"
+               :input-message  "application/json"
                :output-message "application/json"}])
 
 
@@ -194,27 +204,27 @@ particular NuvlaBox release.
 
 
 (defmethod crud/add resource-type
-  [{{:keys [version refresh-interval vpn-server-id owner]
-     :or   {version          latest-version
-            refresh-interval default-refresh-interval}
+  [{{:keys [version refresh-interval heartbeat-interval owner]
+     :or   {version            latest-version
+            refresh-interval   utils/default-refresh-interval
+            heartbeat-interval utils/default-heartbeat-interval}
      :as   body} :body :as request}]
-  (let [authn-info (auth/current-authentication request)
-        is-admin?  (a/is-admin? authn-info)]
-    (when vpn-server-id
-      (let [vpn-service (vpn-utils/get-service vpn-server-id)]
-        (vpn-utils/check-service-subtype vpn-service)))
-
-    (utils/throw-when-payment-required request)
-
-    (let [nb-owner     (if is-admin? (or owner "group/nuvla-admin")
-                                     (auth/current-active-claim request))
-          new-nuvlabox (assoc body :version version
-                                   :state utils/state-new
-                                   :refresh-interval refresh-interval
-                                   :owner nb-owner)
-          resp         (add-impl (assoc request :body new-nuvlabox))]
-      (ka-crud/publish-on-add resource-type resp)
-      resp)))
+  (let [is-admin?    (-> request
+                         utils/throw-when-payment-required
+                         utils/throw-refresh-interval-should-be-bigger
+                         utils/throw-heartbeat-interval-should-be-bigger
+                         utils/throw-vpn-server-id-should-be-vpn
+                         a/is-admin-request?)
+        nb-owner     (if is-admin? (or owner "group/nuvla-admin")
+                                   (auth/current-active-claim request))
+        new-nuvlabox (assoc body :version version
+                                 :state utils/state-new
+                                 :refresh-interval refresh-interval
+                                 :heartbeat-interval heartbeat-interval
+                                 :owner nb-owner)
+        resp         (add-impl (assoc request :body new-nuvlabox))]
+    (ka-crud/publish-on-add resource-type resp)
+    resp))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -276,10 +286,11 @@ particular NuvlaBox release.
         (wf-utils/update-playbooks id acl)))))
 
 
-(def edit-impl (std-crud/edit-fn resource-type))
+(def edit-impl (std-crud/edit-fn resource-type :immutable-keys [:online]))
 
 (defn restricted-body
-  [{:keys [name description location tags ssh-keys capabilities acl] :as _body}
+  [{:keys [name description location tags ssh-keys capabilities acl
+           refresh-interval heartbeat-interval] :as _body}
    {:keys [id owner vpn-server-id] :as existing-resource}]
   (cond-> (dissoc existing-resource :name :description :location :tags :ssh-keys :capabilities :acl)
           name (assoc :name name)
@@ -288,6 +299,8 @@ particular NuvlaBox release.
           tags (assoc :tags tags)
           ssh-keys (assoc :ssh-keys ssh-keys)
           capabilities (assoc :capabilities capabilities)
+          refresh-interval (assoc :refresh-interval refresh-interval)
+          heartbeat-interval (assoc :heartbeat-interval heartbeat-interval)
           acl (assoc
                 :acl (-> acl
                          (select-keys [:view-meta :edit-data :edit-meta :delete])
@@ -300,21 +313,25 @@ particular NuvlaBox release.
                             :manage    (vec (distinct (concat (:manage acl) [id])))})
                          (acl-utils/normalize-acl)))))
 
+(defn restrict-request-body
+  [request resource]
+  (if (a/is-admin-request? request)
+    request
+    (update request :body restricted-body resource)))
 
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params :as request}]
-  (let [authn-info    (auth/current-authentication request)
-        is-not-admin? (not (a/is-admin? authn-info))
-        current       (-> (str resource-type "/" uuid)
-                          (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                          (a/throw-cannot-edit request))
-        {updated-nb :body :as resp} (-> request
-                                        (cond-> is-not-admin? (assoc :body (-> request
-                                                                               (u/delete-attributes current)
-                                                                               (restricted-body current))))
-                                        edit-impl)]
+  (let [current (-> (str resource-type "/" uuid)
+                    (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                    (a/throw-cannot-edit request))
+        resp    (-> request
+                    utils/throw-refresh-interval-should-be-bigger
+                    utils/throw-heartbeat-interval-should-be-bigger
+                    utils/throw-vpn-server-id-should-be-vpn
+                    (restrict-request-body current)
+                    edit-impl)]
     (ka-crud/publish-on-edit resource-type resp)
-    (edit-subresources current updated-nb)
+    (edit-subresources current (:body resp))
     resp))
 
 
@@ -516,6 +533,32 @@ particular NuvlaBox release.
             utils/can-decommission? "decommission")
           (decommission-sync request)
           (decommission-async request))
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
+
+(defmethod crud/do-action [resource-type utils/action-heartbeat]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
+          (utils/set-online! true)
+          (utils/pending-jobs)
+          r/json-response))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+(defmethod crud/do-action [resource-type utils/action-set-offline]
+  [{{uuid :uuid} :params :as request}]
+  (let [id (str resource-type "/" uuid)]
+    (try
+      (-> (db/retrieve id nil)
+          (a/throw-not-admin-request request)
+          (u/throw-can-not-do-action
+            utils/can-set-offline? utils/action-set-offline)
+          (utils/set-online! false))
+      (r/map-response "offline" 200)
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
@@ -1019,10 +1062,10 @@ particular NuvlaBox release.
 ;;
 ;; operations for states for owner are:
 ;;
-;;                edit delete activate commission decommission unsuspend ...
+;;                edit delete activate commission decommission unsuspend heartbeat set-offline
 ;; NEW             Y     Y       Y
 ;; ACTIVATED       Y                       Y           Y
-;; COMMISSIONED    Y                       Y           Y
+;; COMMISSIONED    Y                       Y           Y                     Y          Y
 ;; DECOMMISSIONING Y                                   Y
 ;; DECOMMISSIONED  Y     Y
 ;; ERROR           Y     Y                             Y
@@ -1048,6 +1091,8 @@ particular NuvlaBox release.
         create-log-op        (u/action-map id :create-log)
         generate-new-key-op  (u/action-map id :generate-new-api-key)
         unsuspend-op         (u/action-map id :unsuspend)
+        heartbeat-op         (u/action-map id utils/action-heartbeat)
+        set-offline-op       (u/action-map id utils/action-set-offline)
         can-manage?          (a/can-manage? resource request)]
     (assoc resource
       :operations
@@ -1055,6 +1100,9 @@ particular NuvlaBox release.
               (a/can-edit? resource request) (conj edit-op)
               (and (a/can-delete? resource request)
                    (utils/can-delete? resource)) (conj delete-op)
+              (and
+                (a/is-admin-request? request)
+                (utils/can-set-offline? resource)) (conj set-offline-op)
               can-manage?
               (cond-> (utils/can-activate? resource) (conj activate-op)
                       (utils/can-commission? resource) (conj commission-op)
@@ -1072,7 +1120,7 @@ particular NuvlaBox release.
                       (utils/can-create-log? resource) (conj create-log-op)
                       (utils/can-generate-new-api-key? resource) (conj generate-new-key-op)
                       (utils/can-unsuspend? resource) (conj unsuspend-op)
-                      )))))
+                      (utils/can-heartbeat? resource) (conj heartbeat-op))))))
 
 ;;
 ;; initialization

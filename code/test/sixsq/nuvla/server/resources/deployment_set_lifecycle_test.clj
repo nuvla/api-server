@@ -854,6 +854,10 @@
         (-> session-user
             (request detach-url)
             (ltu/body->edn)
+            (ltu/is-status 200))
+        (-> session-user
+            (request dep-url)
+            (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-key-value :deployment-set nil)
             (ltu/is-key-value :deployment-set-name nil)

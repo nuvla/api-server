@@ -16,6 +16,7 @@
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as nuvlabox-utils]
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -303,3 +304,36 @@
 (defn cred-edited?
   [parent current-parent]
   (boolean (and parent (not= parent current-parent))))
+
+(defn default-execution-mode
+  [nuvlabox]
+  (if nuvlabox
+    (if (nuvlabox-utils/has-job-pull-support? nuvlabox)
+      "pull"
+      "mixed")
+    "push"))
+
+(defn get-execution-mode
+  [current next nuvlabox]
+  (or (:execution-mode next)
+      (when (not= (:parent current) (:parent next))
+        (default-execution-mode nuvlabox))
+      (:execution-mode current)
+      (default-execution-mode nuvlabox)))
+
+(defn get-acl
+  [{:keys [id nuvlabox owner] :as current} {:keys [acl] :as _next} nb-id]
+  (-> (or acl (:acl current))
+      (a/acl-append :owners owner)
+      (a/acl-append :view-acl id)
+      (a/acl-append :edit-data id)
+      (a/acl-append :edit-data nb-id)
+      (cond->
+        (and (some? nuvlabox)
+             (not= nb-id nuvlabox))
+        (a/acl-remove nuvlabox))))
+
+(defn restrict-module-changes
+  [{:keys [module] :as current} next]
+  (let [immutable (select-keys module [:href :price :license :acl])]
+    (update current :module merge (:module next) immutable)))

@@ -57,7 +57,8 @@
                :capabilities                   ["NUVLA_JOB_PULL", "SYS_ADMIN"]
                :online                         true
                :host-level-management-api-key  "credential/123-abc"
-               :nuvlabox-engine-version        "1.2.3"})
+               :nuvlabox-engine-version        "1.2.3"
+               :heartbeat-interval             20})
 
 
 (deftest check-nuvlabox

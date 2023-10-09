@@ -6,17 +6,13 @@ NuvlaBox activation, although they can be created manually by an administrator.
 Versioned subclasses define the attributes for a particular NuvlaBox release.
 "
   (:require
-    [clojure.string :as str]
-    [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.nuvlabox.status-utils :as status-utils]
-    [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
+    [sixsq.nuvla.server.resources.nuvlabox.status-utils :as utils]
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.util.kafka-crud :as kafka-crud]
@@ -82,10 +78,10 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 
 (defn get-nuvlabox-status-name-description
   [nuvlabox-id nuvlabox-name]
-  {:name        (utils/format-nb-name
-                  nuvlabox-name (utils/short-nb-id nuvlabox-id))
+  {:name        (nb-utils/format-nb-name
+                  nuvlabox-name (nb-utils/short-nb-id nuvlabox-id))
    :description (str "NuvlaEdge status of "
-                     (utils/format-nb-name nuvlabox-name nuvlabox-id))})
+                     (nb-utils/format-nb-name nuvlabox-name nuvlabox-id))})
 
 (defn create-nuvlabox-status
   "Utility to facilitate creating a new nuvlabox-status resource from the
@@ -110,96 +106,69 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
     (add-impl request)))
 
 
-(defn get-jobs
-  [{nb-id :parent :as _resource}]
-  (->> {:params      {:resource-name "job"}
-        :cimi-params {:filter  (cimi-params-impl/cimi-filter
-                                 {:filter (str "execution-mode='pull' and "
-                                               "state!='FAILED' and "
-                                               "state!='SUCCESS' and state!='STOPPED'")})
-                      :select  ["id"]
-                      :orderby [["created" :asc]]}
-        :nuvla/authn {:user-id      nb-id
-                      :active-claim nb-id
-                      :claims       #{nb-id "group/nuvla-user" "group/nuvla-anon"}}}
-       crud/query
-       :body
-       :resources
-       (mapv :id)))
+(defn pre-delete-attrs-hook
+  [{nb-id          :parent
+    resources-prev :resources :as resource}
+   request]
+  (let [nb (crud/retrieve-by-id-as-admin nb-id)]
+    (-> (nb-utils/throw-parent-nuvlabox-is-suspended resource nb)
+        (nb-utils/legacy-heartbeat request nb)
+        (utils/status-telemetry-attributes nb)
+        (cond-> (some? resources-prev)
+                (assoc :resources-prev resources-prev)))))
 
-(defn edit-impl [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
-  (try
-    (let [{:keys [parent acl] :as current} (-> (str resource-type "/" uuid)
-                                               (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                                               (a/throw-cannot-edit request)
-                                               (utils/throw-parent-nuvlabox-is-suspended))
+(defn post-edit
+  [response]
+  (utils/denormalize-changes-nuvlabox (r/response-body response))
+  (kafka-crud/publish-on-edit resource-type response)
+  response)
 
-          jobs                     (get-jobs current)
-          rights                   (a/extract-rights (auth/current-authentication request) acl)
-          dissoc-keys              (-> (map keyword select)
-                                       set
-                                       u/strip-select-from-mandatory-attrs
-                                       (a/editable-keys rights))
-          current-without-selected (apply dissoc current dissoc-keys)
-          editable-body            (select-keys body (-> body keys (a/editable-keys rights)))
-          is-nuvlabox?             (-> (auth/current-active-claim request)
-                                       (str/starts-with? "nuvlabox/"))
-          online                   (or is-nuvlabox? (:online body))
-          online-prev              (:online current)
-          edit-fn                  #(let [response (db/edit %1 request)]
-                                      (status-utils/denormalize-changes-nuvlabox %)
-                                      (kafka-crud/publish-on-edit resource-type response)
-                                      response)
-          minimal-update           #(-> %
-                                        (u/update-timestamps)
-                                        (u/set-updated-by request)
-                                        (cond-> (some? online) (assoc :online online))
-                                        (cond-> online (assoc :next-heartbeat (status-utils/get-next-heartbeat parent)))
-                                        (cond-> (some? online-prev) (assoc :online-prev online-prev)))
-          new-status               (-> current-without-selected
-                                       (merge editable-body)
-                                       (minimal-update)
-                                       (assoc :jobs jobs)
-                                       (cond-> (contains? body :resources) (assoc :resources-prev (:resources current))))
-          spec-exception           (try
-                                     (crud/validate new-status)
-                                     nil
-                                     (catch Exception e
-                                       e))]
-      (if spec-exception
-        (do
-          (when is-nuvlabox?
-            ;; update heartbeat only when spec issue
-            (-> current
-                (minimal-update)
-                (crud/validate)
-                (edit-fn))
-            (log/errorf "Nuvlabox got a spec issue while sending telemetry: %s" parent))
-          (throw spec-exception))
-        (edit-fn new-status)))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
+(defn pre-validate-hook
+  [{:keys [parent] :as resource} request]
+  (let [exception (try
+                    (crud/validate resource)
+                    nil
+                    (catch Exception ex
+                      ex))]
+    (if exception
+      (do
+        (crud/edit (dissoc request :body))
+        (throw exception))
+      (assoc resource :jobs (nb-utils/get-jobs parent)))))
+
+(def edit-impl (std-crud/edit-fn resource-type
+                                 :pre-delete-attrs-hook pre-delete-attrs-hook
+                                 :pre-validate-hook pre-validate-hook
+                                 :immutable-keys [:online
+                                                  :online-prev
+                                                  :last-heartbeat
+                                                  :next-heartbeat
+                                                  :last-telemetry
+                                                  :next-telemetry]))
 
 
 (defmethod crud/edit resource-type
   [request]
-  (-> (edit-impl request)
-      remove-blacklisted))
+  (try
+    (-> (edit-impl request)
+        post-edit
+        remove-blacklisted)
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 
 (defn update-nuvlabox-status
   [id nuvlabox-id nuvlabox-name nuvlabox-acl]
-  (let [acl     (merge
-                  (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
-                  {:owners    ["group/nuvla-admin"]
-                   :edit-data [nuvlabox-id]})
-        request {:params      {:uuid          (u/id->uuid id)
-                               :resource-name resource-type}
-                 :body        (merge
-                                (get-nuvlabox-status-name-description nuvlabox-id nuvlabox-name)
-                                {:acl acl})
-                 :nuvla/authn auth/internal-identity}]
-    (edit-impl request)))
+  (let [acl (merge
+              (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
+              {:owners    ["group/nuvla-admin"]
+               :edit-data [nuvlabox-id]})]
+    (crud/edit {:params      {:uuid          (u/id->uuid id)
+                              :resource-name resource-type}
+                :body        (merge
+                               (get-nuvlabox-status-name-description nuvlabox-id nuvlabox-name)
+                               {:acl acl})
+                :nuvla/authn auth/internal-identity})))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))

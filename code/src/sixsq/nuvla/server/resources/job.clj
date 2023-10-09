@@ -118,13 +118,11 @@ request.
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [current  (-> (str resource-type "/" uuid)
-                       (db/retrieve (assoc-in request [:cimi-params :select] nil))
+    (let [job      (-> (str resource-type "/" uuid)
+                       (db/retrieve nil)
                        (a/throw-cannot-edit request)
-                       utils/throw-cannot-edit-in-final-state)
-          job      (-> request
-                       (update :body dissoc :target-resource :action)
-                       (u/delete-attributes current)
+                       utils/throw-cannot-edit-in-final-state
+                       (u/delete-attributes request [:target-resource :action])
                        (u/update-timestamps)
                        (u/set-updated-by request)
                        (utils/job-cond->edition)

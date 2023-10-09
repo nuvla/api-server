@@ -40,4 +40,5 @@
                                ::nb-0/capabilities
                                ::nb-0/online
                                ::nb-0/inferred-location
-                               ::nb-0/nuvlabox-engine-version]}))
+                               ::nb-0/nuvlabox-engine-version
+                               ::nb-0/heartbeat-interval]}))

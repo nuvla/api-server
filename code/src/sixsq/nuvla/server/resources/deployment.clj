@@ -133,6 +133,37 @@ a container orchestration engine.
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
+(defn pre-validate-hook
+  [current {{:keys [parent module] :as next} :body :as request}]
+  (let [id             (:id current)
+        cred-id        (or parent (:parent current))
+        cred           (some-> cred-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request))
+        cred-name      (:name cred)
+        infra-id       (:parent cred)
+        infra          (some-> infra-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request))
+        infra-name     (:name infra)
+        nb-id          (utils/infra->nb-id infra)
+        nb             (some-> nb-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request))
+        nb-name        (:name nb)
+        dep-set-id     (:deployment-set current)
+        dep-set-name   (some-> dep-set-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request) :name)
+        execution-mode (utils/get-execution-mode current next nb)
+        new-acl        (utils/get-acl current next nb-id)
+        is-admin?      (a/is-admin-request? request)
+        acl-updated?   (not= new-acl (:acl current))]
+    (when acl-updated?
+      (utils/propagate-acl-to-dep-parameters id new-acl))
+    (cond-> current
+            (and module (not is-admin?)) (utils/restrict-module-changes next)
+            new-acl (assoc :acl new-acl)
+            cred-name (assoc :credential-name cred-name)
+            infra-id (assoc :infrastructure-service infra-id)
+            infra-name (assoc :infrastructure-service-name infra-name)
+            nb-id (assoc :nuvlabox nb-id)
+            nb-name (assoc :nuvlabox-name nb-name)
+            dep-set-name (assoc :deployment-set-name dep-set-name)
+            execution-mode (assoc :execution-mode execution-mode))))
+
 (defn create-deployment
   [{:keys [parent] :as deployment} {:keys [base-uri] :as request}]
   (some-> parent (crud/get-resource-throw-nok request))
@@ -143,7 +174,8 @@ a container orchestration engine.
                                    :state "CREATED"
                                    :api-endpoint (str/replace-first base-uri #"/api/" "")
                                    :owner (auth/current-active-claim request))
-                            (utils/throw-when-payment-required request))
+                            (utils/throw-when-payment-required request)
+                            (pre-validate-hook (dissoc request :body)))
         create-response (add-impl (assoc request :body deployment))
 
         deployment-id   (get-in create-response [:body :resource-id])
@@ -154,26 +186,16 @@ a container orchestration engine.
 
     create-response))
 
-(defn get-deployment-set-name
-  [deployment-set-id request]
-  (some-> deployment-set-id
-          crud/retrieve-by-id-as-admin
-          (a/throw-cannot-view-data request)
-          :name))
-
 (defmethod crud/add resource-type
-  [{{:keys [parent execution-mode deployment-set app-set]
-     :or   {execution-mode "mixed"}} :body :as request}]
+  [{{:keys [parent execution-mode deployment-set app-set]} :body :as request}]
   (a/throw-cannot-add collection-acl request)
-  (let [deployment-set-name (get-deployment-set-name deployment-set request)]
-    (-> request
-        module-utils/resolve-from-module
-        (assoc :execution-mode execution-mode)
-        (cond-> deployment-set (assoc :deployment-set deployment-set))
-        (cond-> deployment-set-name (assoc :deployment-set-name deployment-set-name))
-        (cond-> app-set (assoc :app-set app-set))
-        (cond-> parent (assoc :parent parent))
-        (create-deployment request))))
+  (-> request
+      module-utils/resolve-from-module
+      (assoc :execution-mode execution-mode)
+      (cond-> deployment-set (assoc :deployment-set deployment-set))
+      (cond-> app-set (assoc :app-set app-set))
+      (cond-> parent (assoc :parent parent))
+      (create-deployment request)))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -183,58 +205,15 @@ a container orchestration engine.
   [request]
   (retrieve-impl request))
 
-
-(def edit-impl (std-crud/edit-fn resource-type))
+(def edit-impl (std-crud/edit-fn resource-type
+                                 :immutable-keys [:owner :infrastructure-service
+                                                  :subscription-id :deployment-set]
+                                 :pre-validate-hook pre-validate-hook))
 
 
 (defmethod crud/edit resource-type
-  [{{:keys [acl parent module deployment-set]} :body
-    {:keys [select]}                           :cimi-params :as request}]
-  (let [{:keys [id] :as current} (crud/get-resource-throw-nok request)
-        authn-info   (auth/current-authentication request)
-        cred-id      (or parent (:parent current))
-        cred-edited? (utils/cred-edited? parent (:parent current))
-        cred         (some-> cred-id
-                             crud/retrieve-by-id-as-admin
-                             (cond-> cred-edited? (a/throw-cannot-view request)))
-        infra-id     (:parent cred)
-        cred-name    (:name cred)
-        infra        (some-> infra-id crud/retrieve-by-id-as-admin)
-        infra-name   (:name cred)
-        nb-id        (utils/infra->nb-id infra)
-        nb-name      (some-> nb-id crud/retrieve-by-id-as-admin :name)
-        dep-set-id   (when-not (contains? select "deployment-set")
-                       (or deployment-set (:deployment-set current)))
-        dep-set-name (get-deployment-set-name dep-set-id request)
-        fixed-attr   (select-keys (:module current) [:href :price :license :acl])
-        is-user?     (not (a/is-admin? authn-info))
-        new-acl      (-> (or acl (:acl current))
-                         (a/acl-append :owners (:owner current))
-                         (a/acl-append :view-acl id)
-                         (a/acl-append :edit-data id)
-                         (a/acl-append :edit-data nb-id)
-                         (cond->
-                           (and (some? (:nuvlabox current))
-                                (not= nb-id (:nuvlabox current)))
-                           (a/acl-remove (:nuvlabox current))))
-        acl-updated? (not= new-acl (:acl current))]
-    (when acl-updated?
-      (utils/propagate-acl-to-dep-parameters id new-acl))
-    (edit-impl
-      (cond-> request
-              is-user? (update :body dissoc :owner :infrastructure-service :subscription-id
-                               :nuvlabox)
-              (and is-user? module) (update-in [:body :module] merge fixed-attr)
-              is-user? (update-in [:cimi-params :select] disj
-                                  "owner" "infrastructure-service" "module/price"
-                                  "module/license" "subscription-id")
-              new-acl (assoc-in [:body :acl] new-acl)
-              cred-name (assoc-in [:body :credential-name] cred-name)
-              infra-id (assoc-in [:body :infrastructure-service] infra-id)
-              infra-name (assoc-in [:body :infrastructure-service-name] infra-name)
-              nb-id (assoc-in [:body :nuvlabox] nb-id)
-              nb-name (assoc-in [:body :nuvlabox-name] nb-name)
-              dep-set-name (assoc-in [:body :deployment-set-name] dep-set-name)))))
+  [request]
+  (edit-impl request))
 
 
 (defn delete-impl
@@ -242,12 +221,12 @@ a container orchestration engine.
    (delete-impl request false))
   ([{{uuid :uuid} :params :as request} force-delete]
    (try
-     (let [deployment-id   (str resource-type "/" uuid)
-           deployment      (-> (db/retrieve deployment-id request)
-                               (a/throw-cannot-delete request)
-                               (cond-> (not force-delete)
-                                       (utils/throw-can-not-do-action-invalid-state
-                                         utils/can-delete? "delete")))]
+     (let [deployment-id (str resource-type "/" uuid)
+           deployment    (-> (db/retrieve deployment-id request)
+                             (a/throw-cannot-delete request)
+                             (cond-> (not force-delete)
+                                     (utils/throw-can-not-do-action-invalid-state
+                                       utils/can-delete? "delete")))]
        (utils/delete-all-child-resources deployment-id)
        (db/delete deployment request))
      (catch Exception e
@@ -432,19 +411,15 @@ a container orchestration engine.
 
 
 (defmethod crud/do-action [resource-type "detach"]
-  [{{uuid :uuid} :params :as request}]
+  [{{uuid :uuid} :params :as _request}]
   (try
-    (let [deployment (-> (str resource-type "/" uuid)
-                         (crud/retrieve-by-id-as-admin)
-                         (utils/throw-can-not-do-action utils/can-detach? "detach")
-                         (dissoc :deployment-set :deployment-set-name))
-          authn-info (auth/current-authentication request)]
-      (crud/edit
-        {:params      {:uuid          uuid
-                       :resource-name resource-type}
-         :cimi-params {:select #{"deployment-set" "deployment-set-name"}}
-         :body        deployment
-         :nuvla/authn authn-info}))
+    (-> (str resource-type "/" uuid)
+        (crud/retrieve-by-id-as-admin)
+        (utils/throw-can-not-do-action utils/can-detach? "detach")
+        (dissoc :deployment-set :deployment-set-name)
+        u/update-timestamps
+        (db/edit nil))
+    (r/map-response "detached" 200)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
