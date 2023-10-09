@@ -148,6 +148,13 @@ particular NuvlaBox release.
                :description    "allow to receive heartbeat from nuvlabox"
                :method         "POST"
                :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           utils/action-set-offline
+               :uri            utils/action-set-offline
+               :description    "allow to job executor as admin to set nuvlabox as offline"
+               :method         "POST"
+               :input-message  "application/json"
                :output-message "application/json"}])
 
 
@@ -1055,10 +1062,10 @@ particular NuvlaBox release.
 ;;
 ;; operations for states for owner are:
 ;;
-;;                edit delete activate commission decommission unsuspend heartbeat
+;;                edit delete activate commission decommission unsuspend heartbeat set-offline
 ;; NEW             Y     Y       Y
-;; ACTIVATED       Y                       Y           Y                     Y
-;; COMMISSIONED    Y                       Y           Y                     Y
+;; ACTIVATED       Y                       Y           Y
+;; COMMISSIONED    Y                       Y           Y                     Y          Y
 ;; DECOMMISSIONING Y                                   Y
 ;; DECOMMISSIONED  Y     Y
 ;; ERROR           Y     Y                             Y
