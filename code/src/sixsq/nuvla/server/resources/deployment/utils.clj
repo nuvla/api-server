@@ -158,12 +158,14 @@
 
 
 (defn create-log
-  [{:keys [id] :as _resource} {:keys [body] :as request}]
+  [{:keys [id nuvlabox] :as _resource} {:keys [body] :as request}]
   (let [session-id (auth/current-session-id request)
         opts       (select-keys body [:since :lines])
         components (:components body)
-        acl        {:owners   ["group/nuvla-admin"]
-                    :edit-acl [session-id]}]
+        acl        (cond-> {:owners   ["group/nuvla-admin"]
+                            :edit-acl [session-id]}
+                           nuvlabox (-> (a/acl-append :edit-data nuvlabox)
+                                        (a/acl-append :manage nuvlabox)))]
     (resource-log/create-log id components acl opts)))
 
 

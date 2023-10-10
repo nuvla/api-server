@@ -241,15 +241,15 @@
                               (ltu/location-url))]
 
               (testing "verify that the log resource exists and acl is owned by
-              nuvlabox id and edit-acl is set for the session id"
+              nuvla-admin group id and view-acl is set for the session id"
                 (-> session
                     (request log-url)
                     (ltu/body->edn)
                     (ltu/is-status 200)
                     (ltu/is-key-value :components ["agent" "security"])
-                    (ltu/is-key-value :owners :acl [nuvlabox-id])
-                    (ltu/is-key-value :delete :acl ["group/nuvla-admin" session-id])
-                    (ltu/is-key-value :view-acl :acl ["group/nuvla-admin" session-id]))))
+                    (ltu/is-key-value :owners :acl ["group/nuvla-admin"])
+                    (ltu/is-key-value :delete :acl [session-id])
+                    (ltu/is-key-value :view-acl :acl [session-id]))))
 
             (-> session
                 (request decommission-url
