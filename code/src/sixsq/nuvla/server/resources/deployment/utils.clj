@@ -306,20 +306,21 @@
   (boolean (and parent (not= parent current-parent))))
 
 (defn default-execution-mode
-  [nuvlabox]
+  [cred-id nuvlabox]
   (if nuvlabox
     (if (nuvlabox-utils/has-job-pull-support? nuvlabox)
       "pull"
       "mixed")
-    "push"))
+    (when cred-id
+      "push")))
 
 (defn get-execution-mode
-  [current next nuvlabox]
+  [current next cred-id nuvlabox]
   (or (:execution-mode next)
       (when (not= (:parent current) (:parent next))
-        (default-execution-mode nuvlabox))
+        (default-execution-mode cred-id nuvlabox))
       (:execution-mode current)
-      (default-execution-mode nuvlabox)))
+      (default-execution-mode cred-id nuvlabox)))
 
 (defn get-acl
   [{:keys [id nuvlabox owner] :as current} {:keys [acl] :as _next} nb-id]

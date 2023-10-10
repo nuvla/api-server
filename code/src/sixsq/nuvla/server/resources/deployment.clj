@@ -147,7 +147,7 @@ a container orchestration engine.
         nb-name        (:name nb)
         dep-set-id     (:deployment-set current)
         dep-set-name   (some-> dep-set-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request) :name)
-        execution-mode (utils/get-execution-mode current next nb)
+        execution-mode (utils/get-execution-mode current next cred-id nb)
         new-acl        (utils/get-acl current next nb-id)
         is-admin?      (a/is-admin-request? request)
         acl-updated?   (not= new-acl (:acl current))]
@@ -191,10 +191,10 @@ a container orchestration engine.
   (a/throw-cannot-add collection-acl request)
   (-> request
       module-utils/resolve-from-module
-      (assoc :execution-mode execution-mode)
-      (cond-> deployment-set (assoc :deployment-set deployment-set))
-      (cond-> app-set (assoc :app-set app-set))
-      (cond-> parent (assoc :parent parent))
+      (cond-> deployment-set (assoc :deployment-set deployment-set)
+              app-set (assoc :app-set app-set)
+              parent (assoc :parent parent)
+              execution-mode (assoc :execution-mode execution-mode))
       (create-deployment request)))
 
 
