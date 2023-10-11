@@ -133,8 +133,14 @@ a container orchestration engine.
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
+(defn pre-delete-attrs-hook
+  [current {{:keys [module] :as next} :body :as request}]
+  (let [is-admin?      (a/is-admin-request? request)]
+    (cond-> current
+            (and module (not is-admin?)) (utils/restrict-module-changes next))))
+
 (defn pre-validate-hook
-  [current {{:keys [parent module] :as next} :body :as request}]
+  [current {{:keys [parent] :as next} :body :as request}]
   (let [id             (:id current)
         cred-id        (or parent (:parent current))
         cred           (some-> cred-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request))
@@ -149,12 +155,10 @@ a container orchestration engine.
         dep-set-name   (some-> dep-set-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request) :name)
         execution-mode (utils/get-execution-mode current next cred-id nb)
         new-acl        (utils/get-acl current next nb-id)
-        is-admin?      (a/is-admin-request? request)
         acl-updated?   (not= new-acl (:acl current))]
     (when acl-updated?
       (utils/propagate-acl-to-dep-parameters id new-acl))
     (cond-> current
-            (and module (not is-admin?)) (utils/restrict-module-changes next)
             new-acl (assoc :acl new-acl)
             cred-name (assoc :credential-name cred-name)
             infra-id (assoc :infrastructure-service infra-id)
@@ -207,7 +211,9 @@ a container orchestration engine.
 
 (def edit-impl (std-crud/edit-fn resource-type
                                  :immutable-keys [:owner :infrastructure-service
-                                                  :subscription-id :deployment-set]
+                                                  :subscription-id :deployment-set
+                                                  :module]
+                                 :pre-delete-attrs-hook pre-delete-attrs-hook
                                  :pre-validate-hook pre-validate-hook))
 
 
@@ -222,7 +228,7 @@ a container orchestration engine.
   ([{{uuid :uuid} :params :as request} force-delete]
    (try
      (let [deployment-id (str resource-type "/" uuid)
-           deployment      (-> (db/retrieve deployment-id)
+           deployment    (-> (db/retrieve deployment-id)
                              (a/throw-cannot-delete request)
                              (cond-> (not force-delete)
                                      (utils/throw-can-not-do-action-invalid-state
@@ -293,7 +299,7 @@ a container orchestration engine.
       (assoc :request-method :put
              :body resource
              :nuvla/authn auth/internal-identity)
-      (crud/edit)
+      crud/edit
       :body))
 
 
