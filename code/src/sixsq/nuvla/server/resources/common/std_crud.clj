@@ -20,13 +20,13 @@
 (def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))
 
 
-(defn default-pre-validate-hook
+(defn pass-through
   [resource _request]
   resource)
 
 (defn add-fn
   ([resource-name collection-acl resource-uri]
-   (add-fn resource-name collection-acl resource-uri default-pre-validate-hook))
+   (add-fn resource-name collection-acl resource-uri pass-through))
   ([resource-name collection-acl resource-uri pre-validate-hook]
    (validate-collection-acl collection-acl)
    (fn [{:keys [body] :as request}]
@@ -59,25 +59,28 @@
 
 
 (defn edit-fn
-  ([resource-name]
-   (edit-fn resource-name default-pre-validate-hook))
-  ([resource-name pre-validate-hook]
-   (fn [{{uuid :uuid} :params :as request}]
-     (try
-       (let [current (-> (str resource-name "/" uuid)
-                         db/retrieve
-                         (a/throw-cannot-edit request)
-                         (sm/throw-can-not-do-action request))]
-         (-> request
-             (u/delete-attributes current)
-             u/update-timestamps
-             (u/set-updated-by request)
-             (pre-validate-hook request)
-             crud/validate
-             (crud/set-operations request)
-             db/edit))
-       (catch Exception e
-         (or (ex-data e) (throw e)))))))
+  [resource-name & {:keys [pre-validate-hook
+                           pre-delete-attrs-hook
+                           immutable-keys]
+                    :or   {pre-delete-attrs-hook pass-through
+                           pre-validate-hook     pass-through
+                           immutable-keys        []}}]
+  (fn [{{uuid :uuid} :params :as request}]
+    (try
+      (-> (str resource-name "/" uuid)
+          db/retrieve
+          (a/throw-cannot-edit request)
+          (sm/throw-can-not-do-action request)
+          (pre-delete-attrs-hook request)
+          (u/delete-attributes request immutable-keys)
+          u/update-timestamps
+          (u/set-updated-by request)
+          (pre-validate-hook request)
+          crud/validate
+          (crud/set-operations request)
+          db/edit)
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
 
 (defn throw-bulk-header-missing
   [{:keys [headers] :as _request}]

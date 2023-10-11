@@ -264,6 +264,15 @@
              :json-schema/order 37)))
 
 
+(s/def ::heartbeat-interval
+  (assoc (st/spec pos-int?)
+    :name "hearthbeat-interval"
+    :json-schema/display-name "hearthbeat interval"
+    :json-schema/description "hearthbeat interval in seconds"
+
+    :json-schema/order 38))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb/attributes
@@ -294,4 +303,5 @@
                                ::capabilities
                                ::online
                                ::inferred-location
-                               ::nuvlabox-engine-version]}))
+                               ::nuvlabox-engine-version
+                               ::heartbeat-interval]}))

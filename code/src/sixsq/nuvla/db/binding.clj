@@ -2,7 +2,7 @@
 
 (defprotocol Binding
   "This protocol defines the core interface to the underlying database.
-   All of the functions accept and return native clojure data structures.
+   All the functions accept and return native clojure data structures.
    The functions must handle all necessary conversions for the database.
 
    For those functions that have a data argument, the id of the document
@@ -54,6 +54,16 @@
      ring response.  The error must be 404 (not-found) if the resource
      does not exist.  Other appropriate error codes can also be thrown.")
 
+  (scripted-edit
+    [this id options]
+    "This function updates the given resource in the database using script.
+
+     On success, the function returns a 200 ring response.
+
+     On failure, the function must throw an ex-info containing the error
+     ring response.  The error must be 404 (not-found) if the resource
+     does not exist.  Other appropriate error codes can also be thrown.")
+
   (delete
     [this data]
     "This function removes the given resource in the database. Note that
@@ -75,7 +85,7 @@
      On success, the function must return a two-element tuple. The first
      element is metadata concerning the query (usually with the count and
      aggregations). The second element is a list of the returned resources.
-     This list may possibly be empty. The list must not be embedded in a ring
+     This list may be empty. The list must not be embedded in a ring
      response.
 
      On failure, the function must throw an ex-info containing the error
@@ -88,8 +98,8 @@
     "This function removes the given resources in the database where the
     collection-id corresponds to the name of a Collection.
 
-     On success, the function must return a the summary map of what was done
-     on the db..
+     On success, the function must return the summary map of what was done
+     on the db.
 
      On failure, the function must throw an ex-info containing the error
      ring response.  If the resource-id does not correspond to a Collection,
@@ -101,7 +111,7 @@
     "This function edits the given resources in the database where the
     collection-id corresponds to the name of a Collection.
 
-     On success, the function must return a the summary map of what was done
+     On success, the function must return the summary map of what was done
      on the db.
 
      On failure, the function must throw an ex-info containing the error

@@ -17,6 +17,9 @@
                      nb-status/attributes
                      {:req-un [::nb-status-0/status]
                       :opt-un [::nb-status-0/next-heartbeat
+                               ::nb-status-0/last-heartbeat
+                               ::nb-status-0/next-telemetry
+                               ::nb-status-0/last-telemetry
                                ::nb-status-0/current-time
                                ::nb-status-0/comment
                                ::nb-status-0/resources

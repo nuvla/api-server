@@ -114,14 +114,15 @@ that start with 'nuvla-' are reserved for the server.
   [{{:keys [id] :as body} :body :as request}]
   (a/throw-cannot-add collection-acl request)
   (throw-subgroups-limit-reached request)
-  (db/add (-> body
-              u/strip-service-attrs
-              (assoc :id id
-                     :resource-type resource-type)
-              u/update-timestamps
-              (u/set-created-by request)
-              (crud/add-acl request)
-              crud/validate)))
+  (-> body
+      u/strip-service-attrs
+      (assoc :id id
+             :resource-type resource-type)
+      u/update-timestamps
+      (u/set-created-by request)
+      (crud/add-acl request)
+      crud/validate
+      db/add))
 
 
 (defmethod crud/add resource-type

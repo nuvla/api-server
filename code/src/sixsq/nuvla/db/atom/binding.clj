@@ -63,10 +63,26 @@
       (throw (r/ex-not-found id)))
     (throw (r/ex-bad-request "invalid document id"))))
 
+(defn partial-update
+  [db id {:keys [doc] :as _options}]
+  (if-let [path (cu/split-id-kw id)]
+    (let [data (get-in db path)]
+      (if data
+       (assoc-in db path (merge data doc))
+       (throw (r/ex-not-found id))))
+    (throw (r/ex-bad-request "invalid document id"))))
+
 
 (defn update-data [data-atom {:keys [id] :as data}]
   (try
     (swap! data-atom atomic-update data)
+    (r/response-updated id)
+    (catch Exception e
+      (ex-data e))))
+
+(defn scripted-update-data [data-atom id options]
+  (try
+    (swap! data-atom partial-update id options)
     (r/response-updated id)
     (catch Exception e
       (ex-data e))))
@@ -117,6 +133,10 @@
 
   (edit [_ data]
     (update-data data-atom data))
+
+
+  (scripted-edit [_ id options]
+    (scripted-update-data data-atom id options))
 
 
   (query [_ collection-id options]
