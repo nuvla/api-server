@@ -138,28 +138,29 @@ These resources represent the logs of a deployment or of a nuvlabox.
 
 (defmethod create-specific-job fetch-nuvlabox-log
   [{log-id :id :as _resource-log}
-   {:keys [id acl] :as parent-resource}
-   _request]
+   {:keys [id] :as parent-resource}
+   request]
   (job/create-job
     log-id fetch-nuvlabox-log
-    (-> acl
-        (a/acl-append :edit-data id)
-        (a/acl-append :manage id))
+    {:owners    ["group/nuvla-admin"]
+     :edit-data [id]
+     :manage    [id]
+     :view-acl  [(auth/current-session-id request)]}
     :priority 50
     :execution-mode (nb-utils/get-execution-mode parent-resource)))
 
 
 (defmethod create-specific-job fetch-deployment-log
   [{log-id :id :as _resource-log}
-   _parent-resource
+   {:keys [execution-mode nuvlabox] :as _parent-resource}
    request]
-  (if-let [session-id (auth/current-session-id request)]
-    (job/create-job log-id fetch-deployment-log
-                    {:owners   ["group/nuvla-admin"]
-                     :view-acl [session-id]}
-                    :priority 50)
-    (throw (r/ex-response
-             "current authentication has no session identifier" 500 log-id))))
+  (job/create-job log-id fetch-deployment-log
+                  (cond-> {:owners   ["group/nuvla-admin"]
+                           :view-acl [(auth/current-session-id request)]}
+                          nuvlabox (-> (a/acl-append :edit-data nuvlabox)
+                                       (a/acl-append :manage nuvlabox)))
+                  :priority 50
+                  :execution-mode execution-mode))
 
 
 (defn create-job

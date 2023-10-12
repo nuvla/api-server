@@ -996,10 +996,11 @@ particular NuvlaBox release.
   (let [opts       (select-keys body [:since :lines])
         components (:components body)
         session-id (auth/current-session-id request)
-        log-acl    {:owners   [id]
-                    :view-acl [session-id]
-                    :manage   [session-id]
-                    :delete   [session-id]}]
+        log-acl    {:owners    ["group/nuvla-admin"]
+                    :edit-data [id]
+                    :manage    [id session-id]
+                    :view-acl  [session-id]
+                    :delete    [session-id]}]
     (resource-log/create-log id components log-acl opts)))
 
 
