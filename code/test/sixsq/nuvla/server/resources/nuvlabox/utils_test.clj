@@ -3,7 +3,6 @@
     [clojure.test :refer [deftest is testing]]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.pricing.payment :as payment]
-    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as t]
     [sixsq.nuvla.server.util.time :as time]))

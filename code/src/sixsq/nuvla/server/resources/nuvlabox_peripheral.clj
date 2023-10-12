@@ -6,7 +6,6 @@ nuvlabox.
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -81,13 +80,13 @@ nuvlabox.
 (defmethod crud/do-action [resource-type "enable-stream"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
-          (a/throw-cannot-manage request)
-          (utils/throw-parent-nuvlabox-is-suspended)
-          (throw-doesnt-have-video-capability)
-          (throw-data-gateway-already-enabled)
-          (create-job request "enable-stream")))
+    (-> (str resource-type "/" uuid)
+        crud/retrieve-by-id-as-admin
+        (a/throw-cannot-manage request)
+        (utils/throw-parent-nuvlabox-is-suspended)
+        (throw-doesnt-have-video-capability)
+        (throw-data-gateway-already-enabled)
+        (create-job request "enable-stream"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -95,12 +94,12 @@ nuvlabox.
 (defmethod crud/do-action [resource-type "disable-stream"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
-          (a/throw-cannot-manage request)
-          (throw-data-gateway-already-disabled)
-          (throw-doesnt-have-video-capability)
-          (create-job request "disable-stream")))
+    (-> (str resource-type "/" uuid)
+        crud/retrieve-by-id-as-admin
+        (a/throw-cannot-manage request)
+        (throw-data-gateway-already-disabled)
+        (throw-doesnt-have-video-capability)
+        (create-job request "disable-stream"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -164,7 +163,7 @@ nuvlabox.
   [{{uuid :uuid} :params body :body :as request}]
   (try
     (let [id       (str resource-type "/" uuid)
-          resource (db/retrieve id request)]
+          resource (crud/retrieve-by-id-as-admin id)]
       (when (and (has-video-capability? body) (:data-gateway-enabled resource))
         (-> resource
             (a/throw-cannot-manage request)
@@ -190,7 +189,7 @@ nuvlabox.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)
-          {:keys [data-gateway-enabled] :as resource} (db/retrieve id request)]
+          {:keys [data-gateway-enabled] :as resource} (crud/retrieve-by-id-as-admin id)]
 
       (when (and data-gateway-enabled (has-video-capability? resource))
         (create-job resource request "disable-stream")))

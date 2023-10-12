@@ -496,6 +496,7 @@
 
 
 (deftest lifecycle-applications-sets-extended
+
   (let [session-anon      (-> (session (ltu/ring-app))
                               (content-type "application/json"))
         session-user      (header session-anon authn-info-header
@@ -516,54 +517,53 @@
                               (ltu/body->edn)
                               (ltu/is-status 201))
         app-1-uri         (ltu/location-url app-1-create-resp)
-        app-1-id          (ltu/location app-1-create-resp)]
+        app-1-id          (ltu/location app-1-create-resp)
+        valid-entry       {:parent-path "a/b"
+                           :path        "a/b/c"
+                           :subtype     utils/subtype-apps-sets
+                           :content     (assoc-in valid-applications-sets-content
+                                                  [:applications-sets 0
+                                                   :applications 0 :id] app-1-id)}]
 
-    (let [valid-entry {:parent-path "a/b"
-                       :path        "a/b/c"
-                       :subtype     utils/subtype-apps-sets
-                       :content     (assoc-in valid-applications-sets-content
-                                              [:applications-sets 0
-                                               :applications 0 :id] app-1-id)}]
+    (-> session-user
+        (request app-1-uri
+                 :request-method :put
+                 :body (json/write-str
+                         (update valid-app-1 :content assoc
+                                 :docker-compose "content changed"
+                                 :commit "second commit")))
+        (ltu/body->edn)
+        (ltu/is-status 200))
 
+    (create-parent-projects (:path valid-entry) session-user)
+    (let [response   (-> session-user
+                         (request base-uri
+                                  :request-method :post
+                                  :body (json/write-str valid-entry))
+                         (ltu/body->edn)
+                         (ltu/is-status 201))
+          uri        (ltu/location response)
+          abs-uri    (ltu/location-url response)
+          deploy-uri (-> session-user
+                         (request abs-uri)
+                         (ltu/body->edn)
+                         (ltu/is-status 200)
+                         (ltu/get-op-url :deploy))]
       (-> session-user
-          (request app-1-uri
-                   :request-method :put
-                   :body (json/write-str
-                          (update valid-app-1 :content assoc
-                                  :docker-compose "content changed"
-                                  :commit "second commit")))
+          (request deploy-uri)
           (ltu/body->edn)
-          (ltu/is-status 200))
-
-      (create-parent-projects (:path valid-entry) session-user)
-      (let [response   (-> session-user
-                           (request base-uri
-                                    :request-method :post
-                                    :body (json/write-str valid-entry))
-                           (ltu/body->edn)
-                           (ltu/is-status 201))
-            uri        (ltu/location response)
-            abs-uri    (ltu/location-url response)
-            deploy-uri (-> session-user
-                           (request abs-uri)
-                           (ltu/body->edn)
-                           (ltu/is-status 200)
-                           (ltu/get-op-url :deploy))]
-        (-> session-user
-            (request deploy-uri)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :application uri)
-            (ltu/is-key-value :version 0)
-            (ltu/is-key-value #(-> %
-                                   first
-                                   :applications
-                                   first
-                                   :resolved
-                                   :content
-                                   :docker-compose)
-                              :applications-sets
-                              "some content"))))))
+          (ltu/is-status 200)
+          (ltu/is-key-value :application uri)
+          (ltu/is-key-value :version 0)
+          (ltu/is-key-value #(-> %
+                                 first
+                                 :applications
+                                 first
+                                 :resolved
+                                 :content
+                                 :docker-compose)
+                            :applications-sets
+                            "some content")))))
 
 
 (deftest bad-methods

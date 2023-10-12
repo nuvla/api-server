@@ -162,12 +162,11 @@ Collection for holding subscriptions configurations.
     (when-not (= 200 (:status resp))
       (throw (ex-info "Delete precondition failed." resp))))
   (try
-    (let [resource-id (str resource-type "/" uuid)
-          delete-response (-> resource-id
-                              (db/retrieve request)
+    (let [id (str resource-type "/" uuid)
+          delete-response (-> (crud/retrieve-by-id-as-admin id)
                               (a/throw-cannot-delete request)
-                              (db/delete request))]
-      (ka-crud/publish-tombstone resource-type resource-id)
+                              db/delete)]
+      (ka-crud/publish-tombstone resource-type id)
       delete-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))

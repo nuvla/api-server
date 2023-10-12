@@ -6,7 +6,7 @@
   (:import (org.apache.zookeeper KeeperException$SessionExpiredException)))
 
 
-(def ^:dynamic *client*)
+(def ^:dynamic *client* nil)
 
 
 (defn set-client!

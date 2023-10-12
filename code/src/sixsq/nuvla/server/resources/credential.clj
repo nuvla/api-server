@@ -7,7 +7,6 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -288,7 +287,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params body :body :as request}]
   (let [subtype (-> (str resource-type "/" uuid)
-                    (db/retrieve request)
+                    crud/retrieve-by-id-as-admin
                     :subtype)]
     (-> body
         (assoc :subtype subtype)
@@ -317,7 +316,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 (defmethod crud/delete resource-type
   [{{uuid :uuid} :params :as request}]
   (-> (str resource-type "/" uuid)
-      (db/retrieve request)
+      crud/retrieve-by-id-as-admin
       (a/throw-cannot-delete request)
       (special-delete request)))
 

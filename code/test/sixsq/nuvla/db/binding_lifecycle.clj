@@ -39,13 +39,13 @@
             my-data          {:id my-id, :long 1, :boolean true, :string "ok"}
             my-data-with-acl (assoc my-data :acl admin-acl :more "hi")
             response         (testing "create an entry in the database"
-                               (db/add db my-data-with-acl nil))]
+                               (db/add db my-data-with-acl))]
         (is (s/valid? ::resource my-data-with-acl))
         (is (= 201 (:status response)))
         (is (= my-id (get-in response [:headers "Location"])))
 
         (testing "ensure that the entry can be retrieved"
-          (let [retrieved-data (db/retrieve db my-id nil)]
+          (let [retrieved-data (db/retrieve db my-id)]
             (is (= my-data-with-acl retrieved-data))))
 
 
@@ -58,13 +58,13 @@
               my-data-2          {:id my-id-2, :long 2, :boolean false, :string "nok"}
               my-data-2-with-acl (assoc my-data-2 :acl admin-acl)
               response           (testing "add a second entry"
-                                   (db/add db my-data-2-with-acl nil))]
+                                   (db/add db my-data-2-with-acl))]
           (is (s/valid? ::resource my-data-2-with-acl))
           (is (= 201 (:status response)))
           (is (= my-id-2 (get-in response [:headers "Location"])))
 
           (testing "ensure that is can be retrieved (and flush index for elasticsearch)"
-            (let [retrieved-data (db/retrieve db my-id-2 nil)]
+            (let [retrieved-data (db/retrieve db my-id-2)]
               (is (= my-data-2-with-acl retrieved-data))))
 
           (testing "check that query has another entry"
@@ -73,16 +73,16 @@
               (is (= #{my-id my-id-2} (set (map :id query-hits))))))
 
           (testing "adding the same entry again must fail"
-            (let [response (db/add db {:id my-id} nil)]
+            (let [response (db/add db {:id my-id})]
               (is (= 409 (:status response)))))
 
           (testing "update the entry"
             (let [updated-data (assoc my-data-with-acl :two "3")
-                  response     (db/edit db updated-data nil)]
+                  response     (db/edit db updated-data)]
               (is (= 200 (:status response)))
 
               (testing "make sure that the update was applied"
-                (let [retrieved-data (db/retrieve db my-id nil)]
+                (let [retrieved-data (db/retrieve db my-id)]
                   (is (= updated-data retrieved-data))))))
 
           (testing "updating the entry by script (partial update)"
@@ -91,25 +91,25 @@
               (is (= 200 (:status response)))
 
               (testing "make sure that the update by script was applied"
-                (let [retrieved-data (db/retrieve db my-id nil)]
+                (let [retrieved-data (db/retrieve db my-id)]
                   (is (= "4" (:two retrieved-data)))))))
 
           (testing "delete the first entry"
-            (let [response (db/delete db {:id my-id} nil)]
+            (let [response (db/delete db {:id my-id})]
               (is (= 200 (:status response)))))
 
           (testing "updating a deleted entry by script"
-            (let [options {:doc {:two "4"}}
-                  response     (db/scripted-edit db my-id options)]
+            (let [options  {:doc {:two "4"}}
+                  response (db/scripted-edit db my-id options)]
               (is (not= 200 (:status response)))))
 
           (testing "delete the second entry"
-            (let [response (db/delete db {:id my-id-2} nil)]
+            (let [response (db/delete db {:id my-id-2})]
               (is (= 200 (:status response)))))
 
           (testing "deleting the first one a second time should give a 404"
             (try
-              (db/delete db {:id my-id} nil)
+              (db/delete db {:id my-id})
               (is (nil? "delete of non-existent resource did not throw an exception"))
               (catch Exception e
                 (let [response (ex-data e)]
@@ -117,7 +117,7 @@
 
           (testing "also retrieving it should do the same"
             (try
-              (db/retrieve db my-id nil)
+              (db/retrieve db my-id)
               (is (nil? "retrieve of non-existent resource did not throw an exception"))
               (catch Exception e
                 (let [response (ex-data e)]

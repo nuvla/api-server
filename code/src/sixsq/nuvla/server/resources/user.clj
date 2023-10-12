@@ -185,8 +185,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     (let [id         (str resource-type "/" uuid)
           authn-info (auth/current-authentication request)
           is-user?   (not (a/is-admin? authn-info))]
-      (-> id
-          (db/retrieve request)
+      (-> (crud/retrieve-by-id-as-admin id)
           (a/throw-cannot-edit request)
           (merge (cond-> body
                          is-user? (dissoc :name :state :auth-method-2fa
@@ -195,7 +194,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
           (u/update-timestamps)
           (u/set-updated-by request)
           (crud/validate)
-          (db/edit request)))
+          db/edit))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -263,7 +262,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     {:keys [method] :as body} :body :as request}]
   (try
     (let [id   (str resource-type "/" uuid)
-          user (db/retrieve id request)]
+          user (crud/retrieve-by-id-as-admin id)]
       (throw-action-2fa-authorized user request can-enable-2fa?)
       (validate-enable-2fa-body-fn body)
       (let [token        (auth-2fa/generate-token method user)
@@ -288,7 +287,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   [{base-uri :base-uri {uuid :uuid} :params :as request}]
   (try
     (let [id             (str resource-type "/" uuid)
-          user           (db/retrieve id request)
+          user           (crud/retrieve-by-id-as-admin id)
           current-method (:auth-method-2fa user)]
       (throw-action-2fa-authorized user request can-disable-2fa?)
       (let [token        (auth-2fa/generate-token current-method user)

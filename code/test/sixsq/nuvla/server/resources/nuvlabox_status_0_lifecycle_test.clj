@@ -199,7 +199,7 @@
                 (ltu/is-key-value :resources resources-updated)
                 (ltu/is-key-value :resources-prev nil))
 
-            (is (= resources-prev (:resources-prev (db/retrieve state-id {}))))
+            (is (= resources-prev (:resources-prev (db/retrieve state-id))))
 
             ;; admin edition can set online flag
             (-> session-admin
@@ -211,7 +211,7 @@
                 (ltu/is-key-value :resources resources-updated)
                 (ltu/is-key-value :resources-prev nil)))
 
-          (is (= resources-updated (:resources-prev (db/retrieve state-id {}))))
+          (is (= resources-updated (:resources-prev (db/retrieve state-id))))
 
 
           (let [resources-prev (-> session-nb
@@ -228,7 +228,7 @@
                 (ltu/is-key-value :resources resources-updated)
                 (ltu/is-key-value :resources-prev nil))
 
-            (is (= resources-prev (:resources-prev (db/retrieve state-id {})))))
+            (is (= resources-prev (:resources-prev (db/retrieve state-id)))))
 
           ;; verify that the update was written to disk
           (-> session-nb
@@ -250,7 +250,7 @@
               (ltu/is-status 200)
               (ltu/is-key-value :peripherals peripherals-updated))
 
-          (is (= resources-prev (:resources-prev (db/retrieve state-id {})))))
+          (is (= resources-prev (:resources-prev (db/retrieve state-id)))))
 
           ;; non of the items in the collection contain '-prev' keys
           (let [resp-resources (-> session-nb

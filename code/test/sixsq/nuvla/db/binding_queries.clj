@@ -93,14 +93,14 @@
         ;; add all of the docs to the database
         (doseq [doc docs]
           (let [doc-id   (:id doc)
-                response (db/add db doc nil)]
+                response (db/add db doc)]
             (is (= 201 (:status response)))
             (is (= doc-id (get-in response [:headers "Location"])))))
 
         ;; ensure that all of them can be retrieved individually
         (doseq [doc docs]
           (let [doc-id         (:id doc)
-                retrieved-data (db/retrieve db doc-id nil)]
+                retrieved-data (db/retrieve db doc-id)]
             (is (= doc retrieved-data))))
 
         ;; check that a query with an admin role retrieves everything
@@ -254,13 +254,13 @@
 
         ;; delete all of the docs one by one
         (doseq [doc docs]
-          (let [response (db/delete db doc nil)]
+          (let [response (db/delete db doc)]
             (is (= 200 (:status response)))))
 
         ;; ensure that all of the docs have been deleted
         (doseq [doc docs]
           (try
-            (db/delete db doc nil)
+            (db/delete db doc)
             (is (nil? "delete of non-existent resource did not throw an exception"))
             (catch Exception e
               (let [response (ex-data e)]
@@ -269,7 +269,7 @@
         ;; add all of the docs to the database
         (doseq [doc docs]
           (let [doc-id   (:id doc)
-                response (db/add db doc nil)]
+                response (db/add db doc)]
             (is (= 201 (:status response)))
             (is (= doc-id (get-in response [:headers "Location"])))))
 

@@ -13,7 +13,6 @@ existing `infrastructure-service-template` resource.
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -251,7 +250,7 @@ existing `infrastructure-service-template` resource.
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params {new-state :state} :body :as request}]
   (let [id       (str resource-type "/" uuid)
-        resource (when (boolean new-state) (db/retrieve id request))
+        resource (when (boolean new-state) (crud/retrieve-by-id-as-admin id))
         ret      (edit-impl request)]
     (try
       (when (and (= 200 (:status ret)) resource)
@@ -285,7 +284,7 @@ existing `infrastructure-service-template` resource.
 
 (defmethod crud/delete resource-type
   [{{uuid :uuid} :params :as request}]
-  (let [resource    (db/retrieve (str resource-type "/" uuid) request)
+  (let [resource    (crud/retrieve-by-id-as-admin (str resource-type "/" uuid))
         delete-resp (delete resource request)]
     (post-delete-hooks request delete-resp)
     delete-resp))

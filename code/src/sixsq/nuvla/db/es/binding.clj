@@ -250,23 +250,19 @@
       (set-index-mapping client index mapping)))
 
 
-  (add [_ data _options]
+  (add [_ data]
     (add-data client data))
 
 
-  (add [_ _collection-id data _options]
-    (add-data client data))
-
-
-  (retrieve [_ id _options]
+  (retrieve [_ id]
     (find-data client id))
 
 
-  (delete [_ {:keys [id]} _options]
+  (delete [_ {:keys [id]}]
     (delete-data client id))
 
 
-  (edit [_ data _options]
+  (edit [_ data]
     (update-data client data))
 
   (scripted-edit [_ id options]

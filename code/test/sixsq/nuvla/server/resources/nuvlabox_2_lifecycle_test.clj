@@ -1730,113 +1730,112 @@
           session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
           session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
-          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
+          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")
+          nuvlabox-id  (-> session-owner
+                           (request base-uri
+                                    :request-method :post
+                                    :body (json/write-str
+                                            (update valid-nuvlabox
+                                                    :capabilities
+                                                    conj
+                                                    utils/capability-heartbeat)))
+                           (ltu/body->edn)
+                           (ltu/is-status 201)
+                           (ltu/location))
 
-      (let [nuvlabox-id  (-> session-owner
-                             (request base-uri
-                                      :request-method :post
-                                      :body (json/write-str
-                                              (update valid-nuvlabox
-                                                      :capabilities
-                                                      conj
-                                                      utils/capability-heartbeat)))
-                             (ltu/body->edn)
-                             (ltu/is-status 201)
-                             (ltu/location))
+          nuvlabox-url (str p/service-context nuvlabox-id)
 
-            nuvlabox-url (str p/service-context nuvlabox-id)
+          activate-url (-> session-owner
+                           (request nuvlabox-url)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/get-op-url :activate))]
 
-            activate-url (-> session-owner
-                             (request nuvlabox-url)
-                             (ltu/body->edn)
-                             (ltu/is-status 200)
-                             (ltu/get-op-url :activate))]
+      ;; activate nuvlabox
+      (-> session-anon
+          (request activate-url
+                   :request-method :post)
+          (ltu/body->edn)
+          (ltu/is-status 200))
 
-        ;; activate nuvlabox
-        (-> session-anon
-            (request activate-url
+      (let [session-nuvlabox (header session authn-info-header
+                                     (str nuvlabox-id " " nuvlabox-id
+                                          " group/nuvla-nuvlabox group/nuvla-anon"))
+            commission       (-> session-owner
+                                 (request nuvlabox-url)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/get-op-url :commission)
+                                 (ltu/is-operation-absent :heartbeat))]
+
+        (-> session-nuvlabox
+            (request commission
                      :request-method :post)
             (ltu/body->edn)
             (ltu/is-status 200))
 
-        (let [session-nuvlabox (header session authn-info-header
-                                       (str nuvlabox-id " " nuvlabox-id
-                                            " group/nuvla-nuvlabox group/nuvla-anon"))
-              commission       (-> session-owner
-                                   (request nuvlabox-url)
-                                   (ltu/body->edn)
-                                   (ltu/is-status 200)
-                                   (ltu/get-op-url :commission)
-                                   (ltu/is-operation-absent :heartbeat))]
+        (let [nuvlabox-status-id (-> session-owner
+                                     (request nuvlabox-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     ltu/body
+                                     :nuvlabox-status)
+              heartbeat-op       (-> session-nuvlabox
+                                     (request nuvlabox-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/is-operation-present utils/action-heartbeat)
+                                     (ltu/is-operation-absent utils/action-set-offline)
+                                     (ltu/is-key-value :online nil)
+                                     (ltu/get-op-url utils/action-heartbeat))
+              set-offline-op     (-> session-admin
+                                     (request nuvlabox-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/is-operation-present utils/action-heartbeat)
+                                     (ltu/is-operation-present utils/action-set-offline)
+                                     (ltu/get-op-url utils/action-set-offline))]
+          (let [nb-status (db/retrieve nuvlabox-status-id)]
+            (is (nil? (:online nb-status)))
+            (is (nil? (:online-prev nb-status)))
+            (is (nil? (:next-heartbeat nb-status)))
+            (is (nil? (:last-heartbeat nb-status))))
 
           (-> session-nuvlabox
-              (request commission
-                       :request-method :post)
+              (request heartbeat-op)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :jobs []))
+
+          (-> session-nuvlabox
+              (request nuvlabox-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :online true))
+
+          (let [nb-status (db/retrieve nuvlabox-status-id)]
+            (is (true? (:online nb-status)))
+            (is (nil? (:online-prev nb-status)))
+            (is (some? (:next-heartbeat nb-status)))
+            (is (some? (:last-heartbeat nb-status))))
+
+          (-> session-admin
+              (request set-offline-op)
               (ltu/body->edn)
               (ltu/is-status 200))
 
-          (let [nuvlabox-status-id  (-> session-owner
-                                        (request nuvlabox-url)
-                                        (ltu/body->edn)
-                                        (ltu/is-status 200)
-                                        ltu/body
-                                        :nuvlabox-status)
-                heartbeat-op        (-> session-nuvlabox
-                                        (request nuvlabox-url)
-                                        (ltu/body->edn)
-                                        (ltu/is-status 200)
-                                        (ltu/is-operation-present utils/action-heartbeat)
-                                        (ltu/is-operation-absent utils/action-set-offline)
-                                        (ltu/is-key-value :online nil)
-                                        (ltu/get-op-url utils/action-heartbeat))
-                set-offline-op      (-> session-admin
-                                        (request nuvlabox-url)
-                                        (ltu/body->edn)
-                                        (ltu/is-status 200)
-                                        (ltu/is-operation-present utils/action-heartbeat)
-                                        (ltu/is-operation-present utils/action-set-offline)
-                                        (ltu/get-op-url utils/action-set-offline))]
-            (let [nb-status (db/retrieve nuvlabox-status-id {})]
-              (is (nil? (:online nb-status)))
-              (is (nil? (:online-prev nb-status)))
-              (is (nil? (:next-heartbeat nb-status)))
-              (is (nil? (:last-heartbeat nb-status))))
+          (-> session-nuvlabox
+              (request nuvlabox-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :online false))
 
-            (-> session-nuvlabox
-                (request heartbeat-op)
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-key-value :jobs []))
-
-            (-> session-nuvlabox
-                (request nuvlabox-url)
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-key-value :online true))
-
-            (let [nb-status (db/retrieve nuvlabox-status-id {})]
-              (is (true? (:online nb-status)))
-              (is (nil? (:online-prev nb-status)))
-              (is (some? (:next-heartbeat nb-status)))
-              (is (some? (:last-heartbeat nb-status))))
-
-            (-> session-admin
-                (request set-offline-op)
-                (ltu/body->edn)
-                (ltu/is-status 200))
-
-            (-> session-nuvlabox
-                (request nuvlabox-url)
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-key-value :online false))
-
-            (let [nb-status (db/retrieve nuvlabox-status-id nil)]
-              (is (false? (:online nb-status)))
-              (is (true? (:online-prev nb-status)))
-              (is (some? (:next-heartbeat nb-status)))
-              (is (some? (:last-heartbeat nb-status))))
-            ))))))
+          (let [nb-status (db/retrieve nuvlabox-status-id)]
+            (is (false? (:online nb-status)))
+            (is (true? (:online-prev nb-status)))
+            (is (some? (:next-heartbeat nb-status)))
+            (is (some? (:last-heartbeat nb-status))))
+          )))))
 
 
 (deftest should-propagate-changes-test

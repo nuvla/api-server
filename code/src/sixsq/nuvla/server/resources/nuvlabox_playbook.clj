@@ -8,7 +8,6 @@ NuvlaBox Engine software
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -68,7 +67,7 @@ NuvlaBox Engine software
 (defmethod crud/add resource-type
   [{{:keys [parent]} :body :as request}]
   (some-> parent
-          (db/retrieve request)
+          crud/retrieve-by-id-as-admin
           (a/throw-cannot-edit request))
   (-> request
       (update-in [:body] dissoc :output)
@@ -139,7 +138,7 @@ NuvlaBox Engine software
   (try
     (let [id         (str resource-type "/" uuid)
           new-output (:output body)]
-      (-> (db/retrieve id request)
+      (-> (crud/retrieve-by-id-as-admin id)
           (a/throw-cannot-manage request)
           (save-output new-output)))
     (catch Exception e

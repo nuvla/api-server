@@ -8,9 +8,8 @@
   [f]
   (k/comm-chan-set! k/comm-chan-len)
   (f)
-  (do
-    (k/close-producers!)
-    (k/comm-chan-set! k/comm-chan-len)))
+  (k/close-producers!)
+  (k/comm-chan-set! k/comm-chan-len))
 
 
 (use-fixtures :each cleanup)

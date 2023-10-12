@@ -184,7 +184,7 @@
                   (ltu/is-status 200)
                   (ltu/is-key-value :resources resources-updated)
                   (ltu/is-key-value :resources-prev nil))
-              (is (= resources-prev (:resources-prev (db/retrieve status-id nil))))))
+              (is (= resources-prev (:resources-prev (db/retrieve status-id))))))
 
           (let [resources-prev (-> session-nb
                                    (request status-url)
@@ -200,7 +200,7 @@
                 (ltu/is-key-value :resources resources-updated)
                 (ltu/is-key-value :resources-prev nil))
 
-            (is (= resources-prev (:resources-prev (db/retrieve status-id nil)))))
+            (is (= resources-prev (:resources-prev (db/retrieve status-id)))))
 
           (testing "verify that the update was written to disk"
             (-> session-nb
