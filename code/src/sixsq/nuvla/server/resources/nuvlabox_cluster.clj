@@ -4,7 +4,6 @@ The `nuvlabox-cluster` resource represents a cluster of at least one NuvlaBox
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -78,18 +77,18 @@ The `nuvlabox-cluster` resource represents a cluster of at least one NuvlaBox
 
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params {:keys [workers managers]} :body :as request}]
-  (let [current     (-> (str resource-type "/" uuid)
-                        db/retrieve
-                        (a/throw-cannot-edit request))
-        cluster-managers  (or managers (:managers current))
-        cluster-workers   (or workers (:workers current))
-        nb-workers        (utils/get-matching-nuvlaboxes cluster-workers)
-        nb-managers       (utils/get-matching-nuvlaboxes cluster-managers)
-        total-nodes       (+ (count cluster-managers) (count cluster-workers))
-        total-nb-nodes    (+ (count nb-managers) (count nb-workers))
-        status-notes      (cond-> []
-                            (> total-nb-nodes total-nodes) (conj "WARNING: there are more NuvlaBox instances than actual nodes")
-                            )]
+  (let [current          (-> (str resource-type "/" uuid)
+                             crud/retrieve-by-id-as-admin
+                             (a/throw-cannot-edit request))
+        cluster-managers (or managers (:managers current))
+        cluster-workers  (or workers (:workers current))
+        nb-workers       (utils/get-matching-nuvlaboxes cluster-workers)
+        nb-managers      (utils/get-matching-nuvlaboxes cluster-managers)
+        total-nodes      (+ (count cluster-managers) (count cluster-workers))
+        total-nb-nodes   (+ (count nb-managers) (count nb-workers))
+        status-notes     (cond-> []
+                                 (> total-nb-nodes total-nodes) (conj "WARNING: there are more NuvlaBox instances than actual nodes")
+                                 )]
     (utils/complete-cluster-details edit-impl nb-workers nb-managers status-notes request)))
 
 

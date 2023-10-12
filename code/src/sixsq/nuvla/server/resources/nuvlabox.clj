@@ -321,7 +321,7 @@ particular NuvlaBox release.
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params :as request}]
   (let [current (-> (str resource-type "/" uuid)
-                    db/retrieve
+                    crud/retrieve-by-id-as-admin
                     (a/throw-cannot-edit request))
         resp    (-> request
                     utils/throw-refresh-interval-should-be-bigger
@@ -349,7 +349,7 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params :as request}]
   (let [id (str resource-type "/" uuid)]
     (try
-      (-> (db/retrieve id)
+      (-> (crud/retrieve-by-id-as-admin id)
           (a/throw-cannot-delete request)
           (u/throw-can-not-do-action utils/can-delete? "delete"))
       (let [resp (delete-impl request)]
@@ -405,8 +405,8 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params :as _request}]
   (try
     (let [id (str resource-type "/" uuid)
-          [nuvlabox-activated api-secret-info] (-> (db/retrieve id)
-                                                   (activate)
+          [nuvlabox-activated api-secret-info] (-> (crud/retrieve-by-id-as-admin id)
+                                                   activate
                                                    u/update-timestamps
                                                    (wf-utils/create-nuvlabox-api-key ""))]
 
@@ -441,7 +441,7 @@ particular NuvlaBox release.
     (try
       (let [capabilities (some-> body :capabilities set vec)
             ssh-keys     (some-> body :ssh-keys set vec)
-            nuvlabox     (-> (db/retrieve id)
+            nuvlabox     (-> (crud/retrieve-by-id-as-admin id)
                              (a/throw-cannot-manage request)
                              (u/throw-can-not-do-action
                                utils/can-commission? "commission")
@@ -525,7 +525,7 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params :as request}]
   (let [id (str resource-type "/" uuid)]
     (try
-      (-> (db/retrieve id)
+      (-> (crud/retrieve-by-id-as-admin id)
           (a/throw-cannot-manage request)
           (u/throw-can-not-do-action
             utils/can-decommission? "decommission")
@@ -537,28 +537,28 @@ particular NuvlaBox release.
 (defmethod crud/do-action [resource-type utils/action-heartbeat]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id)
-          (a/throw-cannot-manage request)
-          (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
-          (utils/set-online! true)
-          (utils/pending-jobs)
-          r/json-response))
+    (-> (str resource-type "/" uuid)
+        crud/retrieve-by-id-as-admin
+        (a/throw-cannot-manage request)
+        (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
+        (utils/set-online! true)
+        (utils/pending-jobs)
+        r/json-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
 (defmethod crud/do-action [resource-type utils/action-set-offline]
   [{{uuid :uuid} :params :as request}]
-  (let [id (str resource-type "/" uuid)]
-    (try
-      (-> (db/retrieve id)
-          (a/throw-not-admin-request request)
-          (u/throw-can-not-do-action
-            utils/can-set-offline? utils/action-set-offline)
-          (utils/set-online! false))
-      (r/map-response "offline" 200)
-      (catch Exception e
-        (or (ex-data e) (throw e))))))
+  (try
+    (-> (str resource-type "/" uuid)
+        crud/retrieve-by-id-as-admin
+        (a/throw-not-admin-request request)
+        (u/throw-can-not-do-action
+          utils/can-set-offline? utils/action-set-offline)
+        (utils/set-online! false))
+    (r/map-response "offline" 200)
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 
 ;;
@@ -592,12 +592,12 @@ particular NuvlaBox release.
 (defmethod crud/do-action [resource-type "check-api"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id)
-          (a/throw-cannot-manage request)
-          (u/throw-can-not-do-action
-            utils/can-check-api? "check-api")
-          (check-api)))
+    (-> (str resource-type "/" uuid)
+        crud/retrieve-by-id-as-admin
+        (a/throw-cannot-manage request)
+        (u/throw-can-not-do-action
+          utils/can-check-api? "check-api")
+        (check-api))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -630,11 +630,11 @@ particular NuvlaBox release.
 (defmethod crud/do-action [resource-type "reboot"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id)
-          (a/throw-cannot-manage request)
-          (u/throw-can-not-do-action utils/can-reboot? "reboot")
-          (reboot)))
+    (-> (str resource-type "/" uuid)
+        crud/retrieve-by-id-as-admin
+        (a/throw-cannot-manage request)
+        (u/throw-can-not-do-action utils/can-reboot? "reboot")
+        (reboot))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -681,9 +681,8 @@ particular NuvlaBox release.
   (try
     (let [id (str resource-type "/" uuid)]
       (when-not (empty? nuvlabox-manager-status)
-        (-> (db/retrieve (:id nuvlabox-manager-status))
-            (a/throw-cannot-view request)))
-      (-> (db/retrieve id)
+        (crud/retrieve-by-id (:id nuvlabox-manager-status) request))
+      (-> (crud/retrieve-by-id-as-admin id)
           (a/throw-cannot-manage request)
           (u/throw-can-not-do-action
             utils/can-cluster-nuvlabox? "cluster-nuvlabox")
@@ -728,19 +727,18 @@ particular NuvlaBox release.
   (try
     (let [id          (str resource-type "/" uuid)
           ssh-cred-id (:credential body)
-          nuvlabox    (-> (db/retrieve id)
+          nuvlabox    (-> (crud/retrieve-by-id-as-admin id)
                           (a/throw-cannot-manage request)
                           (u/throw-can-not-do-action
                             utils/can-add-ssh-key? "add-ssh-key"))
           acl         (:acl nuvlabox)
           credential  (if ssh-cred-id
-                        (db/retrieve ssh-cred-id)
+                        (crud/retrieve-by-id-as-admin ssh-cred-id)
                         (wf-utils/create-ssh-key
                           {:acl      acl
                            :template {:href "credential-template/generate-ssh-key"}}))]
 
-      (-> (db/retrieve (:id credential))
-          (a/throw-cannot-view request))
+      (crud/retrieve-by-id (:id credential) request)
       (add-ssh-key nuvlabox credential))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -797,9 +795,8 @@ particular NuvlaBox release.
   (try
     (let [id          (str resource-type "/" uuid)
           ssh-cred-id (:credential body)]
-      (-> (db/retrieve ssh-cred-id)
-          (a/throw-cannot-view request))
-      (-> (db/retrieve id)
+      (crud/retrieve-by-id ssh-cred-id request)
+      (-> (crud/retrieve-by-id-as-admin id)
           (a/throw-cannot-manage request)
           (u/throw-can-not-do-action
             utils/can-revoke-ssh-key? "revoke-ssh-key")
@@ -848,9 +845,8 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params {:keys [nuvlabox-release payload]} :body :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve nuvlabox-release)
-          (a/throw-cannot-view request))
-      (-> (db/retrieve id)
+      (crud/retrieve-by-id nuvlabox-release request)
+      (-> (crud/retrieve-by-id-as-admin id)
           (a/throw-cannot-manage request)
           (u/throw-can-not-do-action
             utils/can-update-nuvlabox? "update-nuvlabox")
@@ -885,12 +881,12 @@ particular NuvlaBox release.
 (defmethod crud/do-action [resource-type "assemble-playbooks"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id)
-          (a/throw-cannot-manage request)
-          (u/throw-can-not-do-action
-            utils/can-assemble-playbooks? "assemble-playbooks")
-          (assemble-playbooks)))
+    (-> (str resource-type "/" uuid)
+        crud/retrieve-by-id-as-admin
+        (a/throw-cannot-manage request)
+        (u/throw-can-not-do-action
+          utils/can-assemble-playbooks? "assemble-playbooks")
+        (assemble-playbooks))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -918,10 +914,10 @@ particular NuvlaBox release.
 (defmethod crud/do-action [resource-type "enable-host-level-management"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id)
-          (a/throw-cannot-manage request)
-          (enable-host-level-management request)))
+    (-> (str resource-type "/" uuid)
+        crud/retrieve-by-id-as-admin
+        (a/throw-cannot-manage request)
+        (enable-host-level-management request))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -949,12 +945,12 @@ particular NuvlaBox release.
 (defmethod crud/do-action [resource-type "disable-host-level-management"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id)
-          (a/throw-cannot-manage request)
-          (u/throw-can-not-do-action utils/can-disable-host-level-management?
-                                     "disable-host-level-management")
-          (disable-host-level-management)))
+    (-> (str resource-type "/" uuid)
+        crud/retrieve-by-id-as-admin
+        (a/throw-cannot-manage request)
+        (u/throw-can-not-do-action utils/can-disable-host-level-management?
+                                   "disable-host-level-management")
+        (disable-host-level-management))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -981,12 +977,12 @@ particular NuvlaBox release.
 (defmethod crud/do-action [resource-type "enable-emergency-playbooks"]
   [{{uuid :uuid} :params {:keys [emergency-playbooks-ids]} :body :as request}]
   (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id)
-          (a/throw-cannot-manage request)
-          (u/throw-can-not-do-action utils/can-enable-emergency-playbooks?
-                                     "enable-emergency-playbooks")
-          (enable-emergency-playbooks emergency-playbooks-ids (auth/current-authentication request))))
+    (-> (str resource-type "/" uuid)
+        crud/retrieve-by-id-as-admin
+        (a/throw-cannot-manage request)
+        (u/throw-can-not-do-action utils/can-enable-emergency-playbooks?
+                                   "enable-emergency-playbooks")
+        (enable-emergency-playbooks emergency-playbooks-ids (auth/current-authentication request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -1009,11 +1005,11 @@ particular NuvlaBox release.
 
 (defmethod crud/do-action [resource-type "create-log"]
   [{{uuid :uuid} :params :as request}]
-  (let [id (str resource-type "/" uuid)]
-    (-> (db/retrieve id)
-        (a/throw-cannot-manage request)
-        (u/throw-can-not-do-action utils/can-create-log? "create-log")
-        (create-log request))))
+  (-> (str resource-type "/" uuid)
+      crud/retrieve-by-id-as-admin
+      (a/throw-cannot-manage request)
+      (u/throw-can-not-do-action utils/can-create-log? "create-log")
+      (create-log request)))
 
 ;;
 ;; Allows for the creation of a NuvlaBox API key on-demand
@@ -1030,12 +1026,12 @@ particular NuvlaBox release.
 (defmethod crud/do-action [resource-type "generate-new-api-key"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id)
-          (a/throw-cannot-manage request)
-          (u/throw-can-not-do-action utils/can-generate-new-api-key?
-                                     "generate-new-api-key")
-          (create-new-api-key)))
+    (-> (str resource-type "/" uuid)
+        crud/retrieve-by-id-as-admin
+        (a/throw-cannot-manage request)
+        (u/throw-can-not-do-action utils/can-generate-new-api-key?
+                                   "generate-new-api-key")
+        (create-new-api-key))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -1045,7 +1041,7 @@ particular NuvlaBox release.
   (try
     (let [id (str resource-type "/" uuid)]
       (utils/throw-when-payment-required request)
-      (-> (db/retrieve id)
+      (-> (crud/retrieve-by-id-as-admin id)
           (a/throw-cannot-manage request)
           (a/throw-cannot-edit request)
           (u/throw-can-not-do-action utils/can-unsuspend? "unsuspend"))

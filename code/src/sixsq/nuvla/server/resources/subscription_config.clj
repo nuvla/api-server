@@ -163,7 +163,7 @@ Collection for holding subscriptions configurations.
       (throw (ex-info "Delete precondition failed." resp))))
   (try
     (let [id (str resource-type "/" uuid)
-          delete-response (-> (db/retrieve id)
+          delete-response (-> (crud/retrieve-by-id-as-admin id)
                               (a/throw-cannot-delete request)
                               db/delete)]
       (ka-crud/publish-tombstone resource-type id)

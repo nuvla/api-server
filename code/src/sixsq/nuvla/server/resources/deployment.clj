@@ -135,7 +135,7 @@ a container orchestration engine.
 
 (defn pre-delete-attrs-hook
   [current {{:keys [module] :as next} :body :as request}]
-  (let [is-admin?      (a/is-admin-request? request)]
+  (let [is-admin? (a/is-admin-request? request)]
     (cond-> current
             (and module (not is-admin?)) (utils/restrict-module-changes next))))
 
@@ -143,16 +143,16 @@ a container orchestration engine.
   [current {{:keys [parent] :as next} :body :as request}]
   (let [id             (:id current)
         cred-id        (or parent (:parent current))
-        cred           (some-> cred-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request))
+        cred           (some-> cred-id (crud/retrieve-by-id request))
         cred-name      (:name cred)
         infra-id       (:parent cred)
-        infra          (some-> infra-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request))
+        infra          (some-> infra-id (crud/retrieve-by-id request))
         infra-name     (:name infra)
         nb-id          (utils/infra->nb-id infra)
-        nb             (some-> nb-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request))
+        nb             (some-> nb-id (crud/retrieve-by-id request))
         nb-name        (:name nb)
         dep-set-id     (:deployment-set current)
-        dep-set-name   (some-> dep-set-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request) :name)
+        dep-set-name   (some-> dep-set-id (crud/retrieve-by-id request) :name)
         execution-mode (utils/get-execution-mode current next cred-id nb)
         new-acl        (utils/get-acl current next nb-id)
         acl-updated?   (not= new-acl (:acl current))]
@@ -228,7 +228,7 @@ a container orchestration engine.
   ([{{uuid :uuid} :params :as request} force-delete]
    (try
      (let [deployment-id (str resource-type "/" uuid)
-           deployment    (-> (db/retrieve deployment-id)
+           deployment    (-> (crud/retrieve-by-id-as-admin deployment-id)
                              (a/throw-cannot-delete request)
                              (cond-> (not force-delete)
                                      (utils/throw-can-not-do-action-invalid-state

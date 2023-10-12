@@ -120,7 +120,7 @@ Collection for holding notification method configurations.
     (let [resource-id     (str resource-type "/" uuid)
           delete-response (-> resource-id
                               (integrity-check collections request)
-                              db/retrieve
+                              crud/retrieve-by-id-as-admin
                               (a/throw-cannot-delete request)
                               db/delete)]
       (ka-crud/publish-tombstone resource-type resource-id)

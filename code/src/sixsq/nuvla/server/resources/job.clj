@@ -119,7 +119,7 @@ request.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [job      (-> (str resource-type "/" uuid)
-                       db/retrieve
+                       crud/retrieve-by-id-as-admin
                        (a/throw-cannot-edit request)
                        utils/throw-cannot-edit-in-final-state
                        (u/delete-attributes request [:target-resource :action])
@@ -186,7 +186,7 @@ request.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id       (str resource-type "/" uuid)
-          response (-> (db/retrieve id)
+          response (-> (crud/retrieve-by-id-as-admin id)
                        (utils/throw-cannot-cancel request)
                        (assoc :state utils/state-canceled)
                        (u/update-timestamps)
@@ -206,7 +206,7 @@ request.
   [{{uuid :uuid} :params :as request}]
   (try
     (-> (str resource-type "/" uuid)
-        db/retrieve
+        crud/retrieve-by-id-as-admin
         (utils/throw-cannot-get-context request)
         (interface/get-context))
     (catch Exception e
@@ -217,7 +217,7 @@ request.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [response (-> (str resource-type "/" uuid)
-                       db/retrieve
+                       crud/retrieve-by-id-as-admin
                        (utils/throw-cannot-timeout request)
                        (assoc :state utils/state-canceled)
                        (u/update-timestamps)

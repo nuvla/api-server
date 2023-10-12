@@ -379,8 +379,7 @@ how the object can be accessed.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
-      (-> (crud/retrieve-by-id-as-admin id)
-          (a/throw-cannot-view request)                     ;; exception: use view rather than manage for this
+      (-> (crud/retrieve-by-id id request) ;; exception: use view rather than manage for this
           (download request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))

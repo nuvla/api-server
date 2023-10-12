@@ -171,8 +171,7 @@ provide an explicit ACL that the describes the desired visibility.
     (let [id         (str resource-type "/" uuid)
           not-before (delay->from-now
                        (or (-> request :body defer-param-kw) delay-default))]
-      (->
-          (db/retrieve id)
+      (-> (crud/retrieve-by-id-as-admin id)
           (a/throw-cannot-manage request)
           (assoc :not-before not-before)
           (u/update-timestamps)

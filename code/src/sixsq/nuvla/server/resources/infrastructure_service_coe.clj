@@ -173,7 +173,7 @@ manage it.
           job-msg      (str "starting " id " with async " job-id)]
       (when (not= job-status 201)
         (throw (r/ex-response (str "unable to create async job to start infrastructure service " coe-type) 500 id)))
-      (-> (db/retrieve id)
+      (-> (crud/retrieve-by-id-as-admin id)
           (a/throw-cannot-edit request)
           (assoc :state "STARTING")
           (u/update-timestamps)

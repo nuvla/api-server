@@ -6,7 +6,6 @@
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
-    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -130,8 +129,7 @@
   [{{full-uuid     :uuid
      resource-name :resource-name} :params :as request}]
   (-> (str resource-name "/" (full-uuid->uuid full-uuid))
-      db/retrieve
-      (a/throw-cannot-view request)))
+      (crud/retrieve-by-id request)))
 
 (defn resolve-content
   [{:keys [id] :as module-meta}

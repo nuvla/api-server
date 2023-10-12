@@ -49,8 +49,7 @@
   (fn [{{uuid :uuid} :params :as request}]
     (try
       (-> (str resource-name "/" uuid)
-          db/retrieve
-          (a/throw-cannot-view request)
+          (crud/retrieve-by-id request)
           (crud/set-operations request)
           (a/select-viewable-keys request)
           r/json-response)
