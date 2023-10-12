@@ -378,9 +378,9 @@ how the object can be accessed.
 (defmethod crud/do-action [resource-type "download"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (crud/retrieve-by-id id request) ;; exception: use view rather than manage for this
-          (download request)))
+    (-> (str resource-type "/" uuid)
+        (crud/retrieve-by-id request) ;; exception: use view rather than manage for this
+        (download request))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

@@ -143,7 +143,9 @@ a container orchestration engine.
   [current {{:keys [parent] :as next} :body :as request}]
   (let [id             (:id current)
         cred-id        (or parent (:parent current))
-        cred           (some-> cred-id (crud/retrieve-by-id request))
+        cred-edited?   (utils/cred-edited? parent (:parent current))
+        cred           (some-> cred-id crud/retrieve-by-id-as-admin
+                               (cond-> cred-edited? (a/throw-cannot-view request)))
         cred-name      (:name cred)
         infra-id       (:parent cred)
         infra          (some-> infra-id (crud/retrieve-by-id request))
@@ -159,6 +161,7 @@ a container orchestration engine.
     (when acl-updated?
       (utils/propagate-acl-to-dep-parameters id new-acl))
     (cond-> current
+            parent (assoc :parent (:id cred))
             new-acl (assoc :acl new-acl)
             cred-name (assoc :credential-name cred-name)
             infra-id (assoc :infrastructure-service infra-id)
@@ -212,7 +215,7 @@ a container orchestration engine.
 (def edit-impl (std-crud/edit-fn resource-type
                                  :immutable-keys [:owner :infrastructure-service
                                                   :subscription-id :deployment-set
-                                                  :module]
+                                                  :module :parent]
                                  :pre-delete-attrs-hook pre-delete-attrs-hook
                                  :pre-validate-hook pre-validate-hook))
 
