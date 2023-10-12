@@ -1,5 +1,5 @@
 (ns sixsq.nuvla.server.resources.common.dynamic-load-test
-  (:require [clojure.test :refer [deftest testing is]]
+  (:require [clojure.test :refer [deftest is testing]]
             [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
             [sixsq.nuvla.server.util.namespace-utils :as ns-util]))
 

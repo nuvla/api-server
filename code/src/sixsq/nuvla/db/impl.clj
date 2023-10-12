@@ -4,7 +4,7 @@
   (:import
     (java.io Closeable)))
 
-(def ^:dynamic *impl*)
+(def ^:dynamic *impl* nil)
 
 
 (defn set-impl!
@@ -21,22 +21,22 @@
   (p/initialize *impl* collection-id options))
 
 
-(defn add [collection-id data options]
-  (p/add *impl* collection-id data options))
+(defn add [data]
+  (p/add *impl* data))
 
 
-(defn retrieve [id options]
-  (p/retrieve *impl* id options))
+(defn retrieve [id]
+  (p/retrieve *impl* id))
 
 
-(defn edit [data options]
-  (p/edit *impl* data options))
+(defn edit [data]
+  (p/edit *impl* data))
 
 (defn scripted-edit [id options]
   (p/scripted-edit *impl* id options))
 
-(defn delete [data options]
-  (p/delete *impl* data options))
+(defn delete [data]
+  (p/delete *impl* data))
 
 
 (defn query [collection-id options]

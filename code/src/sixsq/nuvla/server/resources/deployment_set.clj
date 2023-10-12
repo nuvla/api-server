@@ -295,11 +295,7 @@ These resources represent a deployment set that regroups deployments.
     :as        _job}]
   (when (= state job-utils/state-success)
     (let [deployment-set (crud/retrieve-by-id-as-admin id)]
-      (db/delete deployment-set
-                 {:request-method :delete
-                  :params         (assoc (u/id->request-params id)
-                                    :action crud/action-delete)
-                  :authn-info     auth/internal-identity}))))
+      (db/delete deployment-set))))
 
 (defmethod job-interface/on-done [resource-type (utils/action-job-name crud/action-delete)]
   [job]

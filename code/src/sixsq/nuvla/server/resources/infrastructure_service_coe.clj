@@ -66,7 +66,7 @@ manage it.
       (edit-fn)
       (u/update-timestamps)
       (u/set-updated-by request)
-      (db/edit request)))
+      db/edit))
 
 
 (defn create-job
@@ -173,13 +173,12 @@ manage it.
           job-msg      (str "starting " id " with async " job-id)]
       (when (not= job-status 201)
         (throw (r/ex-response (str "unable to create async job to start infrastructure service " coe-type) 500 id)))
-      (-> id
-          (db/retrieve request)
+      (-> (crud/retrieve-by-id-as-admin id)
           (a/throw-cannot-edit request)
           (assoc :state "STARTING")
           (u/update-timestamps)
           (u/set-updated-by request)
-          (db/edit request))
+          db/edit)
       (event-utils/create-event id "STARTING" (a/default-acl (auth/current-authentication request))
                                 :severity "low"
                                 :category "state")

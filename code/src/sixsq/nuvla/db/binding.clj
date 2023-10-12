@@ -17,8 +17,7 @@
     "This function initialize the given resource into the database.")
 
   (add
-    [this data options]
-    [this collection-id data options]
+    [this data]
     "This function adds the given resource to the database.  The resource
      must not already exist in the database.
 
@@ -34,7 +33,7 @@
      exists already.  Other appropriate error codes can also be thrown.")
 
   (retrieve
-    [this id options]
+    [this id]
     "This function retrieves the identified resource from the database.
 
      On success, this returns the clojure map representation of the
@@ -44,7 +43,7 @@
      ring response. If the resource doesn't exist, use a 404 status.")
 
   (edit
-    [this data options]
+    [this data]
     "This function updates (edits) the given resource in the database.
      The resource must already exist in the database.
 
@@ -66,7 +65,7 @@
      does not exist.  Other appropriate error codes can also be thrown.")
 
   (delete
-    [this data options]
+    [this data]
     "This function removes the given resource in the database. Note that
      you can remove a document by id by providing data of the form:
      {:id \"collection/uuid\"}.

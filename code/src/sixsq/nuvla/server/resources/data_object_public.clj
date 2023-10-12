@@ -57,7 +57,7 @@ fixed URL.
       (s3/add-s3-md5sum)
       (u/update-timestamps)
       (u/set-updated-by request)
-      (db/edit request)))
+      db/edit))
 
 
 (defmethod do/download-subtype dot/data-object-subtype

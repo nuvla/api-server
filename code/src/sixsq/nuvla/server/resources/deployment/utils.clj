@@ -335,6 +335,6 @@
         (a/acl-remove nuvlabox))))
 
 (defn restrict-module-changes
-  [{:keys [module] :as current} next]
-  (let [immutable (select-keys module [:href :price :license :acl])]
-    (update current :module merge (:module next) immutable)))
+  [current next]
+  (let [mutable-path [:module :content]]
+    (update-in current mutable-path merge (get-in next mutable-path))))

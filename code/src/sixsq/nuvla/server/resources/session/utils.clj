@@ -16,12 +16,12 @@
    by bypassing all authorization checks."
   [{{:keys [id] :as body} :body :as request}]
   (try
-    (-> (db/retrieve id {})
+    (-> (db/retrieve id)
         (merge body)
         u/update-timestamps
         (u/set-updated-by request)
         crud/validate
-        (db/edit request))
+        db/edit)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

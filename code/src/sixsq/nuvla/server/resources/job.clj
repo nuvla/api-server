@@ -85,21 +85,21 @@ request.
         zk-path (when (#{"push" "mixed"} execution-mode)
                   (let [zk-path (utils/add-job-to-queue id priority)]
                     (log/infof "Added %s, zookeeper path %s." id zk-path)
-                    zk-path))
-        new-job (-> body
-                    u/strip-service-attrs
-                    (assoc :resource-type resource-type)
-                    (assoc :id id)
-                    (assoc :state utils/state-queued)
-                    (assoc :execution-mode execution-mode)
-                    (assoc :version version)
-                    u/update-timestamps
-                    (u/set-created-by request)
-                    utils/job-cond->addition
-                    (crud/add-acl request)
-                    (cond-> zk-path (assoc :tags [zk-path]))
-                    (crud/validate))]
-    (db/add resource-type new-job {})))
+                    zk-path))]
+    (-> body
+        u/strip-service-attrs
+        (assoc :resource-type resource-type)
+        (assoc :id id)
+        (assoc :state utils/state-queued)
+        (assoc :execution-mode execution-mode)
+        (assoc :version version)
+        u/update-timestamps
+        (u/set-created-by request)
+        utils/job-cond->addition
+        (crud/add-acl request)
+        (cond-> zk-path (assoc :tags [zk-path]))
+        crud/validate
+        db/add)))
 
 
 (defmethod crud/add resource-type
@@ -119,7 +119,7 @@ request.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [job      (-> (str resource-type "/" uuid)
-                       (db/retrieve nil)
+                       crud/retrieve-by-id-as-admin
                        (a/throw-cannot-edit request)
                        utils/throw-cannot-edit-in-final-state
                        (u/delete-attributes request [:target-resource :action])
@@ -127,7 +127,7 @@ request.
                        (u/set-updated-by request)
                        (utils/job-cond->edition)
                        (crud/validate))
-          response (db/edit job request)]
+          response (db/edit job)]
       (when (utils/is-final-state? job)
         (interface/on-done job))
       response)
@@ -165,9 +165,9 @@ request.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [cancel-op            (u/action-map id utils/action-cancel)
-        get-context-op       (u/action-map id utils/action-get-context)
-        timeout-op           (u/action-map id utils/action-timeout)]
+  (let [cancel-op      (u/action-map id utils/action-cancel)
+        get-context-op (u/action-map id utils/action-get-context)
+        timeout-op     (u/action-map id utils/action-timeout)]
     (cond-> (crud/set-standard-operations resource request)
             (utils/can-cancel? resource request) (update :operations conj cancel-op)
             (utils/can-timeout? resource request) (update :operations conj timeout-op)
@@ -186,14 +186,14 @@ request.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id       (str resource-type "/" uuid)
-          response (-> (db/retrieve id request)
+          response (-> (crud/retrieve-by-id-as-admin id)
                        (utils/throw-cannot-cancel request)
                        (assoc :state utils/state-canceled)
                        (u/update-timestamps)
                        (u/set-updated-by request)
                        (utils/job-cond->edition)
                        (crud/validate)
-                       (db/edit {:nuvla/authn auth/internal-identity}))
+                       db/edit)
           job      (:body response)]
       (cancel-children-jobs-async job)
       (log/warn "Canceled job : " id)
@@ -206,7 +206,7 @@ request.
   [{{uuid :uuid} :params :as request}]
   (try
     (-> (str resource-type "/" uuid)
-        (db/retrieve request)
+        crud/retrieve-by-id-as-admin
         (utils/throw-cannot-get-context request)
         (interface/get-context))
     (catch Exception e
@@ -217,14 +217,14 @@ request.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [response (-> (str resource-type "/" uuid)
-                       (db/retrieve request)
+                       crud/retrieve-by-id-as-admin
                        (utils/throw-cannot-timeout request)
                        (assoc :state utils/state-canceled)
                        (u/update-timestamps)
                        (u/set-updated-by request)
                        (utils/job-cond->edition)
                        (crud/validate)
-                       (db/edit {:nuvla/authn auth/internal-identity}))]
+                       db/edit)]
       (interface/on-timeout (:body response))
       response)
     (catch Exception e

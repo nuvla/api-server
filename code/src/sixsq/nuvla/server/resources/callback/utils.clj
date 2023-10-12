@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.callback.utils
   (:require
-    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]))
@@ -19,7 +18,7 @@
     (-> (crud/retrieve-by-id-as-admin callback-id)
         (u/update-timestamps)
         (assoc :state state)
-        (db/edit {:nuvla/authn auth/internal-identity}))
+        db/edit)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -35,6 +34,6 @@
     (-> (crud/retrieve-by-id-as-admin callback-id)
         (u/update-timestamps)
         (update :tries-left dec)
-        (db/edit {:nuvla/authn auth/internal-identity}))
+        db/edit)
     (catch Exception e
       (or (ex-data e) (throw e)))))

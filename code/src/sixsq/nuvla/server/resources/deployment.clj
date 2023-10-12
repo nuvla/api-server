@@ -133,28 +133,35 @@ a container orchestration engine.
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
+(defn pre-delete-attrs-hook
+  [current {{:keys [module] :as next} :body :as request}]
+  (let [is-admin? (a/is-admin-request? request)]
+    (cond-> current
+            (and module (not is-admin?)) (utils/restrict-module-changes next))))
+
 (defn pre-validate-hook
-  [current {{:keys [parent module] :as next} :body :as request}]
+  [current {{:keys [parent] :as next} :body :as request}]
   (let [id             (:id current)
         cred-id        (or parent (:parent current))
-        cred           (some-> cred-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request))
+        cred-edited?   (utils/cred-edited? parent (:parent current))
+        cred           (some-> cred-id crud/retrieve-by-id-as-admin
+                               (cond-> cred-edited? (a/throw-cannot-view request)))
         cred-name      (:name cred)
         infra-id       (:parent cred)
-        infra          (some-> infra-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request))
+        infra          (some-> infra-id (crud/retrieve-by-id request))
         infra-name     (:name infra)
         nb-id          (utils/infra->nb-id infra)
-        nb             (some-> nb-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request))
+        nb             (some-> nb-id (crud/retrieve-by-id request))
         nb-name        (:name nb)
         dep-set-id     (:deployment-set current)
-        dep-set-name   (some-> dep-set-id crud/retrieve-by-id-as-admin (a/throw-cannot-view request) :name)
+        dep-set-name   (some-> dep-set-id (crud/retrieve-by-id request) :name)
         execution-mode (utils/get-execution-mode current next cred-id nb)
         new-acl        (utils/get-acl current next nb-id)
-        is-admin?      (a/is-admin-request? request)
         acl-updated?   (not= new-acl (:acl current))]
     (when acl-updated?
       (utils/propagate-acl-to-dep-parameters id new-acl))
     (cond-> current
-            (and module (not is-admin?)) (utils/restrict-module-changes next)
+            parent (assoc :parent (:id cred))
             new-acl (assoc :acl new-acl)
             cred-name (assoc :credential-name cred-name)
             infra-id (assoc :infrastructure-service infra-id)
@@ -207,7 +214,9 @@ a container orchestration engine.
 
 (def edit-impl (std-crud/edit-fn resource-type
                                  :immutable-keys [:owner :infrastructure-service
-                                                  :subscription-id :deployment-set]
+                                                  :subscription-id :deployment-set
+                                                  :module :parent]
+                                 :pre-delete-attrs-hook pre-delete-attrs-hook
                                  :pre-validate-hook pre-validate-hook))
 
 
@@ -222,13 +231,13 @@ a container orchestration engine.
   ([{{uuid :uuid} :params :as request} force-delete]
    (try
      (let [deployment-id (str resource-type "/" uuid)
-           deployment    (-> (db/retrieve deployment-id request)
+           deployment    (-> (crud/retrieve-by-id-as-admin deployment-id)
                              (a/throw-cannot-delete request)
                              (cond-> (not force-delete)
                                      (utils/throw-can-not-do-action-invalid-state
                                        utils/can-delete? "delete")))]
        (utils/delete-all-child-resources deployment-id)
-       (db/delete deployment request))
+       (db/delete deployment))
      (catch Exception e
        (or (ex-data e) (throw e))))))
 
@@ -293,7 +302,7 @@ a container orchestration engine.
       (assoc :request-method :put
              :body resource
              :nuvla/authn auth/internal-identity)
-      (crud/edit)
+      crud/edit
       :body))
 
 
@@ -418,7 +427,7 @@ a container orchestration engine.
         (utils/throw-can-not-do-action utils/can-detach? "detach")
         (dissoc :deployment-set :deployment-set-name)
         u/update-timestamps
-        (db/edit nil))
+        db/edit)
     (r/map-response "detached" 200)
     (catch Exception e
       (or (ex-data e) (throw e)))))

@@ -13,8 +13,8 @@
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.resources.nuvlabox-status-1 :as nb-status-1]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [sixsq.nuvla.server.resources.nuvlabox-status-2-lifecycle-test :as nslt]))
+    [sixsq.nuvla.server.resources.nuvlabox-status-2-lifecycle-test :as nslt]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
@@ -174,7 +174,7 @@
                (ltu/is-key-value :resources resources-updated)
                (ltu/is-key-value :resources-prev nil))
 
-           (is (= resources-prev (:resources-prev (db/retrieve state-id {})))))
+           (is (= resources-prev (:resources-prev (db/retrieve state-id)))))
 
          (let [resources-prev (-> session-nb
                                   (request status-url)
@@ -190,7 +190,7 @@
                (ltu/is-key-value :resources resources-updated)
                (ltu/is-key-value :resources-prev nil))
 
-           (is (= resources-prev (:resources-prev (db/retrieve state-id {})))))
+           (is (= resources-prev (:resources-prev (db/retrieve state-id)))))
 
          ;; verify that the update was written to disk
          (-> session-nb

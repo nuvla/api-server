@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.deployment-set.utils
   (:require [clojure.string :as str]
-            [sixsq.nuvla.auth.utils :as auth]
             [sixsq.nuvla.db.filter.parser :as parser]
             [sixsq.nuvla.db.impl :as db]
             [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -185,7 +184,7 @@
     (-> next
         (u/update-timestamps)
         (crud/validate)
-        (db/edit {:nuvla/authn auth/internal-identity})
+        db/edit
         :body)
     current))
 

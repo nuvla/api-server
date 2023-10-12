@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.util.kafka-crud
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.util.kafka :as ka]))
 
 
@@ -11,7 +11,7 @@
   (try
     (when (= 201 (:status add-response))
       (let [resource-id (-> add-response :body :resource-id)
-            resource    (db/retrieve resource-id {})
+            resource    (crud/retrieve-by-id-as-admin resource-id)
             msg-key     (if (= key "resource-id")
                           resource-id
                           ((keyword key) resource))]

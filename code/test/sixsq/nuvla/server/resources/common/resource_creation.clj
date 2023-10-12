@@ -7,6 +7,9 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
+    [sixsq.nuvla.server.resources.credential :as credential]
+    [sixsq.nuvla.server.resources.credential-template :as ct]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as cred-tpl]
     [sixsq.nuvla.server.resources.deployment :as deployment]
     [sixsq.nuvla.server.resources.email.sending :as email-sending]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
@@ -99,6 +102,23 @@
         (request (str p/service-context deployment/resource-type)
                  :request-method :post
                  :body (json/write-str {:module {:href module-id}}))
+        (ltu/body->edn)
+        (ltu/is-status 201)
+        (ltu/location))))
+
+(defn create-credential-swarm
+  [session data]
+  (let [default-href (str ct/resource-type "/" cred-tpl/method)
+        tmpl         (merge-with merge
+                                 data
+                                 {:template {:href default-href
+                                             :ca   "ca value"
+                                             :cert "cert value"
+                                             :key  "key value"}})]
+    (-> session
+        (request (str p/service-context credential/resource-type)
+                 :request-method :post
+                 :body (json/write-str tmpl))
         (ltu/body->edn)
         (ltu/is-status 201)
         (ltu/location))))

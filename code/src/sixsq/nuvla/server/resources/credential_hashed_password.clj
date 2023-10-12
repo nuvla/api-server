@@ -7,7 +7,6 @@ plain text password against the stored hash and to change the password (hash).
   (:require
     [buddy.hashers :as hashers]
     [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -149,7 +148,7 @@ plain text password against the stored hash and to change the password (hash).
         (if (hashers/check current-password hash)
           (if (acceptable-password? new-password)
             (let [new-hash (hashers/derive new-password)]
-              (db/edit (assoc resource :hash new-hash) {:nuvla/authn auth/internal-identity})
+              (db/edit (assoc resource :hash new-hash))
               (r/map-response "password changed" 200))
             (throw (r/ex-response acceptable-password-msg 400)))
           (throw (r/ex-response "invalid password" 403)))))))

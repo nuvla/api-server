@@ -48,7 +48,7 @@
 (defn throw-action-not-allowed-in-state
   [id action state]
   (throw (r/ex-response (format "%s action is not allowed in state [%s]"
-                                action state id) 409 id)))
+                                action state) 409 id)))
 
 (defn throw-can-not-do-action
   [{:keys [id state] :as resource} {{:keys [action]} :params :as request}]

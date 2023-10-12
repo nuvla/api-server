@@ -296,7 +296,6 @@ include aggregating values over a collection of resources.
     [compojure.core :refer [ANY defroutes GET PUT]]
     [ring.util.response :as r]
     [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -352,16 +351,15 @@ include aggregating values over a collection of resources.
    if necessary.  It cannot be added through the API.  This function
    adds the minimal cloud-entry-point resource to the database."
   []
-  (let [record (u/update-timestamps
-                 {:acl           resource-acl
-                  :id            resource-type
-                  :resource-type resource-type})]
-    (db/add resource-type record {:nuvla/authn auth/internal-identity})))
+  (db/add (u/update-timestamps
+            {:acl           resource-acl
+             :id            resource-type
+             :resource-type resource-type})))
 
 
 (defn retrieve-impl
   [{:keys [base-uri] :as request}]
-  (-> (db/retrieve resource-type {})
+  (-> (db/retrieve resource-type)
       (assoc :base-uri base-uri
              :collections resource-links)
       (crud/set-operations request)
@@ -375,7 +373,7 @@ include aggregating values over a collection of resources.
 
 (defn edit-impl
   [{:keys [body] :as request}]
-  (let [current (-> (db/retrieve resource-type {})
+  (let [current (-> (db/retrieve resource-type)
                     (assoc :acl resource-acl)
                     (a/throw-cannot-edit request))
         updated (-> body
@@ -387,7 +385,7 @@ include aggregating values over a collection of resources.
                     (crud/set-operations request)
                     (crud/validate))]
 
-    (db/edit updated request)))
+    (db/edit updated)))
 
 
 (defmethod crud/edit resource-type

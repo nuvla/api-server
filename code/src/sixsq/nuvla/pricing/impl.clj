@@ -2,7 +2,7 @@
   (:require [sixsq.nuvla.pricing.protocol :as protocol]))
 
 
-(def ^:dynamic *impl*)
+(def ^:dynamic *impl* nil)
 
 
 (defn set-impl!
