@@ -27,3 +27,9 @@
   (assoc nuvlabox-status
     :last-telemetry (time/now-str)
     :next-telemetry (nb-utils/compute-next-report refresh-interval #(+ % 30))))
+
+(defn special-body-nuvlabox
+  [{{:keys [parent]} :body :as response} request]
+  (if (nb-utils/nuvlabox-request? request)
+    (assoc response :body {:jobs (nb-utils/get-jobs parent)})
+    response))

@@ -176,31 +176,18 @@
                                      (ltu/body->edn)
                                      (ltu/body)
                                      :resources)]
-              (-> session-nb
-                  (request status-url
-                           :request-method :put
-                           :body (json/write-str {:resources resources-updated}))
-                  (ltu/body->edn)
-                  (ltu/is-status 200)
-                  (ltu/is-key-value :resources resources-updated)
-                  (ltu/is-key-value :resources-prev nil))
-              (is (= resources-prev (:resources-prev (db/retrieve status-id))))))
-
-          (let [resources-prev (-> session-nb
-                                   (request status-url)
-                                   (ltu/body->edn)
-                                   (ltu/body)
-                                   :resources)]
-            (-> session-nb
-                (request status-url
-                         :request-method :put
-                         :body (json/write-str {:resources resources-updated}))
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-key-value :resources resources-updated)
-                (ltu/is-key-value :resources-prev nil))
-
-            (is (= resources-prev (:resources-prev (db/retrieve status-id)))))
+              (testing "when an update is done by a nuvlabox, the body contains only jobs"
+                (is (= (-> session-nb
+                          (request status-url
+                                   :request-method :put
+                                   :body (json/write-str {:resources resources-updated}))
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          ltu/body)
+                      {:jobs []})))
+              (let [nb-status (db/retrieve status-id)]
+                (is (= resources-updated (:resources nb-status)))
+                (is (= resources-prev (:resources-prev nb-status))))))
 
           (testing "verify that the update was written to disk"
             (-> session-nb
@@ -349,10 +336,14 @@
                        :body (json/write-str {:nuvlabox-engine-version "1.0.2"}))
               (ltu/body->edn)
               (ltu/is-status 200)
+              (ltu/is-key-value :jobs []))
+          (-> session-user
+              (request status-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
               (ltu/is-key-value :online true)
               (ltu/is-key-value some? :next-heartbeat true)
-              (ltu/is-key-value some? :last-heartbeat true)
-              (ltu/is-key-value :jobs []))
+              (ltu/is-key-value some? :last-heartbeat true))
 
           (testing "online flag is propagated to nuvlabox"
             (-> session-admin
@@ -377,10 +368,7 @@
                        :body (json/write-str {:nuvlabox-engine-version "1.0.2"}))
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value count :jobs 1)
-              (ltu/is-key-value :online true)
-              (ltu/is-key-value some? :last-heartbeat true)
-              (ltu/is-key-value some? :next-heartbeat true)))
+              (ltu/is-key-value count :jobs 1)))
 
         (testing "admin can set offline"
           (-> session-admin

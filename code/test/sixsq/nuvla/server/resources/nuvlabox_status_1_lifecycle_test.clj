@@ -170,11 +170,11 @@
                         :request-method :put
                         :body (json/write-str {:resources resources-updated}))
                (ltu/body->edn)
-               (ltu/is-status 200)
-               (ltu/is-key-value :resources resources-updated)
-               (ltu/is-key-value :resources-prev nil))
+               (ltu/is-status 200))
 
-           (is (= resources-prev (:resources-prev (db/retrieve state-id)))))
+           (let [nb-status (db/retrieve state-id)]
+             (is (= resources-updated (:resources nb-status)))
+             (is (= resources-prev (:resources-prev nb-status)))))
 
          (let [resources-prev (-> session-nb
                                   (request status-url)
@@ -186,9 +186,7 @@
                         :request-method :put
                         :body (json/write-str {:resources resources-updated}))
                (ltu/body->edn)
-               (ltu/is-status 200)
-               (ltu/is-key-value :resources resources-updated)
-               (ltu/is-key-value :resources-prev nil))
+               (ltu/is-status 200))
 
            (is (= resources-prev (:resources-prev (db/retrieve state-id)))))
 
