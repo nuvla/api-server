@@ -13,6 +13,7 @@
     [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
     [sixsq.nuvla.server.util.kafka-crud :as kafka-crud]
     [sixsq.nuvla.server.util.response :as r]
+    [taoensso.tufte :refer [defnp]]
     [sixsq.nuvla.server.util.time :as time]))
 
 (def ^:const state-new "NEW")
@@ -372,7 +373,7 @@
           (some? online)
           (assoc :online-prev online)))
 
-(defn set-online!
+(defnp set-online!
   [{:keys [id nuvlabox-status heartbeat-interval]
     :or   {heartbeat-interval default-heartbeat-interval}
     :as   nuvlabox} online-new]

@@ -27,9 +27,10 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
+    [taoensso.tufte :as tufte]
     [sixsq.nuvla.server.util.response :as r]))
 
-
+#_(defonce p (prof/serve-ui 8080))
 (def ^:const resource-type (u/ns->type *ns*))
 
 
@@ -536,16 +537,19 @@ particular NuvlaBox release.
 
 (defmethod crud/do-action [resource-type utils/action-heartbeat]
   [{{uuid :uuid} :params :as request}]
-  (try
-    (-> (str resource-type "/" uuid)
-        crud/retrieve-by-id-as-admin
-        (a/throw-cannot-manage request)
-        (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
-        (utils/set-online! true)
-        (utils/pending-jobs)
-        r/json-response)
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
+  (tufte/profile {:id (:id uuid)
+                  :data request}
+                 (tufte/p :heartbeat
+                          (try
+                            (-> (str resource-type "/" uuid)
+                                crud/retrieve-by-id-as-admin
+                                (a/throw-cannot-manage request)
+                                (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
+                                (utils/set-online! true)
+                                (utils/pending-jobs)
+                                r/json-response)
+                            (catch Exception e
+                              (or (ex-data e) (throw e)))))))
 
 (defmethod crud/do-action [resource-type utils/action-set-offline]
   [{{uuid :uuid} :params :as request}]

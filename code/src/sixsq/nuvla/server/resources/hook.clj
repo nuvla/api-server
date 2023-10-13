@@ -9,6 +9,7 @@ for events driven workflows.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.hook-oidc-session :as oidc-session]
     [sixsq.nuvla.server.resources.hook-oidc-user :as oidc-user]
+    [sixsq.nuvla.server.resources.hook-performance-report :as perf]
     [sixsq.nuvla.server.resources.hook-reset-password :as reset-password]
     [sixsq.nuvla.server.resources.hook-stripe-oauth :as stripe-oauth]))
 
@@ -37,5 +38,7 @@ for events driven workflows.
            (ANY (str p/service-context resource-type "/" oidc-user/action) request
              (oidc-user/execute request))
            (ANY (str p/service-context resource-type "/" oidc-session/action) request
-             (oidc-session/execute request)))
+             (oidc-session/execute request))
+           (ANY (str p/service-context resource-type "/" perf/action) request
+             (perf/execute request)))
 
