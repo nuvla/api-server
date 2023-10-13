@@ -25,23 +25,22 @@
   resource)
 
 (defn add-fn
-  ([resource-name collection-acl resource-uri]
-   (add-fn resource-name collection-acl resource-uri pass-through))
-  ([resource-name collection-acl resource-uri pre-validate-hook]
-   (validate-collection-acl collection-acl)
-   (fn [{:keys [body] :as request}]
-     (a/throw-cannot-add collection-acl request)
-     (-> body
-         u/strip-service-attrs
-         (crud/new-identifier resource-name)
-         (assoc :resource-type resource-uri)
-         sm/initialize
-         u/update-timestamps
-         (u/set-created-by request)
-         (crud/add-acl request)
-         (pre-validate-hook request)
-         crud/validate
-         db/add))))
+  [resource-name collection-acl resource-uri & {:keys [pre-validate-hook]
+                                                :or   {pre-validate-hook pass-through}}]
+  (validate-collection-acl collection-acl)
+  (fn [{:keys [body] :as request}]
+    (a/throw-cannot-add collection-acl request)
+    (-> body
+        u/strip-service-attrs
+        (crud/new-identifier resource-name)
+        (assoc :resource-type resource-uri)
+        sm/initialize
+        u/update-timestamps
+        (u/set-created-by request)
+        (crud/add-acl request)
+        (pre-validate-hook request)
+        crud/validate
+        db/add)))
 
 
 (defn retrieve-fn

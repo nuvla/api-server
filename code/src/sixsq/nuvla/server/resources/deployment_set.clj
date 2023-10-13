@@ -326,7 +326,7 @@ These resources represent a deployment set that regroups deployments.
   [request]
   (standard-action request cancel-latest-job))
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-type add-edit-pre-validate-hook))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type :pre-validate-hook add-edit-pre-validate-hook))
 
 (defmethod crud/add resource-type
   [{{:keys [start]} :body :as request}]
