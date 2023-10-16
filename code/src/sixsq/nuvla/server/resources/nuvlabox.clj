@@ -438,27 +438,29 @@ particular NuvlaBox release.
 
 (defmethod crud/do-action [resource-type "commission"]
   [{{uuid :uuid} :params body :body :as request}]
-  (let [id (str resource-type "/" uuid)]
-    (try
-      (let [capabilities (some-> body :capabilities set vec)
-            ssh-keys     (some-> body :ssh-keys set vec)
-            nuvlabox     (-> (crud/retrieve-by-id-as-admin id)
-                             (a/throw-cannot-manage request)
-                             (u/throw-can-not-do-action
-                               utils/can-commission? "commission")
-                             (assoc :state utils/state-commissioned)
-                             (cond-> capabilities (assoc :capabilities capabilities)
-                                     ssh-keys (assoc :ssh-keys ssh-keys))
-                             u/update-timestamps
-                             crud/validate)]
-        (commission nuvlabox request)
+  (tufte/profile {:id "nb-commission"}
+                 (let [id (str resource-type "/" uuid)]
+                   (try
+                     (let [capabilities (some-> body :capabilities set vec)
+                           ssh-keys     (some-> body :ssh-keys set vec)
+                           nuvlabox     (-> (tufte/p "retrieve-nb"
+                                                     (crud/retrieve-by-id-as-admin id))
+                                            (a/throw-cannot-manage request)
+                                            (u/throw-can-not-do-action
+                                              utils/can-commission? "commission")
+                                            (assoc :state utils/state-commissioned)
+                                            (cond-> capabilities (assoc :capabilities capabilities)
+                                                    ssh-keys (assoc :ssh-keys ssh-keys))
+                                            u/update-timestamps
+                                            crud/validate)]
+                       (commission nuvlabox request)
 
-        (let [resp (db/edit nuvlabox)]
-          (ka-crud/publish-on-edit resource-type resp))
+                       (let [resp (db/edit nuvlabox)]
+                         (ka-crud/publish-on-edit resource-type resp))
 
-        (r/map-response "commission executed successfully" 200))
-      (catch Exception e
-        (or (ex-data e) (throw e))))))
+                       (r/map-response "commission executed successfully" 200))
+                     (catch Exception e
+                       (or (ex-data e) (throw e)))))))
 
 
 ;;
@@ -537,32 +539,31 @@ particular NuvlaBox release.
 
 (defmethod crud/do-action [resource-type utils/action-heartbeat]
   [{{uuid :uuid} :params :as request}]
-  (tufte/profile {:id (:id uuid)
-                  :data request}
-                 (tufte/p :heartbeat
-                          (try
-                            (-> (str resource-type "/" uuid)
-                                crud/retrieve-by-id-as-admin
-                                (a/throw-cannot-manage request)
-                                (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
-                                (utils/set-online! true)
-                                (utils/pending-jobs)
-                                r/json-response)
-                            (catch Exception e
-                              (or (ex-data e) (throw e)))))))
+  (tufte/profile {:id (str "nb-" utils/action-heartbeat)}
+                 (try
+                   (-> (str resource-type "/" uuid)
+                       (#(tufte/p "retrieve-nb" (crud/retrieve-by-id-as-admin %)))
+                       (a/throw-cannot-manage request)
+                       (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
+                       (utils/set-online! true)
+                       (utils/pending-jobs)
+                       r/json-response)
+                   (catch Exception e
+                     (or (ex-data e) (throw e))))))
 
 (defmethod crud/do-action [resource-type utils/action-set-offline]
   [{{uuid :uuid} :params :as request}]
-  (try
-    (-> (str resource-type "/" uuid)
-        crud/retrieve-by-id-as-admin
-        (a/throw-not-admin-request request)
-        (u/throw-can-not-do-action
-          utils/can-set-offline? utils/action-set-offline)
-        (utils/set-online! false))
-    (r/map-response "offline" 200)
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
+  (tufte/profile {:id (str "nb-" utils/action-set-offline)}
+                 (try
+                   (-> (str resource-type "/" uuid)
+                       crud/retrieve-by-id-as-admin
+                       (a/throw-not-admin-request request)
+                       (u/throw-can-not-do-action
+                         utils/can-set-offline? utils/action-set-offline)
+                       (utils/set-online! false))
+                   (r/map-response "offline" 200)
+                   (catch Exception e
+                     (or (ex-data e) (throw e))))))
 
 
 ;;

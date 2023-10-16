@@ -1844,25 +1844,6 @@
             (is (some? (:last-heartbeat nb-status))))
           )))))
 
-(deftest perf
-  (binding [config-nuvla/*stripe-api-key* nil]
-    (let [session       (-> (ltu/ring-app)
-                            session
-                            (content-type "application/json"))
-          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-
-          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
-          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
-
-      ;; activate nuvlabox
-      (-> session-admin
-          (request (str p/service-context "hook/perf"))
-          (ltu/is-status 200)
-          ltu/body
-          println)
-
-      )))
-
 
 (deftest should-propagate-changes-test
   (are [expected current updated]

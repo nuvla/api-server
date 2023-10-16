@@ -13,7 +13,7 @@
     [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
     [sixsq.nuvla.server.util.kafka-crud :as kafka-crud]
     [sixsq.nuvla.server.util.response :as r]
-    [taoensso.tufte :refer [defnp]]
+    [taoensso.tufte :as tufte]
     [sixsq.nuvla.server.util.time :as time]))
 
 (def ^:const state-new "NEW")
@@ -373,16 +373,18 @@
           (some? online)
           (assoc :online-prev online)))
 
-(defnp set-online!
+(defn set-online!
   [{:keys [id nuvlabox-status heartbeat-interval]
     :or   {heartbeat-interval default-heartbeat-interval}
     :as   nuvlabox} online-new]
   (let [nb-status (status-online-attributes nuvlabox online-new)]
-    (r/throw-response-not-200
-      (db/scripted-edit id {:doc {:online             online-new
-                                  :heartbeat-interval heartbeat-interval}}))
-    (r/throw-response-not-200
-      (db/scripted-edit nuvlabox-status {:doc nb-status}))
+    (tufte/p "update-nb"
+      (r/throw-response-not-200
+        (db/scripted-edit id {:doc {:online             online-new
+                                    :heartbeat-interval heartbeat-interval}})))
+    (tufte/p "update-nb-status"
+      (r/throw-response-not-200
+       (db/scripted-edit nuvlabox-status {:doc nb-status})))
     (kafka-crud/publish-on-edit
       "nuvlabox-status"
       (r/json-response (assoc nb-status :id nuvlabox-status)))
@@ -390,20 +392,21 @@
 
 (defn get-jobs
   [nb-id]
-  (->> {:params      {:resource-name "job"}
-        :cimi-params {:filter  (cimi-params-impl/cimi-filter
-                                 {:filter (str "execution-mode='pull' and "
-                                               "state!='FAILED' and "
-                                               "state!='SUCCESS' and state!='STOPPED'")})
-                      :select  ["id"]
-                      :orderby [["created" :asc]]}
-        :nuvla/authn {:user-id      nb-id
-                      :active-claim nb-id
-                      :claims       #{nb-id "group/nuvla-user" "group/nuvla-anon"}}}
-       crud/query
-       :body
-       :resources
-       (mapv :id)))
+  (tufte/p "get-jobs"
+    (->> {:params      {:resource-name "job"}
+         :cimi-params {:filter  (cimi-params-impl/cimi-filter
+                                  {:filter (str "execution-mode='pull' and "
+                                                "state!='FAILED' and "
+                                                "state!='SUCCESS' and state!='STOPPED'")})
+                       :select  ["id"]
+                       :orderby [["created" :asc]]}
+         :nuvla/authn {:user-id      nb-id
+                       :active-claim nb-id
+                       :claims       #{nb-id "group/nuvla-user" "group/nuvla-anon"}}}
+        crud/query
+        :body
+        :resources
+        (mapv :id))))
 
 (defn pending-jobs
   [{:keys [id] :as _nuvlabox}]

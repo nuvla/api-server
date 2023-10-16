@@ -18,7 +18,8 @@
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.util.general :as gen-util]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [taoensso.tufte :as tufte]))
 
 
 (defn create-infrastructure-service-group
@@ -629,62 +630,72 @@
                            (true? swarm-worker) false
                            (true? swarm-enabled) true
                            :else nil)
-          swarm-id       (or
-                           (update-coe-service id name acl isg-id "swarm"
-                                               :endpoint swarm-endpoint
-                                               :capabilities capabilities
-                                               :swarm-enabled swarm-enabled
-                                               :swarm-manager swarm-manager)
-                           (create-coe-service id name acl isg-id "swarm"
-                                               swarm-endpoint
-                                               :capabilities capabilities
-                                               :swarm-enabled (or swarm-enabled false)
-                                               :swarm-manager swarm-manager))
-          kubernetes-id  (or
-                           (update-coe-service id name acl isg-id "kubernetes"
-                                               :endpoint kubernetes-endpoint
-                                               :tags tags
-                                               :capabilities capabilities)
-                           (create-coe-service id name acl isg-id "kubernetes"
-                                               kubernetes-endpoint
-                                               :tags tags
-                                               :capabilities capabilities))
-          minio-id       (or
-                           (update-minio-service id name acl isg-id minio-endpoint)
-                           (create-minio-service id name acl isg-id minio-endpoint))]
+          swarm-id       (tufte/p "create-update-coe-swarm"
+                           (or
+                            (update-coe-service id name acl isg-id "swarm"
+                                                :endpoint swarm-endpoint
+                                                :capabilities capabilities
+                                                :swarm-enabled swarm-enabled
+                                                :swarm-manager swarm-manager)
+                            (create-coe-service id name acl isg-id "swarm"
+                                                swarm-endpoint
+                                                :capabilities capabilities
+                                                :swarm-enabled (or swarm-enabled false)
+                                                :swarm-manager swarm-manager)))
+          kubernetes-id  (tufte/p "create-update-coe-k8s"
+                           (or
+                            (update-coe-service id name acl isg-id "kubernetes"
+                                                :endpoint kubernetes-endpoint
+                                                :tags tags
+                                                :capabilities capabilities)
+                            (create-coe-service id name acl isg-id "kubernetes"
+                                                kubernetes-endpoint
+                                                :tags tags
+                                                :capabilities capabilities)))
+          minio-id       (tufte/p "create-update-minio"
+                           (or
+                            (update-minio-service id name acl isg-id minio-endpoint)
+                            (create-minio-service id name acl isg-id minio-endpoint)))]
 
       (when (and cluster-id cluster-managers)
-        (or
-          (update-nuvlabox-cluster id cluster-id nil cluster-managers cluster-workers)
-          (create-nuvlabox-cluster id name cluster-id cluster-orchestrator cluster-managers cluster-workers)))
+        (tufte/p "create-update-cluster"
+          (or
+           (update-nuvlabox-cluster id cluster-id nil cluster-managers cluster-workers)
+           (create-nuvlabox-cluster id name cluster-id cluster-orchestrator cluster-managers cluster-workers))))
 
       (when (and (not cluster-id) cluster-worker-id)
-        (update-nuvlabox-cluster id cluster-id cluster-worker-id cluster-managers cluster-workers))
+        (tufte/p "update-nuvlabox-cluster-worker-id"
+          (update-nuvlabox-cluster id cluster-id cluster-worker-id cluster-managers cluster-workers)))
 
       (when swarm-id
-        (or
-          (update-coe-cred id name acl swarm-id swarm-client-key
-                           swarm-client-cert swarm-client-ca "infrastructure-service-swarm")
-          (create-coe-cred id name acl swarm-id swarm-client-key
-                           swarm-client-cert swarm-client-ca "infrastructure-service-swarm"))
-        (or
-          (update-swarm-token id name acl swarm-id "MANAGER" swarm-token-manager)
-          (create-swarm-token id name acl swarm-id "MANAGER" swarm-token-manager))
-        (or
-          (update-swarm-token id name acl swarm-id "WORKER" swarm-token-worker)
-          (create-swarm-token id name acl swarm-id "WORKER" swarm-token-worker)))
+        (tufte/p "create-update-coe-swarm-cred"
+          (or
+           (update-coe-cred id name acl swarm-id swarm-client-key
+                            swarm-client-cert swarm-client-ca "infrastructure-service-swarm")
+           (create-coe-cred id name acl swarm-id swarm-client-key
+                            swarm-client-cert swarm-client-ca "infrastructure-service-swarm")))
+        (tufte/p "create-update-swarm-manager-token"
+          (or
+           (update-swarm-token id name acl swarm-id "MANAGER" swarm-token-manager)
+           (create-swarm-token id name acl swarm-id "MANAGER" swarm-token-manager)))
+        (tufte/p "create-update-swarm-worker-token"
+          (or
+           (update-swarm-token id name acl swarm-id "WORKER" swarm-token-worker)
+           (create-swarm-token id name acl swarm-id "WORKER" swarm-token-worker))))
 
       (when kubernetes-id
-        (or
-          (update-coe-cred id name acl kubernetes-id kubernetes-client-key
-                           kubernetes-client-cert kubernetes-client-ca "infrastructure-service-kubernetes")
-          (create-coe-cred id name acl kubernetes-id kubernetes-client-key
-                           kubernetes-client-cert kubernetes-client-ca "infrastructure-service-kubernetes")))
+        (tufte/p "create-update-coe-k8s-cred"
+          (or
+           (update-coe-cred id name acl kubernetes-id kubernetes-client-key
+                            kubernetes-client-cert kubernetes-client-ca "infrastructure-service-kubernetes")
+           (create-coe-cred id name acl kubernetes-id kubernetes-client-key
+                            kubernetes-client-cert kubernetes-client-ca "infrastructure-service-kubernetes"))))
 
       (when minio-id
-        (or
-          (update-minio-cred id name acl minio-id minio-access-key minio-secret-key)
-          (create-minio-cred id name acl minio-id minio-access-key minio-secret-key)))
+        (tufte/p "create-update-minio-cred"
+          (or
+           (update-minio-cred id name acl minio-id minio-access-key minio-secret-key)
+           (create-minio-cred id name acl minio-id minio-access-key minio-secret-key))))
 
       (when (and vpn-server-id vpn-csr)
         (let [active-claim (auth/current-active-claim request)
@@ -695,10 +706,12 @@
           (create-vpn-cred id name vpn-server-id vpn-csr authn-info)))
 
       (when (contains? removed-set "swarm-token-manager")
-        (delete-resource (get-swarm-token swarm-id "MANAGER") auth/internal-identity))
+        (tufte/p "delete-resource-swarm-manager-token"
+          (delete-resource (get-swarm-token swarm-id "MANAGER") auth/internal-identity)))
 
       (when (contains? removed-set "swarm-token-worker")
-        (delete-resource (get-swarm-token swarm-id "WORKER") auth/internal-identity))
+        (tufte/p "delete-resource-swarm-worker-token"
+          (delete-resource (get-swarm-token swarm-id "WORKER") auth/internal-identity)))
       )))
 
 

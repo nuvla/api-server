@@ -28,6 +28,8 @@
         (request base-uri)
         (ltu/is-status 403))
 
-    (-> session-admin
-        (request base-uri)
-        (ltu/is-status 200))))
+    (println
+      (-> session-admin
+         (request base-uri)
+         (ltu/is-status 200)
+          ltu/body))))

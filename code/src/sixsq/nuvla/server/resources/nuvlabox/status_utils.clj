@@ -2,7 +2,8 @@
   (:require
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
-    [sixsq.nuvla.server.util.time :as time]))
+    [sixsq.nuvla.server.util.time :as time]
+    [taoensso.tufte :as tufte]))
 
 (def DENORMALIZED_FIELD [:online :inferred-location :nuvlabox-engine-version])
 
@@ -17,7 +18,8 @@
   [{:keys [parent] :as nuvlabox-status}]
   (let [propagate-status (status-fields-to-denormalize nuvlabox-status)]
     (when (seq propagate-status)
-      (db/scripted-edit parent {:doc propagate-status}))))
+      (tufte/p "denormalize-changes-nuvlabox"
+        (db/scripted-edit parent {:doc propagate-status})))))
 
 (defn status-telemetry-attributes
   [nuvlabox-status

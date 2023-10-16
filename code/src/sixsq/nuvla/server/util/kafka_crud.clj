@@ -2,7 +2,8 @@
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.util.kafka :as ka]))
+    [sixsq.nuvla.server.util.kafka :as ka]
+    [taoensso.tufte :as tufte]))
 
 
 (defn publish-on-add
@@ -24,14 +25,15 @@
 (defn publish-on-edit
   "Publish to a `topic` based on result of edit response `edit-response`."
   [topic edit-response & {:keys [key] :or {key "id"}}]
-  (try
-    (when (= 200 (int (:status edit-response)))
-      (let [msg-key  (-> edit-response :body (get (keyword key)))
-            resource (:body edit-response)]
-        (log/debugf "publish on edit: %s %s" msg-key resource)
-        (ka/publish! topic msg-key resource)))
-    (catch Exception e
-      (log/warn "Failed publishing to Kafka on edit: " (str e)))))
+  (tufte/p "publish-on-edit"
+    (try
+     (when (= 200 (int (:status edit-response)))
+       (let [msg-key  (-> edit-response :body (get (keyword key)))
+             resource (:body edit-response)]
+         (log/debugf "publish on edit: %s %s" msg-key resource)
+         (ka/publish! topic msg-key resource)))
+     (catch Exception e
+       (log/warn "Failed publishing to Kafka on edit: " (str e))))))
 
 
 (defn publish-tombstone

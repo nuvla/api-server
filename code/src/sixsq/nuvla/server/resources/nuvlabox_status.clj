@@ -16,7 +16,8 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
     [sixsq.nuvla.server.resources.spec.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.util.kafka-crud :as kafka-crud]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [taoensso.tufte :as tufte]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -109,7 +110,8 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
   [{nb-id          :parent
     resources-prev :resources :as resource}
    request]
-  (let [nb (crud/retrieve-by-id-as-admin nb-id)]
+  (let [nb (tufte/p "retrieve-nb"
+             (crud/retrieve-by-id-as-admin nb-id))]
     (-> (nb-utils/throw-parent-nuvlabox-is-suspended resource nb)
         (nb-utils/legacy-heartbeat request nb)
         (utils/status-telemetry-attributes nb)
@@ -131,7 +133,8 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                       ex))]
     (if exception
       (do
-        (crud/edit (dissoc request :body))
+        (tufte/p "spec-issue-minimal-edit"
+          (crud/edit (dissoc request :body)))
         (throw exception))
       resource)))
 
