@@ -1731,25 +1731,25 @@
 
           session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
           session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")
-          nuvlabox-id  (-> session-owner
-                           (request base-uri
-                                    :request-method :post
-                                    :body (json/write-str
-                                            (update valid-nuvlabox
-                                                    :capabilities
-                                                    conj
-                                                    utils/capability-heartbeat)))
-                           (ltu/body->edn)
-                           (ltu/is-status 201)
-                           (ltu/location))
+          nuvlabox-id   (-> session-owner
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str
+                                             (update valid-nuvlabox
+                                                     :capabilities
+                                                     conj
+                                                     utils/capability-heartbeat)))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
 
-          nuvlabox-url (str p/service-context nuvlabox-id)
+          nuvlabox-url  (str p/service-context nuvlabox-id)
 
-          activate-url (-> session-owner
-                           (request nuvlabox-url)
-                           (ltu/body->edn)
-                           (ltu/is-status 200)
-                           (ltu/get-op-url :activate))]
+          activate-url  (-> session-owner
+                            (request nuvlabox-url)
+                            (ltu/body->edn)
+                            (ltu/is-status 200)
+                            (ltu/get-op-url :activate))]
 
       ;; activate nuvlabox
       (-> session-anon
@@ -1818,6 +1818,13 @@
             (is (nil? (:online-prev nb-status)))
             (is (some? (:next-heartbeat nb-status)))
             (is (some? (:last-heartbeat nb-status))))
+
+          (testing "second heartbeat is possible and doesn't fail (noop on ES)"
+            (-> session-nuvlabox
+                (request heartbeat-op)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-key-value :jobs [])))
 
           (-> session-admin
               (request set-offline-op)

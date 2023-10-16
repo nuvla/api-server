@@ -195,11 +195,11 @@
                          :request-method :put
                          :body (json/write-str {:resources resources-updated}))
                 (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-key-value :resources resources-updated)
-                (ltu/is-key-value :resources-prev nil))
+                (ltu/is-status 200))
 
-            (is (= resources-prev (:resources-prev (db/retrieve state-id))))
+            (let [nb-status (db/retrieve state-id)]
+              (is (= resources-updated (:resources nb-status)))
+              (is (= resources-prev (:resources-prev nb-status))))
 
             ;; admin edition can set online flag
             (-> session-admin
@@ -224,11 +224,11 @@
                          :request-method :put
                          :body (json/write-str {:resources resources-updated}))
                 (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-key-value :resources resources-updated)
-                (ltu/is-key-value :resources-prev nil))
+                (ltu/is-status 200))
 
-            (is (= resources-prev (:resources-prev (db/retrieve state-id)))))
+            (let [nb-status (db/retrieve state-id)]
+              (is (= resources-updated (:resources nb-status)))
+              (is (= resources-prev (:resources-prev nb-status)))))
 
           ;; verify that the update was written to disk
           (-> session-nb
@@ -247,10 +247,11 @@
                        :request-method :put
                        :body (json/write-str {:peripherals peripherals-updated}))
               (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value :peripherals peripherals-updated))
+              (ltu/is-status 200))
 
-          (is (= resources-prev (:resources-prev (db/retrieve state-id)))))
+          (let [nb-status (db/retrieve state-id)]
+            (is (= peripherals-updated (:peripherals nb-status)))
+            (is (= resources-prev (:resources-prev nb-status)))))
 
           ;; non of the items in the collection contain '-prev' keys
           (let [resp-resources (-> session-nb
