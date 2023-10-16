@@ -70,6 +70,10 @@
   [response]
   (pos? (get-in response [:body :_shards :successful])))
 
+(defn noop?
+  [response]
+  (= (get-in response [:body :result]) "noop"))
+
 (defn no-body-failures?
   [response]
   (empty? (get-in response [:body :failures])))
@@ -86,7 +90,7 @@
                                                :query-string {:refresh true}
                                                :method       :put
                                                :body         updated-doc})
-          success? (shards-successful? response)]
+          success?    (shards-successful? response)]
       (if success?
         (r/response-created id)
         (r/response-conflict id)))
@@ -109,7 +113,7 @@
                                                :query-string {:refresh true}
                                                :method       :put
                                                :body         updated-doc})
-          success? (shards-successful? response)]
+          success?    (shards-successful? response)]
       (if success?
         (r/json-response data)
         (r/response-conflict id)))
@@ -127,7 +131,8 @@
                                             :query-string {:refresh true}
                                             :method       :post
                                             :body         options})
-          success? (shards-successful? response)]
+          success? (or (shards-successful? response)
+                       (noop? response))]
       (if success?
         (r/map-response "updated successfully" 200 id)
         (r/response-conflict id)))
