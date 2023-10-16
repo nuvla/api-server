@@ -65,7 +65,8 @@
    ;; need for Factual geo wkt polygon to geojson
    ;; upgrading jts2geojson dependency to 0.16 or 0.17 creates conflicts for now
    [org.wololo/jts2geojson "0.15.0"]
-   [one-time "0.7.0"]]
+   [one-time "0.7.0"]
+   [com.taoensso/tufte "2.6.3"]]
 
   :profiles
   {
@@ -97,8 +98,7 @@
                                [com.cemerick/url]
                                [org.apache.curator/curator-test]
                                [org.clojars.konstan/kinsky-test-jar ~kinsky-version]
-                               [com.clojure-goes-fast/clj-async-profiler "1.0.5"]
-                               [com.taoensso/tufte "2.6.3"]]
+                               [com.clojure-goes-fast/clj-async-profiler "1.0.5"]]
               :resource-paths ["test-resources"]
               :env            {:nuvla-session-key           "test-resources/session.key"
                                :nuvla-session-crt           "test-resources/session.crt"

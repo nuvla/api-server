@@ -20,6 +20,6 @@ Stripe oauth hook.
     (r/text-response
       (if-let [m (not-empty @stats-accumulator)]
         (tufte/format-grouped-pstats m)
-        "Nothing (try visit the /sleep/... endpoints)"))
+        "Nothing"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
