@@ -117,13 +117,13 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                 (assoc :resources-prev resources-prev)))))
 
 (defn post-edit
-  [response]
+  [response request]
   (utils/denormalize-changes-nuvlabox (r/response-body response))
   (kafka-crud/publish-on-edit resource-type response)
-  response)
+  (utils/special-body-nuvlabox response request))
 
 (defn pre-validate-hook
-  [{:keys [parent] :as resource} request]
+  [resource request]
   (let [exception (try
                     (crud/validate resource)
                     nil
@@ -133,7 +133,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
       (do
         (crud/edit (dissoc request :body))
         (throw exception))
-      (assoc resource :jobs (nb-utils/get-jobs parent)))))
+      resource)))
 
 (def edit-impl (std-crud/edit-fn resource-type
                                  :pre-delete-attrs-hook pre-delete-attrs-hook
@@ -149,9 +149,12 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 (defmethod crud/edit resource-type
   [request]
   (try
-    (-> (edit-impl request)
-        post-edit
-        remove-blacklisted)
+    (let [response (edit-impl request)]
+      (if (r/status-200? response)
+        (-> response
+            (post-edit request)
+            remove-blacklisted)
+        response))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
