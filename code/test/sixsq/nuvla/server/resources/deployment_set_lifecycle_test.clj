@@ -344,6 +344,7 @@
                                   (ltu/is-operation-absent utils/action-stop)
                                   (ltu/is-operation-absent utils/action-update)
                                   (ltu/is-operation-absent utils/action-cancel)
+                                  (ltu/is-operation-absent utils/action-recompute-fleet)
                                   (ltu/get-op-url utils/action-start))
                 start-job-url (with-redefs [crud/get-resource-throw-nok
                                             (constantly u-applications-sets-v11)]
@@ -364,6 +365,7 @@
                 (ltu/is-operation-absent utils/action-stop)
                 (ltu/is-operation-absent utils/action-update)
                 (ltu/is-operation-present utils/action-cancel)
+                (ltu/is-operation-absent utils/action-recompute-fleet)
                 (ltu/is-key-value :state utils/state-starting))
 
             (-> session-user
@@ -388,6 +390,7 @@
               (ltu/is-operation-present utils/action-stop)
               (ltu/is-operation-present utils/action-update)
               (ltu/is-operation-absent utils/action-cancel)
+              (ltu/is-operation-absent utils/action-recompute-fleet)
               (ltu/is-key-value :state utils/state-started)))
 
         (testing "edit action is possible"
@@ -530,6 +533,7 @@
                                   (ltu/is-operation-present utils/action-stop)
                                   (ltu/is-operation-present utils/action-update)
                                   (ltu/is-operation-absent utils/action-cancel)
+                                  (ltu/is-operation-absent utils/action-recompute-fleet)
                                   (ltu/get-op-url utils/action-update))
                 job-url       (with-redefs [crud/get-resource-throw-nok
                                             (constantly u-applications-sets-v11)]
@@ -571,6 +575,7 @@
               (ltu/is-operation-present utils/action-stop)
               (ltu/is-operation-present utils/action-update)
               (ltu/is-operation-absent utils/action-cancel)
+              (ltu/is-operation-absent utils/action-recompute-fleet)
               (ltu/is-key-value :state utils/state-partially-updated)))
 
         (testing "a second update action will create a new bulk_deployment_set_update job"
@@ -584,6 +589,7 @@
                                   (ltu/is-operation-present utils/action-stop)
                                   (ltu/is-operation-present utils/action-update)
                                   (ltu/is-operation-absent utils/action-cancel)
+                                  (ltu/is-operation-absent utils/action-recompute-fleet)
                                   (ltu/get-op-url utils/action-update))
                 job-url       (with-redefs [crud/get-resource-throw-nok
                                             (constantly u-applications-sets-v11)]
@@ -610,6 +616,7 @@
                                       (ltu/is-operation-absent utils/action-stop)
                                       (ltu/is-operation-absent utils/action-update)
                                       (ltu/is-operation-present utils/action-cancel)
+                                      (ltu/is-operation-absent utils/action-recompute-fleet)
                                       (ltu/get-op-url utils/action-cancel))]
                 (with-redefs [crud/get-resource-throw-nok
                               (constantly u-applications-sets-v11)]
@@ -636,6 +643,7 @@
                     (ltu/is-operation-present utils/action-stop)
                     (ltu/is-operation-present utils/action-update)
                     (ltu/is-operation-absent utils/action-cancel)
+                    (ltu/is-operation-absent utils/action-recompute-fleet)
                     (ltu/is-key-value :state utils/state-partially-updated))
                 ))))
 
@@ -650,6 +658,7 @@
                                 (ltu/is-operation-present utils/action-stop)
                                 (ltu/is-operation-present utils/action-update)
                                 (ltu/is-operation-absent utils/action-cancel)
+                                (ltu/is-operation-absent utils/action-recompute-fleet)
                                 (ltu/get-op-url utils/action-stop))
                 job-url     (with-redefs [crud/get-resource-throw-nok
                                           (constantly u-applications-sets-v11)]
@@ -674,6 +683,7 @@
                 (ltu/is-operation-absent utils/action-start)
                 (ltu/is-operation-absent utils/action-stop)
                 (ltu/is-operation-present utils/action-cancel)
+                (ltu/is-operation-absent utils/action-recompute-fleet)
                 (ltu/is-key-value :state utils/state-stopping))))
 
         (testing "force state transition to simulate job action"
@@ -692,6 +702,7 @@
               (ltu/is-operation-present utils/action-force-delete)
               (ltu/is-operation-absent utils/action-update)
               (ltu/is-operation-absent utils/action-cancel)
+              (ltu/is-operation-absent utils/action-recompute-fleet)
               (ltu/is-key-value :state utils/state-partially-stopped)))
 
         (testing "force delete deployment set will create a job"
@@ -780,6 +791,7 @@
                             (ltu/is-key-value
                               (comp :fleet-filter first :overwrites first)
                               :applications-sets fleet-filter)
+                            (ltu/is-operation-present utils/action-recompute-fleet)
                             ltu/body)
             app-set-id  (-> dep-set
                             :applications-sets
@@ -840,6 +852,7 @@
                                    (ltu/is-key-value
                                      (comp :fleet-filter first :overwrites first)
                                      :applications-sets fleet-filter)
+                                   (ltu/is-operation-present utils/action-recompute-fleet)
                                    ltu/body
                                    :applications-sets
                                    first
@@ -848,7 +861,7 @@
 
         (testing "Fleet filter"
           (let [dynamic-fleet ["nuvlabox/1" "nuvlabox/2"]]
-            (with-redefs [nuvlabox/query-impl (constantly {:body {:count (count dynamic-fleet)
+            (with-redefs [nuvlabox/query-impl (constantly {:body {:count     (count dynamic-fleet)
                                                                   :resources (mapv (fn [id] {:id id}) dynamic-fleet)}})]
               (-> session-user
                   (request dep-set-url
@@ -866,7 +879,25 @@
                     :applications-sets dynamic-fleet)
                   (ltu/is-key-value
                     (comp :fleet-filter first :overwrites first)
-                    :applications-sets fleet-filter)))))))))
+                    :applications-sets fleet-filter)
+                  (ltu/is-operation-present utils/action-recompute-fleet)))))
+
+        (testing "Recompute fleet"
+          (let [dynamic-fleet ["nuvlabox/1" "nuvlabox/2" "nuvlabox/3"]]
+            (with-redefs [nuvlabox/query-impl (constantly {:body {:count     (count dynamic-fleet)
+                                                                  :resources (mapv (fn [id] {:id id}) dynamic-fleet)}})]
+              (let [recompute-fleet-op (-> session-user
+                                           (request dep-set-url)
+                                           (ltu/body->edn)
+                                           (ltu/is-status 200)
+                                           (ltu/get-op-url utils/action-recompute-fleet))]
+                (-> session-user
+                    (request recompute-fleet-op)
+                    (ltu/body->edn)
+                    (ltu/is-status 200)
+                    (ltu/is-key-value
+                      (comp :fleet first :overwrites first)
+                      :applications-sets dynamic-fleet))))))))))
 
 (deftest lifecycle-deployment-detach
   (binding [config-nuvla/*stripe-api-key* nil]

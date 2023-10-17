@@ -316,6 +316,27 @@ These resources represent a deployment set that regroups deployments.
   [request]
   (standard-action request action-simple))
 
+(defn recompute-fleet
+  [{:keys [applications-sets] :as resource} request]
+  (let [fleet-filter (-> applications-sets first :overwrites first :fleet-filter)]
+    (cond-> resource
+            fleet-filter
+            (assoc-in [:applications-sets 0 :overwrites 0 :fleet]
+                      (map :id (utils/query-nuvlaboxes fleet-filter request))))))
+
+(defmethod crud/do-action [resource-type utils/action-recompute-fleet]
+  [request]
+  (let [current (load-resource-throw-not-allowed-action request)]
+    (-> current
+        (recompute-fleet request)
+        (sm/transition request)
+        u/update-timestamps
+        (u/set-updated-by request)
+        (pre-validate-hook request)
+        crud/validate
+        (crud/set-operations request)
+        db/edit)))
+
 (defn cancel-latest-job
   [{:keys [id] :as _resource} _request]
   (let [filter-str (format "target-resource/href='%s' and (state='%s' or state='%s')" id
