@@ -18,6 +18,7 @@
 (def action-force-delete "force-delete")
 (def action-plan "plan")
 (def action-operational-status "operational-status")
+(def action-recompute-fleet "recompute-fleet")
 
 (def actions [crud/action-edit
               crud/action-delete
@@ -27,7 +28,8 @@
               action-cancel
               action-force-delete
               action-plan
-              action-operational-status])
+              action-operational-status
+              action-recompute-fleet])
 
 
 (def state-new "NEW")
@@ -60,6 +62,8 @@
 
 (def guard-operational-status-nok? :operational-status-nok)
 
+(def guard-fleet-filter-defined? :fleet-filter-defined)
+
 (defn transition-ok
   [to-state]
   {::tk/on action-ok ::tk/to to-state ::tk/guards [sm/guard-is-admin?]})
@@ -82,10 +86,16 @@
 (def transition-force-delete {::tk/on action-force-delete ::tk/guards [sm/guard-can-delete?]})
 (def transition-plan {::tk/on action-plan ::tk/guards [sm/guard-can-manage?]})
 (def transition-operational-status {::tk/on action-operational-status ::tk/guards [sm/guard-can-manage?]})
+(def transition-recompute-fleet {::tk/on action-recompute-fleet ::tk/guards [sm/guard-can-edit?
+                                                                             guard-fleet-filter-defined?]})
 
 (defn operational-status-nok?
   [{{:keys [status]} :operational-status :as _resource}]
   (= status operational-status-nok))
+
+(defn fleet-filter-defined?
+  [resource]
+  (some? (get-in resource [:applications-sets 0 :overwrites 0 :fleet-filter])))
 
 (def state-machine
   {::tk/states [{::tk/name        state-new
@@ -93,7 +103,8 @@
                                    transition-edit
                                    transition-plan
                                    transition-operational-status
-                                   transition-delete]}
+                                   transition-delete
+                                   transition-recompute-fleet]}
                 {::tk/name        state-starting
                  ::tk/transitions [(transition-cancel state-partially-started)
                                    (transition-nok state-partially-started)
@@ -106,7 +117,8 @@
                                    transition-stop
                                    transition-plan
                                    transition-operational-status
-                                   transition-force-delete]}
+                                   transition-force-delete
+                                   transition-recompute-fleet]}
                 {::tk/name        state-partially-started
                  ::tk/transitions [transition-edit
                                    transition-update
@@ -125,14 +137,16 @@
                                    transition-edit
                                    transition-plan
                                    transition-operational-status
-                                   transition-delete]}
+                                   transition-delete
+                                   transition-recompute-fleet]}
                 {::tk/name        state-partially-stopped
                  ::tk/transitions [transition-edit
                                    transition-start
                                    transition-stop
                                    transition-plan
                                    transition-operational-status
-                                   transition-force-delete]}
+                                   transition-force-delete
+                                   transition-recompute-fleet]}
                 {::tk/name        state-updating
                  ::tk/transitions [(transition-cancel state-partially-updated)
                                    (transition-nok state-partially-updated)
@@ -145,19 +159,22 @@
                                    transition-stop
                                    transition-plan
                                    transition-operational-status
-                                   transition-force-delete]}
+                                   transition-force-delete
+                                   transition-recompute-fleet]}
                 {::tk/name        state-partially-updated
                  ::tk/transitions [transition-edit
                                    transition-update
                                    transition-stop
                                    transition-plan
                                    transition-operational-status
-                                   transition-force-delete]}]
+                                   transition-force-delete
+                                   transition-recompute-fleet]}]
    ::tk/guard? (fn [{{:keys [resource _request]} ::tk/process
                      guard                       ::tk/guard :as ctx}]
                  (or (sm/guard? ctx)
                      (condp = guard
                        guard-operational-status-nok? (operational-status-nok? resource)
+                       guard-fleet-filter-defined? (fleet-filter-defined? resource)
                        false)))
    ::tk/state  state-new})
 
