@@ -3,6 +3,7 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
     [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
     [sixsq.nuvla.server.resources.spec.deployment-set-operational-status :as os]
     [sixsq.nuvla.server.resources.spec.module-applications-sets :as module-sets]
@@ -32,6 +33,14 @@
          :json-schema/display-name "fleet"
          :json-schema/description "List of targeted edge ids."))
 
+(s/def ::fleet-filter
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "fleet-filter"
+             :json-schema/type "string"
+
+             :json-schema/display-name "fleet filter"
+             :json-schema/description "filter for fleet associated with this deployment set")))
+
 (s/def ::start
   (assoc (st/spec boolean?)
     :name "start"
@@ -42,7 +51,8 @@
 (s/def ::set-overwrites
   (assoc (st/spec (su/only-keys :opt-un [::module-sets/applications
                                          ::targets
-                                         ::fleet]))
+                                         ::fleet
+                                         ::fleet-filter]))
     :name "set-overwrites"
     :json-schema/type "map"))
 

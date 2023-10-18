@@ -16,6 +16,7 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.module :as module]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
+    [sixsq.nuvla.server.resources.nuvlabox :as nuvlabox]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
@@ -744,7 +745,8 @@
         session-user (header session-anon authn-info-header
                              (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
         module-id    (resource-creation/create-module session-user)
-        fleet        ["nuvlabox/1"]]
+        fleet        ["nuvlabox/1"]
+        fleet-filter "resource:type='nuvlabox'"]
 
     (module/initialize)
 
@@ -760,10 +762,11 @@
       (let [dep-set-url (-> session-user
                             (request base-uri
                                      :request-method :post
-                                     :body (json/write-str {:name    dep-set-name,
-                                                            :start   false,
-                                                            :modules [m-id]
-                                                            :fleet   fleet}))
+                                     :body (json/write-str {:name         dep-set-name,
+                                                            :start        false,
+                                                            :modules      [m-id]
+                                                            :fleet        fleet
+                                                            :fleet-filter fleet-filter}))
                             ltu/body->edn
                             (ltu/is-status 201)
                             ltu/location-url)
@@ -774,6 +777,9 @@
                             (ltu/is-key-value
                               (comp :fleet first :overwrites first)
                               :applications-sets fleet)
+                            (ltu/is-key-value
+                              (comp :fleet-filter first :overwrites first)
+                              :applications-sets fleet-filter)
                             ltu/body)
             app-set-id  (-> dep-set
                             :applications-sets
@@ -808,6 +814,9 @@
                                    (ltu/is-key-value
                                      (comp :fleet first :overwrites first)
                                      :applications-sets fleet)
+                                   (ltu/is-key-value
+                                     (comp :fleet-filter first :overwrites first)
+                                     :applications-sets fleet-filter)
                                    ltu/body
                                    :applications-sets
                                    first
@@ -817,7 +826,8 @@
               (request dep-set-url
                        :request-method :put
                        :body (json/write-str (assoc dep-set :modules [m-id]
-                                                            :fleet   fleet)))
+                                                            :fleet fleet
+                                                            :fleet-filter fleet-filter)))
               ltu/body->edn
               (ltu/is-status 200))
           (let [new-app-set-id (-> session-user
@@ -827,11 +837,36 @@
                                    (ltu/is-key-value
                                      (comp :fleet first :overwrites first)
                                      :applications-sets fleet)
+                                   (ltu/is-key-value
+                                     (comp :fleet-filter first :overwrites first)
+                                     :applications-sets fleet-filter)
                                    ltu/body
                                    :applications-sets
                                    first
                                    :id)]
-            (is (not= new-app-set-id app-set-id))))))))
+            (is (not= new-app-set-id app-set-id))))
+
+        (testing "Fleet filter"
+          (let [dynamic-fleet ["nuvlabox/1" "nuvlabox/2"]]
+            (with-redefs [nuvlabox/query-impl (constantly {:body {:count (count dynamic-fleet)
+                                                                  :resources (mapv (fn [id] {:id id}) dynamic-fleet)}})]
+              (-> session-user
+                  (request dep-set-url
+                           :request-method :put
+                           :body (json/write-str (assoc dep-set :modules [m-id]
+                                                                :fleet-filter fleet-filter)))
+                  ltu/body->edn
+                  (ltu/is-status 200))
+              (-> session-user
+                  (request dep-set-url)
+                  ltu/body->edn
+                  (ltu/is-status 200)
+                  (ltu/is-key-value
+                    (comp :fleet first :overwrites first)
+                    :applications-sets dynamic-fleet)
+                  (ltu/is-key-value
+                    (comp :fleet-filter first :overwrites first)
+                    :applications-sets fleet-filter)))))))))
 
 (deftest lifecycle-deployment-detach
   (binding [config-nuvla/*stripe-api-key* nil]

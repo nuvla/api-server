@@ -6,6 +6,7 @@
             [sixsq.nuvla.server.resources.common.state-machine :as sm]
             [sixsq.nuvla.server.resources.common.utils :as u]
             [sixsq.nuvla.server.resources.module.utils :as module-utils]
+            [sixsq.nuvla.server.resources.nuvlabox :as nuvlabox]
             [tilakone.core :as tk]))
 
 (def action-start "start")
@@ -309,3 +310,12 @@
   (if (every? (comp #(= "STOPPED" %) :state) (current-deployments deployment-set-id))
     action-ok
     action-nok))
+
+(defn query-nuvlaboxes
+  [cimi-filter request]
+  (let [{:keys [body]} (crud/query {:params      {:resource-name nuvlabox/resource-type}
+                                    :cimi-params {:filter (parser/parse-cimi-filter cimi-filter)
+                                                  :last   10000}
+                                    :nuvla/authn (:nuvla/authn request)})]
+    (:resources body)))
+
