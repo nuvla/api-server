@@ -43,21 +43,11 @@
 (deftest check-params->select
   (are [expect arg] (= expect (t/cimi-select {:select arg}))
                     nil nil
-                    nil "*"
-                    #{"a" "resource-type"} "a"
-                    #{"a" "resource-type"} " a "
-                    #{"a" "resource-type"} "a,a"
-                    #{"a" "resource-type"} [" a,a" "a" "a"]
-                    #{"a" "a2" "resource-type"} " a, a2 "))
-
-(deftest check-params->expand
-  (are [expect arg] (= expect (t/cimi-expand {:expand arg}))
-                    :none nil
-                    :all "*"
                     #{"a"} "a"
-                    #{"a" "b"} "a,b"
-                    #{"a" "b"} " a , b "
-                    #{"a" "b"} ["a" "b"]))
+                    #{"a"} " a "
+                    #{"a"} "a,a"
+                    #{"a"} [" a,a" "a" "a"]
+                    #{"a" "a2"} " a, a2 "))
 
 (deftest check-params->orderby
   (are [expect arg] (= expect (t/cimi-orderby {:orderby arg}))

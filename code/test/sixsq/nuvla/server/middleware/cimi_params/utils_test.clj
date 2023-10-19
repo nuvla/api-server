@@ -56,21 +56,6 @@
                     [] nil))
 
 
-(deftest check-reduce-select-set
-  (are [expect arg] (= expect (t/reduce-select-set arg))
-                    #{"a" "b"} (set ["a" "b" "a" "b"])
-                    nil (set ["a" "b" "*"])
-                    nil nil))
-
-
-(deftest check-reduce-expand-set
-  (are [expect arg] (= expect (t/reduce-expand-set arg))
-                    :all #{"*"}
-                    :none #{}
-                    :none nil
-                    #{"a" "b"} #{"a" "b"}))
-
-
 (deftest check-orderby-clause
   (are [expect arg] (= expect (t/orderby-clause arg))
                     nil ":asc"

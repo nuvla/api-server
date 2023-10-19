@@ -62,15 +62,6 @@
          (remove str/blank?))
     []))
 
-(defn reduce-expand-set
-  "Reduce the given set to :all if the set contains the wildcard '*' or to
-  :none if the set is empty or nil. Otherwise this returns the original set."
-  [key-set]
-  (cond
-    (contains? key-set "*") :all
-    (empty? key-set) :none
-    :else key-set))
-
 (defn reduce-select-set
   "Reduce the given set to nil if the set contains the wildcard '*'. If the
    wildcard is not present, then the initial key set will be returned (which

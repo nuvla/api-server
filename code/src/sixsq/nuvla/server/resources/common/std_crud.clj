@@ -102,19 +102,28 @@
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
+(defn transform-entries
+  [entries {{:keys [select]} :cimi-params :as request} with-entries-op?]
+  (let [with-operations?  (and with-entries-op?
+                               (or (nil? select) (contains? select "operations")))
+        transformation-fn (remove nil? [(when with-operations?
+                                          #(crud/set-operations % request))
+                                        (when select
+                                          #(select-keys % (map keyword select)))])]
+    (if (seq transformation-fn)
+      (map (apply comp transformation-fn) entries)
+      entries)))
 
 (defn collection-wrapper-fn
   ([resource-name collection-acl collection-uri]
    (collection-wrapper-fn resource-name collection-acl collection-uri true true))
   ([resource-name collection-acl collection-uri with-collection-op? with-entries-op?]
    (fn [request entries]
-     (let [resources (cond->> entries
-                              with-entries-op? (map #(crud/set-operations % request)))
+     (let [resources (transform-entries entries request with-entries-op?)
            skeleton  {:acl           collection-acl
                       :resource-type collection-uri
                       :id            resource-name
                       :resources     resources}]
-
        (cond-> skeleton
                with-collection-op? (crud/set-operations request))))))
 
