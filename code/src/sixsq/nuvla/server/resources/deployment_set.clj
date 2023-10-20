@@ -133,7 +133,7 @@ These resources represent a deployment set that regroups deployments.
                          :nuvla/authn    (auth/current-authentication request)})))
 
 (defn create-module-apps-set
-  [{:keys [modules]} request]
+  [{:keys [modules overwrites]} request]
   (create-module
     {:path    (str module-utils/project-apps-sets "/" (u/random-uuid))
      :subtype module-utils/subtype-apps-sets
@@ -145,12 +145,13 @@ These resources represent a deployment set that regroups deployments.
                  :applications (map #(hash-map :id (module-utils/full-uuid->uuid %)
                                                :version
                                                (module-utils/latest-or-version-index
-                                                 (retrieve-module % request) %))
+                                                 (retrieve-module % request) %)
+                                               :overwrites overwrites)
                                     modules)}]}}))
 
 (defn replace-modules-by-apps-set
-  "Removes top level key :modules, creates an app set with those modules, and
-   makes the deployment set point to the new app-set.
+  "Removes top level keys :modules and :overwrites, creates an app set with those modules and
+   overwrites, and makes the deployment set point to the new app-set.
    A top level :fleet and/or :fleet-filter keys are also required:
    If :fleet is not specified, it is computed by querying edges satisfying the :fleet-filter.
    If both :fleet and :fleet-filter are specified, they are stored as-is, no consistency check is made."
@@ -158,7 +159,7 @@ These resources represent a deployment set that regroups deployments.
   (let [apps-set-id (create-module-apps-set resource request)
         fleet       (or fleet (map :id (some-> fleet-filter (utils/query-nuvlaboxes request))))]
     (-> resource
-        (dissoc :modules :fleet :fleet-filter)
+        (dissoc :modules :overwrites :fleet :fleet-filter)
         (assoc :applications-sets [{:id      apps-set-id,
                                     :version 0
                                     :overwrites

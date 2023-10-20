@@ -776,6 +776,7 @@
                                      :body (json/write-str {:name         dep-set-name,
                                                             :start        false,
                                                             :modules      [m-id]
+                                                            :overwrites   [{:applications [{}]}]
                                                             :fleet        fleet
                                                             :fleet-filter fleet-filter}))
                             ltu/body->edn
@@ -838,6 +839,7 @@
               (request dep-set-url
                        :request-method :put
                        :body (json/write-str (assoc dep-set :modules [m-id]
+                                                            :overwrites [{:applications [{}]}]
                                                             :fleet fleet
                                                             :fleet-filter fleet-filter)))
               ltu/body->edn
@@ -867,6 +869,7 @@
                   (request dep-set-url
                            :request-method :put
                            :body (json/write-str (assoc dep-set :modules [m-id]
+                                                                :overwrites [{:applications [{}]}]
                                                                 :fleet-filter fleet-filter)))
                   ltu/body->edn
                   (ltu/is-status 200))
