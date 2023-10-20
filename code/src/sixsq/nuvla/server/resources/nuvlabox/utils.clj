@@ -337,8 +337,10 @@
                400)))))
 
 (defn throw-refresh-interval-should-be-bigger
-  [request]
-  (throw-value-should-be-bigger request :refresh-interval 30))
+  [request nuvlabox]
+  (if (and nuvlabox (not (has-heartbeat-support? nuvlabox)))
+    (throw-value-should-be-bigger request :refresh-interval 30)
+    (throw-value-should-be-bigger request :refresh-interval 60)))
 
 (defn throw-heartbeat-interval-should-be-bigger
   [request]
