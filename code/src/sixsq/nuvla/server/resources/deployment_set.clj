@@ -133,7 +133,7 @@ These resources represent a deployment set that regroups deployments.
                          :nuvla/authn    (auth/current-authentication request)})))
 
 (defn create-module-apps-set
-  [{:keys [modules overwrites]} request]
+  [{:keys [modules]} request]
   (create-module
     {:path    (str module-utils/project-apps-sets "/" (u/random-uuid))
      :subtype module-utils/subtype-apps-sets
@@ -145,8 +145,7 @@ These resources represent a deployment set that regroups deployments.
                  :applications (map #(hash-map :id (module-utils/full-uuid->uuid %)
                                                :version
                                                (module-utils/latest-or-version-index
-                                                 (retrieve-module % request) %)
-                                               :overwrites overwrites)
+                                                 (retrieve-module % request) %))
                                     modules)}]}}))
 
 (defn replace-modules-by-apps-set
@@ -155,7 +154,7 @@ These resources represent a deployment set that regroups deployments.
    A top level :fleet and/or :fleet-filter keys are also required:
    If :fleet is not specified, it is computed by querying edges satisfying the :fleet-filter.
    If both :fleet and :fleet-filter are specified, they are stored as-is, no consistency check is made."
-  [{:keys [fleet fleet-filter] :as resource} request]
+  [{:keys [fleet fleet-filter overwrites] :as resource} request]
   (let [apps-set-id (create-module-apps-set resource request)
         fleet       (or fleet (map :id (some-> fleet-filter (utils/query-nuvlaboxes request))))]
     (-> resource
@@ -164,7 +163,8 @@ These resources represent a deployment set that regroups deployments.
                                     :version 0
                                     :overwrites
                                     [(cond-> {:fleet fleet}
-                                             fleet-filter (assoc :fleet-filter fleet-filter))]}]))))
+                                             fleet-filter (assoc :fleet-filter fleet-filter)
+                                             overwrites (merge {:applications overwrites}))]}]))))
 
 (defn create-app-set
   [{:keys [modules] :as resource} request]
