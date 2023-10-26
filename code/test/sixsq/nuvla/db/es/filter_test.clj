@@ -85,14 +85,14 @@
     (format "attr intersects '%s'" wkt-point)
 
     {:constant_score {:boost  1.0
-                      :filter {:geo_shape {"attr" {:relation "intersects"
+                      :filter {:geo_shape {"attr" {:relation "within"
                                                    :shape    geojson-simple-polygon}}}}}
-    (format "attr intersects '%s'" wkt-simple-polygon)
+    (format "attr within '%s'" wkt-simple-polygon)
 
     {:constant_score {:boost  1.0
-                      :filter {:geo_shape {"attr" {:relation "intersects"
+                      :filter {:geo_shape {"attr" {:relation "disjoint"
                                                    :shape    geojson-complex-polygon}}}}}
-    (format "attr intersects '%s'" wkt-complex-polygon)
+    (format "attr disjoint '%s'" wkt-complex-polygon)
 
     {:constant_score {:boost  1.0
                       :filter {:geo_shape {"attr2" {:relation "contains"
