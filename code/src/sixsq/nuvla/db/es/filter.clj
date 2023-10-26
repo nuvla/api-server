@@ -3,129 +3,108 @@
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [clojure.walk :as w]
+    [instaparse.transform :as insta-transform]
     [geo.io :as gio]
     [sixsq.nuvla.db.es.query :as query]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.time :as time]))
 
-
 (defn- strip-quotes
   [s]
   (subs s 1 (dec (count s))))
 
-
-(defmulti convert
-          (fn [v]
-            (when (vector? v)
-              (first v))))
-
-
-(defmethod convert :IntValue [[_ ^String s]]
-  [:Value (Integer/valueOf s)])
-
-
-(defmethod convert :DoubleQuoteString [[_ s]]
-  [:Value (strip-quotes s)])
-
-
-(defmethod convert :SingleQuoteString [[_ s]]
-  [:Value (strip-quotes s)])
-
-
 (defn parse-wkt
   [v]
   (try
-    (-> v
-        gio/read-wkt
+    (-> (gio/read-wkt v)
         gio/to-geojson
         (json/read-str :key-fn keyword))
     (catch Exception e
-      (logu/log-and-throw-400 (str "invalid WKT format '" v "'. " (ex-message e) ".")))))
+      (logu/log-and-throw-400
+        (str "invalid WKT format '" v "'. " (ex-message e) ".")))))
 
+(defn transform-string-value
+  [s]
+  [:Value (strip-quotes s)])
 
-(defmethod convert :WktValue [[_ s]]
-  [:Value (-> s second parse-wkt)])
-
-
-(defmethod convert :BoolValue [[_ ^String s]]
-  [:Value (Boolean/valueOf s)])
-
-
-(defmethod convert :DateValue [[_ ^String s]]
-  [:Value (time/date-from-str s)])
-
-
-(defmethod convert :NullValue [[_ ^String _]]
+(defn transform-null-value
+  [_]
   [:Value nil])
 
+(defn transform-int-value
+  [^String s]
+  [:Value (Integer/valueOf s)])
 
-(defmethod convert :Comp [v]
-  (let [args (rest v)]
-    (if (= 1 (count args))
-      (first args)                                          ;; (a=1 and b=2) case
-      (let [{:keys [Attribute EqOp RelOp GeoOp PrefixOp FullTextOp Value] :as m} (into {} args)
-            Op    (or EqOp RelOp PrefixOp FullTextOp GeoOp)
-            order (ffirst args)]
-        (case [Op order]
-          ["=" :Attribute] (if (nil? Value) (query/missing Attribute) (query/eq Attribute Value))
-          ["!=" :Attribute] (if (nil? Value) (query/exists Attribute) (query/ne Attribute Value))
+(defn transform-bool-value
+  [^String s]
+  [:Value (Boolean/valueOf s)])
 
-          ["^=" :Attribute] (query/prefix Attribute Value)
+(defn transform-date-value
+  [^String s]
+  [:Value (time/date-from-str s)])
 
-          ["==" :Attribute] (query/full-text-search Attribute Value)
+(defn transform-wkt-value
+  [[_ s]]
+  [:Value (parse-wkt s)])
 
-          [">=" :Attribute] (query/gte Attribute Value)
-          [">" :Attribute] (query/gt Attribute Value)
-          ["<=" :Attribute] (query/lte Attribute Value)
-          ["<" :Attribute] (query/lt Attribute Value)
+(defn transform-attribute
+  [& args]
+  [:Attribute (str/replace (str/join "" args) #"/" ".")])
 
-          ["intersects" :Attribute] (query/geo-shape Attribute Op Value)
-          ["disjoint" :Attribute] (query/geo-shape Attribute Op Value)
-          ["within" :Attribute] (query/geo-shape Attribute Op Value)
-          ["contains" :Attribute] (query/geo-shape Attribute Op Value)
+(defn transform-comp
+  [& args]
+  (let [{:keys [Attribute EqOp RelOp GeoOp
+                PrefixOp FullTextOp Value] :as m} (into {} args)
+        Op (or EqOp RelOp PrefixOp FullTextOp GeoOp)]
+    (case Op
+      "=" (if (nil? Value) (query/missing Attribute) (query/eq Attribute Value))
+      "!=" (if (nil? Value) (query/exists Attribute) (query/ne Attribute Value))
+      "^=" (query/prefix Attribute Value)
+      "==" (query/full-text-search Attribute Value)
+      ">=" (query/gte Attribute Value)
+      ">" (query/gt Attribute Value)
+      "<=" (query/lte Attribute Value)
+      "<" (query/lt Attribute Value)
+      "intersects" (query/geo-shape Attribute Op Value)
+      "disjoint" (query/geo-shape Attribute Op Value)
+      "within" (query/geo-shape Attribute Op Value)
+      "contains" (query/geo-shape Attribute Op Value)
+      m)))
 
-          ["=" :Value] (if (nil? Value) (query/missing Attribute) (query/eq Attribute Value))
-          ["!=" :Value] (if (nil? Value) (query/exists Attribute) (query/ne Attribute Value))
+(defn transform-and
+  [& args]
+  (if (= (count args) 1)
+    (first args)
+    (query/and args)))
 
-          ["^=" :Value] (query/prefix Attribute Value)
+(defn transform-or
+  [& args]
+  (if (= (count args) 1)
+    (first args)
+    (query/or args)))
 
-          [">=" :Value] (query/lte Attribute Value)
-          [">" :Value] (query/lt Attribute Value)
-          ["<=" :Value] (query/gte Attribute Value)
-          ["<" :Value] (query/gt Attribute Value)
+(defn transform-filter
+  [arg]
+  (query/constant-score-query arg))
 
-          m)))))
+(def transform-map {:Comp        transform-comp
+                    :StringValue transform-string-value
+                    :NullValue   transform-null-value
+                    :IntValue    transform-int-value
+                    :BoolValue   transform-bool-value
+                    :DateValue   transform-date-value
+                    :WktValue    transform-wkt-value
+                    :Attribute   transform-attribute
+                    :And         transform-and
+                    :Or          transform-or
+                    :Filter      transform-filter})
 
-
-(defmethod convert :AndExpr
-  [v]
-  (let [args (rest v)]
-    (if (= 1 (count args))
-      (first args)
-      (query/and args))))
-
-
-(defmethod convert :Filter
-  [v]
-  (let [args (rest v)]
-    (if (= 1 (count args))
-      (first args)
-      (query/or args))))
-
-
-(defmethod convert :Attribute
-  [v]
-  [:Attribute (str/replace (str/join "" (rest v)) #"/" ".")])
-
-
-(defmethod convert :default
-  [v]
-  v)
-
+(defn transform
+  [hiccup-tree]
+  (insta-transform/transform transform-map hiccup-tree))
 
 (defn filter
   [{:keys [filter] :as _cimi-params}]
   (if filter
-    (query/constant-score-query (w/postwalk convert filter))
+    (transform filter)
     (query/match-all-query)))

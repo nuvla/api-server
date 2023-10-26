@@ -1,41 +1,40 @@
-(* warning: do not use wildcards for 'and'/'or' expressions because
-            they create an ambiguous grammar that causes the parsing
-            time to increase exponentially with the number of terms *)
-Filter          ::= AndExpr | AndExpr <'or'> Filter
-AndExpr         ::= Comp | Comp <'and'> AndExpr
-Comp            ::= Attribute EqOp Value
-                    | Value EqOp Attribute
-                    | Attribute RelOp OrdinalValue
-                    | OrdinalValue RelOp Attribute
-                    | Attribute PrefixOp StringValue
-                    | StringValue PrefixOp Attribute
-                    | Attribute FullTextOp StringValue
-                    | StringValue FullTextOp Attribute
-                    | Attribute  GeoOp WktValue
-                    | WS <'('> Filter <')'> WS
+Filter              = Or
+Or                  = And {<'or'> And}
+And                 = CompOr {<'and'> CompOr}
+<CompOr>            = Comp | WS <'('> Or <')'> WS
 
-FullTextOp      ::= '=='
-PrefixOp        ::= '^='
-EqOp            ::= '=' | '!='
-RelOp           ::= '<' | '<=' | '>=' | '>'
-GeoOp           ::= 'intersects' | 'disjoint' | 'within' | 'contains'
+Comp                = Attribute EqOp Value
+                       | Attribute RelOp OrdinalValue
+                       | Attribute PrefixOp StringValue
+                       | Attribute FullTextOp StringValue
+                       | Attribute  GeoOp WktValue
+                       | Value EqOp Attribute
+                       | OrdinalValue RelOp Attribute
+                       | StringValue PrefixOp Attribute
+                       | StringValue FullTextOp Attribute
+
+FullTextOp          = '=='
+PrefixOp            = '^='
+EqOp                = '=' | '!='
+RelOp               = '<' | '<=' | '>=' | '>'
+GeoOp               = 'intersects' | 'disjoint' | 'within' | 'contains'
 
 
-Attribute       ::= WS NamespaceTerm ('/' NamespaceTerm)* WS
+Attribute           = WS NamespaceTerm ('/' NamespaceTerm)* WS
 
-<NamespaceTerm> ::= (Term ':' Term) | Term
-<Term>          ::= #'([a-zA-Z][\w-]*[\w]+)|[a-zA-Z]'
-<OrdinalValue>  ::= IntValue | DateValue | StringValue
-<NominalValue>  ::= BoolValue | NullValue
-<Value>         ::= OrdinalValue | NominalValue
-IntValue        ::= WS #'\d+' WS
-DateValue       ::= WS #'\d+-\d+(-\d+)?(T\d+:\d+:\d+(\.\d+)?(Z|[+-]\d+:\d+))?' WS
-WktValue        ::= StringValue
-<StringValue>   ::= WS (DoubleQuoteString | SingleQuoteString) WS
-BoolValue       ::= WS ('true' | 'false') WS
-NullValue       ::= WS 'null' WS
+<NamespaceTerm>     = (Term ':' Term) | Term
+<Term>              = #'([a-zA-Z][\w-]*[\w]+)|[a-zA-Z]'
+<OrdinalValue>      = IntValue | DateValue | StringValue
+<NominalValue>      = BoolValue | NullValue
+<Value>             = OrdinalValue | NominalValue
+IntValue            = WS #'\d+' WS
+DateValue           = WS #'\d+-\d+(-\d+)?(T\d+:\d+:\d+(\.\d+)?(Z|[+-]\d+:\d+))?' WS
+WktValue            = StringValue
+StringValue         = WS (DoubleQuoteString | SingleQuoteString) WS
+BoolValue           = WS ('true' | 'false') WS
+NullValue           = WS 'null' WS
 
-<WS>            ::= <#'\s*'>
+<WS>                = <#'\s*'>
 
-DoubleQuoteString ::= #"\"[^\"\\]*(?:\\.[^\"\\]*)*\""
-SingleQuoteString ::= #"'[^'\\]*(?:\\.[^'\\]*)*'"
+<DoubleQuoteString> = #"\"[^\"\\]*(?:\\.[^\"\\]*)*\""
+<SingleQuoteString> = #"'[^'\\]*(?:\\.[^'\\]*)*'"

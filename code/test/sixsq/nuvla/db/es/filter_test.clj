@@ -2,8 +2,15 @@
   (:require
     [clojure.test :refer [are deftest is]]
     [sixsq.nuvla.db.es.filter :as t]
-    [sixsq.nuvla.db.filter.parser :as parser])
+    [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.db.filter.parser-test :as parser-test]
+    [sixsq.nuvla.server.util.time :as time])
   (:import (clojure.lang ExceptionInfo)))
+
+(deftest check-parse-cimi-filter-base-case
+  (is (= {:constant_score {:boost  1.0
+                           :filter {:term {"id" "1"}}}}
+         (t/transform (parser/parse-cimi-filter "id='1'")))))
 
 (def wkt-point "POINT (30 10)")
 (def wkt-simple-polygon "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))")
@@ -69,26 +76,62 @@
 
 
 (deftest check-geo-filter
-  (are [expected filter-str] (= expected
-                                (t/filter {:filter (parser/parse-cimi-filter filter-str)}))
+  (are [expected filter-str]
+    (= expected (t/filter {:filter (parser/parse-cimi-filter filter-str)}))
 
-                             {:constant_score {:boost  1.0
-                                               :filter {:geo_shape {"attr" {:relation "intersects"
-                                                                            :shape    geojson-point}}}}}
-                             (format "attr intersects '%s'" wkt-point)
+    {:constant_score {:boost  1.0
+                      :filter {:geo_shape {"attr" {:relation "intersects"
+                                                   :shape    geojson-point}}}}}
+    (format "attr intersects '%s'" wkt-point)
 
-                             {:constant_score {:boost  1.0
-                                               :filter {:geo_shape {"attr" {:relation "intersects"
-                                                                            :shape    geojson-simple-polygon}}}}}
-                             (format "attr intersects '%s'" wkt-simple-polygon)
+    {:constant_score {:boost  1.0
+                      :filter {:geo_shape {"attr" {:relation "within"
+                                                   :shape    geojson-simple-polygon}}}}}
+    (format "attr within '%s'" wkt-simple-polygon)
 
-                             {:constant_score {:boost  1.0
-                                               :filter {:geo_shape {"attr" {:relation "intersects"
-                                                                            :shape    geojson-complex-polygon}}}}}
-                             (format "attr intersects '%s'" wkt-complex-polygon)
+    {:constant_score {:boost  1.0
+                      :filter {:geo_shape {"attr" {:relation "disjoint"
+                                                   :shape    geojson-complex-polygon}}}}}
+    (format "attr disjoint '%s'" wkt-complex-polygon)
 
-                             {:constant_score {:boost  1.0
-                                               :filter {:geo_shape {"attr2" {:relation "contains"
-                                                                             :shape    geojson-multi-polygon}}}}}
-                             (format "attr2 contains '%s'" wkt-multi-polygon)
-                             ))
+    {:constant_score {:boost  1.0
+                      :filter {:geo_shape {"attr2" {:relation "contains"
+                                                    :shape    geojson-multi-polygon}}}}}
+    (format "attr2 contains '%s'" wkt-multi-polygon)))
+
+(deftest check-transform-or-query
+  (is (= {:constant_score {:boost  1.0
+                           :filter {:bool {:should [{:bool {:must_not {:exists {:field "id"}}}}
+                                                    {:term {"b" true}}
+                                                    {:term {"c" 1}}
+                                                    {:term {"d" "foo"}}]}}}}
+         (t/transform parser-test/expected-transform-or-query))))
+
+(deftest check-transform-and-query
+  (is (= {:constant_score {:boost  1.0
+                           :filter {:bool {:filter [{:bool {:must_not {:exists {:field "id"}}}}
+                                                    {:term {"b" true}}
+                                                    {:term {"c" 1}}]}}}}
+         (t/transform parser-test/expected-transform-and-query))))
+
+(deftest check-transform-complex-query
+  (is (= {:constant_score
+          {:boost  1.0
+           :filter {:bool
+                    {:should
+                     [{:bool
+                       {:filter
+                        [{:bool
+                          {:should [{:bool {:must_not {:exists {:field "id"}}}}
+                                    {:term {"id" "x"}}
+                                    {:bool {:filter [{:term {"d" 1}}
+                                                     {:term {"b" true}}]}}]}}
+                         {:bool {:must_not {:term {"name" "s"}}}}
+                         {:term {"acl.owner" "user/1"}}
+                         {:geo_shape {"attr" {:relation "intersects"
+                                              :shape    {:coordinates [1.0
+                                                                       2.0]
+                                                         :type        "Point"}}}}]}}
+                      {:range {"created" {:gte (time/date-from-str
+                                                 "2022-03-29T14:21:37.659Z")}}}]}}}}
+         (t/transform parser-test/expected-transform-complex-query))))
