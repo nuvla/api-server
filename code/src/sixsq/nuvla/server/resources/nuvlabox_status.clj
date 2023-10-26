@@ -74,34 +74,21 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                #(for [r %] (apply dissoc r blacklist-response-keys)))
     (update response :body #(apply dissoc % blacklist-response-keys))))
 
-
-(defn get-nuvlabox-status-name-description
-  [nuvlabox-id nuvlabox-name]
-  {:name        (nb-utils/format-nb-name
-                  nuvlabox-name (nb-utils/short-nb-id nuvlabox-id))
-   :description (str "NuvlaEdge status of "
-                     (nb-utils/format-nb-name nuvlabox-name nuvlabox-id))})
-
 (defn create-nuvlabox-status
   "Utility to facilitate creating a new nuvlabox-status resource from the
    nuvlabox resource. This will create (as an administrator) an unknown
    state based on the given id and acl. The returned value is the standard
    'add' response for the request."
-  [schema-version nuvlabox-id nuvlabox-name nuvlabox-acl]
-  (let [status-acl (merge
-                     (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
-                     {:owners    ["group/nuvla-admin"]
-                      :edit-data [nuvlabox-id]})
-        body       (merge
-                     (get-nuvlabox-status-name-description nuvlabox-id nuvlabox-name)
-                     {:resource-type resource-type
-                      :parent        nuvlabox-id
-                      :version       schema-version
-                      :status        "UNKNOWN"
-                      :acl           status-acl})
-        request    {:params      {:resource-name resource-type}
-                    :nuvla/authn auth/internal-identity
-                    :body        body}]
+  [{:keys [id version] :as nuvlabox}]
+  (let [body    (utils/set-name-description-acl
+                  {:resource-type resource-type
+                   :parent        id
+                   :version       version
+                   :status        "UNKNOWN"}
+                  nuvlabox)
+        request {:params      {:resource-name resource-type}
+                 :nuvla/authn auth/internal-identity
+                 :body        body}]
     (add-impl request)))
 
 
@@ -113,6 +100,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
     (-> (nb-utils/throw-parent-nuvlabox-is-suspended resource nb)
         (nb-utils/legacy-heartbeat request nb)
         (utils/status-telemetry-attributes nb)
+        (utils/set-name-description-acl nb)
         (cond-> (some? resources-prev)
                 (assoc :resources-prev resources-prev)))))
 
@@ -160,17 +148,11 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 
 
 (defn update-nuvlabox-status
-  [id nuvlabox-id nuvlabox-name nuvlabox-acl]
-  (let [acl (merge
-              (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
-              {:owners    ["group/nuvla-admin"]
-               :edit-data [nuvlabox-id]})]
-    (crud/edit {:params      {:uuid          (u/id->uuid id)
-                              :resource-name resource-type}
-                :body        (merge
-                               (get-nuvlabox-status-name-description nuvlabox-id nuvlabox-name)
-                               {:acl acl})
-                :nuvla/authn auth/internal-identity})))
+  [status-id nuvlabox]
+  (crud/edit {:params      {:uuid          (u/id->uuid status-id)
+                            :resource-name resource-type}
+              :body        (utils/set-name-description-acl {} nuvlabox)
+              :nuvla/authn auth/internal-identity}))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))

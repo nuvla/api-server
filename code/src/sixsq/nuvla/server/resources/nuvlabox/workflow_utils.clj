@@ -52,8 +52,8 @@
 
 
 (defn create-nuvlabox-status
-  [{:keys [id name version acl] :as nuvlabox}]
-  (let [{:keys [status body] :as _resp} (nb-status/create-nuvlabox-status version id name acl)]
+  [nuvlabox]
+  (let [{:keys [status body] :as _resp} (nb-status/create-nuvlabox-status nuvlabox)]
     (if (= 201 status)
       (assoc nuvlabox :nuvlabox-status (:resource-id body))
       (let [msg (str "creating nuvlabox-status resource failed:" status (:message body))]
@@ -61,8 +61,8 @@
 
 
 (defn update-nuvlabox-status
-  [status-id {:keys [id name acl] :as nuvlabox}]
-  (let [{:keys [status body] :as _resp} (nb-status/update-nuvlabox-status status-id id name acl)]
+  [status-id nuvlabox]
+  (let [{:keys [status body] :as _resp} (nb-status/update-nuvlabox-status status-id nuvlabox)]
     (if (= 200 status)
       nuvlabox
       (let [msg (str "updating nuvlabox-status resource failed:" status (:message body))]

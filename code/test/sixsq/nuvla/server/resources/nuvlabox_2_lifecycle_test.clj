@@ -74,7 +74,7 @@
                               (str nb/resource-type "-" nb-2/schema-version)))
 
 
-(deftest create-edit-delete-lifecycle
+(deftest create-delete-lifecycle
   ;; Disable stripe
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session       (-> (ltu/ring-app)
@@ -112,16 +112,7 @@
         (-> session-owner
             (request nuvlabox-url
                      :request-method :delete)
-            (ltu/is-status 200)))
-
-      ;; create nuvlabox with inexistent vpn id will fail
-      (-> session-owner
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str (assoc valid-nuvlabox
-                                           :vpn-server-id "infrastructure-service/fake")))
-          (ltu/body->edn)
-          (ltu/is-status 404)))))
+            (ltu/is-status 200))))))
 
 
 (deftest create-activate-create-log-decommission-delete-lifecycle
@@ -920,7 +911,15 @@
           session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
           session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
-      #_{:clj-kondo/ignore [:redundant-let]}
+      (testing "create nuvlabox with inexistent vpn id will fail"
+        (-> session-owner
+           (request base-uri
+                    :request-method :post
+                    :body (json/write-str (assoc valid-nuvlabox
+                                            :vpn-server-id "infrastructure-service/fake")))
+           (ltu/body->edn)
+           (ltu/is-status 404)))
+
       (let [infra-srvc-vpn-create {:template {:href      (str infra-service-tpl/resource-type "/"
                                                               infra-srvc-tpl-vpn/method)
                                               :vpn-scope "nuvlabox"
