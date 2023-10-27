@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.db.filter.parser-test
   (:require
     [clojure.string :as str]
-    [clojure.test :refer [is are deftest]]
+    [clojure.test :refer [are deftest is]]
     [instaparse.core :as insta]
     [sixsq.nuvla.db.filter.parser :as t]))
 

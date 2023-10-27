@@ -3,8 +3,8 @@
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [instaparse.transform :as insta-transform]
     [geo.io :as gio]
+    [instaparse.transform :as insta-transform]
     [sixsq.nuvla.db.es.query :as query]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.time :as time]))

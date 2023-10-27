@@ -5,14 +5,14 @@
 
   <artifactId>container-dep</artifactId>
   <packaging>pom</packaging>
-  <version>6.1.1-SNAPSHOT</version>
+  <version>6.2.0-SNAPSHOT</version>
   <name>server/container</name>
   <url>http://sixsq.com</url>
 
   <parent>
     <groupId>sixsq.nuvla.server</groupId>
     <artifactId>server</artifactId>
-    <version>6.1.1-SNAPSHOT</version>
+    <version>6.2.0-SNAPSHOT</version>
   </parent>
 
   <licenses>
