@@ -1804,7 +1804,8 @@
               (request heartbeat-op)
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value :jobs []))
+              (ltu/is-key-value :jobs [])
+              (ltu/is-key-value some? :doc-last-updated true))
 
           (-> session-nuvlabox
               (request nuvlabox-url)

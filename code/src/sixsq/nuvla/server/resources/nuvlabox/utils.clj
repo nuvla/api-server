@@ -405,9 +405,10 @@
        :resources
        (mapv :id)))
 
-(defn pending-jobs
-  [{:keys [id] :as _nuvlabox}]
-  {:jobs (get-jobs id)})
+(defn build-response
+  [{:keys [id updated] :as _nuvlabox}]
+  {:doc-last-updated updated
+   :jobs             (get-jobs id)})
 
 (defn nuvlabox-request?
   [request]

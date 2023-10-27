@@ -542,7 +542,7 @@ particular NuvlaBox release.
         (a/throw-cannot-manage request)
         (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
         (utils/set-online! true)
-        (utils/pending-jobs)
+        (utils/build-response)
         r/json-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
