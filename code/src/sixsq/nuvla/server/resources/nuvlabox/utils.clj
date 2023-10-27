@@ -111,7 +111,7 @@
 
 (defn can-set-offline?
   [nuvlabox]
-  (is-state-commissioned? nuvlabox))
+  (u/is-state-within? #{state-commissioned state-suspended} nuvlabox))
 
 (defn throw-nuvlabox-is-suspended
   [{:keys [id] :as nuvlabox}]
