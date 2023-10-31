@@ -111,7 +111,7 @@
 
 (defn can-set-offline?
   [nuvlabox]
-  (is-state-commissioned? nuvlabox))
+  (u/is-state-within? #{state-commissioned state-suspended} nuvlabox))
 
 (defn throw-nuvlabox-is-suspended
   [{:keys [id] :as nuvlabox}]
@@ -337,8 +337,10 @@
                400)))))
 
 (defn throw-refresh-interval-should-be-bigger
-  [request]
-  (throw-value-should-be-bigger request :refresh-interval 60))
+  [request nuvlabox]
+  (if (and nuvlabox (not (has-heartbeat-support? nuvlabox)))
+    (throw-value-should-be-bigger request :refresh-interval 30)
+    (throw-value-should-be-bigger request :refresh-interval 60)))
 
 (defn throw-heartbeat-interval-should-be-bigger
   [request]
@@ -360,23 +362,22 @@
           time/to-str))
 
 (defn status-online-attributes
-  [{:keys [heartbeat-interval online]
-    :or   {heartbeat-interval default-heartbeat-interval}
-    :as   _nuvlabox} online-new]
+  [online online-new time-interval]
   (cond-> {:online  online-new
            :updated (time/now-str)}
           online-new (assoc :last-heartbeat (time/now-str)
                             :next-heartbeat (compute-next-report
-                                              heartbeat-interval
+                                              time-interval
                                               #(-> % (* 2) (+ 10))))
           (some? online)
           (assoc :online-prev online)))
 
 (defn set-online!
-  [{:keys [id nuvlabox-status heartbeat-interval]
+  [{:keys [id nuvlabox-status heartbeat-interval online]
     :or   {heartbeat-interval default-heartbeat-interval}
     :as   nuvlabox} online-new]
-  (let [nb-status (status-online-attributes nuvlabox online-new)]
+  (let [nb-status (status-online-attributes
+                    online online-new heartbeat-interval)]
     (r/throw-response-not-200
       (db/scripted-edit id {:doc {:online             online-new
                                   :heartbeat-interval heartbeat-interval}}))
@@ -404,17 +405,18 @@
        :resources
        (mapv :id)))
 
-(defn pending-jobs
-  [{:keys [id] :as _nuvlabox}]
-  {:jobs (get-jobs id)})
+(defn build-response
+  [{:keys [id updated] :as _nuvlabox}]
+  {:doc-last-updated updated
+   :jobs             (get-jobs id)})
 
 (defn nuvlabox-request?
   [request]
   (str/starts-with? (auth/current-active-claim request) "nuvlabox/"))
 
 (defn legacy-heartbeat
-  [nuvlabox-status request nuvlabox]
+  [nuvlabox-status request {:keys [online refresh-interval] :as nuvlabox}]
   (if (and (nuvlabox-request? request)
            (not (has-heartbeat-support? nuvlabox)))
-    (merge nuvlabox-status (status-online-attributes nuvlabox true))
+    (merge nuvlabox-status (status-online-attributes online true refresh-interval))
     nuvlabox-status))

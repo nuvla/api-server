@@ -4,6 +4,40 @@
 
 ## Released
 
+## [6.2.0] - 2023-10-27
+
+- Nuvlabox - Refactor #801
+- Nuvlabox - Heartbeat new action
+- Nuvlabox - Set-offline new action
+- Nuvlabox - Allow user to edit intervals, check minimum vals for intervals
+- Nuvlabox - Set heartbeat-interval to the default value if it doesn't exist
+- Nuvlabox - Heartbeat action return last updated document value
+- Nuvlabox status - Change tolerance for telemetry
+- Nuvlabox status - Last-telemetry and next-telemetry support
+- Nuvlabox status - Telemetry online retro-compatible
+- Nuvlabox status - Do not send the whole nuvlabox-status in a reply of an edit
+- Nuvlabox status - Always set name descr acl at edit (#833)
+  request made by a NuvlaBox (#825)
+- Deployment - New logic to set execution-mode
+- Deployment - Allow user to set execution-mode 
+- Deployment - Refactor add and edit
+- Deployment - Detach action response changed
+- Deployment - Add support for pull mode for logs (#823)
+- Global - Replace db/retrieve by crud/retrieve-by-admin as much as possible
+- Fix reflective access warning and clj-kondo fixes
+- Atom binding - workaround incoherence in binding es and atom
+- Atom Binding - support scripted edit
+- ES Binding - allow scripted edit and partial edit (#815)
+- Binding - Remove non-used options
+- Binding - allow scripted edit
+- Deployment set - Accept :module key in PUT calls to replace app set
+- Deployment set - Add fleet-filter property
+- Deployment set - Add recompute-fleet action, to recompute the edges based on
+  the fleet filter (#829)
+- Make definition of std-crud/add-fn similar to std-crud/edit-fn (#824)
+- Filter parser - Transform various enhancement and build balanced tree to avoid
+  full stack error while parsing (#832)
+
 ## [6.1.0] - 2023-09-25
 
 - Resources dynamic load - Make resource initialisation order predictable (#813)

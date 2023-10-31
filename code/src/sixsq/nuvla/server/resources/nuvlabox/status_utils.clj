@@ -28,6 +28,21 @@
     :last-telemetry (time/now-str)
     :next-telemetry (nb-utils/compute-next-report refresh-interval #(+ % 30))))
 
+(defn build-nuvlabox-status-acl
+  [{:keys [id acl] :as _nuvlabox}]
+  (merge
+    (select-keys acl [:view-acl :view-data :view-meta])
+    {:owners    ["group/nuvla-admin"]
+     :edit-data [id]}))
+
+(defn set-name-description-acl
+  [nuvlabox-status {:keys [id name] :as nuvlabox}]
+  (assoc nuvlabox-status
+    :name (nb-utils/format-nb-name
+            name (nb-utils/short-nb-id id))
+    :description (str "NuvlaEdge status of " (nb-utils/format-nb-name name id))
+    :acl (build-nuvlabox-status-acl nuvlabox)))
+
 (defn special-body-nuvlabox
   [{{:keys [parent]} :body :as response} request]
   (if (nb-utils/nuvlabox-request? request)

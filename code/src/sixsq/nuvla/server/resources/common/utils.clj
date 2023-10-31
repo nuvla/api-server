@@ -330,21 +330,15 @@
                                      (->> (select-keys body)))]
     (merge current-without-selected editable-body)))
 
-
 (defn is-state-within?
   [states resource]
   (contains? (set states) (:state resource)))
 
-
 (def is-state-besides? (complement is-state-within?))
-
 
 (defn is-state?
   [state resource]
   (= (:state resource) state))
-
-(def is-not-in-state? (complement is-state?))
-
 
 (defn throw-can-not-do-action
   [{:keys [id] :as resource} pred action]

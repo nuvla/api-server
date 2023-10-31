@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.db.filter.parser-test
   (:require
-    [clojure.test :refer [are deftest]]
+    [clojure.string :as str]
+    [clojure.test :refer [are deftest is]]
     [instaparse.core :as insta]
     [sixsq.nuvla.db.filter.parser :as t]))
 
@@ -168,30 +169,84 @@
              "2012-01:02T25:14:25.6-01:15"
              "2012-01-02T13:14:25.6+02-30"))
 
+(def expected-transform-or-query
+  [:Filter
+   [:Or
+    [:And [:Comp [:Attribute "id"] [:EqOp "="] [:NullValue "null"]]]
+    [:And [:Comp [:Attribute "b"] [:EqOp "="] [:BoolValue "true"]]]
+    [:And [:Comp [:Attribute "c"] [:EqOp "="] [:IntValue "1"]]]
+    [:And [:Comp [:Attribute "d"] [:EqOp "="] [:StringValue "'foo'"]]]]])
+
+(deftest check-parse-cimi-filter-transform-or
+  (is (= expected-transform-or-query (t/parse-cimi-filter "id=null or b=true or c=1 or d='foo'"))))
+
+(def expected-transform-and-query
+  [:Filter
+   [:Or
+    [:And
+     [:Comp [:Attribute "id"] [:EqOp "="] [:NullValue "null"]]
+     [:Comp [:Attribute "b"] [:EqOp "="] [:BoolValue "true"]]
+     [:Comp [:Attribute "c"] [:EqOp "="] [:IntValue "1"]]]]])
+
+(deftest check-parse-cimi-filter-transform-and-query
+  (is (= expected-transform-and-query (t/parse-cimi-filter "id=null and b=true and c=1"))))
+
+(def expected-transform-complex-query
+  [:Filter
+   [:Or
+    [:And
+     [:Or
+      [:And [:Comp [:Attribute "id"] [:EqOp "="] [:NullValue "null"]]]
+      [:And [:Comp [:StringValue "'x'"] [:EqOp "="] [:Attribute "id"]]]
+      [:And
+       [:Comp [:Attribute "d"] [:EqOp "="] [:IntValue "1"]]
+       [:Comp [:Attribute "b"] [:EqOp "="] [:BoolValue "true"]]]]
+     [:Comp [:Attribute "name"] [:EqOp "!="] [:StringValue "\"s\""]]
+     [:Comp [:Attribute "acl" "/" "owner"] [:EqOp "="] [:StringValue "'user/1'"]]
+     [:Comp [:Attribute "attr"] [:GeoOp "intersects"] [:WktValue [:StringValue "'POINT(1 2)'"]]]]
+    [:And [:Comp [:Attribute "created"] [:RelOp ">="] [:DateValue "2022-03-29T14:21:37.659Z"]]]]])
+
+(deftest check-parse-cimi-filter-transform-complex-query
+  (is (= expected-transform-complex-query
+         (t/parse-cimi-filter
+           (str "(id=null or 'x'=id or d=1 and b=true) "
+                "and name!=\"s\" and acl/owner='user/1' and attr intersects 'POINT(1 2)' "
+                "or created>=2022-03-29T14:21:37.659Z")))))
+
 
 (deftest check-valid-wkt-filter
   (are [expected v] (= expected (t/parse-cimi-filter v))
                     [:Filter
-                     [:AndExpr
-                      [:Comp
-                       [:Attribute "attr"]
-                       [:GeoOp "intersects"]
-                       [:WktValue [:SingleQuoteString "'POINT(1 2)'"]]]]]
+                     [:Or
+                      [:And
+                       [:Comp
+                        [:Attribute "attr"]
+                        [:GeoOp "intersects"]
+                        [:WktValue [:StringValue "'POINT(1 2)'"]]]]]]
                     "attr intersects 'POINT(1 2)'"
 
                     [:Filter
-                     [:AndExpr
-                      [:Comp
-                       [:Attribute "attr"]
-                       [:GeoOp "within"]
-                       [:WktValue [:DoubleQuoteString "\"POINT(1 2)\""]]]]]
+                     [:Or
+                      [:And
+                       [:Comp
+                        [:Attribute "attr"]
+                        [:GeoOp "within"]
+                        [:WktValue [:StringValue "\"POINT(1 2)\""]]]]]]
                     "attr within \"POINT(1 2)\""
 
                     [:Filter
-                     [:AndExpr
-                      [:Comp
-                       [:Attribute "attr"]
-                       [:GeoOp "disjoint"]
-                       [:WktValue [:SingleQuoteString "'any string is ok'"]]]]]
-                    "attr disjoint 'any string is ok'"
-                    ))
+                     [:Or
+                      [:And
+                       [:Comp
+                        [:Attribute "attr"]
+                        [:GeoOp "disjoint"]
+                        [:WktValue [:StringValue "'any string is ok'"]]]]]]
+                    "attr disjoint 'any string is ok'"))
+
+(defn build-filter
+  [n op]
+  (str/join op (repeat n "(a='1')")))
+
+(deftest test-parse-performance
+  (is (t/parse-cimi-filter (build-filter 4000 " or ")))
+  (is (t/parse-cimi-filter (build-filter 4000 " and "))))

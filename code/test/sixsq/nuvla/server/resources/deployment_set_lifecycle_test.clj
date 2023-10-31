@@ -834,30 +834,36 @@
                                    first
                                    :id)]
             (is (= new-app-set-id app-set-id)))
-          (-> session-user
-              (request dep-set-url
-                       :request-method :put
-                       :body (json/write-str (assoc dep-set :modules [m-id]
-                                                            :fleet fleet
-                                                            :fleet-filter fleet-filter)))
-              ltu/body->edn
-              (ltu/is-status 200))
-          (let [new-app-set-id (-> session-user
-                                   (request dep-set-url)
-                                   ltu/body->edn
-                                   (ltu/is-status 200)
-                                   (ltu/is-key-value
-                                     (comp :fleet first :overwrites first)
-                                     :applications-sets fleet)
-                                   (ltu/is-key-value
-                                     (comp :fleet-filter first :overwrites first)
-                                     :applications-sets fleet-filter)
-                                   (ltu/is-operation-present utils/action-recompute-fleet)
-                                   ltu/body
-                                   :applications-sets
-                                   first
-                                   :id)]
-            (is (not= new-app-set-id app-set-id))))
+          (let [app-overwrites [{:id                      "module/1234"
+                             :version                 0
+                             :environmental-variables [{:name "var01" :value "value01"}]}]]
+            (-> session-user
+                (request dep-set-url
+                         :request-method :put
+                         :body (json/write-str (assoc dep-set :modules [m-id]
+                                                              :overwrites app-overwrites
+                                                              :fleet fleet
+                                                              :fleet-filter fleet-filter)))
+                ltu/body->edn
+                (ltu/is-status 200))
+            (let [dep-set        (-> session-user
+                                     (request dep-set-url)
+                                     ltu/body->edn
+                                     (ltu/is-status 200)
+                                     (ltu/is-key-value
+                                       (comp :fleet first :overwrites first)
+                                       :applications-sets fleet)
+                                     (ltu/is-key-value
+                                       (comp :fleet-filter first :overwrites first)
+                                       :applications-sets fleet-filter)
+                                     (ltu/is-operation-present utils/action-recompute-fleet)
+                                     ltu/body)
+                  new-app-set-id (-> dep-set
+                                     :applications-sets
+                                     first
+                                     :id)]
+              (is (not= new-app-set-id app-set-id))
+              (is (= app-overwrites (-> dep-set :applications-sets first :overwrites first :applications))))))
 
         (testing "Fleet filter"
           (let [dynamic-fleet ["nuvlabox/1" "nuvlabox/2"]]

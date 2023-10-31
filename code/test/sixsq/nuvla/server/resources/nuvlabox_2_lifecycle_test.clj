@@ -74,40 +74,39 @@
                               (str nb/resource-type "-" nb-2/schema-version)))
 
 
-(deftest create-edit-delete-lifecycle
+(deftest create-delete-lifecycle
   ;; Disable stripe
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session       (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
 
-          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")]
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          nuvlabox-id   (-> session-owner
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-nuvlabox))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
+          nuvlabox-url  (str p/service-context nuvlabox-id)
 
-      (let [nuvlabox-id  (-> session-owner
-                             (request base-uri
-                                      :request-method :post
-                                      :body (json/write-str valid-nuvlabox))
-                             (ltu/body->edn)
-                             (ltu/is-status 201)
-                             (ltu/location))
-            nuvlabox-url (str p/service-context nuvlabox-id)
+          {:keys [id acl owner]} (-> session-owner
+                                     (request nuvlabox-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/is-operation-present :edit)
+                                     (ltu/is-operation-present :delete)
+                                     (ltu/is-operation-present :activate)
+                                     (ltu/is-operation-absent :commission)
+                                     (ltu/is-operation-absent :decommission)
+                                     (ltu/is-key-value :state "NEW")
+                                     (ltu/body))]
 
-            {:keys [id acl owner]} (-> session-owner
-                                       (request nuvlabox-url)
-                                       (ltu/body->edn)
-                                       (ltu/is-status 200)
-                                       (ltu/is-operation-present :edit)
-                                       (ltu/is-operation-present :delete)
-                                       (ltu/is-operation-present :activate)
-                                       (ltu/is-operation-absent :commission)
-                                       (ltu/is-operation-absent :decommission)
-                                       (ltu/is-key-value :state "NEW")
-                                       (ltu/body))]
-
-        ;; check generated ACL
-        (is (contains? (set (:owners acl)) "group/nuvla-admin"))
-        (is (contains? (set (:manage acl)) id))
-        (is (contains? (set (:edit-acl acl)) owner))
+      ;; check generated ACL
+      (is (contains? (set (:owners acl)) "group/nuvla-admin"))
+      (is (contains? (set (:manage acl)) id))
+      (is (contains? (set (:edit-acl acl)) owner))
 
         (testing "query with minimal select should not fail"
           (is (= (-> session-owner
@@ -121,19 +120,10 @@
                      :resources)
                  [{:state "NEW"}])))
 
-        (-> session-owner
-            (request nuvlabox-url
-                     :request-method :delete)
-            (ltu/is-status 200)))
-
-      ;; create nuvlabox with inexistent vpn id will fail
       (-> session-owner
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str (assoc valid-nuvlabox
-                                           :vpn-server-id "infrastructure-service/fake")))
-          (ltu/body->edn)
-          (ltu/is-status 404)))))
+          (request nuvlabox-url
+                   :request-method :delete)
+          (ltu/is-status 200)))))
 
 
 (deftest create-activate-create-log-decommission-delete-lifecycle
@@ -932,7 +922,15 @@
           session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
           session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
-      #_{:clj-kondo/ignore [:redundant-let]}
+      (testing "create nuvlabox with inexistent vpn id will fail"
+        (-> session-owner
+            (request base-uri
+                     :request-method :post
+                     :body (json/write-str (assoc valid-nuvlabox
+                                             :vpn-server-id "infrastructure-service/fake")))
+            (ltu/body->edn)
+            (ltu/is-status 404)))
+
       (let [infra-srvc-vpn-create {:template {:href      (str infra-service-tpl/resource-type "/"
                                                               infra-srvc-tpl-vpn/method)
                                               :vpn-scope "nuvlabox"
@@ -1817,7 +1815,8 @@
               (request heartbeat-op)
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value :jobs []))
+              (ltu/is-key-value :jobs [])
+              (ltu/is-key-value some? :doc-last-updated true))
 
           (-> session-nuvlabox
               (request nuvlabox-url)

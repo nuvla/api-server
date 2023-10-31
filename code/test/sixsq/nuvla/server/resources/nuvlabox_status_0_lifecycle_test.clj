@@ -38,68 +38,68 @@
 (def valid-nuvlabox {:owner nuvlabox-owner})
 
 
-(def valid-state {:id                      (str nb-status/resource-type "/uuid")
-                  :resource-type           nb-status/resource-type
-                  :created                 timestamp
-                  :updated                 timestamp
+(def valid-state {:id                          (str nb-status/resource-type "/uuid")
+                  :resource-type               nb-status/resource-type
+                  :created                     timestamp
+                  :updated                     timestamp
 
-                  :version                 0
-                  :status                  "OPERATIONAL"
-                  :comment                 "some witty comment"
+                  :version                     0
+                  :status                      "OPERATIONAL"
+                  :comment                     "some witty comment"
 
-                  :next-heartbeat          timestamp
+                  :next-heartbeat              timestamp
 
-                  :resources               {:cpu       {:capacity 8
-                                                        :load     4.5
-                                                        :topic    "topic/name"}
-                                            :ram       {:capacity   4096
-                                                        :used       1000
-                                                        :raw-sample "{\"one\": 1}"}
-                                            :disks     [{:device     "root"
-                                                         :capacity   20000
-                                                         :topic      "topic/name"
-                                                         :raw-sample "{\"one\": 1}"
-                                                         :used       10000}
-                                                        {:device   "datastore"
-                                                         :capacity 20000
-                                                         :used     10000}]
-                                            :net-stats [{:interface         "eth0"
-                                                         :bytes-received    5247943
-                                                         :bytes-transmitted 41213
-                                                         }
-                                                        {:interface         "vpn"
-                                                         :bytes-received    2213
-                                                         :bytes-transmitted 55}]}
+                  :resources                   {:cpu       {:capacity 8
+                                                            :load     4.5
+                                                            :topic    "topic/name"}
+                                                :ram       {:capacity   4096
+                                                            :used       1000
+                                                            :raw-sample "{\"one\": 1}"}
+                                                :disks     [{:device     "root"
+                                                             :capacity   20000
+                                                             :topic      "topic/name"
+                                                             :raw-sample "{\"one\": 1}"
+                                                             :used       10000}
+                                                            {:device   "datastore"
+                                                             :capacity 20000
+                                                             :used     10000}]
+                                                :net-stats [{:interface         "eth0"
+                                                             :bytes-received    5247943
+                                                             :bytes-transmitted 41213
+                                                             }
+                                                            {:interface         "vpn"
+                                                             :bytes-received    2213
+                                                             :bytes-transmitted 55}]}
 
-                  :peripherals             {:usb [{:vendor-id   "vendor-id"
-                                                   :device-id   "device-id"
-                                                   :bus-id      "bus-id"
-                                                   :product-id  "product-id"
-                                                   :description "description"}]}
+                  :peripherals                 {:usb [{:vendor-id   "vendor-id"
+                                                       :device-id   "device-id"
+                                                       :bus-id      "bus-id"
+                                                       :product-id  "product-id"
+                                                       :description "description"}]}
 
-                  :wifi-password           "some-secure-password"
-                  :nuvlabox-api-endpoint   "https://1.2.3.4:1234"
-                  :operating-system        "Ubuntu"
-                  :architecture            "x86"
-                  :hostname                "localhost"
-                  :ip                      "127.0.0.1"
-                  :docker-server-version   "19.0.3"
-                  :last-boot               timestamp
-                  :inferred-location       [46.2044 6.1432 373.]
-                  :gpio-pins               [{:name    "GPIO. 7"
-                                             :bcm     4
-                                             :mode    "IN"
-                                             :voltage 1
-                                             :pin     7}
-                                            {:pin 1}]
-                  :nuvlabox-engine-version "1.2.3"
-                  :swarm-node-id           "xyz"
-                  :installation-parameters {:config-files   ["docker-compose.yml",
-                                                             "docker-compose.usb.yaml"]
-                                            :working-dir    "/home/user"
-                                            :project-name   "nuvlabox"
-                                            :environment    []}
-                  :swarm-node-cert-expiry-date  "2020-02-18T19:42:08Z"})
+                  :wifi-password               "some-secure-password"
+                  :nuvlabox-api-endpoint       "https://1.2.3.4:1234"
+                  :operating-system            "Ubuntu"
+                  :architecture                "x86"
+                  :hostname                    "localhost"
+                  :ip                          "127.0.0.1"
+                  :docker-server-version       "19.0.3"
+                  :last-boot                   timestamp
+                  :inferred-location           [46.2044 6.1432 373.]
+                  :gpio-pins                   [{:name    "GPIO. 7"
+                                                 :bcm     4
+                                                 :mode    "IN"
+                                                 :voltage 1
+                                                 :pin     7}
+                                                {:pin 1}]
+                  :nuvlabox-engine-version     "1.2.3"
+                  :swarm-node-id               "xyz"
+                  :installation-parameters     {:config-files ["docker-compose.yml",
+                                                               "docker-compose.usb.yaml"]
+                                                :working-dir  "/home/user"
+                                                :project-name "nuvlabox"
+                                                :environment  []}
+                  :swarm-node-cert-expiry-date "2020-02-18T19:42:08Z"})
 
 
 (def resources-updated {:cpu   {:capacity   10
@@ -242,16 +242,16 @@
                                    (ltu/body->edn)
                                    (ltu/body)
                                    :resources)]
-          (-> session-nb
-              (request state-url
-                       :request-method :put
-                       :body (json/write-str {:peripherals peripherals-updated}))
-              (ltu/body->edn)
-              (ltu/is-status 200))
+            (-> session-nb
+                (request state-url
+                         :request-method :put
+                         :body (json/write-str {:peripherals peripherals-updated}))
+                (ltu/body->edn)
+                (ltu/is-status 200))
 
-          (let [nb-status (db/retrieve state-id)]
-            (is (= peripherals-updated (:peripherals nb-status)))
-            (is (= resources-prev (:resources-prev nb-status)))))
+            (let [nb-status (db/retrieve state-id)]
+              (is (= peripherals-updated (:peripherals nb-status)))
+              (is (= resources-prev (:resources-prev nb-status)))))
 
           ;; non of the items in the collection contain '-prev' keys
           (let [resp-resources (-> session-nb
@@ -296,8 +296,12 @@
 
 
       ;; verify that the internal create function also works
-      (let [response  (nb-status/create-nuvlabox-status 0 nuvlabox-id "name" {:owners   ["group/nuvla-admin"]
-                                                                              :edit-acl ["user/alpha"]})
+      (let [response  (nb-status/create-nuvlabox-status
+                        {:id      nuvlabox-id
+                         :name    "name"
+                         :version 0
+                         :acl     {:owners   ["group/nuvla-admin"]
+                                   :edit-acl ["user/alpha"]}})
             location  (get-in response [:headers "Location"])
             state-id  (-> response :body :resource-id)
             state-url (str p/service-context state-id)]

@@ -210,7 +210,7 @@ particular NuvlaBox release.
      :as   body} :body :as request}]
   (let [is-admin?    (-> request
                          utils/throw-when-payment-required
-                         utils/throw-refresh-interval-should-be-bigger
+                         (utils/throw-refresh-interval-should-be-bigger nil)
                          utils/throw-heartbeat-interval-should-be-bigger
                          utils/throw-vpn-server-id-should-be-vpn
                          a/is-admin-request?)
@@ -324,7 +324,7 @@ particular NuvlaBox release.
                     crud/retrieve-by-id-as-admin
                     (a/throw-cannot-edit request))
         resp    (-> request
-                    utils/throw-refresh-interval-should-be-bigger
+                    (utils/throw-refresh-interval-should-be-bigger current)
                     utils/throw-heartbeat-interval-should-be-bigger
                     utils/throw-vpn-server-id-should-be-vpn
                     (restrict-request-body current)
@@ -542,7 +542,7 @@ particular NuvlaBox release.
         (a/throw-cannot-manage request)
         (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
         (utils/set-online! true)
-        (utils/pending-jobs)
+        (utils/build-response)
         r/json-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))

@@ -149,21 +149,22 @@ These resources represent a deployment set that regroups deployments.
                                     modules)}]}}))
 
 (defn replace-modules-by-apps-set
-  "Removes top level key :modules, creates an app set with those modules, and
-   makes the deployment set point to the new app-set.
+  "Removes top level keys :modules and :overwrites, creates an app set with those modules and
+   overwrites, and makes the deployment set point to the new app-set.
    A top level :fleet and/or :fleet-filter keys are also required:
    If :fleet is not specified, it is computed by querying edges satisfying the :fleet-filter.
    If both :fleet and :fleet-filter are specified, they are stored as-is, no consistency check is made."
-  [{:keys [fleet fleet-filter] :as resource} request]
+  [{:keys [fleet fleet-filter overwrites] :as resource} request]
   (let [apps-set-id (create-module-apps-set resource request)
         fleet       (or fleet (map :id (some-> fleet-filter (utils/query-nuvlaboxes request))))]
     (-> resource
-        (dissoc :modules :fleet :fleet-filter)
+        (dissoc :modules :overwrites :fleet :fleet-filter)
         (assoc :applications-sets [{:id      apps-set-id,
                                     :version 0
                                     :overwrites
                                     [(cond-> {:fleet fleet}
-                                             fleet-filter (assoc :fleet-filter fleet-filter))]}]))))
+                                             fleet-filter (assoc :fleet-filter fleet-filter)
+                                             overwrites (merge {:applications overwrites}))]}]))))
 
 (defn create-app-set
   [{:keys [modules] :as resource} request]

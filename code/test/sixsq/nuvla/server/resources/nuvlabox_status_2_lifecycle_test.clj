@@ -35,7 +35,10 @@
 (def nuvlabox-owner "user/alpha")
 
 
-(def valid-nuvlabox {:owner nuvlabox-owner})
+(def nb-name "nb-test-status")
+
+(def valid-nuvlabox {:name  nb-name
+                     :owner nuvlabox-owner})
 
 
 (def valid-state
@@ -178,13 +181,13 @@
                                      :resources)]
               (testing "when an update is done by a nuvlabox, the body contains only jobs"
                 (is (= (-> session-nb
-                          (request status-url
-                                   :request-method :put
-                                   :body (json/write-str {:resources resources-updated}))
-                          (ltu/body->edn)
-                          (ltu/is-status 200)
-                          ltu/body)
-                      {:jobs []})))
+                           (request status-url
+                                    :request-method :put
+                                    :body (json/write-str {:resources resources-updated}))
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           ltu/body)
+                       {:jobs []})))
               (let [nb-status (db/retrieve status-id)]
                 (is (= resources-updated (:resources nb-status)))
                 (is (= resources-prev (:resources-prev nb-status))))))
@@ -194,6 +197,7 @@
                 (request status-url)
                 (ltu/body->edn)
                 (ltu/is-status 200)
+                (ltu/is-key-value :name nb-name)
                 (ltu/is-key-value :resources resources-updated)))
 
           (testing "non of the items in the collection contain '-prev' keys"
@@ -239,8 +243,12 @@
                 (ltu/is-status 200)))))
 
       (testing "verify that the internal create function also works"
-        (let [response  (nb-status/create-nuvlabox-status 0 nuvlabox-id "name" {:owners   ["group/nuvla-admin"]
-                                                                                :edit-acl ["user/alpha"]})
+        (let [response  (nb-status/create-nuvlabox-status
+                          {:id      nuvlabox-id
+                           :name    "name"
+                           :version 0
+                           :acl     {:owners   ["group/nuvla-admin"]
+                                     :edit-acl ["user/alpha"]}})
               location  (get-in response [:headers "Location"])
               state-id  (-> response :body :resource-id)
               state-url (str p/service-context state-id)]
@@ -293,18 +301,6 @@
           (ltu/body->edn)
           (ltu/is-status 200))
 
-      (-> session-nb
-          (request (-> session-nb
-                       (request nuvlabox-url)
-                       (ltu/body->edn)
-                       (ltu/is-status 200)
-                       (ltu/get-op-url :commission))
-                   :request-method :put
-                   :body (json/write-str
-                           {:capabilities [nb-utils/capability-job-pull]}))
-          (ltu/body->edn)
-          (ltu/is-status 200))
-
       (let [status-url (str p/service-context
                             (-> session-nb
                                 (request nuvlabox-url)
@@ -312,6 +308,25 @@
                                 (ltu/is-status 200)
                                 ltu/body
                                 :nuvlabox-status))]
+
+        (testing "nuvlabox name is set as name of nuvlabox status"
+          (-> session-nb
+              (request status-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :name nb-name)))
+
+        (-> session-nb
+            (request (-> session-nb
+                         (request nuvlabox-url)
+                         (ltu/body->edn)
+                         (ltu/is-status 200)
+                         (ltu/get-op-url :commission))
+                     :request-method :put
+                     :body (json/write-str
+                             {:capabilities [nb-utils/capability-job-pull]}))
+            (ltu/body->edn)
+            (ltu/is-status 200))
 
         (testing "admin edition doesn't set online flag"
           (-> session-admin
