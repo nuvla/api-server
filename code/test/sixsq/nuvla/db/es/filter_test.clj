@@ -114,6 +114,11 @@
                                                     {:term {"c" 1}}]}}}}
          (t/transform parser-test/expected-transform-and-query))))
 
+(deftest check-transform-values-query
+  (is (= {:constant_score {:boost  1.0
+                           :filter {:terms {"id" ["a" "b" 1]}}}}
+         (t/transform parser-test/expected-transform-values-query))))
+
 (deftest check-transform-complex-query
   (is (= {:constant_score
           {:boost  1.0

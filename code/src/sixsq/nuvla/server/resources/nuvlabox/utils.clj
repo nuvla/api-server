@@ -155,12 +155,11 @@
 
 (defn get-matching-nuvlaboxes
   [node-ids]
-  (if-not (empty? node-ids)
+  (if (seq node-ids)
     (->> {:params      {:resource-name "nuvlabox-status"}
-          :cimi-params {:filter (cimi-params-impl/cimi-filter
-                                  {:filter (->> node-ids
-                                                (map #(str "node-id='" % "'"))
-                                                (str/join " or "))})
+          :cimi-params {:filter (->> node-ids
+                                     (u/filter-eq-values "node-id")
+                                     parser/parse-cimi-filter)
                         :select ["parent"]
                         :last   1000}
           :nuvla/authn auth/internal-identity}
@@ -176,10 +175,9 @@
 (defn get-nuvlabox-acls
   [ids]
   (->> {:params      {:resource-name "nuvlabox"}
-        :cimi-params {:filter (cimi-params-impl/cimi-filter
-                                {:filter (->> ids
-                                              (map #(str "id='" % "'"))
-                                              (str/join " or "))})
+        :cimi-params {:filter (->> ids
+                                   (u/filter-eq-values "id")
+                                   parser/parse-cimi-filter)
                       :select ["acl"]
                       :last   1000}
         :nuvla/authn auth/internal-identity}

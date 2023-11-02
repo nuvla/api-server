@@ -402,8 +402,8 @@ status, a 'set-cookie' header, and a 'location' header with the created
   (let [root-groups (query-group (str "users='" user "'"))
         subgroups   (if (seq root-groups)
                       (->> root-groups
-                           (map #(str "parents='" (:id %) "'"))
-                           (str/join " or ")
+                           (mapv :id)
+                           (u/filter-eq-values "parents")
                            query-group)
                       [])]
     (assoc session
@@ -474,22 +474,20 @@ status, a 'set-cookie' header, and a 'location' header with the created
 (defmethod crud/do-action [resource-type "get-peers"]
   [request]
   (try
-    (let [user-groups   (-> request
-                            retrieve-session
-                            (a/throw-cannot-manage request)
-                            resolve-user-groups
-                            :user-groups)
-          filter-emails (if (a/is-admin? (auth/current-authentication request))
-                          "validated=true"
-                          (let [{:keys [root-groups
-                                        subgroups]} user-groups]
-                            (some->> (concat root-groups subgroups)
-                                     (mapcat :users)
-                                     distinct
-                                     seq
-                                     (map #(format "parent='%s'" %))
-                                     (str/join " or ")
-                                     (format "(%s) and validated=true"))))]
+    (let [{:keys [root-groups subgroups]} (-> request
+                                              retrieve-session
+                                              (a/throw-cannot-manage request)
+                                              resolve-user-groups
+                                              :user-groups)
+          filter-validated "validated=true"
+          filter-emails (if (a/is-admin-request? request)
+                          filter-validated
+                          (some->> (concat root-groups subgroups)
+                                   (mapcat :users)
+                                   distinct
+                                   seq
+                                   (u/filter-eq-values "parent")
+                                   (str filter-validated " and ")))]
       (r/json-response
         (if filter-emails
           (->> {:cimi-params {:filter (parser/parse-cimi-filter filter-emails)

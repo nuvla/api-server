@@ -180,6 +180,20 @@
 (deftest check-parse-cimi-filter-transform-or
   (is (= expected-transform-or-query (t/parse-cimi-filter "id=null or b=true or c=1 or d='foo'"))))
 
+
+(def expected-transform-values-query
+  [:Filter
+   [:Or
+    [:And
+     [:Comp [:Attribute "id"] [:EqOp "="]
+      [:Values
+       [:StringValue "\"a\""]
+       [:StringValue "\"b\""]
+       [:IntValue "1"]]]]]])
+
+(deftest check-parse-cimi-filter-transform-values-query
+  (is (= expected-transform-values-query (t/parse-cimi-filter "id=[\"a\" \"b\" 1]"))))
+
 (def expected-transform-and-query
   [:Filter
    [:Or

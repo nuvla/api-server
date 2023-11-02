@@ -4,11 +4,13 @@ And                 = CompOr {<'and'> CompOr}
 <CompOr>            = Comp | WS <'('> Or <')'> WS
 
 Comp                = Attribute EqOp Value
+                       | Attribute EqOp Values
                        | Attribute RelOp OrdinalValue
                        | Attribute PrefixOp StringValue
                        | Attribute FullTextOp StringValue
                        | Attribute  GeoOp WktValue
                        | Value EqOp Attribute
+                       | Values EqOp Attribute
                        | OrdinalValue RelOp Attribute
                        | StringValue PrefixOp Attribute
                        | StringValue FullTextOp Attribute
@@ -27,6 +29,7 @@ Attribute           = WS NamespaceTerm ('/' NamespaceTerm)* WS
 <OrdinalValue>      = IntValue | DateValue | StringValue
 <NominalValue>      = BoolValue | NullValue
 <Value>             = OrdinalValue | NominalValue
+Values              = <'['> OrdinalValue {WS [<','>] WS OrdinalValue} <']'>
 IntValue            = WS #'\d+' WS
 DateValue           = WS #'\d+-\d+(-\d+)?(T\d+:\d+:\d+(\.\d+)?(Z|[+-]\d+:\d+))?' WS
 WktValue            = StringValue
