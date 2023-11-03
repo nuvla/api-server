@@ -347,3 +347,7 @@
     (throw (r/ex-response
              (format "operation '%s' not allowed on %s" action id)
              409 id))))
+
+(defn filter-eq-vals
+  [attribute vals]
+  (str attribute "=" (vec vals)))

@@ -189,11 +189,8 @@
                                 set)
         creds-to-be-checked (set/difference (set registries-credentials) preselected-creds)]
     (if (seq creds-to-be-checked)
-      (let [filter-cred (str "subtype='infrastructure-service-registry' and ("
-                             (->> creds-to-be-checked
-                                  (map #(str "id='" % "'"))
-                                  (str/join " or "))
-                             ")")
+      (let [filter-cred (str "subtype='infrastructure-service-registry' and "
+                             (u/filter-eq-vals "id" creds-to-be-checked))
             {:keys [body]} (crud/query {:params      {:resource-name credential/resource-type}
                                         :cimi-params {:filter (parser/parse-cimi-filter filter-cred)
                                                       :last   0}

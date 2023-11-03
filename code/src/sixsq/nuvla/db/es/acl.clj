@@ -12,9 +12,9 @@
         acl-owners-clauses    (map vector (repeat "acl.owners") claims)
         acl-clauses           (concat acl-view-meta-clauses
                                       acl-owners-clauses)
-        acl-queries           (map (fn [[field value]] (ef/eq field value)) acl-clauses)
-        query-acl             (if (empty? acl-queries) (ef/match-none-query) (ef/or acl-queries))]
-    (ef/and [query-acl query])))
+        acl-queries           (map (fn [[field value]] (ef/term-query field value)) acl-clauses)
+        query-acl             (if (empty? acl-queries) (ef/match-none-query) (ef/or-clauses acl-queries))]
+    (ef/and-clauses [query-acl query])))
 
 
 (defn and-acl-query

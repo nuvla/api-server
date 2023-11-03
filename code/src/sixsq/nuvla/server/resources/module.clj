@@ -112,11 +112,8 @@ component, or application.
   [{{{:keys [private-registries]} :content} :body :as request}]
   (if (and (seq private-registries)
            (< (query-count infra-service/resource-type
-                           (str "subtype='registry' and ("
-                                (->> private-registries
-                                     (map #(str "id='" % "'"))
-                                     (str/join " or "))
-                                ")")
+                           (str "subtype='registry' and "
+                                (u/filter-eq-vals "id" private-registries))
                            request)
               (count private-registries)))
     (throw (r/ex-response "Private registries can't be resolved!" 403))
@@ -127,11 +124,8 @@ component, or application.
   (let [creds (remove str/blank? registries-credentials)]
     (if (and (seq creds)
              (< (query-count credential/resource-type
-                             (str "subtype='infrastructure-service-registry' and ("
-                                  (->> creds
-                                       (map #(str "id='" % "'"))
-                                       (str/join " or "))
-                                  ")")
+                             (str "subtype='infrastructure-service-registry' and "
+                                  (u/filter-eq-vals "id" creds))
                              request)
                 (count creds)))
       (throw (r/ex-response "Registries credentials can't be resolved!" 403))

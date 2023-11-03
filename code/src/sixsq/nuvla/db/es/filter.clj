@@ -47,18 +47,32 @@
   [[_ s]]
   [:Value (parse-wkt s)])
 
+(defn transform-values
+  [& args]
+  [:Value (mapv second args)])
+
 (defn transform-attribute
   [& args]
   [:Attribute (str/replace (str/join "" args) #"/" ".")])
 
+(defn eq
+  [term value]
+  (if (coll? value)
+    (query/terms-query term value)
+    (query/term-query term value)))
+
 (defn transform-comp
   [& args]
-  (let [{:keys [Attribute EqOp RelOp GeoOp
-                PrefixOp FullTextOp Value] :as m} (into {} args)
+  (let [{:keys [Attribute EqOp RelOp GeoOp PrefixOp FullTextOp
+                Value] :as m} (into {} args)
         Op (or EqOp RelOp PrefixOp FullTextOp GeoOp)]
     (case Op
-      "=" (if (nil? Value) (query/missing Attribute) (query/eq Attribute Value))
-      "!=" (if (nil? Value) (query/exists Attribute) (query/ne Attribute Value))
+      "=" (if (nil? Value)
+            (query/not-clause (query/exists Attribute))
+            (eq Attribute Value))
+      "!=" (if (nil? Value)
+             (query/exists Attribute)
+             (query/not-clause (eq Attribute Value)))
       "^=" (query/prefix Attribute Value)
       "==" (query/full-text-search Attribute Value)
       ">=" (query/gte Attribute Value)
@@ -75,19 +89,20 @@
   [& args]
   (if (= (count args) 1)
     (first args)
-    (query/and args)))
+    (query/and-clauses args)))
 
 (defn transform-or
   [& args]
   (if (= (count args) 1)
     (first args)
-    (query/or args)))
+    (query/or-clauses args)))
 
 (defn transform-filter
   [arg]
   (query/constant-score-query arg))
 
 (def transform-map {:Comp        transform-comp
+                    :Values      transform-values
                     :StringValue transform-string-value
                     :NullValue   transform-null-value
                     :IntValue    transform-int-value

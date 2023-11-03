@@ -866,7 +866,6 @@ particular NuvlaBox release.
     (log/warn "Assembling playbooks for execution, for NuvlaBox " id)
     (let [emergency-playbooks (seq (utils/get-playbooks id "EMERGENCY"))]
       (when emergency-playbooks
-        (log/warn "Running one-off emergency playbooks for NuvlaBox " id " and disabling them")
         (doseq [{playbook-id :id} emergency-playbooks]
           (crud/edit {:params      {:uuid          (u/id->uuid playbook-id)
                                     :resource-name "nuvlabox-playbook"}
