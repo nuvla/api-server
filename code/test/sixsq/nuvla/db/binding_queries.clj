@@ -141,7 +141,7 @@
           (is (every? :attr1 query-hits))
           (is (every? :sequence query-hits))
           (is (every? :acl query-hits))                     ;; always added to select list
-          (is (every? #(nil? (:id %)) query-hits))
+          (is (every? #(nil? (:admin %)) query-hits))
           (is (every? #(nil? (:attr2 %)) query-hits)))
 
         ;; attribute exists

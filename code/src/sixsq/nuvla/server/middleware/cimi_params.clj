@@ -21,11 +21,7 @@
                   combined with a logical AND.  This will be nil if
                   the parameter was not specified or was invalid.
     - :select     contains a set of the attributes the client has
-                  selected.  Will be nil if unspecified or if the
-                  user specified the wildcard '*'.
-    - :expand     indicates the reference attributes to expand in the
-                  response: :none if unspecified, :all if the wildcard
-                  was used, or an explicit set of attributes.
+                  selected.  Will be nil if unspecified.
     - :orderby    nil if unspecified or no valid values were provided.
                   Otherwise, provides an ordered vector of attribute,
                   direction pairs.  The direction is either :asc
@@ -51,7 +47,6 @@
     (let [cimi-params {:first       (impl/cimi-first params)
                        :last        (impl/cimi-last params)
                        :filter      (impl/cimi-filter params)
-                       :expand      (impl/cimi-expand params)
                        :select      (impl/cimi-select params)
                        :format      (impl/cimi-format params)
                        :orderby     (impl/cimi-orderby params)

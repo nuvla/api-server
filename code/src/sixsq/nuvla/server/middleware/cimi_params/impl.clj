@@ -32,31 +32,15 @@
            parser/parse-cimi-filter
            utils/throw-illegal-for-invalid-filter))
 
-(defn cimi-expand
-  "Calculates the value for the :expand key in the CIMI parameters map. The
-  value will be :none if the attribute wasn't specified or if no valid values
-  were given. If the wildcard is specified '*', then :all will be given as the
-  value. In all other cases, a set of the specified attributes will be
-  provided."
-  [{:keys [expand] :as _params}]
-  (->> expand
-       utils/as-vector
-       (mapcat utils/comma-split)
-       set
-       utils/reduce-expand-set))
-
 (defn cimi-select
   "Calculates the value for the :select key in the CIMI parameters map. The
-  value will be nil if the select key was not specified or if the wildcard
-  value '*' is given. Otherwise a set of the desired keys (with 'resource-type'
-  added automatically) is returned."
+   value will be nil if the select key was not specified. Otherwise a set of the
+   desired keys is returned."
   [{:keys [select] :as _params}]
   (some->> select
            utils/as-vector
            (mapcat utils/comma-split)
-           (cons "resource-type")
-           set
-           utils/reduce-select-set))
+           set))
 
 (defn cimi-format
   "Calculates the value for the :format key in the CIMI parameters map. The
