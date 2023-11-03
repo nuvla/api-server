@@ -158,7 +158,7 @@
   (if (seq node-ids)
     (->> {:params      {:resource-name "nuvlabox-status"}
           :cimi-params {:filter (->> node-ids
-                                     (u/filter-eq-values "node-id")
+                                     (u/filter-eq-vals "node-id")
                                      parser/parse-cimi-filter)
                         :select ["parent"]
                         :last   1000}
@@ -176,7 +176,7 @@
   [ids]
   (->> {:params      {:resource-name "nuvlabox"}
         :cimi-params {:filter (->> ids
-                                   (u/filter-eq-values "id")
+                                   (u/filter-eq-vals "id")
                                    parser/parse-cimi-filter)
                       :select ["acl"]
                       :last   1000}

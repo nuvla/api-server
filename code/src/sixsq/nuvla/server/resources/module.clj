@@ -113,7 +113,7 @@ component, or application.
   (if (and (seq private-registries)
            (< (query-count infra-service/resource-type
                            (str "subtype='registry' and "
-                                (u/filter-eq-values "id" private-registries))
+                                (u/filter-eq-vals "id" private-registries))
                            request)
               (count private-registries)))
     (throw (r/ex-response "Private registries can't be resolved!" 403))
@@ -125,7 +125,7 @@ component, or application.
     (if (and (seq creds)
              (< (query-count credential/resource-type
                              (str "subtype='infrastructure-service-registry' and "
-                                  (u/filter-eq-values "id" creds))
+                                  (u/filter-eq-vals "id" creds))
                              request)
                 (count creds)))
       (throw (r/ex-response "Registries credentials can't be resolved!" 403))

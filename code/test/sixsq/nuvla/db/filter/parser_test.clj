@@ -192,6 +192,11 @@
        [:IntValue "1"]]]]]])
 
 (deftest check-parse-cimi-filter-transform-values-query
+  (is (= [:Filter
+          [:Or
+           [:And
+            [:Comp [:Attribute "id"] [:EqOp "="]
+             [:Values]]]]] (t/parse-cimi-filter "id=[]")))
   (is (= expected-transform-values-query (t/parse-cimi-filter "id=[\"a\" \"b\" 1]"))))
 
 (def expected-transform-and-query

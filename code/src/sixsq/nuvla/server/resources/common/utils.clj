@@ -348,6 +348,6 @@
              (format "operation '%s' not allowed on %s" action id)
              409 id))))
 
-(defn filter-eq-values
-  [attribute values]
-  (str attribute "=" (vec values)))
+(defn filter-eq-vals
+  [attribute vals]
+  (str attribute "=" (vec vals)))

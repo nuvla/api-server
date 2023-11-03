@@ -403,7 +403,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
         subgroups   (if (seq root-groups)
                       (->> root-groups
                            (mapv :id)
-                           (u/filter-eq-values "parents")
+                           (u/filter-eq-vals "parents")
                            query-group)
                       [])]
     (assoc session
@@ -486,7 +486,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
                                    (mapcat :users)
                                    distinct
                                    seq
-                                   (u/filter-eq-values "parent")
+                                   (u/filter-eq-vals "parent")
                                    (str filter-validated " and ")))]
       (r/json-response
         (if filter-emails
