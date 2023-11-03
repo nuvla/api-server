@@ -109,7 +109,7 @@
         transformation-fn (remove nil? [(when with-operations?
                                           #(crud/set-operations % request))
                                         (when select
-                                          #(select-keys % (map keyword select)))])]
+                                          #(select-keys % (conj (map keyword select) :id)))])]
     (if (seq transformation-fn)
       (map (apply comp transformation-fn) entries)
       entries)))

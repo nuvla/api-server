@@ -108,17 +108,18 @@
       (is (contains? (set (:manage acl)) id))
       (is (contains? (set (:edit-acl acl)) owner))
 
-        (testing "query with minimal select should not fail"
-          (is (= (-> session-owner
-                     (content-type "application/x-www-form-urlencoded")
-                     (request base-uri
-                              :request-method :put
-                              :body (rc/form-encode {:select "state"}))
-                     (ltu/body->edn)
-                     (ltu/is-status 200)
-                     ltu/body
-                     :resources)
-                 [{:state "NEW"}])))
+      (testing "query with minimal select should not fail"
+        (is (= (-> session-owner
+                   (content-type "application/x-www-form-urlencoded")
+                   (request base-uri
+                            :request-method :put
+                            :body (rc/form-encode {:select "state"}))
+                   (ltu/body->edn)
+                   (ltu/is-status 200)
+                   ltu/body
+                   :resources)
+               [{:id    id
+                 :state "NEW"}])))
 
       (-> session-owner
           (request nuvlabox-url
