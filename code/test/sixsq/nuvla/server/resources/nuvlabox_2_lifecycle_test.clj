@@ -92,7 +92,9 @@
           nuvlabox-url  (str p/service-context nuvlabox-id)
 
           {:keys [id acl owner]} (-> session-owner
-                                     (request nuvlabox-url)
+                                     (content-type "application/x-www-form-urlencoded")
+                                     (request nuvlabox-url
+                                              :body (rc/form-encode {:select "id, acl, owner, operations, state"}))
                                      (ltu/body->edn)
                                      (ltu/is-status 200)
                                      (ltu/is-operation-present :edit)

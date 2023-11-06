@@ -42,6 +42,11 @@
         crud/validate
         db/add)))
 
+(defn select-keys-resource
+  [resource {{:keys [select]} :cimi-params :as _request}]
+  (if select
+    (select-keys resource (conj (map keyword select) :id))
+    resource))
 
 (defn retrieve-fn
   [resource-name]
@@ -51,6 +56,7 @@
           (crud/retrieve-by-id request)
           (crud/set-operations request)
           (a/select-viewable-keys request)
+          (select-keys-resource request)
           r/json-response)
       (catch Exception e
         (or (ex-data e) (throw e))))))
@@ -109,7 +115,7 @@
         transformation-fn (remove nil? [(when with-operations?
                                           #(crud/set-operations % request))
                                         (when select
-                                          #(select-keys % (conj (map keyword select) :id)))])]
+                                          #(select-keys-resource % request))])]
     (if (seq transformation-fn)
       (map (apply comp transformation-fn) entries)
       entries)))
