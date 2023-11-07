@@ -37,11 +37,11 @@
     (PUT uri request
       (ec/add-to-context :params (:params request))
       (ec/add-to-context :category "edit")
-      (crud/edit request))
+      (crud/edit (assoc-in request [:params :action] crud/action-edit)))
     (DELETE uri request
       (ec/add-to-context :params (:params request))
       (ec/add-to-context :category "delete")
-      (crud/delete request))
+      (crud/delete (assoc-in request [:params :action] crud/action-delete)))
     (ANY uri request
       (throw (r/ex-bad-method request)))))
 
@@ -90,4 +90,3 @@
                                 (route/resources (str p/service-context "static"))]
                                (dyn/resource-routes)
                                final-routes))))
-
