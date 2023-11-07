@@ -10,6 +10,8 @@ component, or application.
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.event-config :as ec]
+    [sixsq.nuvla.server.resources.common.event-context :as ectx]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
@@ -112,8 +114,11 @@ component, or application.
   [{{{:keys [private-registries]} :content} :body :as request}]
   (if (and (seq private-registries)
            (< (query-count infra-service/resource-type
-                           (str "subtype='registry' and "
-                                (u/filter-eq-vals "id" private-registries))
+                           (str "subtype='registry' and ("
+                                (->> private-registries
+                                     (map #(str "id='" % "'"))
+                                     (str/join " or "))
+                                ")")
                            request)
               (count private-registries)))
     (throw (r/ex-response "Private registries can't be resolved!" 403))
@@ -124,8 +129,11 @@ component, or application.
   (let [creds (remove str/blank? registries-credentials)]
     (if (and (seq creds)
              (< (query-count credential/resource-type
-                             (str "subtype='infrastructure-service-registry' and "
-                                  (u/filter-eq-vals "id" creds))
+                             (str "subtype='infrastructure-service-registry' and ("
+                                  (->> creds
+                                       (map #(str "id='" % "'"))
+                                       (str/join " or "))
+                                  ")")
                              request)
                 (count creds)))
       (throw (r/ex-response "Registries credentials can't be resolved!" 403))
@@ -352,11 +360,12 @@ component, or application.
 (defmethod crud/delete resource-type
   [request]
   (try
-    (-> request
-        utils/retrieve-module-meta
-        throw-project-cannot-delete-if-has-children
-        (a/throw-cannot-edit request)
-        (delete-all request))
+    (let [module-meta (utils/retrieve-module-meta request)]
+      (ectx/add-to-context :acl (:acl module-meta))
+      (-> module-meta
+          throw-project-cannot-delete-if-has-children
+          (a/throw-cannot-edit request)
+          (delete-all request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -473,6 +482,21 @@ component, or application.
             publish-eligible? (update :operations conj unpublish-op)
             deploy-op-present? (update :operations conj deploy-op)
             can-delete? (update :operations conj delete-version-op))))
+
+
+;;
+;; Events
+;;
+
+(defmethod ec/events-enabled? resource-type
+  [_resource-type]
+  true)
+
+
+(defmethod ec/log-event? "module.validate-docker-compose"
+  [_event _response]
+  false)
+
 
 ;;
 ;; initialization

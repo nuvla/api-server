@@ -92,6 +92,16 @@
   [resource-id]
   (retrieve-by-id resource-id {:nuvla/authn auth/internal-identity}))
 
+(defn retrieve-by-id-as-admin1
+  "Same as `retrieve-by-id-as-admin` but if the resource is not found returns nil
+   instead of throwing an exception."
+  [resource-id]
+  (try (retrieve-by-id-as-admin resource-id)
+       (catch Exception ex
+         (when-not (= 404 (:status (ex-data ex)))
+           (throw ex)))))
+
+
 (defn id->user-request
   [id request]
   {:params         (u/id->request-params id)

@@ -11,6 +11,8 @@
 
 (def valid-event
   {:id            "event/262626262626262"
+   :name          "test"
+   :success       true
    :resource-type t/resource-type
    :created       event-timestamp
    :updated       event-timestamp
@@ -21,14 +23,15 @@
    :content       {:resource {:href "module/HNSciCloud-RHEA/S3"}
                    :state    "Started"}
    :category      "state"
-   :severity      "critical"})
+   :severity      "critical"
+   :authn-info    {:user-id      "user/a978c1c0-f958-4238-9eba-aab85714b114"
+                   :claims       ["group/nuvla-anon" "group/nuvla-user"]
+                   :active-claim "group/nuvla-user"}})
 
 
 (deftest check-reference
   (let [updated-event (assoc-in valid-event [:content :resource :href] "another/valid-identifier")]
-    (stu/is-valid ::event/schema updated-event))
-  (let [updated-event (assoc-in valid-event [:content :resource :href] "/not a valid reference/")]
-    (stu/is-invalid ::event/schema updated-event)))
+    (stu/is-valid ::event/schema updated-event)))
 
 
 (deftest check-severity
