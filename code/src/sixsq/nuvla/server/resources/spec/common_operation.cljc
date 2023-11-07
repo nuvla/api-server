@@ -36,7 +36,7 @@
 
 
 (s/def ::operations
-  (-> (st/spec (s/coll-of ::operation :min-count 1))
+  (-> (st/spec (s/coll-of ::operation))
       (assoc :name "operations"
              :json-schema/type "array"
              :json-schema/description "list of authorized resource operations"
