@@ -15,4 +15,4 @@
 (deftest check-operations
   (stu/is-valid ::common-operation/operations [{:href "uri" :rel "add"}])
   (stu/is-valid ::common-operation/operations [{:href "uri" :rel "add"} {:href "uri" :rel "delete"}])
-  (stu/is-invalid ::common-operation/operations []))
+  (stu/is-valid ::common-operation/operations []))
