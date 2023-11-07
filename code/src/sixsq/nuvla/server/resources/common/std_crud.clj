@@ -80,9 +80,10 @@
           u/update-timestamps
           (u/set-updated-by request)
           (pre-validate-hook request)
+          (dissoc :operations)
           crud/validate
-          (crud/set-operations request)
-          db/edit)
+          db/edit
+          (update :body crud/set-operations request))
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
