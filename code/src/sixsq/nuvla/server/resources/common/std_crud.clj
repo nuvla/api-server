@@ -113,10 +113,10 @@
   [entries {{:keys [select]} :cimi-params :as request} with-entries-op?]
   (let [with-operations?  (and with-entries-op?
                                (or (nil? select) (contains? select "operations")))
-        transformation-fn (remove nil? [(when with-operations?
-                                          #(crud/set-operations % request))
-                                        (when select
-                                          #(select-keys-resource % request))])]
+        transformation-fn (remove nil? [(when select
+                                          #(select-keys-resource % request))
+                                        (when with-operations?
+                                          #(crud/set-operations % request))])]
     (if (seq transformation-fn)
       (map (apply comp transformation-fn) entries)
       entries)))
