@@ -2,6 +2,7 @@
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.response :as r]))
@@ -273,3 +274,17 @@
 (defmethod add-acl :default
   [json _request]
   json)
+
+;;
+;; Given resource type, filter and request, return count of the found resources.
+;;
+
+(defn query-count
+  [resource-type filter-str request]
+  (-> {:params      {:resource-name resource-type}
+       :cimi-params {:filter (parser/parse-cimi-filter filter-str)
+                     :last   0}
+       :nuvla/authn (auth/current-authentication request)}
+      query
+      :body
+      :count))

@@ -15,8 +15,8 @@ component, or application.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.resources.credential :as credential]
-    [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
+    [sixsq.nuvla.server.resources.credential.utils :as cred-utils]
+    [sixsq.nuvla.server.resources.infrastructure-service.utils :as infra-service-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.module-application :as module-application]
     [sixsq.nuvla.server.resources.module-applications-sets :as module-applications-sets]
@@ -72,20 +72,10 @@ component, or application.
     :else (throw (r/ex-bad-request (str "unknown module subtype: "
                                         (utils/module-subtype resource))))))
 
-(defn query-count
-  [resource-type filter-str request]
-  (-> {:params      {:resource-name resource-type}
-       :cimi-params {:filter (parser/parse-cimi-filter filter-str)
-                     :last   0}
-       :nuvla/authn (auth/current-authentication request)}
-      crud/query
-      :body
-      :count))
-
 (defn colliding-path?
   [path]
   (-> resource-type
-      (query-count (format "path='%s'" path) {:nuvla/authn auth/internal-identity})
+      (crud/query-count (format "path='%s'" path) {:nuvla/authn auth/internal-identity})
       pos?))
 
 (defn throw-colliding-path
@@ -112,30 +102,14 @@ component, or application.
 
 (defn throw-cannot-access-private-registries
   [{{{:keys [private-registries]} :content} :body :as request}]
-  (if (and (seq private-registries)
-           (< (query-count infra-service/resource-type
-                           (str "subtype='registry' and ("
-                                (->> private-registries
-                                     (map #(str "id='" % "'"))
-                                     (str/join " or "))
-                                ")")
-                           request)
-              (count private-registries)))
+  (if (infra-service-utils/all-registries-exist private-registries request)
     (throw (r/ex-response "Private registries can't be resolved!" 403))
     request))
 
 (defn throw-cannot-access-registries-credentials
   [{{{:keys [registries-credentials]} :content} :body :as request}]
   (let [creds (remove str/blank? registries-credentials)]
-    (if (and (seq creds)
-             (< (query-count credential/resource-type
-                             (str "subtype='infrastructure-service-registry' and ("
-                                  (->> creds
-                                       (map #(str "id='" % "'"))
-                                       (str/join " or "))
-                                  ")")
-                             request)
-                (count creds)))
+    (if (cred-utils/all-registry-creds-exist creds request)
       (throw (r/ex-response "Registries credentials can't be resolved!" 403))
       request)))
 
