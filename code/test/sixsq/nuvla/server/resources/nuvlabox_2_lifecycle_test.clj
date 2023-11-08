@@ -115,13 +115,26 @@
                    (content-type "application/x-www-form-urlencoded")
                    (request base-uri
                             :request-method :put
-                            :body (rc/form-encode {:select "state"}))
+                            :body (rc/form-encode {:select "state, operations"}))
                    (ltu/body->edn)
                    (ltu/is-status 200)
                    ltu/body
-                   :resources)
-               [{:id    id
-                 :state "NEW"}])))
+                   :resources
+                   first)
+               {:id         id
+                :operations [{:href id
+                              :rel  "edit"}
+                             {:href id
+                              :rel  "delete"}
+                             {:href (str id "/activate")
+                              :rel  "activate"}
+                             {:href (str id "/enable-host-level-management")
+                              :rel  "enable-host-level-management"}
+                             {:href (str id "/create-log")
+                              :rel  "create-log"}
+                             {:href (str id "/generate-new-api-key")
+                              :rel  "generate-new-api-key"}]
+                :state      "NEW"})))
 
       (-> session-owner
           (request nuvlabox-url
