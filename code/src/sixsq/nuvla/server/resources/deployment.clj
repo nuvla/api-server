@@ -346,21 +346,6 @@ a container orchestration engine.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-
-(defn stop-terminate
-  [{{uuid :uuid} :params :as request} action-name]
-  (try
-    (let [deployment     (-> (str resource-type "/" uuid)
-                             (crud/retrieve-by-id-as-admin)
-                             (utils/throw-can-not-do-action-invalid-state utils/can-stop? "stop"))
-          execution-mode (:execution-mode deployment)]
-      (-> deployment
-          (assoc :state "STOPPING")
-          (edit-deployment request)
-          (utils/create-job request action-name execution-mode)))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
-
 (defmethod crud/do-action [resource-type "stop"]
   [{{uuid :uuid} :params :as request}]
   (try
