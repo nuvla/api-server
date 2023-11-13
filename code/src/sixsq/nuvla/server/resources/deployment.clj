@@ -50,6 +50,13 @@ a container orchestration engine.
                :input-message  "application/json"
                :output-message "application/json"}
 
+              {:name           "terminate"
+               :uri            "terminate"
+               :description    "stops the deployment and delete it if stopped successfully"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
               {:name             "create-log"
                :uri              "create-log"
                :description      (str "creates a new deployment-log resource "
@@ -259,6 +266,7 @@ a container orchestration engine.
   [{:keys [id] :as resource} request]
   (let [start-op        (u/action-map id :start)
         stop-op         (u/action-map id :stop)
+        terminate-op    (u/action-map id :terminate)
         update-op       (u/action-map id :update)
         create-log-op   (u/action-map id :create-log)
         clone-op        (u/action-map id :clone)
@@ -267,6 +275,7 @@ a container orchestration engine.
         force-delete-op (u/action-map id :force-delete)
         detach-op       (u/action-map id :detach)
         can-manage?     (a/can-manage? resource request)
+        can-delete?     (a/can-delete? resource request)
         can-edit-data?  (a/can-edit-data? resource request)
         can-clone?      (a/can-view-data? resource request)]
     (cond-> (crud/set-standard-operations resource request)
@@ -275,6 +284,9 @@ a container orchestration engine.
 
             (and can-manage? (utils/can-stop? resource))
             (update :operations conj stop-op)
+
+            (and can-manage? can-delete? (utils/can-stop? resource))
+            (update :operations conj terminate-op)
 
             (and can-manage? (utils/can-update? resource)) (update :operations conj update-op)
 
@@ -335,6 +347,20 @@ a container orchestration engine.
       (or (ex-data e) (throw e)))))
 
 
+(defn stop-terminate
+  [{{uuid :uuid} :params :as request} action-name]
+  (try
+    (let [deployment     (-> (str resource-type "/" uuid)
+                             (crud/retrieve-by-id-as-admin)
+                             (utils/throw-can-not-do-action-invalid-state utils/can-stop? "stop"))
+          execution-mode (:execution-mode deployment)]
+      (-> deployment
+          (assoc :state "STOPPING")
+          (edit-deployment request)
+          (utils/create-job request action-name execution-mode)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
 (defmethod crud/do-action [resource-type "stop"]
   [{{uuid :uuid} :params :as request}]
   (try
@@ -346,6 +372,21 @@ a container orchestration engine.
           (assoc :state "STOPPING")
           (edit-deployment request)
           (utils/create-job request "stop_deployment" execution-mode)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+(defmethod crud/do-action [resource-type "terminate"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [deployment     (-> (str resource-type "/" uuid)
+                             (crud/retrieve-by-id-as-admin)
+                             (utils/throw-can-not-do-action-invalid-state utils/can-stop? "stop")
+                             (a/throw-cannot-delete request))
+          execution-mode (:execution-mode deployment)]
+      (-> deployment
+          (assoc :state "STOPPING")
+          (edit-deployment request)
+          (utils/create-job request "terminate_deployment" execution-mode)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -471,6 +512,10 @@ a container orchestration engine.
   [resource]
   (utils/on-cancel resource))
 
+(defmethod job-interface/on-cancel ["deployment" "terminate_deployment"]
+  [resource]
+  (utils/on-cancel resource))
+
 (def validate-edit-tags-body (u/create-spec-validation-request-body-fn
                                ::common-body/bulk-edit-tags-body))
 
@@ -505,6 +550,10 @@ a container orchestration engine.
   (bulk-action-impl request))
 
 (defmethod crud/bulk-action [resource-type "bulk-stop"]
+  [request]
+  (bulk-action-impl request))
+
+(defmethod crud/bulk-action [resource-type "bulk-terminate"]
   [request]
   (bulk-action-impl request))
 
