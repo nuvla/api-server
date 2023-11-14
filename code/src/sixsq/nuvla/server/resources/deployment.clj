@@ -4,6 +4,7 @@ These resources represent the deployment of a component or application within
 a container orchestration engine.
 "
   (:require
+    [clojure.data.json :as json]
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
@@ -14,6 +15,7 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.deployment.utils :as utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
+    [sixsq.nuvla.server.resources.job.utils :as job-utils]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.common-body :as common-body]
@@ -347,7 +349,7 @@ a container orchestration engine.
       (or (ex-data e) (throw e)))))
 
 (defmethod crud/do-action [resource-type "stop"]
-  [{{uuid :uuid} :params :as request}]
+  [{{uuid :uuid} :params body :body :as request}]
   (try
     (let [deployment     (-> (str resource-type "/" uuid)
                              (crud/retrieve-by-id-as-admin)
@@ -356,7 +358,10 @@ a container orchestration engine.
       (-> deployment
           (assoc :state "STOPPING")
           (edit-deployment request)
-          (utils/create-job request "stop_deployment" execution-mode)))
+          (utils/create-job request "stop_deployment" execution-mode
+                            :payload (when (and (a/can-delete? deployment request)
+                                                (:delete body))
+                                       {:delete true}))))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -503,6 +508,13 @@ a container orchestration engine.
 (defmethod job-interface/on-cancel ["deployment" "terminate_deployment"]
   [resource]
   (utils/on-cancel resource))
+
+(defmethod job-interface/on-done ["deployment" "stop_deployment"]
+  [{:keys [target-resource state payload] :as _job}]
+  (when-let [deployment (and (= state job-utils/state-success)
+                             (-> payload json/read-str (get "delete" false))
+                             (some-> target-resource :href crud/retrieve-by-id-as-admin))]
+    (db/delete deployment)))
 
 (def validate-edit-tags-body (u/create-spec-validation-request-body-fn
                                ::common-body/bulk-edit-tags-body))

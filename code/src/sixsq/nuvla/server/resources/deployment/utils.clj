@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.server.resources.deployment.utils
   (:require
+    [clojure.data.json :as json]
     [clojure.set :as set]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
@@ -104,7 +105,8 @@
 
 
 (defn create-job
-  [{:keys [id nuvlabox] :as resource} request action execution-mode]
+  [{:keys [id nuvlabox] :as resource} request action execution-mode
+   & {:keys [payload]}]
   (a/throw-cannot-manage resource request)
   (let [active-claim (auth/current-active-claim request)
         low-priority (get-in request [:body :low-priority] false)
@@ -118,7 +120,8 @@
                                            (a/acl-append :manage nuvlabox))
                                        :parent-job parent-job
                                        :priority (if low-priority 999 50)
-                                       :execution-mode execution-mode)
+                                       :execution-mode execution-mode
+                                       :payload (json/write-str payload))
         job-msg      (str action " " id " with async " job-id)]
     (when (not= job-status 201)
       (throw (r/ex-response
