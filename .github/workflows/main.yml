@@ -45,6 +45,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libxml2-utils
 
+      - name: Debug cloverage
+        working-directory: code
+        run: |
+          export JAVA_OPTS="-Xms6g -Xmx6g"
+          export ES_JAVA_OPTS="-Xms6g -Xmx6g"
+          lein cloverage --codecov
+
+
       - name: Project version
         working-directory: code
         run: |
