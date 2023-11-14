@@ -35,6 +35,7 @@
     resource
     (throw (r/ex-unauthorized (:id resource)))))
 
+
 (defn can-timeout?
   [{:keys [state] :as resource} request]
   (and (boolean (#{state-running} state))
@@ -52,18 +53,22 @@
   (uzk/create (str locking-queue-path "/" kazoo-queue-prefix (format "%03d" priority) "-")
               :data (uzk/string-to-byte job-id) :sequential? true :persistent? true))
 
+
 (defn create-job-queue
   []
   (when-not (uzk/exists locking-queue-path)
     (uzk/create-all locking-queue-path :persistent? true)))
 
+
 (defn is-final-state?
   [{:keys [state] :as _job}]
   (contains? #{state-failed state-success state-canceled} state))
 
+
 (defn update-time-of-status-change
   [job]
   (assoc job :time-of-status-change (time/now-str)))
+
 
 (defn job-cond->addition
   [{:keys [target-resource affected-resources progress status-message] :as job}]
@@ -77,6 +82,7 @@
                                              (conj affected-resources
                                                    target-resource))))
 
+
 (defn job-cond->edition
   [{:keys [status-message state started] :as job}]
   (let [job-in-final-state? (is-final-state? job)]
@@ -88,12 +94,14 @@
             (and job-in-final-state?
                  started) (assoc :duration (time/time-between-date-now started :seconds)))))
 
+
 (defn can-get-context?
   [resource request]
   (let [active-claim (auth/current-active-claim request)]
     (or (and (a/can-manage? resource request)
              (str/starts-with? active-claim "nuvlabox/"))
         (a/is-admin-request? request))))
+
 
 (defn throw-cannot-get-context
   [resource request]
