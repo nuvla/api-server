@@ -115,9 +115,10 @@
           job-status :status} :body} (job/create-job
                                        id action
                                        (-> {:owners ["group/nuvla-admin"]}
-                                           (a/acl-append :edit-acl active-claim)
                                            (a/acl-append :edit-data nuvlabox)
-                                           (a/acl-append :manage nuvlabox))
+                                           (a/acl-append :manage nuvlabox)
+                                           (a/acl-append :view-data active-claim)
+                                           (a/acl-append :manage active-claim))
                                        :parent-job parent-job
                                        :priority (if low-priority 999 50)
                                        :execution-mode execution-mode
