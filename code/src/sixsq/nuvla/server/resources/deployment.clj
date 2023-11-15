@@ -4,6 +4,7 @@ These resources represent the deployment of a component or application within
 a container orchestration engine.
 "
   (:require
+    [clojure.data.json :as json]
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
@@ -14,6 +15,7 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.deployment.utils :as utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
+    [sixsq.nuvla.server.resources.job.utils :as job-utils]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.common-body :as common-body]
@@ -23,18 +25,12 @@ a container orchestration engine.
 
 
 (def ^:const resource-type (u/ns->type *ns*))
-
-
 (def ^:const collection-type (u/ns->collection-type *ns*))
-
-
 (def ^:const create-type (u/ns->create-type *ns*))
-
 
 (def collection-acl {:query       ["group/nuvla-user"]
                      :add         ["group/nuvla-user"]
                      :bulk-action ["group/nuvla-user"]})
-
 
 (def actions [{:name           "start"
                :uri            "start"
@@ -104,32 +100,15 @@ a container orchestration engine.
                :input-message  "application/json"
                :output-message "application/json"}])
 
-
-;;
-;; validate deployment
-;;
-
 (def validate-fn (u/create-spec-validation-fn ::deployment-spec/deployment))
-
 
 (defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
 
-
-;;
-;; multimethod for ACLs
-;;
-
 (defmethod crud/add-acl resource-type
   [resource request]
   (a/add-acl resource request))
-
-
-;;
-;; CRUD operations
-;;
-
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
@@ -204,9 +183,7 @@ a container orchestration engine.
               execution-mode (assoc :execution-mode execution-mode))
       (create-deployment request)))
 
-
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
-
 
 (defmethod crud/retrieve resource-type
   [request]
@@ -219,11 +196,9 @@ a container orchestration engine.
                                  :pre-delete-attrs-hook pre-delete-attrs-hook
                                  :pre-validate-hook pre-validate-hook))
 
-
 (defmethod crud/edit resource-type
   [request]
   (edit-impl request))
-
 
 (defn delete-impl
   ([request]
@@ -241,19 +216,15 @@ a container orchestration engine.
      (catch Exception e
        (or (ex-data e) (throw e))))))
 
-
 (defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
-
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
-
 
 (defmethod crud/query resource-type
   [request]
   (query-impl request))
-
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
@@ -295,7 +266,6 @@ a container orchestration engine.
             (not (utils/can-delete? resource))
             (update :operations utils/remove-delete))))
 
-
 (defn edit-deployment
   [resource request]
   (-> request
@@ -304,7 +274,6 @@ a container orchestration engine.
              :nuvla/authn auth/internal-identity)
       crud/edit
       :body))
-
 
 (defmethod crud/do-action [resource-type "start"]
   [{{uuid :uuid} :params :as request}]
@@ -334,9 +303,8 @@ a container orchestration engine.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-
 (defmethod crud/do-action [resource-type "stop"]
-  [{{uuid :uuid} :params :as request}]
+  [{{uuid :uuid} :params body :body :as request}]
   (try
     (let [deployment     (-> (str resource-type "/" uuid)
                              (crud/retrieve-by-id-as-admin)
@@ -345,10 +313,12 @@ a container orchestration engine.
       (-> deployment
           (assoc :state "STOPPING")
           (edit-deployment request)
-          (utils/create-job request "stop_deployment" execution-mode)))
+          (utils/create-job request "stop_deployment" execution-mode
+                            :payload (when (and (a/can-delete? deployment request)
+                                                (:delete body))
+                                       {:delete true}))))
     (catch Exception e
       (or (ex-data e) (throw e)))))
-
 
 (defmethod crud/do-action [resource-type "create-log"]
   [{{uuid :uuid} :params :as request}]
@@ -362,7 +332,6 @@ a container orchestration engine.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-
 (defmethod crud/do-action [resource-type "check-dct"]
   [{{uuid :uuid} :params :as request}]
   (try
@@ -372,7 +341,6 @@ a container orchestration engine.
         (utils/create-job request "dct_check" "push"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
-
 
 (defmethod crud/do-action [resource-type "clone"]
   [request]
@@ -384,11 +352,9 @@ a container orchestration engine.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-
 (defmethod crud/do-action [resource-type "force-delete"]
   [request]
   (delete-impl request true))
-
 
 (defn update-deployment-impl
   [{{uuid :uuid} :params :as request}]
@@ -413,11 +379,9 @@ a container orchestration engine.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-
 (defmethod crud/do-action [resource-type "update"]
   [request]
   (update-deployment-impl request))
-
 
 (defmethod crud/do-action [resource-type "detach"]
   [{{uuid :uuid} :params :as _request}]
@@ -436,16 +400,13 @@ a container orchestration engine.
   [resource]
   (utils/get-context resource true))
 
-
 (defmethod job-interface/get-context ["deployment" "update_deployment"]
   [resource]
   (utils/get-context resource true))
 
-
 (defmethod job-interface/get-context ["deployment" "stop_deployment"]
   [resource]
   (utils/get-context resource false))
-
 
 (defmethod job-interface/get-context ["deployment" "deployment_state"]
   [resource]
@@ -470,6 +431,13 @@ a container orchestration engine.
 (defmethod job-interface/on-cancel ["deployment" "stop_deployment"]
   [resource]
   (utils/on-cancel resource))
+
+(defmethod job-interface/on-done ["deployment" "stop_deployment"]
+  [{:keys [target-resource state payload] :as _job}]
+  (when-let [deployment (and (= state job-utils/state-success)
+                             (-> payload json/read-str (get "delete" false))
+                             (some-> target-resource :href crud/retrieve-by-id-as-admin))]
+    (db/delete deployment)))
 
 (def validate-edit-tags-body (u/create-spec-validation-request-body-fn
                                ::common-body/bulk-edit-tags-body))
@@ -508,11 +476,9 @@ a container orchestration engine.
   [request]
   (bulk-action-impl request))
 
-
 (defmethod crud/bulk-action [resource-type "bulk-force-delete"]
   [request]
   (bulk-action-impl request))
-
 
 (defmethod crud/do-action [resource-type "fetch-module"]
   [{{uuid :uuid} :params body :body :as request}]
@@ -536,12 +502,7 @@ a container orchestration engine.
                   :body        dep-updated
                   :nuvla/authn authn-info}))))
 
-;;
-;; initialization
-;;
-
 (def resource-metadata (gen-md/generate-metadata ::ns ::deployment-spec/deployment))
-
 
 (defn initialize
   []
