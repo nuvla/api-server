@@ -28,20 +28,20 @@
 (defmulti on-cancel dispatch-on-target-type-and-action)
 
 (defmethod on-cancel :default
-  [resource]
-  (r/json-response resource))
+  [_job]
+  nil)
 
 
 (defmulti on-timeout dispatch-on-target-type-and-action)
 
 (defmethod on-timeout :default
-  [resource]
-  (r/json-response resource))
+  [_job]
+  nil)
 
 
 (defmulti on-done dispatch-on-target-type-and-action)
 
 (defmethod on-done :default
-  [resource]
-  (r/json-response resource))
+  [_job]
+  nil)
 

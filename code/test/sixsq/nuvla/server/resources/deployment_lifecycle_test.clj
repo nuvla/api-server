@@ -491,18 +491,71 @@
                                               :acl "user/shared")))
 
                     (testing "verify user can create another deployment from existing one by using clone action"
-                      (let [deployment-url-from-dep (-> session-user
-                                                        (request (str deployment-url "/clone")
-                                                                 :request-method :post
-                                                                 :body (json/write-str {:deployment {:href deployment-id}}))
-                                                        (ltu/body->edn)
-                                                        (ltu/is-status 201)
-                                                        (ltu/location-url))]
-                        (-> session-user
-                            (request deployment-url-from-dep
-                                     :request-method :delete)
-                            (ltu/body->edn)
-                            (ltu/is-status 200))))
+                      (let [cloned-dep-url  (-> session-user
+                                                (request (str deployment-url "/clone")
+                                                         :request-method :post
+                                                         :body (json/write-str {:deployment {:href deployment-id}}))
+                                                (ltu/body->edn)
+                                                (ltu/is-status 201)
+                                                ltu/location-url)
+                            cloned-stop-url (-> session-user
+                                                (request cloned-dep-url
+                                                         :request-method :put
+                                                         :body (json/write-str {:state "STARTED"}))
+                                                (ltu/body->edn)
+                                                (ltu/is-status 200)
+                                                (ltu/is-operation-present :stop)
+                                                (ltu/get-op-url :stop))]
+                        (testing "try to stop the cloned deployment with delete option"
+                          (let [job-url (-> session-user
+                                            (request cloned-stop-url
+                                                     :request-method :post
+                                                     :body (json/write-str {:delete true}))
+                                            (ltu/body->edn)
+                                            (ltu/is-status 202)
+                                            (ltu/location-url))]
+                            (-> session-user
+                                (request job-url)
+                                (ltu/body->edn)
+                                (ltu/is-status 200)
+                                (ltu/is-key-value :state "QUEUED")
+                                (ltu/is-key-value :action "stop_deployment")
+                                (ltu/is-key-value :payload "{\"delete\":true}"))
+                            (testing "When job is failed deployment should not be deleted"
+                              (-> session-admin
+                                  (request job-url
+                                           :request-method :put
+                                           :body (json/write-str {:state "FAILED"}))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200))
+                              (-> session-user
+                                  (request cloned-dep-url)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)))
+                            (testing "When job is success deployment should be deleted"
+                              (-> session-user
+                                  (request cloned-dep-url
+                                           :request-method :put
+                                           :body (json/write-str {:state "STARTED"}))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200))
+                              (let [job-url (-> session-user
+                                                (request cloned-stop-url
+                                                         :request-method :post
+                                                         :body (json/write-str {:delete true}))
+                                                (ltu/body->edn)
+                                                (ltu/is-status 202)
+                                                (ltu/location-url))]
+                                (-> session-admin
+                                    (request job-url
+                                             :request-method :put
+                                             :body (json/write-str {:state "SUCCESS"}))
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200))
+                                (-> session-user
+                                    (request cloned-dep-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 404))))))))
 
                     (testing "verify that the user can delete the deployment"
                       (-> session-user
@@ -555,18 +608,19 @@
 
 
 (deftest lifecycle-application
-  (let [valid-application {:id             (str module-application/resource-type
-                                                "/module-application-uuid")
-                           :resource-type  module-application/resource-type
-                           :created        timestamp
-                           :updated        timestamp
-                           :acl            valid-acl
+  (let [valid-module-content {:id             (str module-application/resource-type
+                                                   "/module-application-uuid")
+                              :resource-type  module-application/resource-type
+                              :created        timestamp
+                              :updated        timestamp
+                              :acl            valid-acl
 
-                           :author         "someone"
-                           :commit         "wip"
+                              :author         "someone"
+                              :commit         "wip"
 
-                           :docker-compose "version: \"3.3\"\nservices:\n  web:\n    ..."}]
-    (lifecycle-deployment "application" valid-application)))
+                              :docker-compose "version: \"3.3\"\nservices:\n  web:\n    ..."}
+        subtype              "application"]
+    (lifecycle-deployment "application" valid-module-content)))
 
 
 (deftest lifecycle-error

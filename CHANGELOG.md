@@ -4,6 +4,19 @@
 
 ## Released
 
+## [6.3.0] - 2023-11-09
+
+- Nuvlabox - Allow set-offline action for suspended state
+- Query support matching one or more values for an attribute
+- Nuvlabox - NullPointerException on PUT /api/nuvlabox with a filter and select=state (#830)
+- Middleware - Parser cimi-params remove support expand non used option
+- Middleware - Parser cimi-params remove support for wildcard in select option
+- ES binding - Always retrieve id acl state resource-type usually needed
+- Std-crud - Return only what user is asking for, plus the id of resources
+- Support select param for get queries
+- Std-crud - Do not store dynamic user operations on edit
+- Common spec - relax operations spec
+
 ## [6.2.0] - 2023-10-27
 
 - Nuvlabox - Refactor #801
