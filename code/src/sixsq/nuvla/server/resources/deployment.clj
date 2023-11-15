@@ -25,18 +25,12 @@ a container orchestration engine.
 
 
 (def ^:const resource-type (u/ns->type *ns*))
-
-
 (def ^:const collection-type (u/ns->collection-type *ns*))
-
-
 (def ^:const create-type (u/ns->create-type *ns*))
-
 
 (def collection-acl {:query       ["group/nuvla-user"]
                      :add         ["group/nuvla-user"]
                      :bulk-action ["group/nuvla-user"]})
-
 
 (def actions [{:name           "start"
                :uri            "start"
@@ -48,13 +42,6 @@ a container orchestration engine.
               {:name           "stop"
                :uri            "stop"
                :description    "stops the deployment"
-               :method         "POST"
-               :input-message  "application/json"
-               :output-message "application/json"}
-
-              {:name           "terminate"
-               :uri            "terminate"
-               :description    "stops the deployment and delete it if stopped successfully"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
@@ -113,32 +100,15 @@ a container orchestration engine.
                :input-message  "application/json"
                :output-message "application/json"}])
 
-
-;;
-;; validate deployment
-;;
-
 (def validate-fn (u/create-spec-validation-fn ::deployment-spec/deployment))
-
 
 (defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
 
-
-;;
-;; multimethod for ACLs
-;;
-
 (defmethod crud/add-acl resource-type
   [resource request]
   (a/add-acl resource request))
-
-
-;;
-;; CRUD operations
-;;
-
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
@@ -213,9 +183,7 @@ a container orchestration engine.
               execution-mode (assoc :execution-mode execution-mode))
       (create-deployment request)))
 
-
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
-
 
 (defmethod crud/retrieve resource-type
   [request]
@@ -228,11 +196,9 @@ a container orchestration engine.
                                  :pre-delete-attrs-hook pre-delete-attrs-hook
                                  :pre-validate-hook pre-validate-hook))
 
-
 (defmethod crud/edit resource-type
   [request]
   (edit-impl request))
-
 
 (defn delete-impl
   ([request]
@@ -250,25 +216,20 @@ a container orchestration engine.
      (catch Exception e
        (or (ex-data e) (throw e))))))
 
-
 (defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
-
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
-
 
 (defmethod crud/query resource-type
   [request]
   (query-impl request))
 
-
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
   (let [start-op        (u/action-map id :start)
         stop-op         (u/action-map id :stop)
-        terminate-op    (u/action-map id :terminate)
         update-op       (u/action-map id :update)
         create-log-op   (u/action-map id :create-log)
         clone-op        (u/action-map id :clone)
@@ -277,7 +238,6 @@ a container orchestration engine.
         force-delete-op (u/action-map id :force-delete)
         detach-op       (u/action-map id :detach)
         can-manage?     (a/can-manage? resource request)
-        can-delete?     (a/can-delete? resource request)
         can-edit-data?  (a/can-edit-data? resource request)
         can-clone?      (a/can-view-data? resource request)]
     (cond-> (crud/set-standard-operations resource request)
@@ -286,9 +246,6 @@ a container orchestration engine.
 
             (and can-manage? (utils/can-stop? resource))
             (update :operations conj stop-op)
-
-            (and can-manage? can-delete? (utils/can-stop? resource))
-            (update :operations conj terminate-op)
 
             (and can-manage? (utils/can-update? resource)) (update :operations conj update-op)
 
@@ -309,7 +266,6 @@ a container orchestration engine.
             (not (utils/can-delete? resource))
             (update :operations utils/remove-delete))))
 
-
 (defn edit-deployment
   [resource request]
   (-> request
@@ -318,7 +274,6 @@ a container orchestration engine.
              :nuvla/authn auth/internal-identity)
       crud/edit
       :body))
-
 
 (defmethod crud/do-action [resource-type "start"]
   [{{uuid :uuid} :params :as request}]
@@ -365,22 +320,6 @@ a container orchestration engine.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-(defmethod crud/do-action [resource-type "terminate"]
-  [{{uuid :uuid} :params :as request}]
-  (try
-    (let [deployment     (-> (str resource-type "/" uuid)
-                             (crud/retrieve-by-id-as-admin)
-                             (utils/throw-can-not-do-action-invalid-state utils/can-stop? "stop")
-                             (a/throw-cannot-delete request))
-          execution-mode (:execution-mode deployment)]
-      (-> deployment
-          (assoc :state "STOPPING")
-          (edit-deployment request)
-          (utils/create-job request "terminate_deployment" execution-mode)))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
-
-
 (defmethod crud/do-action [resource-type "create-log"]
   [{{uuid :uuid} :params :as request}]
   (try
@@ -393,7 +332,6 @@ a container orchestration engine.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-
 (defmethod crud/do-action [resource-type "check-dct"]
   [{{uuid :uuid} :params :as request}]
   (try
@@ -403,7 +341,6 @@ a container orchestration engine.
         (utils/create-job request "dct_check" "push"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
-
 
 (defmethod crud/do-action [resource-type "clone"]
   [request]
@@ -415,11 +352,9 @@ a container orchestration engine.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-
 (defmethod crud/do-action [resource-type "force-delete"]
   [request]
   (delete-impl request true))
-
 
 (defn update-deployment-impl
   [{{uuid :uuid} :params :as request}]
@@ -444,11 +379,9 @@ a container orchestration engine.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-
 (defmethod crud/do-action [resource-type "update"]
   [request]
   (update-deployment-impl request))
-
 
 (defmethod crud/do-action [resource-type "detach"]
   [{{uuid :uuid} :params :as _request}]
@@ -467,17 +400,11 @@ a container orchestration engine.
   [resource]
   (utils/get-context resource true))
 
-
 (defmethod job-interface/get-context ["deployment" "update_deployment"]
   [resource]
   (utils/get-context resource true))
 
-
 (defmethod job-interface/get-context ["deployment" "stop_deployment"]
-  [resource]
-  (utils/get-context resource false))
-
-(defmethod job-interface/get-context ["deployment" "terminate_deployment"]
   [resource]
   (utils/get-context resource false))
 
@@ -502,10 +429,6 @@ a container orchestration engine.
   (utils/on-cancel resource))
 
 (defmethod job-interface/on-cancel ["deployment" "stop_deployment"]
-  [resource]
-  (utils/on-cancel resource))
-
-(defmethod job-interface/on-cancel ["deployment" "terminate_deployment"]
   [resource]
   (utils/on-cancel resource))
 
@@ -553,15 +476,9 @@ a container orchestration engine.
   [request]
   (bulk-action-impl request))
 
-(defmethod crud/bulk-action [resource-type "bulk-terminate"]
-  [request]
-  (bulk-action-impl request))
-
-
 (defmethod crud/bulk-action [resource-type "bulk-force-delete"]
   [request]
   (bulk-action-impl request))
-
 
 (defmethod crud/do-action [resource-type "fetch-module"]
   [{{uuid :uuid} :params body :body :as request}]
@@ -585,12 +502,7 @@ a container orchestration engine.
                   :body        dep-updated
                   :nuvla/authn authn-info}))))
 
-;;
-;; initialization
-;;
-
 (def resource-metadata (gen-md/generate-metadata ::ns ::deployment-spec/deployment))
-
 
 (defn initialize
   []

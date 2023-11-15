@@ -312,7 +312,6 @@
                                             (ltu/is-status 200)
                                             (ltu/is-operation-present :edit)
                                             (ltu/is-operation-present :stop)
-                                            (ltu/is-operation-present :terminate)
                                             (ltu/is-operation-absent :delete)
                                             (ltu/is-operation-absent :start)
                                             (ltu/is-key-value :state "STARTING")))
@@ -334,7 +333,6 @@
                                        (ltu/is-status 200)
                                        (ltu/is-operation-present :edit)
                                        (ltu/is-operation-present :stop)
-                                       (ltu/is-operation-present :terminate)
                                        (ltu/is-operation-present :create-log)
                                        (ltu/is-operation-absent :delete)
                                        (ltu/is-operation-absent :start)
@@ -1196,69 +1194,5 @@
               (request deployment-url)
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value :state "ERROR"))))
-
-      (testing "Canceling terminate_deployment action"
-
-        (let [deployment-id       (-> session-user
-                                      (request base-uri
-                                               :request-method :post
-                                               :body (json/write-str valid-deployment))
-                                      (ltu/body->edn)
-                                      (ltu/is-status 201)
-                                      (ltu/location))
-
-              deployment-url      (str p/service-context deployment-id)
-              start-url           (-> session-user
-                                      (request deployment-url)
-                                      (ltu/body->edn)
-                                      (ltu/is-status 200)
-                                      (ltu/is-operation-present :start)
-                                      (ltu/get-op-url "start"))
-              _                   (-> session-user
-                                      (request start-url
-                                               :request-method :post)
-                                      (ltu/body->edn)
-                                      (ltu/is-status 202))
-              ;; the deployment would be set to "STARTED" via the job
-              ;; for the tests, set this manually to continue with the workflow
-              _                   (-> session-user
-                                      (request deployment-url
-                                               :request-method :put
-                                               :body (json/write-str {:state "STARTED"}))
-                                      (ltu/body->edn)
-                                      (ltu/is-status 200))
-              terminate-url       (-> session-user
-                                      (request deployment-url)
-                                      (ltu/body->edn)
-                                      (ltu/is-status 200)
-                                      (ltu/is-operation-present :terminate)
-                                      (ltu/get-op-url "terminate"))
-              ;; try to stop the deployment and check the stop job was created
-              job-url             (-> session-user
-                                      (request terminate-url
-                                               :request-method :get)
-                                      (ltu/body->edn)
-                                      (ltu/is-status 202)
-                                      (ltu/location-url))
-              cancel-stop-job-url (-> session-user
-                                      (request job-url
-                                               :request-method :get)
-                                      (ltu/body->edn)
-                                      (ltu/is-status 200)
-                                      (ltu/is-key-value :state "QUEUED")
-                                      (ltu/is-key-value :action "terminate_deployment")
-                                      (ltu/is-operation-present :cancel)
-                                      (ltu/get-op-url "cancel"))]
-          (-> session-user
-              (request cancel-stop-job-url)
-              (ltu/body->edn)
-              (ltu/is-status 200))
-          ;; the deployment should go in ERROR state
-          (-> session-user
-              (request deployment-url)
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value :state "ERROR"))))
-      )))
+              (ltu/is-key-value :state "ERROR")))))))
 
