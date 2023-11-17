@@ -42,7 +42,9 @@
           (if (= 404 status)
             (let [{{:keys [acknowledged shards_acknowledged]} :body} (spandex/request
                                                                        client
-                                                                       {:url [index], :method :put})]
+                                                                       {:url [index],
+                                                                        :method :put
+                                                                        :body {:settings {:index {:search {:idle {:after "1s"}}}}}})]
               (if (and acknowledged shards_acknowledged)
                 (log/info index "index created")
                 (log/warn index "index may or may not have been created")))
