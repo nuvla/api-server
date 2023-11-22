@@ -249,6 +249,7 @@
     :name "gpio-pins"
     :json-schema/type "array"
     :json-schema/description "list of GPIO pins and their information"
+    :json-schema/indexed false
     :json-schema/order 53))
 
 (s/def ::nuvlabox-engine-version
@@ -407,6 +408,7 @@
     :name "resources"
     :json-schema/type "map"
     :json-schema/description "available and consumed resources"
+    :json-schema/indexed false
     :json-schema/order 33))
 
 (s/def ::resources-prev
@@ -420,6 +422,7 @@
     :name "resources-prev"
     :json-schema/type "map"
     :json-schema/description "available and consumed resources; previous values."
+    :json-schema/indexed false
     :json-schema/order 30))
 
 (s/def ::operating-system
@@ -529,6 +532,7 @@
   (assoc (st/spec ::core/nonblank-string)
     :name "wifi-password"
     :json-schema/description "WIFI password for the NuvlaBox"
+    :json-schema/indexed false
     :json-schema/order 35))
 
 (s/def ::nuvlabox-api-endpoint
@@ -641,6 +645,7 @@
     :name "vulnerabilities"
     :json-schema/type "map"
     :json-schema/description "list of vulnerabilities affecting the NuvlaBox, plus summary"
+    :json-schema/indexed false
     :json-schema/order 66))
 
 (s/def ::swarm-node-id
@@ -692,6 +697,7 @@
   (assoc (st/spec (s/coll-of ::job-id :kind vector?))
     :name "jobs"
     :json-schema/description "List of jobs to be executed by NuvlaBox"
+    :json-schema/indexed false
     :json-schema/order 73))
 
 (s/def ::swarm-node-cert-expiry-date
@@ -743,6 +749,7 @@
     :name "temperatures"
     :json-schema/type "array"
     :json-schema/description "list of temperatures in the edge device"
+    :json-schema/indexed false
     :json-schema/order 80))
 
 (s/def ::kubelet-version

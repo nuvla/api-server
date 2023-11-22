@@ -78,7 +78,7 @@
   (-> (st/spec (s/coll-of string? :kind vector?))
       (assoc :name "status-notes"
              :json-schema/description "Previously called 'comment', now turned into a list of notes related with the status"
-
+             :json-schema/indexed false
              :json-schema/order 82)))
 
 (s/def ::cluster-nodes
@@ -113,9 +113,9 @@
 
 (s/def ::components
   (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
-      (assoc :name "cpmponents"
+      (assoc :name "components"
              :json-schema/description "List of all the NuvlaBox components in the edge device"
-
+             :json-schema/indexed false
              :json-schema/order 87)))
 
 ;;
@@ -214,7 +214,7 @@
       (assoc :name "network"
              :json-schema/type "map"
              :json-schema/description "Network related configuration"
-
+             :json-schema/indexed false
              :json-schema/order 88)))
 
 

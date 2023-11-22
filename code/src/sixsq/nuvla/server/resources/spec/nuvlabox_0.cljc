@@ -54,7 +54,7 @@
     :name "wifi-password"
     :json-schema/display-name "WIFI password"
     :json-schema/description "WIFI network password"
-
+    :json-schema/indexed false
     :json-schema/order 14))
 
 
@@ -63,7 +63,7 @@
     :name "root-password"
     :json-schema/display-name "root password"
     :json-schema/description "root password for NuvlaBox"
-
+    :json-schema/indexed false
     :json-schema/order 15))
 
 
@@ -169,7 +169,7 @@
   (assoc (st/spec ::core/nonblank-string)
     :name "comment"
     :json-schema/description "comment about the NuvlaBox"
-
+    :json-schema/indexed false
     :json-schema/order 27))
 
 
