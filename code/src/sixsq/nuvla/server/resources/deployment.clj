@@ -367,13 +367,14 @@ a container orchestration engine.
                           (utils/throw-when-payment-required request))
           module-href (get-in current [:module :href])
           ;; update price, license, etc. from source module during update
-          {:keys [name description price license]} (module-utils/resolve-module module-href request)
+          {:keys [name description price license logo-url]} (module-utils/resolve-module module-href request)
           new         (-> current
                           (assoc :state "UPDATING")
                           (cond-> name (assoc-in [:module :name] name)
                                   description (assoc-in [:module :description] description)
                                   price (assoc-in [:module :price] price)
-                                  license (assoc-in [:module :license] license))
+                                  license (assoc-in [:module :license] license)
+                                  logo-url (assoc-in [:module :logo-url] logo-url))
                           (edit-deployment request))]
       (utils/create-job new request "update_deployment" (:execution-mode new)))
     (catch Exception e
