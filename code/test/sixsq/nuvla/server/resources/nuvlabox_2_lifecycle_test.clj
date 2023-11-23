@@ -1939,6 +1939,7 @@
                         [{:name "NE1"}
                          {:name "NE2" :tags ["foo"]}
                          {:name "NE3" :tags ["foo" "bar"]}])]
+    (ltu/refresh-es-indices)
     (testing name
       (-> session-owner
           (header "bulk" "yes")

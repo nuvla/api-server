@@ -53,6 +53,7 @@
   [client index-name]
   (when (index-exists? client index-name)
     (log/debug (str "cleaning up index: " index-name))
+    (spandex/request client {:url [:_refresh], :method :post})
     (spandex/request client {:url          [index-name :_delete_by_query]
                              :query-string {:refresh true}
                              :method       :post

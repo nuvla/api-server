@@ -78,6 +78,13 @@
   [response]
   (empty? (get-in response [:body :failures])))
 
+(defn get-refresh
+  [index]
+  (if (or (= index "nuvla-nuvlabox")
+          (= index "nuvla-nuvlabox-status"))
+    false
+    true))
+
 (defn add-data
   [client {:keys [id] :as data}]
   (try
@@ -110,7 +117,7 @@
                           (acl-utils/force-admin-role-right-all)
                           (acl-utils/normalize-acl-for-resource))
           response    (spandex/request client {:url          [index :_doc uuid]
-                                               :query-string {:refresh true}
+                                               :query-string {:refresh (get-refresh index)}
                                                :method       :put
                                                :body         updated-doc})
           success?    (shards-successful? response)]
@@ -128,7 +135,7 @@
     (let [[collection-id uuid] (cu/split-id id)
           index    (escu/collection-id->index collection-id)
           response (spandex/request client {:url          [index :_update uuid]
-                                            :query-string {:refresh true}
+                                            :query-string {:refresh (get-refresh index)}
                                             :method       :post
                                             :body         options})
           success? (or (shards-successful? response)
