@@ -342,14 +342,22 @@
 
 
                 (testing "update deployment"
-                  (let [job-url (testing "try to update the deployment and check
+                  (let [updated-logo-url "updated-logo-url"
+                        _                (-> session-user
+                                             (request (str p/service-context module-id)
+                                                      :request-method :put
+                                                      :body (json/write-str
+                                                              {:logo-url updated-logo-url}))
+                                             (ltu/body->edn)
+                                             (ltu/is-status 200)
+                                             (ltu/is-key-value :logo-url updated-logo-url))
+                        job-url          (testing "try to update the deployment and check
                    the update job was created"
-                                  (-> session-user
-                                      (request update-url
-                                               :request-method :get)
-                                      (ltu/body->edn)
-                                      (ltu/is-status 202)
-                                      (ltu/location-url)))]
+                                           (-> session-user
+                                               (request update-url)
+                                               (ltu/body->edn)
+                                               (ltu/is-status 202)
+                                               (ltu/location-url)))]
                     (-> session-user
                         (request job-url
                                  :request-method :get)
@@ -358,12 +366,13 @@
                         (ltu/is-key-value :state "QUEUED")
                         (ltu/is-key-value :action "update_deployment"))
 
-                    ;; verify that the state has been updated
-                    (-> session-user
-                        (request deployment-url)
-                        (ltu/body->edn)
-                        (ltu/is-status 200)
-                        (ltu/is-key-value :state "UPDATING"))
+                    (testing "state should be updating and logo have been updated"
+                      (-> session-user
+                          (request deployment-url)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          (ltu/is-key-value :state "UPDATING")
+                          (ltu/is-key-value :logo-url :module updated-logo-url)))
 
                     (testing "on success, the deployment update job would set
                     the deployment state to \"STARTED\" for the tests, set this
