@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.db.es.binding-test
   (:require
-    [clojure.test :refer [deftest use-fixtures]]
+    [clojure.test :refer [deftest is use-fixtures]]
+    [qbits.spandex :as spandex]
     [sixsq.nuvla.db.binding-lifecycle :as lifecycle]
     [sixsq.nuvla.db.binding-queries :as queries]
     [sixsq.nuvla.db.es.binding :as t]
@@ -12,12 +13,23 @@
 
 (deftest check-es-protocol
 
-  (with-open [client (t/create-client {:hosts ["localhost:9200"]})
+  (with-open [client  (t/create-client {:hosts ["localhost:9200"]})
               sniffer (t/create-sniffer client {})
               binding (t/->ElasticsearchRestBinding client sniffer)]
     (lifecycle/check-binding-lifecycle binding))
 
-  (with-open [client (t/create-client {:hosts ["localhost:9200"]})
+  (with-open [client  (t/create-client {:hosts ["localhost:9200"]})
               sniffer (t/create-sniffer client {})
               binding (t/->ElasticsearchRestBinding client sniffer)]
     (queries/check-binding-queries binding)))
+
+(deftest check-index-creation
+  (with-open [client (t/create-client {:hosts ["localhost:9200"]})]
+    (let [index-name "test-index-creation"]
+      (t/create-index client index-name)
+      (is (= {:number_of_shards   "3"
+              :number_of_replicas "2"}
+             (-> client
+                 (spandex/request {:url index-name})
+                 (get-in [:body (keyword index-name) :settings :index])
+                 (select-keys [:number_of_shards :number_of_replicas])))))))
