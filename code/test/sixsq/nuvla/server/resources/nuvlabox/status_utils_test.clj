@@ -26,15 +26,15 @@
         (is (false? @called)))))
   (testing "nuvlabox is edited when propagated field value is changed"
     (with-redefs [crud/retrieve-by-id-as-admin (constantly {:online true})
-                  db/scripted-edit             (fn [_id {:keys [doc]}] (is (false? (:online doc))))]
+                  db/scripted-edit             (fn [_id & [{:keys [doc]}]] (is (false? (:online doc))))]
       (t/denormalize-changes-nuvlabox {:online false})))
   (testing "nuvlabox is edited when some propagated fields values are changed"
     (with-redefs [crud/retrieve-by-id-as-admin (constantly {:online                  true
                                                             :nuvlabox-engine-version "1.0.0"})
-                  db/scripted-edit             (fn [_id {:keys [doc]}] (is (= {:inferred-location       [46.2 6.1]
-                                                                               :nuvlabox-engine-version "2.0.0"
-                                                                               :online                  true}
-                                                                              doc)))]
+                  db/scripted-edit             (fn [_id & [{:keys [doc]}]] (is (= {:inferred-location       [46.2 6.1]
+                                                                                   :nuvlabox-engine-version "2.0.0"
+                                                                                   :online                  true}
+                                                                                  doc)))]
       (t/denormalize-changes-nuvlabox {:online                  true
                                        :inferred-location       [46.2 6.1]
                                        :nuvlabox-engine-version "2.0.0"}))))

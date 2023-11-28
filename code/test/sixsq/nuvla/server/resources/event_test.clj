@@ -43,7 +43,8 @@
           (request base-uri
                    :request-method :post
                    :body (json/write-str valid-event))
-          (ltu/is-status 201))))
+          (ltu/is-status 201)))
+    (ltu/refresh-es-indices))
   (f))
 
 

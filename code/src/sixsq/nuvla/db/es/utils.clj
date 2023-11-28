@@ -7,26 +7,25 @@
     [sixsq.nuvla.db.es.binding :as esrb]
     [sixsq.nuvla.utils.env :as eu]))
 
+(def ^:const status-yellow "yellow")
+(def ^:const status-green "green")
 
-(def ^:private ok-health-statuses #{"green" "yellow"})
-
+(def ^:private ok-health-statuses #{status-green status-yellow})
 
 (defn- throw-if-cluster-not-healthy
   [status]
   (when-not (ok-health-statuses status)
     (throw (ex-info "status is not accepted" {:status (str status)}))))
 
-
 (defn cluster-health
   [client indexes]
   (-> client
       (spandex/request {:url          [:_cluster :health (str/join "," indexes)]
-                        :query-string {:wait_for_status "yellow"
+                        :query-string {:wait_for_status status-yellow
                                        :timeout         "15s"}
                         :method       :get})
       :body
       :status))
-
 
 (defn wait-for-cluster
   "Waits for the cluster to reach a healthy state. Throws if the cluster does
@@ -36,15 +35,10 @@
     (throw-if-cluster-not-healthy status)
     client))
 
-
 (defn index-exists?
   [client index-name]
   (try
-    (-> client
-        (spandex/request {:url    [index-name]
-                          :method :head})
-        :status
-        (= 200))
+    (= (:status (spandex/request client {:url [index-name] :method :head})) 200)
     (catch Exception _
       false)))
 
@@ -58,44 +52,8 @@
                              :method       :post
                              :body         {:query {:match_all {}}}})))
 
-
-(defn cleanup-indices
-  [client indices-to-cleanup]
-  (doseq [index indices-to-cleanup]
-    (cleanup-index client index)))
-
-
-(defn list-indices
-  [client]
-  (spandex/request client {:url    "/_cat/indices"
-                           :method :get}))
-
-(defn index-content
-  [client index-name]
-  (-> client
-      (spandex/request {:url    [index-name]
-                        :method :get})
-      :body))
-
-
-(defn get-document
-  [client doc-path]
-  (-> client
-      (spandex/request {:url    doc-path
-                        :method :get})
-      :body))
-
-
-(defn reset-index
-  [client index-name]
-  (when (index-exists? client index-name)
-    (spandex/request client {:url    [index-name]
-                             :method :delete})))
-
-
 (def ^:const ES_PORT "9200")
 (def ^:const ES_HOST (str "localhost:" ES_PORT))
-
 
 (defn create-es-client
   "Creates a client connecting to an Elasticsearch instance. The 0-arity
@@ -117,12 +75,10 @@
      (log/info "creating elasticsearch client:" es-endpoints)
      (esrb/create-client endpoints))))
 
-
 (defn load-es-client
   []
   (-> (create-es-client)
       wait-for-cluster))
-
 
 (defn create-es-sniffer
   "Creates a sniffer connected to an Elasticsearch cluster. The 1-arity
@@ -140,7 +96,6 @@
   ([client options]
    (log/info "creating elasticsearch sniffer:" options)
    (esrb/create-sniffer client (or options {}))))
-
 
 (defn load-es-sniffer
   "Conditionally creates and returns Elasticsearch sniffer. For the sniffer to

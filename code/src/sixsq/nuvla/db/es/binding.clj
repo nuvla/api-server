@@ -256,19 +256,19 @@
       (set-index-mapping client index mapping)))
 
 
-  (add [_ data]
+  (add [_ data _options]
     (add-data client data))
 
 
-  (retrieve [_ id]
+  (retrieve [_ id _options]
     (find-data client id))
 
 
-  (delete [_ {:keys [id]}]
+  (delete [_ {:keys [id]} _options]
     (delete-data client id))
 
 
-  (edit [_ data]
+  (edit [_ data _options]
     (update-data client data))
 
   (scripted-edit [_ id options]

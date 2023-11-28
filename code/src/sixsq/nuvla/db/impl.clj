@@ -17,36 +17,36 @@
   (.unbindRoot #'*impl*))
 
 
-(defn initialize [collection-id options]
-  (p/initialize *impl* collection-id options))
+(defn initialize [collection-id & [options]]
+  (p/initialize *impl* collection-id [options]))
 
 
-(defn add [data]
-  (p/add *impl* data))
+(defn add [data & [options]]
+  (p/add *impl* data options))
 
 
-(defn retrieve [id]
-  (p/retrieve *impl* id))
+(defn retrieve [id & [options]]
+  (p/retrieve *impl* id options))
 
 
-(defn edit [data]
-  (p/edit *impl* data))
+(defn edit [data & [options]]
+  (p/edit *impl* data options))
 
-(defn scripted-edit [id options]
+(defn scripted-edit [id & [options]]
   (p/scripted-edit *impl* id options))
 
-(defn delete [data]
-  (p/delete *impl* data))
+(defn delete [data & [options]]
+  (p/delete *impl* data options))
 
 
-(defn query [collection-id options]
+(defn query [collection-id & [options]]
   (p/query *impl* collection-id options))
 
 
-(defn bulk-delete [collection-id options]
+(defn bulk-delete [collection-id & [options]]
   (p/bulk-delete *impl* collection-id options))
 
-(defn bulk-edit [collection-id options]
+(defn bulk-edit [collection-id & [options]]
   (p/bulk-edit *impl* collection-id options))
 
 
