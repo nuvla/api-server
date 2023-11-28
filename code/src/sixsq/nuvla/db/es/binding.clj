@@ -40,9 +40,10 @@
       (let [{:keys [status body]} (ex-data e)]
         (try
           (if (= 404 status)
-            (let [{{:keys [acknowledged shards_acknowledged]} :body} (spandex/request
-                                                                       client
-                                                                       {:url [index], :method :put})]
+            (let [{{:keys [acknowledged shards_acknowledged]} :body}
+                  (spandex/request client {:url  [index], :method :put
+                                           :body {:settings {:number_of_shards   3
+                                                             :number_of_replicas 2}}})]
               (if (and acknowledged shards_acknowledged)
                 (log/info index "index created")
                 (log/warn index "index may or may not have been created")))
