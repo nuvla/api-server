@@ -96,7 +96,10 @@
 
 (defn get-resource
   [context response]
-  {:href (get-resource-href context response)})
+  (if (contains? context :resource)
+    {:href (get-resource-href context response)
+     :content (:resource context)}
+    {:href (get-resource-href context response)}))
 
 
 (defn get-linked-identifiers

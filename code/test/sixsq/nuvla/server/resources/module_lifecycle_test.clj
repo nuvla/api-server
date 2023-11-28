@@ -95,12 +95,19 @@
             (ltu/message-matches "published successfully")))
 
       (testing "module publication event was created"
-        (-> session-admin
-            (request event-url-filter
-                     :request-method :put)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-count 1))))))
+        (is (= subtype (-> session-admin
+                           (request event-url-filter
+                                    :request-method :put)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/is-count 1)
+                           (ltu/body)
+                           :resources
+                           first
+                           :content
+                           :resource
+                           :content
+                           :subtype)))))))
 
 (deftest module-publish-creates-event-test
     (let [valid-application {:author         "someone"

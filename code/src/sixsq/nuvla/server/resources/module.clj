@@ -224,6 +224,15 @@ component, or application.
                (dissoc :content)
                (utils/set-price nil request))))
 
+(def event-context-keys [:name
+                         :description
+                         :subtype])
+
+(defn set-event-context
+  [resource]
+  (ectx/add-to-context :resource (select-keys resource event-context-keys))
+  resource)
+
 (defmethod crud/add resource-type
   [request]
   (a/throw-cannot-add collection-acl request)
@@ -236,6 +245,7 @@ component, or application.
       throw-requires-parent
       throw-requires-editable-parent-project
       update-add-request
+      (set-event-context)
       add-impl))
 
 (defmethod crud/retrieve resource-type
@@ -265,7 +275,9 @@ component, or application.
                             :body resource)
                      edit-impl)]
     (if (r/status-200? response)
-      response
+      (do
+        (set-event-context resource)
+        response)
       (throw (r/ex-response (str error-message ": " response) 500)))))
 
 

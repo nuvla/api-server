@@ -24,19 +24,36 @@
 
 (deftest build-event
   (with-redefs [time/now-str (constantly "2023-08-17T07:25:57.259Z")]
-    (let [context {:category "add"
+    (let [id    (str "resource/" (u/random-uuid))
+          context {:category "add"
                    :params   {:resource-name "resource"}}
           request (req {:nuvla-authn-info "super super group/nuvla-admin"
                         :method           :post
                         :body             {:k "v"}})]
       (testing "success"
-        (let [uuid  (u/random-uuid)
-              id    (str "resource/" uuid)
-              event (t/build-event context request {:status 201 :body {:resource-id id}})]
+        (let [event (t/build-event context request {:status 201 :body {:resource-id id}})]
           (is (= {:name          "resource.add"
                   :category      "add"
                   :description   (str "An anonymous user added resource " id ".")
                   :content       {:resource           {:href id}
+                                  :linked-identifiers []}
+                  :authn-info    {}
+                  :success       true
+                  :severity      "medium"
+                  :resource-type "event"
+                  :acl           {:owners ["group/nuvla-admin"]}
+                  :timestamp     "2023-08-17T07:25:57.259Z"}
+                 event))))
+      (testing "success w/ :resource in context"
+        (let [context (merge context {:resource {:id      id
+                                                 :name    "Resource Name"
+                                                 :subtype "resource subtype"}})
+              event (t/build-event context request {:status 201 :body {:resource-id id}})]
+          (is (= {:name          "resource.add"
+                  :category      "add"
+                  :description   (str "An anonymous user added resource " (-> context :resource :name) ".")
+                  :content       {:resource           {:href    id
+                                                       :content (:resource context)}
                                   :linked-identifiers []}
                   :authn-info    {}
                   :success       true
