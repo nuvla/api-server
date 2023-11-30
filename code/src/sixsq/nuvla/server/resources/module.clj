@@ -226,6 +226,7 @@ component, or application.
 
 (def event-context-keys [:name
                          :description
+                         :path
                          :subtype])
 
 (defn set-event-context
@@ -245,7 +246,7 @@ component, or application.
       throw-requires-parent
       throw-requires-editable-parent-project
       update-add-request
-      (set-event-context)
+      set-event-context
       add-impl))
 
 (defmethod crud/retrieve resource-type
