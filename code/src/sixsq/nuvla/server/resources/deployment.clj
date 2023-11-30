@@ -113,13 +113,25 @@ a container orchestration engine.
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defn pre-delete-attrs-hook
-  [current {{:keys [module] :as next} :body :as request}]
-  (let [is-admin? (a/is-admin-request? request)]
-    (cond-> current
-            (and module (not is-admin?)) (utils/restrict-module-changes next))))
+  [current {body :body :as request}]
+  (let [is-admin?            (a/is-admin-request? request)
+        body-module          (:module body)
+        dep-module           (:module current)
+        module-href          (:href body-module)
+        module-href-changed? (and module-href
+                                  (not= module-href (get-in current [:module :href])))
+        module               (if is-admin?
+                               (or body-module dep-module)
+                               (utils/merge-module
+                                 body-module
+                                 (if module-href-changed?
+                                   (module-utils/resolve-module module-href request)
+                                   dep-module)))]
+    ;; todo script to change existing href without version to an href with version; add version field
+    (assoc current :module module)))
 
 (defn pre-validate-hook
-  [current {{:keys [parent] :as next} :body :as request}]
+  [current {{:keys [parent] :as body} :body :as request}]
   (let [id             (:id current)
         cred-id        (or parent (:parent current))
         cred-edited?   (utils/cred-edited? parent (:parent current))
@@ -134,8 +146,8 @@ a container orchestration engine.
         nb-name        (:name nb)
         dep-set-id     (:deployment-set current)
         dep-set-name   (some-> dep-set-id crud/retrieve-by-id-as-admin :name)
-        execution-mode (utils/get-execution-mode current next cred-id nb)
-        new-acl        (utils/get-acl current next nb-id)
+        execution-mode (utils/get-execution-mode current body cred-id nb)
+        new-acl        (utils/get-acl current body nb-id)
         acl-updated?   (not= new-acl (:acl current))]
     (when acl-updated?
       (utils/propagate-acl-to-dep-parameters id new-acl))
@@ -174,6 +186,7 @@ a container orchestration engine.
 
 (defmethod crud/add resource-type
   [{{:keys [parent execution-mode deployment-set app-set]} :body :as request}]
+  ;; TODO only allow creation with specific version to always have a version without needing to check versions map
   (a/throw-cannot-add collection-acl request)
   (-> request
       module-utils/resolve-from-module
@@ -359,23 +372,15 @@ a container orchestration engine.
 (defn update-deployment-impl
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [current     (-> (str resource-type "/" uuid)
-                          (crud/retrieve-by-id-as-admin)
-                          (a/throw-cannot-manage request)
-                          (utils/throw-can-not-do-action-invalid-state
-                            utils/can-update? "update_deployment")
-                          (utils/throw-when-payment-required request))
-          module-href (get-in current [:module :href])
-          ;; update price, license, etc. from source module during update
-          {:keys [name description price license logo-url]} (module-utils/resolve-module module-href request)
-          new         (-> current
-                          (assoc :state "UPDATING")
-                          (cond-> name (assoc-in [:module :name] name)
-                                  description (assoc-in [:module :description] description)
-                                  price (assoc-in [:module :price] price)
-                                  license (assoc-in [:module :license] license)
-                                  logo-url (assoc-in [:module :logo-url] logo-url))
-                          (edit-deployment request))]
+    (let [current (-> (str resource-type "/" uuid)
+                      (crud/retrieve-by-id-as-admin)
+                      (a/throw-cannot-manage request)
+                      (utils/throw-can-not-do-action-invalid-state
+                        utils/can-update? "update_deployment")
+                      (utils/throw-when-payment-required request))
+          new     (-> current
+                      (assoc :state "UPDATING")
+                      (edit-deployment request))]
       (utils/create-job new request "update_deployment" (:execution-mode new)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -487,21 +492,18 @@ a container orchestration engine.
         deployment  (-> (crud/retrieve-by-id-as-admin id)
                         (a/throw-cannot-edit request)
                         (utils/throw-when-payment-required request))
-        module-href (:module-href body)]
-    (when (or (not (string? module-href))
-              (str/blank? module-href)
-              (not (str/starts-with? module-href (-> deployment
-                                                     (get-in [:module :href])
-                                                     (str/split #"_")
-                                                     first))))
+        module-href (:module-href body)
+        [module-uuid version-index] (when (string? module-href)
+                                      (module-utils/split-uuid module-href))]
+    (when (or (not= module-uuid (-> deployment
+                                    (get-in [:module :href])
+                                    module-utils/full-uuid->uuid))
+              (nil? version-index))
       (throw (r/ex-response "invalid module-href" 400)))
-    (let [authn-info  (auth/current-authentication request)
-          module      (module-utils/resolve-module module-href request)
-          dep-updated (update deployment :module utils/merge-module module)]
-      (crud/edit {:params      {:uuid          uuid
-                                :resource-name resource-type}
-                  :body        dep-updated
-                  :nuvla/authn authn-info}))))
+    (crud/edit {:params      {:uuid          uuid
+                              :resource-name resource-type}
+                :body        (assoc-in deployment [:module :href] module-href)
+                :nuvla/authn (auth/current-authentication request)})))
 
 (def resource-metadata (gen-md/generate-metadata ::ns ::deployment-spec/deployment))
 
