@@ -17,6 +17,7 @@
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
+    [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nuvlabox-utils]
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
     [sixsq.nuvla.server.util.response :as r]))
@@ -266,25 +267,24 @@
 
 
 (defn merge-module
-  [{current-content :content :as current-module}
-   {resolved-content :content :as resolved-module}]
+  [{existing-content :content :as _exiting-module}
+   {new-content :content :as new-module}]
   (let [params (merge-module-element :name #(select-keys % [:value])
-                                     (:output-parameters current-content)
-                                     (:output-parameters resolved-content))
+                                     (:output-parameters existing-content)
+                                     (:output-parameters new-content))
         env    (merge-module-element :name #(select-keys % [:value])
-                                     (:environmental-variables current-content)
-                                     (:environmental-variables resolved-content))
+                                     (:environmental-variables existing-content)
+                                     (:environmental-variables new-content))
 
         files  (merge-module-element :file-name #(select-keys % [:file-content])
-                                     (:files current-content)
-                                     (:files resolved-content))]
-    (assoc resolved-module
+                                     (:files existing-content)
+                                     (:files new-content))]
+    (assoc new-module
       :content
-      (cond-> (dissoc resolved-content :output-parameters :environmental-variables :files)
+      (cond-> (dissoc new-content :output-parameters :environmental-variables :files)
               (seq params) (assoc :output-parameters params)
               (seq env) (assoc :environmental-variables env)
-              (seq files) (assoc :files files))
-      :href (:id current-module))))
+              (seq files) (assoc :files files)))))
 
 (defn throw-when-payment-required
   [{{:keys [price] :as module} :module :as deployment} request]
@@ -336,8 +336,3 @@
         (and (some? nuvlabox)
              (not= nb-id nuvlabox))
         (a/acl-remove nuvlabox))))
-
-(defn restrict-module-changes
-  [current next]
-  (let [mutable-path [:module :content]]
-    (update-in current mutable-path merge (get-in next mutable-path))))
