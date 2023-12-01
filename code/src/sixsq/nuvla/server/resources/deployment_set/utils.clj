@@ -125,7 +125,8 @@
                                    transition-stop
                                    transition-plan
                                    transition-operational-status
-                                   transition-force-delete]}
+                                   transition-force-delete
+                                   transition-recompute-fleet]}
                 {::tk/name        state-stopping
                  ::tk/transitions [(transition-cancel state-partially-stopped)
                                    (transition-nok state-partially-stopped)
