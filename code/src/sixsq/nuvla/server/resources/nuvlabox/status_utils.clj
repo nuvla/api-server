@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.status-utils
   (:require
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [sixsq.nuvla.server.util.general :as gen-util]
@@ -61,7 +62,11 @@
                     :swarm-manager (or (= "manager" cluster-node-role)
                                        (contains? (set cluster-managers) node-id)
                                        swarm-node-id-set?)} ]
+
+    (log/debugf "detect-swarm - parent: %s - isg: %s - attrs: %s - swarm-node-id: %s - orchestrator: %s - node-id: %s - cluster-node-role: %s - cluster-managers: %s"
+                parent infrastructure-service-group attributes swarm-node-id orchestrator node-id cluster-node-role cluster-managers)
     (when-let [resource-id (nb-utils/get-service "swarm" infrastructure-service-group)]
-      (db/scripted-edit resource-id attributes)
+      (log/debugf "detect-swarm - resource-id: %s" resource-id)
+      (log/debugf "detect-swarm - scripted-edit: %s" (db/scripted-edit resource-id {:doc attributes}))
     )
   ))
