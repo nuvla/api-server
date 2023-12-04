@@ -125,7 +125,8 @@
                                    transition-stop
                                    transition-plan
                                    transition-operational-status
-                                   transition-force-delete]}
+                                   transition-force-delete
+                                   transition-recompute-fleet]}
                 {::tk/name        state-stopping
                  ::tk/transitions [(transition-cancel state-partially-stopped)
                                    (transition-nok state-partially-stopped)
@@ -257,13 +258,15 @@
   [{:keys [environmental-variables
            version] :as application}
    application-overwrite]
-  (let [env (merge-env
-              environmental-variables
-              (:environmental-variables application-overwrite))]
+  (let [env        (merge-env
+                     environmental-variables
+                     (:environmental-variables application-overwrite))
+        regs-creds (:registries-credentials application-overwrite)]
     (-> application
         (assoc :version (or (:version application-overwrite) version))
         (cond->
-          (seq env) (assoc :environmental-variables env)))))
+          (seq env) (assoc :environmental-variables env)
+          (seq regs-creds) (assoc :registries-credentials regs-creds)))))
 
 (defn merge-apps
   [app-set app-set-overwrite]
@@ -301,7 +304,7 @@
 (defn current-state
   [{:keys [id] :as _deployment-set}]
   (let [deployments (current-deployments id)]
-    (for [{:keys                     [nuvlabox parent state app-set] deployment-id :id
+    (for [{:keys                     [nuvlabox parent state app-set registries-credentials] deployment-id :id
            {application-href :href {:keys [environmental-variables]} :content
             :as              module} :module} deployments
           :let [env-vars (->> environmental-variables
@@ -312,7 +315,9 @@
        :application (cond-> {:id      (module-utils/full-uuid->uuid application-href)
                              :version (module-utils/module-current-version module)}
                             (seq env-vars)
-                            (assoc :environmental-variables env-vars))
+                            (assoc :environmental-variables env-vars)
+                            (seq registries-credentials)
+                            (assoc :registries-credentials registries-credentials))
        :target      (or nuvlabox parent)
        :state       state})))
 
