@@ -2,6 +2,8 @@
   (:require
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
+    [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as workflow-utils]
+    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.time :as time]))
 
 (def DENORMALIZED_FIELD [:online :inferred-location :nuvlabox-engine-version])
@@ -48,3 +50,20 @@
   (if (nb-utils/nuvlabox-request? request)
     (assoc response :body {:jobs (nb-utils/get-jobs parent)})
     response))
+
+(defn detect-swarm
+  [{{:keys [parent orchestrator node-id cluster-node-role cluster-managers swarm-node-id]} :body :as _response}
+   _request]
+
+  (let [{:keys [infrastructure-service-group] :as _nuvlabox} (db/retrieve parent)
+        swarm-node-id-set? (not (clojure.string/blank? swarm-node-id))
+        attributes {:swarm-enabled (or (= "swarm" orchestrator)
+                                       swarm-node-id-set?)
+                    :swarm-manager (or (= "manager" cluster-node-role)
+                                       (contains? (set cluster-managers) node-id)
+                                       swarm-node-id-set?)} ]
+    (when-let [resource-id (workflow-utils/get-service "swarm" infrastructure-service-group)
+               filtered-attributes (gen-util/filter-map-nil-value attributes)]
+      (db/scripted-edit resource-id filtered-attributes)
+    )
+  ))
