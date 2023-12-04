@@ -2,7 +2,6 @@
   (:require
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
-    [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as workflow-utils]
     [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.time :as time]))
 
@@ -62,8 +61,7 @@
                     :swarm-manager (or (= "manager" cluster-node-role)
                                        (contains? (set cluster-managers) node-id)
                                        swarm-node-id-set?)} ]
-    (when-let [resource-id (workflow-utils/get-service "swarm" infrastructure-service-group)
-               filtered-attributes (gen-util/filter-map-nil-value attributes)]
-      (db/scripted-edit resource-id filtered-attributes)
+    (when-let [resource-id (nb-utils/get-service "swarm" infrastructure-service-group)]
+      (db/scripted-edit resource-id attributes)
     )
   ))
