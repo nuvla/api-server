@@ -376,22 +376,37 @@
                 (ltu/is-key-value :href :target-resource resource-id))))
 
         (testing "force state transition to simulate job action"
-          (with-redefs [crud/get-resource-throw-nok
-                        (constantly u-applications-sets-v11)]
-            (t/state-transition resource-id utils/action-ok))
+          (testing "admin should be able to edit in transitional state"
+            (-> session-admin
+                (request dep-set-url)
+                ltu/body->edn
+                (ltu/is-status 200)
+                (ltu/is-operation-present crud/action-edit)
+                (ltu/is-operation-absent crud/action-delete)
+                (ltu/is-operation-absent utils/action-force-delete)
+                (ltu/is-operation-absent utils/action-start)
+                (ltu/is-operation-absent utils/action-stop)
+                (ltu/is-operation-absent utils/action-update)
+                (ltu/is-operation-present utils/action-cancel)
+                (ltu/is-operation-absent utils/action-recompute-fleet)
+                (ltu/is-key-value :state utils/state-starting))
 
-          (-> session-user
-              (request dep-set-url)
-              ltu/body->edn
-              (ltu/is-status 200)
-              (ltu/is-operation-present crud/action-edit)
-              (ltu/is-operation-absent crud/action-delete)
-              (ltu/is-operation-absent utils/action-start)
-              (ltu/is-operation-present utils/action-stop)
-              (ltu/is-operation-present utils/action-update)
-              (ltu/is-operation-absent utils/action-cancel)
-              (ltu/is-operation-absent utils/action-recompute-fleet)
-              (ltu/is-key-value :state utils/state-started)))
+            (with-redefs [crud/get-resource-throw-nok
+                          (constantly u-applications-sets-v11)]
+              (-> session-admin
+                  (request dep-set-url
+                           :request-method :put
+                           :body (json/write-str {:state utils/state-started}))
+                  ltu/body->edn
+                  (ltu/is-status 200)
+                  (ltu/is-operation-present crud/action-edit)
+                  (ltu/is-operation-absent crud/action-delete)
+                  (ltu/is-operation-absent utils/action-start)
+                  (ltu/is-operation-present utils/action-stop)
+                  (ltu/is-operation-present utils/action-update)
+                  (ltu/is-operation-absent utils/action-cancel)
+                  (ltu/is-operation-absent utils/action-recompute-fleet)
+                  (ltu/is-key-value :state utils/state-started)))))
 
         (testing "edit action is possible"
           (with-redefs [crud/get-resource-throw-nok
@@ -835,8 +850,8 @@
                                    :id)]
             (is (= new-app-set-id app-set-id)))
           (let [app-overwrites [{:id                      "module/1234"
-                             :version                 0
-                             :environmental-variables [{:name "var01" :value "value01"}]}]]
+                                 :version                 0
+                                 :environmental-variables [{:name "var01" :value "value01"}]}]]
             (-> session-user
                 (request dep-set-url
                          :request-method :put
