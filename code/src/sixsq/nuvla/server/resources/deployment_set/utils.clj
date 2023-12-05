@@ -64,6 +64,8 @@
 
 (def guard-fleet-filter-defined? :fleet-filter-defined)
 
+(def guard-admin? :fleet-filter-defined)
+
 (defn transition-ok
   [to-state]
   {::tk/on action-ok ::tk/to to-state ::tk/guards [sm/guard-is-admin?]})
@@ -82,6 +84,7 @@
                                                                                   guard-operational-status-nok?]})
 (def transition-stop {::tk/on action-stop ::tk/to state-stopping ::tk/guards [sm/guard-can-manage?]})
 (def transition-edit {::tk/on crud/action-edit ::tk/guards [sm/guard-can-edit?]})
+(def transition-edit-admin {::tk/on crud/action-edit ::tk/guards [sm/guard-is-admin?]})
 (def transition-delete {::tk/on crud/action-delete ::tk/guards [sm/guard-can-delete?]})
 (def transition-force-delete {::tk/on action-force-delete ::tk/guards [sm/guard-can-delete?]})
 (def transition-plan {::tk/on action-plan ::tk/guards [sm/guard-can-manage?]})
@@ -110,7 +113,8 @@
                                    (transition-nok state-partially-started)
                                    (transition-ok state-started)
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-edit-admin]}
                 {::tk/name        state-started
                  ::tk/transitions [transition-edit
                                    transition-update
@@ -132,7 +136,8 @@
                                    (transition-nok state-partially-stopped)
                                    (transition-ok state-stopped)
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-edit-admin]}
                 {::tk/name        state-stopped
                  ::tk/transitions [transition-start
                                    transition-edit
@@ -153,7 +158,8 @@
                                    (transition-nok state-partially-updated)
                                    (transition-ok state-updated)
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-edit-admin]}
                 {::tk/name        state-updated
                  ::tk/transitions [transition-edit
                                    transition-update
