@@ -11,6 +11,7 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
+    [sixsq.nuvla.server.resources.job.utils :as job-utils]
     [sixsq.nuvla.server.util.kafka-crud :as kafka-crud]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time]))
@@ -391,8 +392,8 @@
   (->> {:params      {:resource-name "job"}
         :cimi-params {:filter  (cimi-params-impl/cimi-filter
                                  {:filter (str "execution-mode='pull' and "
-                                               "state!='FAILED' and "
-                                               "state!='SUCCESS' and state!='STOPPED'")})
+                                               "state!="
+                                               (vec job-utils/final-states))})
                       :select  ["id"]
                       :orderby [["created" :asc]]}
         :nuvla/authn {:user-id      nb-id
