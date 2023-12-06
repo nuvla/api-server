@@ -21,7 +21,10 @@
    {{v2 :version env2 :environmental-variables} :application :keys [state] :as _current-deployment}]
   (let [relevant-keys (set (map :name env1))
         env2 (filter #(relevant-keys (:name %)) env2)]
-    (or (not= v1 v2) (not= (seq env1) (seq env2)) (not= "STARTED" state))))
+    (or (not= v1 v2)
+        (not= (seq env1) (seq env2))
+        (and (not= "STARTED" state)
+             (not= "UPDATED" state)))))
 
 
 (defn deployments-to-update
