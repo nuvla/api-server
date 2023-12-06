@@ -10,11 +10,11 @@
 
 
 (s/def ::state
-  (-> (st/spec (set utils/states))
+  (-> (st/spec utils/states)
       (assoc :name "state"
              :json-schema/type "string"
              :json-schema/description "job state"
-             :json-schema/value-scope {:values utils/states}
+             :json-schema/value-scope {:values (vec utils/states)}
 
              :json-schema/order 20)))
 
