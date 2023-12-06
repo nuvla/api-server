@@ -2,7 +2,7 @@
   (:require [sixsq.nuvla.server.util.time :as t]))
 
 
-(def ^:dynamic *context*)
+(def ^:dynamic *context* nil)
 
 
 (defmacro with-context
@@ -23,7 +23,7 @@
 (defn add-to-context
   "Adds value `v` to the current context under key `k`."
   [k v]
-  (when @*context*
+  (when (and (not (nil? *context*)) @*context*)
     (swap! *context* assoc k v)))
 
 (defn add-to-visible-to
