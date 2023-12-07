@@ -107,6 +107,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 (defn post-edit
   [response request]
   (utils/denormalize-changes-nuvlabox (r/response-body response))
+  (utils/detect-swarm response request)
   (kafka-crud/publish-on-edit resource-type response)
   (utils/special-body-nuvlabox response request))
 

@@ -1,7 +1,10 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.status-utils
   (:require
+    [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
+    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.time :as time]))
 
 (def DENORMALIZED_FIELD [:online :inferred-location :nuvlabox-engine-version])
@@ -48,3 +51,21 @@
   (if (nb-utils/nuvlabox-request? request)
     (assoc response :body {:jobs (nb-utils/get-jobs parent)})
     response))
+
+(defn detect-swarm
+  [{{:keys [parent orchestrator node-id cluster-node-role cluster-managers swarm-node-id]} :body :as _response}
+   _request]
+
+  (let [{:keys [infrastructure-service-group] :as _nuvlabox} (db/retrieve parent)
+        swarm-node-id-set? (not (str/blank? swarm-node-id))
+        attributes {:swarm-enabled (or (= "swarm" orchestrator)
+                                       swarm-node-id-set?)
+                    :swarm-manager (or (= "manager" cluster-node-role)
+                                       (contains? (set cluster-managers) node-id)
+                                       swarm-node-id-set?)} ]
+
+    (log/debugf "detect-swarm - parent: %s - isg: %s - attrs: %s - swarm-node-id: %s - orchestrator: %s - node-id: %s - cluster-node-role: %s - cluster-managers: %s"
+                parent infrastructure-service-group attributes swarm-node-id orchestrator node-id cluster-node-role cluster-managers)
+    (when-let [resource-id (nb-utils/get-service "swarm" infrastructure-service-group)]
+      (log/debugf "detect-swarm - parent: %s - resource-id: %s - scripted-edit: %s"
+                  parent resource-id (db/scripted-edit resource-id {:doc attributes})))))
