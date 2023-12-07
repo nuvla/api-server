@@ -13,7 +13,9 @@
 (def state-canceled "CANCELED")
 (def state-success "SUCCESS")
 
-(def states [state-queued state-running state-failed state-canceled state-success])
+(def states #{state-queued state-running state-failed state-canceled state-success})
+
+(def final-states #{state-failed state-success state-canceled})
 
 (def action-cancel "cancel")
 (def action-get-context "get-context")
@@ -59,7 +61,7 @@
 
 (defn is-final-state?
   [{:keys [state] :as _job}]
-  (contains? #{state-failed state-success state-canceled} state))
+  (contains? final-states state))
 
 (defn update-time-of-status-change
   [job]
