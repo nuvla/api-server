@@ -23,7 +23,7 @@
 (defn add-to-context
   "Adds value `v` to the current context under key `k`."
   [k v]
-  (when (and (not (nil? *context*)) @*context*)
+  (when (get-context)
     (swap! *context* assoc k v)))
 
 (defn add-to-visible-to
