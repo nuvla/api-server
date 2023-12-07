@@ -76,12 +76,12 @@
       (throw e))))
 
 
-(def ^:const default-initilization-order 99999)
+(def ^:const default-initialization-order 99999)
 
 
 (defn initialization-order
   "Returns the `initialization-order` value if defined by the namespace, or a high integer value by default."
   [resource-ns]
   (or (some-> (resolve "initialization-order" resource-ns) deref)
-      default-initilization-order))
+      default-initialization-order))
 

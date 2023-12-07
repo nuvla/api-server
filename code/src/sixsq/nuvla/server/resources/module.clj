@@ -10,11 +10,13 @@ component, or application.
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.event-config :as ec]
+    [sixsq.nuvla.server.resources.common.event-context :as ectx]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.resources.credential :as credential]
-    [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
+    [sixsq.nuvla.server.resources.credential.utils :as cred-utils]
+    [sixsq.nuvla.server.resources.infrastructure-service.utils :as infra-service-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.module-application :as module-application]
     [sixsq.nuvla.server.resources.module-applications-sets :as module-applications-sets]
@@ -70,20 +72,10 @@ component, or application.
     :else (throw (r/ex-bad-request (str "unknown module subtype: "
                                         (utils/module-subtype resource))))))
 
-(defn query-count
-  [resource-type filter-str request]
-  (-> {:params      {:resource-name resource-type}
-       :cimi-params {:filter (parser/parse-cimi-filter filter-str)
-                     :last   0}
-       :nuvla/authn (auth/current-authentication request)}
-      crud/query
-      :body
-      :count))
-
 (defn colliding-path?
   [path]
   (-> resource-type
-      (query-count (format "path='%s'" path) {:nuvla/authn auth/internal-identity})
+      (crud/query-count (format "path='%s'" path) {:nuvla/authn auth/internal-identity})
       pos?))
 
 (defn throw-colliding-path
@@ -110,24 +102,14 @@ component, or application.
 
 (defn throw-cannot-access-private-registries
   [{{{:keys [private-registries]} :content} :body :as request}]
-  (if (and (seq private-registries)
-           (< (query-count infra-service/resource-type
-                           (str "subtype='registry' and "
-                                (u/filter-eq-vals "id" private-registries))
-                           request)
-              (count private-registries)))
+  (if (infra-service-utils/all-registries-exist private-registries request)
     (throw (r/ex-response "Private registries can't be resolved!" 403))
     request))
 
 (defn throw-cannot-access-registries-credentials
   [{{{:keys [registries-credentials]} :content} :body :as request}]
   (let [creds (remove str/blank? registries-credentials)]
-    (if (and (seq creds)
-             (< (query-count credential/resource-type
-                             (str "subtype='infrastructure-service-registry' and "
-                                  (u/filter-eq-vals "id" creds))
-                             request)
-                (count creds)))
+    (if (cred-utils/all-registry-creds-exist creds request)
       (throw (r/ex-response "Registries credentials can't be resolved!" 403))
       request)))
 
@@ -242,6 +224,16 @@ component, or application.
                (dissoc :content)
                (utils/set-price nil request))))
 
+(def event-context-keys [:name
+                         :description
+                         :path
+                         :subtype])
+
+(defn set-event-context
+  [resource]
+  (ectx/add-to-context :resource (select-keys resource event-context-keys))
+  resource)
+
 (defmethod crud/add resource-type
   [request]
   (a/throw-cannot-add collection-acl request)
@@ -254,6 +246,7 @@ component, or application.
       throw-requires-parent
       throw-requires-editable-parent-project
       update-add-request
+      set-event-context
       add-impl))
 
 (defmethod crud/retrieve resource-type
@@ -283,7 +276,9 @@ component, or application.
                             :body resource)
                      edit-impl)]
     (if (r/status-200? response)
-      response
+      (do
+        (set-event-context resource)
+        response)
       (throw (r/ex-response (str error-message ": " response) 500)))))
 
 
@@ -352,11 +347,12 @@ component, or application.
 (defmethod crud/delete resource-type
   [request]
   (try
-    (-> request
-        utils/retrieve-module-meta
-        throw-project-cannot-delete-if-has-children
-        (a/throw-cannot-edit request)
-        (delete-all request))
+    (let [module-meta (utils/retrieve-module-meta request)]
+      (ectx/add-to-context :acl (:acl module-meta))
+      (-> module-meta
+          throw-project-cannot-delete-if-has-children
+          (a/throw-cannot-edit request)
+          (delete-all request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -473,6 +469,21 @@ component, or application.
             publish-eligible? (update :operations conj unpublish-op)
             deploy-op-present? (update :operations conj deploy-op)
             can-delete? (update :operations conj delete-version-op))))
+
+
+;;
+;; Events
+;;
+
+(defmethod ec/events-enabled? resource-type
+  [_resource-type]
+  true)
+
+
+(defmethod ec/log-event? "module.validate-docker-compose"
+  [_event _response]
+  false)
+
 
 ;;
 ;; initialization
