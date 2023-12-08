@@ -100,3 +100,15 @@
     false nil "credential/x"
     false "credential/x" "credential/x"
     true "credential/y" "credential/x"))
+
+(deftest keep-defined-values
+  (let [m-a {:name "a" :value "a-v" :description "a-d"}
+        m-b {:name "b" :description "b-d"}]
+    (are [expected arg-map]
+      (= expected (t/keep-current-defined-values (:arg1 arg-map) (:arg2 arg-map)))
+      [] {:arg1 [] :arg2 []}
+      [] {:arg1 [m-a] :arg2 []}
+      [m-a] {:arg1 [m-a] :arg2 [{:name "a" :description "a-d"}]}
+      [m-a m-b] {:arg1 [m-a m-b] :arg2 [{:name "a" :description "a-d"} m-b]}
+      [(assoc m-a :description "a-d-changed") m-b] {:arg1 [m-a m-b] :arg2 [{:name "a" :description "a-d-changed"} m-b]}
+      [m-a m-b] {:arg1 [m-a m-b] :arg2 [m-a (assoc m-b :value "any")]})))

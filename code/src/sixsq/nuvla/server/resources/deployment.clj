@@ -114,21 +114,19 @@ a container orchestration engine.
 
 (defn pre-delete-attrs-hook
   [current {body :body :as request}]
-  (let [is-admin?            (a/is-admin-request? request)
-        body-module          (:module body)
+  (let [body-module          (:module body)
         dep-module           (:module current)
         module-href          (:href body-module)
         module-href-changed? (and module-href
-                                  (not= module-href (get-in current [:module :href])))
-        module               (if is-admin?
+                                  (not= module-href (get-in current [:module :href])))]
+    (assoc current
+      :module
+      (cond
+        module-href-changed? (utils/keep-module-defined-values
                                (or body-module dep-module)
-                               (utils/merge-module
-                                 body-module
-                                 (if module-href-changed?
-                                   (module-utils/resolve-module module-href request)
-                                   dep-module)))]
-    ;; todo script to change existing href without version to an href with version; add version field
-    (assoc current :module module)))
+                               (module-utils/resolve-module module-href request))
+        body-module (utils/keep-module-defined-values body-module dep-module)
+        :else dep-module))))
 
 (defn pre-validate-hook
   [current {{:keys [parent] :as body} :body :as request}]
