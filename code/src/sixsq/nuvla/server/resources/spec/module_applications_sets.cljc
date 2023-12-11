@@ -33,9 +33,14 @@
     :name "version"
     :json-schema/type "integer"))
 
+(s/def ::value
+  (-> (st/spec string?)
+      (assoc :name "blankable value override"
+             :json-schema/description "blankable parameter value override")))
+
 (s/def ::environmental-variable
   (assoc (st/spec (su/only-keys :req-un [::container-spec/name
-                                         ::container-spec/value]))
+                                         ::value]))
     :name "environmental-variable"
     :json-schema/type "map"
     :json-schema/description
