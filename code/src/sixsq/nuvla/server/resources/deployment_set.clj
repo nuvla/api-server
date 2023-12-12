@@ -3,7 +3,6 @@
 These resources represent a deployment set that regroups deployments.
 "
   (:require
-    [clojure.set :as set]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
@@ -109,13 +108,7 @@ These resources represent a deployment set that regroups deployments.
      (let [applications-sets   (-> deployment-set
                                    utils/get-applications-sets-href
                                    (crud/get-resource-throw-nok request))
-           apps-set-overwrites (utils/get-applications-sets deployment-set)
-           edges               (vec (mapcat :fleet apps-set-overwrites))
-           existing-edges      (->> request
-                                    (utils/query-nuvlaboxes (str "id=" edges))
-                                    (map :id)
-                                    set)
-           missing-edges       (set/difference (set edges) existing-edges)
+           missing-edges       (utils/get-missing-edges deployment-set request)
            planned             (remove
                                  #(contains? missing-edges (:target %))
                                  (utils/plan deployment-set applications-sets))
