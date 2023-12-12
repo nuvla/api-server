@@ -3,6 +3,7 @@
 These resources represent a deployment set that regroups deployments.
 "
   (:require
+    [clojure.set :as set]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
@@ -105,15 +106,27 @@ These resources represent a deployment set that regroups deployments.
    (divergence-map (load-resource-throw-not-allowed-action request) request))
   ([{:keys [applications-sets] :as deployment-set} request]
    (when (seq applications-sets)
-     (let [applications-sets (-> deployment-set
-                                 utils/get-applications-sets-href
-                                 (crud/get-resource-throw-nok request))
-           divergence        (os/divergence-map
-                               (utils/plan deployment-set applications-sets)
-                               (utils/current-state deployment-set))
-           status            (if (some (comp pos? count) (vals divergence))
-                               utils/operational-status-nok
-                               utils/operational-status-ok)]
+     (let [applications-sets   (-> deployment-set
+                                   utils/get-applications-sets-href
+                                   (crud/get-resource-throw-nok request))
+           apps-set-overwrites (utils/get-applications-sets deployment-set)
+           edges               (vec (mapcat :fleet apps-set-overwrites))
+           existing-edges      (->> request
+                                    (utils/query-nuvlaboxes (str "id=" edges))
+                                    (map :id)
+                                    set)
+           missing-edges       (set/difference (set edges) existing-edges)
+           planned             (remove
+                                 #(contains? missing-edges (:target %))
+                                 (utils/plan deployment-set applications-sets))
+           divergence          (cond->
+                                 (os/divergence-map
+                                   planned
+                                   (utils/current-state deployment-set))
+                                 (seq missing-edges) (assoc :missing-edges (vec missing-edges)))
+           status              (if (some (comp pos? count) (vals divergence))
+                                 utils/operational-status-nok
+                                 utils/operational-status-ok)]
        (assoc divergence :status status)))))
 
 (defn create-module
@@ -227,9 +240,13 @@ These resources represent a deployment set that regroups deployments.
                               (crud/get-resource-throw-nok request))]
     (r/json-response (utils/plan deployment-set applications-sets))))
 
+(defn operationnal-status-content
+  [resource _request]
+  (-> resource :operational-status r/json-response))
+
 (defmethod crud/do-action [resource-type utils/action-operational-status]
   [request]
-  (r/json-response (divergence-map request)))
+  (standard-action request operationnal-status-content))
 
 (defmethod crud/do-action [resource-type utils/action-start]
   [request]
