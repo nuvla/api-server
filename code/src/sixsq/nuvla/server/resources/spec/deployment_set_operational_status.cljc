@@ -67,6 +67,12 @@
     :json-schema/description "deployments to update"
     :json-schema/indexed false))
 
+(s/def ::missing-edges
+  (assoc (st/spec (s/coll-of string?))
+    :json-schema/type "array"
+    :json-schema/description "missing edges"
+    :json-schema/indexed false))
+
 (s/def ::status
   (assoc (st/spec (set utils/operational-statuses))
     :json-schema/type "string"
@@ -78,6 +84,7 @@
   (assoc (st/spec (su/only-keys :req-un [::status]
                                 :opt-un [::deployments-to-add
                                          ::deployments-to-remove
-                                         ::deployments-to-update]))
+                                         ::deployments-to-update
+                                         ::missing-edges]))
     :json-schema/type "map"
     :json-schema/description "operational status of deployment set"))

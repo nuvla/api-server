@@ -12,6 +12,7 @@
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as cred-tpl]
     [sixsq.nuvla.server.resources.deployment :as deployment]
     [sixsq.nuvla.server.resources.email.sending :as email-sending]
+    [sixsq.nuvla.server.resources.nuvlabox :as nuvlabox]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.module :as module]
     [sixsq.nuvla.server.resources.module-application :as module-application]
@@ -122,3 +123,13 @@
         (ltu/body->edn)
         (ltu/is-status 201)
         (ltu/location))))
+
+(defn create-nuvlabox
+  [session data]
+  (-> session
+      (request (str p/service-context nuvlabox/resource-type)
+               :request-method :post
+               :body (json/write-str data))
+      (ltu/body->edn)
+      (ltu/is-status 201)
+      (ltu/location)))
