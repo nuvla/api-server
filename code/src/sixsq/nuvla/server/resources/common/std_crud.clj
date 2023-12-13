@@ -65,7 +65,8 @@
 (defn edit-fn
   [resource-name & {:keys [pre-validate-hook
                            pre-delete-attrs-hook
-                           immutable-keys]
+                           immutable-keys
+                           options]
                     :or   {pre-delete-attrs-hook pass-through
                            pre-validate-hook     pass-through
                            immutable-keys        []}}]
@@ -82,7 +83,7 @@
           (pre-validate-hook request)
           (dissoc :operations)
           crud/validate
-          db/edit
+          (db/edit options)
           (update :body crud/set-operations request))
       (catch Exception e
         (or (ex-data e) (throw e))))))

@@ -4,13 +4,23 @@
     [clojure.tools.logging :as log]
     [environ.core :as env]
     [qbits.spandex :as spandex]
-    [sixsq.nuvla.db.es.binding :as esrb]
     [sixsq.nuvla.utils.env :as eu]))
 
 (def ^:const status-yellow "yellow")
 (def ^:const status-green "green")
 
 (def ^:private ok-health-statuses #{status-green status-yellow})
+
+(def ^:const sniff-interval-mills 5000)
+(def ^:const sniff-after-failure-delay-mills 1000)
+
+(defn create-client
+  [options]
+  (spandex/client options))
+
+(defn create-sniffer
+  [client options]
+  (spandex/sniffer client (or options {})))
 
 (defn- throw-if-cluster-not-healthy
   [status]
@@ -42,11 +52,15 @@
     (catch Exception _
       false)))
 
+(defn refresh-index
+  [client index-name]
+  (spandex/request client {:url [index-name :_refresh]}))
 
 (defn cleanup-index
   [client index-name]
   (when (index-exists? client index-name)
     (log/debug (str "cleaning up index: " index-name))
+    (refresh-index client index-name)
     (spandex/request client {:url          [index-name :_delete_by_query]
                              :query-string {:refresh true}
                              :method       :post
@@ -73,7 +87,7 @@
   ([es-endpoints]
    (let [endpoints {:hosts (if (empty? es-endpoints) [ES_HOST] es-endpoints)}]
      (log/info "creating elasticsearch client:" es-endpoints)
-     (esrb/create-client endpoints))))
+     (create-client endpoints))))
 
 (defn load-es-client
   []
@@ -89,13 +103,13 @@
   be empty (then defaults will be used) or contain sniffer initialisation
   options."
   ([client]
-   (let [interval (eu/env-get-as-int :es-sniff-interval esrb/sniff-interval-mills)
-         delay    (eu/env-get-as-int :es-sniff-after-failure-delay esrb/sniff-after-failure-delay-mills)]
+   (let [interval (eu/env-get-as-int :es-sniff-interval sniff-interval-mills)
+         delay    (eu/env-get-as-int :es-sniff-after-failure-delay sniff-after-failure-delay-mills)]
      (create-es-sniffer client {:sniff-interval            interval
                                 :sniff-after-failure-delay delay})))
   ([client options]
    (log/info "creating elasticsearch sniffer:" options)
-   (esrb/create-sniffer client (or options {}))))
+   (create-sniffer client (or options {}))))
 
 (defn load-es-sniffer
   "Conditionally creates and returns Elasticsearch sniffer. For the sniffer to

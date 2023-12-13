@@ -12,22 +12,12 @@
             [sixsq.nuvla.db.es.filter :as filter]
             [sixsq.nuvla.db.es.order :as order]
             [sixsq.nuvla.db.es.pagination :as paging]
+            [sixsq.nuvla.db.es.utils :as esu]
             [sixsq.nuvla.db.es.script-utils :refer [get-update-script]]
             [sixsq.nuvla.db.es.select :as select]
             [sixsq.nuvla.db.utils.common :as cu]
             [sixsq.nuvla.server.util.response :as r])
   (:import (java.io Closeable)))
-
-(def ^:const sniff-interval-mills 5000)
-(def ^:const sniff-after-failure-delay-mills 1000)
-
-(defn create-client
-  [options]
-  (spandex/client options))
-
-(defn create-sniffer
-  [client options]
-  (spandex/sniffer client (or options {})))
 
 (defn create-index
   [client index]
@@ -103,7 +93,9 @@
           (r/response-error (str "unexpected exception: " (or error e))))))))
 
 (defn update-data
-  [client {:keys [id] :as data}]
+  [client {:keys [id] :as data} {:keys [refresh]
+                                 :or   {refresh true}
+                                 :as   _options}]
   (try
     (let [[collection-id uuid] (cu/split-id id)
           index       (escu/collection-id->index collection-id)
@@ -111,7 +103,7 @@
                           (acl-utils/force-admin-role-right-all)
                           (acl-utils/normalize-acl-for-resource))
           response    (spandex/request client {:url          [index :_doc uuid]
-                                               :query-string {:refresh true}
+                                               :query-string {:refresh refresh}
                                                :method       :put
                                                :body         updated-doc})
           success?    (shards-successful? response)]
@@ -208,6 +200,8 @@
     (let [index         (escu/collection-id->index collection-id)
           body          {:query  (acl/and-acl-edit (filter/filter cimi-params) options)
                          :script (get-update-script doc operation)}
+          ;; refresh index to minimize risk of version conflicts
+          _             (esu/refresh-index client index)
           response      (spandex/request client {:url          [index :_update_by_query]
                                                  :method       :post
                                                  :query-string {:refresh true}
@@ -221,7 +215,7 @@
     (catch Exception e
       (let [{:keys [body] :as _response} (ex-data e)
             error (:error body)
-            msg   (str "unexpected exception updating by query: " (or error e))]
+            msg   (str "unexpected exception updating by query: " _response (or error e))]
         (throw (r/ex-response msg 500))))))
 
 (defn bulk-delete-data
@@ -268,8 +262,8 @@
     (delete-data client id))
 
 
-  (edit [_ data _options]
-    (update-data client data))
+  (edit [_ data options]
+    (update-data client data options))
 
   (scripted-edit [_ id options]
     (scripted-update-data client id options))
