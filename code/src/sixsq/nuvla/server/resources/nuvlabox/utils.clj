@@ -11,6 +11,8 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
+    [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
+    [sixsq.nuvla.server.resources.job.utils :as job-utils]
     [sixsq.nuvla.server.util.kafka-crud :as kafka-crud]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time]))
@@ -391,8 +393,8 @@
   (->> {:params      {:resource-name "job"}
         :cimi-params {:filter  (cimi-params-impl/cimi-filter
                                  {:filter (str "execution-mode='pull' and "
-                                               "state!='FAILED' and "
-                                               "state!='SUCCESS' and state!='STOPPED'")})
+                                               "state!="
+                                               (vec job-utils/final-states))})
                       :select  ["id"]
                       :orderby [["created" :asc]]}
         :nuvla/authn {:user-id      nb-id
@@ -418,3 +420,16 @@
            (not (has-heartbeat-support? nuvlabox)))
     (merge nuvlabox-status (status-online-attributes online true refresh-interval))
     nuvlabox-status))
+
+(defn get-service
+  "Searches for an existing infrastructure-service of the given subtype and
+   linked to the given infrastructure-service-group. If found, the identifier
+   is returned."
+  [subtype isg-id]
+  (let [filter  (format "subtype='%s' and parent='%s'" subtype isg-id)
+        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                               :select ["id"]}}]
+    (-> (crud/query-as-admin infra-service/resource-type options)
+        second
+        first
+        :id)))

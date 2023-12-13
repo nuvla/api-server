@@ -17,8 +17,10 @@
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
+    [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nuvlabox-utils]
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
+    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -254,37 +256,43 @@
                        :nuvla/authn auth/internal-identity}]
     (crud/edit edit-request)))
 
-(defn merge-module-element
-  [key-fn current-val-fn current resolved]
-  (let [coll->map           (fn [val-fn coll] (into {} (map (juxt key-fn val-fn) coll)))
-        resolved-params-map (coll->map identity resolved)
-        valid-params-set    (set (map key-fn resolved))
-        current-params-map  (->> current
-                                 (filter (fn [entry] (valid-params-set (key-fn entry))))
-                                 (coll->map current-val-fn))]
-    (into [] (vals (merge-with merge resolved-params-map current-params-map)))))
+(defn keep-current-value
+  [k current new]
+  (if current
+    (if-let [v (get current k)]
+      (assoc new k v)
+      (dissoc new k))
+    new))
 
+(defn keep-current-defined-key
+  [k current-seq new-seq]
+  (let [current-seq-indexed (gen-util/index-by current-seq :name)
+        get-current         #(get current-seq-indexed (:name %))]
+    (mapv #(keep-current-value k (get-current %) %) new-seq)))
 
-(defn merge-module
-  [{current-content :content :as current-module}
-   {resolved-content :content :as resolved-module}]
-  (let [params (merge-module-element :name #(select-keys % [:value])
-                                     (:output-parameters current-content)
-                                     (:output-parameters resolved-content))
-        env    (merge-module-element :name #(select-keys % [:value])
-                                     (:environmental-variables current-content)
-                                     (:environmental-variables resolved-content))
+(defn keep-current-defined-values
+  [current-seq new-seq]
+  (keep-current-defined-key :value current-seq new-seq))
 
-        files  (merge-module-element :file-name #(select-keys % [:file-content])
-                                     (:files current-content)
-                                     (:files resolved-content))]
-    (assoc resolved-module
-      :content
-      (cond-> (dissoc resolved-content :output-parameters :environmental-variables :files)
-              (seq params) (assoc :output-parameters params)
-              (seq env) (assoc :environmental-variables env)
-              (seq files) (assoc :files files))
-      :href (:id current-module))))
+(defn keep-defined-file-contents
+  [current-seq new-seq]
+  (keep-current-defined-key :file-content current-seq new-seq))
+
+(defn keep-module-defined-values
+  [{defined-content :content :as _module_defined_values}
+   {content :content :as module}]
+  (let [params (keep-current-defined-values (:output-parameters defined-content)
+                                            (:output-parameters content))
+        env    (keep-current-defined-values (:environmental-variables defined-content)
+                                            (:environmental-variables content))
+        files  (keep-defined-file-contents
+                 (:files defined-content)
+                 (:files content))]
+    (update module :content
+            #(cond-> %
+                     (seq params) (assoc :output-parameters params)
+                     (seq env) (assoc :environmental-variables env)
+                     (seq files) (assoc :files files)))))
 
 (defn throw-when-payment-required
   [{{:keys [price] :as module} :module :as deployment} request]
@@ -336,8 +344,3 @@
         (and (some? nuvlabox)
              (not= nb-id nuvlabox))
         (a/acl-remove nuvlabox))))
-
-(defn restrict-module-changes
-  [current next]
-  (let [mutable-path [:module :content]]
-    (update-in current mutable-path merge (get-in next mutable-path))))

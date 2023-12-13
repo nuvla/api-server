@@ -111,7 +111,8 @@
                                      (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
           module-id          (setup-module session-user (valid-module subtype valid-module-content))
           valid-deployment   {:module {:href module-id}}
-          invalid-deployment {:module {:href "module/doesnt-exist"}}]
+          invalid-deployment {:module {:href "module/doesnt-exist"}}
+          new-logo-url "change-logo.url"]
 
       (testing "admin/user query succeeds but is empty"
         (doseq [session [session-admin session-user]]
@@ -195,7 +196,7 @@
                 (ltu/is-key-value :owner "user/jane")
                 (ltu/is-key-value :owners :acl ["user/jane" "user/tarzan"])))
 
-          (testing "user should be not be able to change parent credential to something inaccessible"
+          (testing "user should not be able to change parent credential to something inaccessible"
             (-> session-user
                 (request deployment-url
                          :request-method :put
@@ -215,6 +216,7 @@
                   (ltu/is-status 200)
                   (ltu/is-key-value :parent credential-id)
                   (ltu/is-key-value :credential-name cred-name))
+
               (testing "deployment credential should be able to edit deployment even without access to parent credential"
                 (let [session-deployment (header session-anon authn-info-header
                                                  (str deployment-id " " deployment-id " group/nuvla-user group/nuvla-anon"))]
@@ -273,20 +275,24 @@
               (is (= deployment-id (:parent credential))))
 
             (let [module (-> session-user
-                             (request (str "/api/" module-id))
+                             (request (str p/service-context module-id))
                              (ltu/body->edn)
                              (ltu/is-status 200)
                              :response :body)]
 
               (-> session-user
-                  (request (str "/api/" module-id)
+                  (request (str p/service-context module-id)
                            :request-method :put
-                           :body (json/write-str (assoc-in module [:content :environmental-variables]
-                                                           [{:name "ALPHA_ENV", :value "NOK"}
-                                                            {:name "NEW", :value "new"}
-                                                            {:name        "BETA_ENV",
-                                                             :description "beta-env variable",
-                                                             :required    true}])))
+                           :body (-> module
+                                     (assoc-in [:content :environmental-variables]
+                                               [{:name "ALPHA_ENV", :value "NOK"}
+                                                {:name "NEW", :value "new"}
+                                                {:name        "BETA_ENV",
+                                                 :description "beta-env variable",
+                                                 :required    true}])
+                                     (assoc :logo-url new-logo-url)
+                                     (assoc-in [:content :commit] "changed logo and add params")
+                                     json/write-str))
                   (ltu/body->edn)
                   (ltu/is-status 200)))
 
@@ -340,27 +346,22 @@
                     create-log-url (ltu/get-op-url response "create-log")
                     update-url     (ltu/get-op-url response "update")]
 
-
                 (testing "update deployment"
-                  (let [updated-logo-url "updated-logo-url"
-                        _                (-> session-user
-                                             (request (str p/service-context module-id)
-                                                      :request-method :put
-                                                      :body (json/write-str
-                                                              {:logo-url updated-logo-url}))
-                                             (ltu/body->edn)
-                                             (ltu/is-status 200)
-                                             (ltu/is-key-value :logo-url updated-logo-url))
-                        job-url          (testing "try to update the deployment and check
+                  (-> session-user
+                      (request deployment-url
+                               :request-method :put
+                               :body (json/write-str {:module {:href (str module-id "_1")}}))
+                      (ltu/body->edn)
+                      (ltu/is-status 200))
+                  (let [job-url (testing "try to update the deployment and check
                    the update job was created"
-                                           (-> session-user
-                                               (request update-url)
-                                               (ltu/body->edn)
-                                               (ltu/is-status 202)
-                                               (ltu/location-url)))]
+                                  (-> session-user
+                                      (request update-url)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 202)
+                                      (ltu/location-url)))]
                     (-> session-user
-                        (request job-url
-                                 :request-method :get)
+                        (request job-url)
                         (ltu/body->edn)
                         (ltu/is-status 200)
                         (ltu/is-key-value :state "QUEUED")
@@ -372,7 +373,7 @@
                           (ltu/body->edn)
                           (ltu/is-status 200)
                           (ltu/is-key-value :state "UPDATING")
-                          (ltu/is-key-value :logo-url :module updated-logo-url)))
+                          (ltu/is-key-value :logo-url :module new-logo-url)))
 
                     (testing "on success, the deployment update job would set
                     the deployment state to \"STARTED\" for the tests, set this
@@ -629,7 +630,7 @@
 
                               :docker-compose "version: \"3.3\"\nservices:\n  web:\n    ..."}
         subtype              "application"]
-    (lifecycle-deployment "application" valid-module-content)))
+    (lifecycle-deployment subtype valid-module-content)))
 
 
 (deftest lifecycle-error
@@ -756,7 +757,7 @@
         (-> session-user
             (request fetch-url
                      :request-method :put
-                     :body (json/write-str {:module-href module-id}))
+                     :body (json/write-str {:module-href (str module-id "_1")}))
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-key-value #(-> % :content :image :tag) :module "18.04"))

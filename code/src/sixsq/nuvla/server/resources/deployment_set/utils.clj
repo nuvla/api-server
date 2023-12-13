@@ -64,6 +64,8 @@
 
 (def guard-fleet-filter-defined? :fleet-filter-defined)
 
+(def guard-admin? :fleet-filter-defined)
+
 (defn transition-ok
   [to-state]
   {::tk/on action-ok ::tk/to to-state ::tk/guards [sm/guard-is-admin?]})
@@ -82,6 +84,7 @@
                                                                                   guard-operational-status-nok?]})
 (def transition-stop {::tk/on action-stop ::tk/to state-stopping ::tk/guards [sm/guard-can-manage?]})
 (def transition-edit {::tk/on crud/action-edit ::tk/guards [sm/guard-can-edit?]})
+(def transition-edit-admin {::tk/on crud/action-edit ::tk/guards [sm/guard-is-admin?]})
 (def transition-delete {::tk/on crud/action-delete ::tk/guards [sm/guard-can-delete?]})
 (def transition-force-delete {::tk/on action-force-delete ::tk/guards [sm/guard-can-delete?]})
 (def transition-plan {::tk/on action-plan ::tk/guards [sm/guard-can-manage?]})
@@ -110,7 +113,8 @@
                                    (transition-nok state-partially-started)
                                    (transition-ok state-started)
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-edit-admin]}
                 {::tk/name        state-started
                  ::tk/transitions [transition-edit
                                    transition-update
@@ -125,13 +129,15 @@
                                    transition-stop
                                    transition-plan
                                    transition-operational-status
-                                   transition-force-delete]}
+                                   transition-force-delete
+                                   transition-recompute-fleet]}
                 {::tk/name        state-stopping
                  ::tk/transitions [(transition-cancel state-partially-stopped)
                                    (transition-nok state-partially-stopped)
                                    (transition-ok state-stopped)
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-edit-admin]}
                 {::tk/name        state-stopped
                  ::tk/transitions [transition-start
                                    transition-edit
@@ -152,7 +158,8 @@
                                    (transition-nok state-partially-updated)
                                    (transition-ok state-updated)
                                    transition-plan
-                                   transition-operational-status]}
+                                   transition-operational-status
+                                   transition-edit-admin]}
                 {::tk/name        state-updated
                  ::tk/transitions [transition-edit
                                    transition-update
@@ -257,13 +264,15 @@
   [{:keys [environmental-variables
            version] :as application}
    application-overwrite]
-  (let [env (merge-env
-              environmental-variables
-              (:environmental-variables application-overwrite))]
+  (let [env        (merge-env
+                     environmental-variables
+                     (:environmental-variables application-overwrite))
+        regs-creds (:registries-credentials application-overwrite)]
     (-> application
         (assoc :version (or (:version application-overwrite) version))
         (cond->
-          (seq env) (assoc :environmental-variables env)))))
+          (seq env) (assoc :environmental-variables env)
+          (seq regs-creds) (assoc :registries-credentials regs-creds)))))
 
 (defn merge-apps
   [app-set app-set-overwrite]
@@ -301,7 +310,7 @@
 (defn current-state
   [{:keys [id] :as _deployment-set}]
   (let [deployments (current-deployments id)]
-    (for [{:keys                     [nuvlabox parent state app-set] deployment-id :id
+    (for [{:keys                     [nuvlabox parent state app-set registries-credentials] deployment-id :id
            {application-href :href {:keys [environmental-variables]} :content
             :as              module} :module} deployments
           :let [env-vars (->> environmental-variables
@@ -312,7 +321,9 @@
        :application (cond-> {:id      (module-utils/full-uuid->uuid application-href)
                              :version (module-utils/module-current-version module)}
                             (seq env-vars)
-                            (assoc :environmental-variables env-vars))
+                            (assoc :environmental-variables env-vars)
+                            (seq registries-credentials)
+                            (assoc :registries-credentials registries-credentials))
        :target      (or nuvlabox parent)
        :state       state})))
 

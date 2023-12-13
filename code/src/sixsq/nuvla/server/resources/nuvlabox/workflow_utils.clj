@@ -141,21 +141,7 @@
         :id)))
 
 
-(defn get-service
-  "Searches for an existing infrastructure-service of the given subtype and
-   linked to the given infrastructure-service-group. If found, the identifier
-   is returned."
-  [subtype isg-id]
-  (let [filter  (format "subtype='%s' and parent='%s'" subtype isg-id)
-        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
-                               :select ["id"]}}]
-    (-> (crud/query-as-admin infra-service/resource-type options)
-        second
-        first
-        :id)))
-
-
-(def get-minio-service (partial get-service "s3"))
+(def get-minio-service (partial utils/get-service "s3"))
 
 
 (defn create-coe-service
@@ -191,7 +177,7 @@
 
 (defn update-coe-service
   [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id subtype & {:as opt-map}]
-  (when-let [resource-id (get-service subtype isg-id)]
+  (when-let [resource-id (utils/get-service subtype isg-id)]
     (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
           body    (merge
                     {:name        (utils/format-nb-name

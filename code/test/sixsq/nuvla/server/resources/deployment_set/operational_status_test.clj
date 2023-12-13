@@ -111,7 +111,7 @@
   (-> deployment2
       set-random-deployment-id
       (set-deployment-state (rand-nth ["CREATED", "STARTING", "STOPPING", "STOPPED", "PAUSING", "PAUSED",
-                                       "SUSPENDING", "SUSPENDED", "UPDATING", "UPDATED", "PENDING", "ERROR"]))))
+                                       "SUSPENDING", "SUSPENDED", "UPDATING", "PENDING", "ERROR"]))))
 
 ;;
 ;; Current deployment configurations
@@ -185,6 +185,12 @@
     (is (= {:deployments-to-update #{[deployment1* deployment1]
                                      [deployment2** deployment2]}}
            (t/divergence-map expected deployment1*_deployment2**))))
+  (testing "Deployment with UPDATED state matches expected"
+    (is (= {:deployments-to-add #{deployment2 deployment3}}
+           (t/divergence-map expected
+                             (-> [deployment1]
+                                 set-random-deployment-ids
+                                 (set-deployment-states "UPDATED"))))))
   (testing "More combinations"
     (is (= {:deployments-to-add    #{deployment1}
             :deployments-to-remove #{extra-deployment-id}}
