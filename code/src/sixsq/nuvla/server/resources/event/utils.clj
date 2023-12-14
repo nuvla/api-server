@@ -7,7 +7,6 @@
     [sixsq.nuvla.server.resources.common.event-config :as ec]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event :as event]
-    [sixsq.nuvla.server.util.time :as t]
     [sixsq.nuvla.server.util.time :as time]))
 
 
@@ -47,7 +46,7 @@
 
 (defn get-timestamp
   [{:keys [timestamp] :as _context}]
-  (or timestamp (t/now-str)))
+  (or timestamp (time/now-str)))
 
 
 (defn retrieve-by-id
