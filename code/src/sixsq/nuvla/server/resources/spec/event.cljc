@@ -143,6 +143,6 @@
                      {:req-un [::timestamp
                                ::content
                                ::category
-                               ::severity
-                               ::authn-info
+                               ::severity]
+                      :opt-un [::authn-info
                                ::success]}))
