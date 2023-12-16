@@ -385,7 +385,9 @@
       (db/scripted-edit nuvlabox-status {:doc nb-status}))
     (kafka-crud/publish-on-edit
       "nuvlabox-status"
-      (r/json-response (assoc nb-status :id nuvlabox-status)))
+      (r/json-response (assoc nb-status :id nuvlabox-status
+                                        :parent id
+                                        :acl (:acl nuvlabox))))
     nuvlabox))
 
 (defn get-jobs
