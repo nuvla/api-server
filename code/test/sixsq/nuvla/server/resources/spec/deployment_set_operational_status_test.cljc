@@ -11,9 +11,9 @@
 (def app-id "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8")
 
 (def app-env-vars [{:name  "var_1_value"
-                     :value "overwritten var1 overwritten in deployment set"}
-                    {:name  "var_2"
-                     :value "overwritten in deployment set"}])
+                    :value "overwritten var1 overwritten in deployment set"}
+                   {:name  "var_2"
+                    :value "overwritten in deployment set"}])
 (def target-id "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316")
 (def current-deployment
   {:id          deployment-id-3
@@ -34,6 +34,7 @@
   {:deployments-to-add    [target-deployment]
    :deployments-to-remove [deployment-id-2]
    :deployments-to-update [[current-deployment target-deployment]]
+   :missing-edges         ["nuvlabox/1"]
    :status                "OK"})
 
 (deftest test-schema-check

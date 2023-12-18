@@ -4,6 +4,33 @@
 
 ## Released
 
+## [6.4.0] - 2023-12-14
+
+- Event -  Auto event generation framework plus enabled events on module publication
+- Nuvlabox - Pull jobs in state CANCELLED are still given to NuvlaEdges for execution
+- Deployment group
+  - Allow empty env var value override for app bouquets and DGs
+  - Deployment group divergence check should consider deployment with state UPDATED as matching the spec
+  - Admin should be able to edit deployment-set objects regardless of its state
+  - Support for registries credentials in plan and current-state of deployment
+  - Version nil spec issue fix, indirect issue related to deployment immutable fields bug
+  - Make recompute fleet operation available on PARTIALLY_STARTED state
+- Module - Edit module fetch module refactor
+- Es binding - Set default number of shards to 3 and number of replicas to 2
+- Deployment
+  - Operational status should detect if a NuvlaEdge has been deleted
+  - Persist operational status each time user call the action
+  - Merge module for files env and params changed to allow remove of variables
+  - Application logo in deployment is not updated when module logo change bugfix
+  - Stop action accept delete option that will delete deployment 
+  when stop action is successful
+  - Created jobs acl changed for user
+- Zookeeper - Avoid job not reaching zookeeper because of closed client
+
+## [6.3.1] - 2023-12-08
+
+- Nuvlabox-status - detect swarm mode from telemetry (#851) patch
+
 ## [6.3.0] - 2023-11-09
 
 - Nuvlabox - Allow set-offline action for suspended state

@@ -10,7 +10,7 @@
   resource-type)
 
 
-(defn event-name-dispatch [{event-name :name :as _event} & rest]
+(defn event-name-dispatch [{event-name :name :as _event} & _rest]
   event-name)
 
 

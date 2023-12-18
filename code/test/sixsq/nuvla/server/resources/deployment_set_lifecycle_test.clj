@@ -765,103 +765,77 @@
                   (ltu/is-status 404)))))))))
 
 (deftest lifecycle-create-apps-sets
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-user (header session-anon authn-info-header
-                             (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
-        module-id    (resource-creation/create-module session-user)
-        fleet        ["nuvlabox/1"]
-        fleet-filter "resource:type='nuvlabox'"]
+  (with-redefs [utils/get-missing-edges (constantly #{})]
+    (let [session-anon (-> (ltu/ring-app)
+                           session
+                           (content-type "application/json"))
+          session-user (header session-anon authn-info-header
+                               (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
+          module-id    (resource-creation/create-module session-user)
+          fleet        ["nuvlabox/1"]
+          fleet-filter "resource:type='nuvlabox'"]
 
-    (module/initialize)
+      (module/initialize)
 
-    (-> session-user
-        (request (str p/service-context module-id)
-                 :request-method :put
-                 :body (json/write-str {:content {:docker-compose "a"
-                                                  :author         "user/jane"}}))
-        ltu/body->edn
-        (ltu/is-status 200))
+      (-> session-user
+          (request (str p/service-context module-id)
+                   :request-method :put
+                   :body (json/write-str {:content {:docker-compose "a"
+                                                    :author         "user/jane"}}))
+          ltu/body->edn
+          (ltu/is-status 200))
 
-    (doseq [[expected-version m-id] [[1 module-id] [0 (str module-id "_0")]]]
-      (let [dep-set-url (-> session-user
-                            (request base-uri
-                                     :request-method :post
-                                     :body (json/write-str {:name         dep-set-name,
-                                                            :start        false,
-                                                            :modules      [m-id]
-                                                            :fleet        fleet
-                                                            :fleet-filter fleet-filter}))
-                            ltu/body->edn
-                            (ltu/is-status 201)
-                            ltu/location-url)
-            dep-set     (-> session-user
-                            (request dep-set-url)
-                            ltu/body->edn
-                            (ltu/is-status 200)
-                            (ltu/is-key-value
-                              (comp :fleet first :overwrites first)
-                              :applications-sets fleet)
-                            (ltu/is-key-value
-                              (comp :fleet-filter first :overwrites first)
-                              :applications-sets fleet-filter)
-                            (ltu/is-operation-present utils/action-recompute-fleet)
-                            ltu/body)
-            app-set-id  (-> dep-set
-                            :applications-sets
-                            first
-                            :id)
-            app-set-url (str p/service-context app-set-id)]
+      (doseq [[expected-version m-id] [[1 module-id] [0 (str module-id "_0")]]]
+        (let [dep-set-url (-> session-user
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str {:name         dep-set-name,
+                                                              :start        false,
+                                                              :modules      [m-id]
+                                                              :fleet        fleet
+                                                              :fleet-filter fleet-filter}))
+                              ltu/body->edn
+                              (ltu/is-status 201)
+                              ltu/location-url)
+              dep-set     (-> session-user
+                              (request dep-set-url)
+                              ltu/body->edn
+                              (ltu/is-status 200)
+                              (ltu/is-key-value
+                                (comp :fleet first :overwrites first)
+                                :applications-sets fleet)
+                              (ltu/is-key-value
+                                (comp :fleet-filter first :overwrites first)
+                                :applications-sets fleet-filter)
+                              (ltu/is-operation-present utils/action-recompute-fleet)
+                              ltu/body)
+              app-set-id  (-> dep-set
+                              :applications-sets
+                              first
+                              :id)
+              app-set-url (str p/service-context app-set-id)]
 
-        (testing
-          "Application set was created in the right project
-           and latest version of the application was picked up"
-          (-> session-user
-              (request app-set-url)
-              ltu/body->edn
-              (ltu/is-status 200)
-              (ltu/is-key-value (comp first :applications first :applications-sets)
-                                :content {:id      module-id
-                                          :version expected-version})
-              (ltu/is-key-value :parent-path module-utils/project-apps-sets)))
+          (testing
+            "Application set was created in the right project
+             and latest version of the application was picked up"
+            (-> session-user
+                (request app-set-url)
+                ltu/body->edn
+                (ltu/is-status 200)
+                (ltu/is-key-value (comp first :applications first :applications-sets)
+                                  :content {:id      module-id
+                                            :version expected-version})
+                (ltu/is-key-value :parent-path module-utils/project-apps-sets)))
 
-        (testing
-          "In edit call application set is replaced by a new one only when :modules key is specified"
-          (-> session-user
-              (request dep-set-url
-                       :request-method :put
-                       :body (json/write-str dep-set))
-              ltu/body->edn
-              (ltu/is-status 200))
-          (let [new-app-set-id (-> session-user
-                                   (request dep-set-url)
-                                   ltu/body->edn
-                                   (ltu/is-status 200)
-                                   (ltu/is-key-value
-                                     (comp :fleet first :overwrites first)
-                                     :applications-sets fleet)
-                                   (ltu/is-key-value
-                                     (comp :fleet-filter first :overwrites first)
-                                     :applications-sets fleet-filter)
-                                   ltu/body
-                                   :applications-sets
-                                   first
-                                   :id)]
-            (is (= new-app-set-id app-set-id)))
-          (let [app-overwrites [{:id                      "module/1234"
-                                 :version                 0
-                                 :environmental-variables [{:name "var01" :value "value01"}]}]]
+          (testing
+            "In edit call application set is replaced by a new one only when :modules key is specified"
             (-> session-user
                 (request dep-set-url
                          :request-method :put
-                         :body (json/write-str (assoc dep-set :modules [m-id]
-                                                              :overwrites app-overwrites
-                                                              :fleet fleet
-                                                              :fleet-filter fleet-filter)))
+                         :body (json/write-str dep-set))
                 ltu/body->edn
                 (ltu/is-status 200))
-            (let [dep-set        (-> session-user
+            (let [new-app-set-id (-> session-user
                                      (request dep-set-url)
                                      ltu/body->edn
                                      (ltu/is-status 200)
@@ -871,54 +845,117 @@
                                      (ltu/is-key-value
                                        (comp :fleet-filter first :overwrites first)
                                        :applications-sets fleet-filter)
-                                     (ltu/is-operation-present utils/action-recompute-fleet)
-                                     ltu/body)
-                  new-app-set-id (-> dep-set
+                                     ltu/body
                                      :applications-sets
                                      first
                                      :id)]
-              (is (not= new-app-set-id app-set-id))
-              (is (= app-overwrites (-> dep-set :applications-sets first :overwrites first :applications))))))
-
-        (testing "Fleet filter"
-          (let [dynamic-fleet ["nuvlabox/1" "nuvlabox/2"]]
-            (with-redefs [nuvlabox/query-impl (constantly {:body {:count     (count dynamic-fleet)
-                                                                  :resources (mapv (fn [id] {:id id}) dynamic-fleet)}})]
+              (is (= new-app-set-id app-set-id)))
+            (let [app-overwrites [{:id                      "module/1234"
+                                   :version                 0
+                                   :environmental-variables [{:name "var01" :value "value01"}]}]]
               (-> session-user
                   (request dep-set-url
                            :request-method :put
                            :body (json/write-str (assoc dep-set :modules [m-id]
+                                                                :overwrites app-overwrites
+                                                                :fleet fleet
                                                                 :fleet-filter fleet-filter)))
                   ltu/body->edn
                   (ltu/is-status 200))
-              (-> session-user
-                  (request dep-set-url)
-                  ltu/body->edn
-                  (ltu/is-status 200)
-                  (ltu/is-key-value
-                    (comp :fleet first :overwrites first)
-                    :applications-sets dynamic-fleet)
-                  (ltu/is-key-value
-                    (comp :fleet-filter first :overwrites first)
-                    :applications-sets fleet-filter)
-                  (ltu/is-operation-present utils/action-recompute-fleet)))))
+              (let [dep-set        (-> session-user
+                                       (request dep-set-url)
+                                       ltu/body->edn
+                                       (ltu/is-status 200)
+                                       (ltu/is-key-value
+                                         (comp :fleet first :overwrites first)
+                                         :applications-sets fleet)
+                                       (ltu/is-key-value
+                                         (comp :fleet-filter first :overwrites first)
+                                         :applications-sets fleet-filter)
+                                       (ltu/is-operation-present utils/action-recompute-fleet)
+                                       ltu/body)
+                    new-app-set-id (-> dep-set
+                                       :applications-sets
+                                       first
+                                       :id)]
+                (is (not= new-app-set-id app-set-id))
+                (is (= app-overwrites (-> dep-set :applications-sets first :overwrites first :applications))))))
 
-        (testing "Recompute fleet"
-          (let [dynamic-fleet ["nuvlabox/1" "nuvlabox/2" "nuvlabox/3"]]
-            (with-redefs [nuvlabox/query-impl (constantly {:body {:count     (count dynamic-fleet)
-                                                                  :resources (mapv (fn [id] {:id id}) dynamic-fleet)}})]
-              (let [recompute-fleet-op (-> session-user
-                                           (request dep-set-url)
-                                           (ltu/body->edn)
-                                           (ltu/is-status 200)
-                                           (ltu/get-op-url utils/action-recompute-fleet))]
+          (testing "Fleet filter"
+            (let [dynamic-fleet ["nuvlabox/1" "nuvlabox/2"]]
+              (with-redefs [nuvlabox/query-impl (constantly {:body {:count     (count dynamic-fleet)
+                                                                    :resources (mapv (fn [id] {:id id}) dynamic-fleet)}})]
                 (-> session-user
-                    (request recompute-fleet-op)
-                    (ltu/body->edn)
+                    (request dep-set-url
+                             :request-method :put
+                             :body (json/write-str (assoc dep-set :modules [m-id]
+                                                                  :fleet-filter fleet-filter)))
+                    ltu/body->edn
+                    (ltu/is-status 200))
+                (-> session-user
+                    (request dep-set-url)
+                    ltu/body->edn
                     (ltu/is-status 200)
                     (ltu/is-key-value
                       (comp :fleet first :overwrites first)
-                      :applications-sets dynamic-fleet))))))))))
+                      :applications-sets dynamic-fleet)
+                    (ltu/is-key-value
+                      (comp :fleet-filter first :overwrites first)
+                      :applications-sets fleet-filter)
+                    (ltu/is-operation-present utils/action-recompute-fleet)))))
+
+          (testing "Recompute fleet"
+            (let [dynamic-fleet ["nuvlabox/1" "nuvlabox/2" "nuvlabox/3"]]
+              (with-redefs [nuvlabox/query-impl (constantly {:body {:count     (count dynamic-fleet)
+                                                                    :resources (mapv (fn [id] {:id id}) dynamic-fleet)}})]
+                (let [recompute-fleet-op (-> session-user
+                                             (request dep-set-url)
+                                             (ltu/body->edn)
+                                             (ltu/is-status 200)
+                                             (ltu/get-op-url utils/action-recompute-fleet))]
+                  (-> session-user
+                      (request recompute-fleet-op)
+                      (ltu/body->edn)
+                      (ltu/is-status 200)
+                      (ltu/is-key-value
+                        (comp :fleet first :overwrites first)
+                        :applications-sets dynamic-fleet)))))))))))
+
+(deftest lifecycle-missing-edges
+  (let [session-anon    (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+        session-user    (header session-anon authn-info-header
+                                (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
+        module-id       (resource-creation/create-module session-user)
+        ne-id           (resource-creation/create-nuvlabox session-user {})
+        ne-id-not-exist "nuvlabox/not-existing"
+        fleet           [ne-id ne-id-not-exist]]
+
+    (module/initialize)
+    (let [dep-set-url (-> session-user
+                          (request base-uri
+                                   :request-method :post
+                                   :body (json/write-str {:name    dep-set-name,
+                                                          :start   false,
+                                                          :modules [module-id]
+                                                          :fleet   fleet}))
+                          ltu/body->edn
+                          (ltu/is-status 201)
+                          ltu/location-url)]
+      (testing "deployment created only on existing edges, a missing-edges entry is there"
+        (-> session-user
+           (request dep-set-url)
+           ltu/body->edn
+           (ltu/is-status 200)
+           (ltu/is-key-value :operational-status
+                             {:deployments-to-add
+                              [{:target  ne-id,
+                                :application
+                                {:id module-id, :version 0},
+                                :app-set "Main"}],
+                              :missing-edges [ne-id-not-exist],
+                              :status        "NOK"}))))))
 
 (deftest lifecycle-deployment-detach
   (binding [config-nuvla/*stripe-api-key* nil]

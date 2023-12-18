@@ -4,7 +4,6 @@
     [clojure.tools.logging :as log]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
-    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.time :as time]))
 
 (def DENORMALIZED_FIELD [:online :inferred-location :nuvlabox-engine-version])

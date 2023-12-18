@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.server.resources.deployment-set.utils
-  (:require [clojure.string :as str]
+  (:require [clojure.set :as set]
+            [clojure.string :as str]
             [sixsq.nuvla.db.filter.parser :as parser]
             [sixsq.nuvla.db.impl :as db]
             [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -346,4 +347,14 @@
                                                   :last   10000}
                                     :nuvla/authn (:nuvla/authn request)})]
     (:resources body)))
+
+(defn get-missing-edges
+  [deployment-set request]
+  (let [apps-set-overwrites (get-applications-sets deployment-set)
+        edges               (vec (mapcat :fleet apps-set-overwrites))
+        existing-edges      (->> request
+                                 (query-nuvlaboxes (str "id=" edges))
+                                 (map :id)
+                                 set)]
+    (set/difference (set edges) existing-edges)))
 
