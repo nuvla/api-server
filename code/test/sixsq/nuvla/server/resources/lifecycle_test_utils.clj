@@ -10,7 +10,8 @@
     [kinsky.embedded-kraft :as ke]
     [me.raynes.fs :as fs]
     [peridot.core :refer [request session]]
-    [qbits.spandex :as spandex]
+    [sixsq.nuvla.db.es.utils :as esu]
+    [sixsq.nuvla.db.es.common.utils :as escu]
     [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
     [ring.middleware.keyword-params :refer [wrap-keyword-params]]
     [ring.middleware.nested-params :refer [wrap-nested-params]]
@@ -282,9 +283,9 @@
 
 (defn refresh-es-indices
   []
-  (let [client (spandex/client {:hosts ["localhost:9200"]})]
-    (spandex/request client {:url [:_refresh], :method :post})
-    (spandex/close! client)))
+  (let [client (esu/create-client {:hosts ["localhost:9200"]})]
+    (esu/refresh-index client escu/index-prefix-wildcard)
+    (esu/close! client)))
 
 
 (defn strip-unwanted-attrs
@@ -572,7 +573,7 @@
   (profile "start zookeeper" set-zk-client-server-cache)
   (with-test-es-client
     (profile "start ring app" ring-app)
-    (profile "cleanup indices" esu/cleanup-index (es-client) "nuvla-*")
+    (profile "cleanup indices" esu/cleanup-index (es-client) escu/index-prefix-wildcard)
     (profile "initialize indices" initialize-indices)
     (profile "run supplied function" f)))
 

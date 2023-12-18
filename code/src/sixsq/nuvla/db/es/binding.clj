@@ -70,7 +70,9 @@
   (empty? (get-in response [:body :failures])))
 
 (defn add-data
-  [client {:keys [id] :as data}]
+  [client {:keys [id] :as data} {:keys [refresh]
+                                 :or   {refresh true}
+                                 :as   _options}]
   (try
     (let [[collection-id uuid] (cu/split-id id)
           index       (escu/collection-id->index collection-id)
@@ -78,7 +80,7 @@
                           (acl-utils/force-admin-role-right-all)
                           (acl-utils/normalize-acl-for-resource))
           response    (spandex/request client {:url          [index :_doc uuid :_create]
-                                               :query-string {:refresh true}
+                                               :query-string {:refresh refresh}
                                                :method       :put
                                                :body         updated-doc})
           success?    (shards-successful? response)]
@@ -250,8 +252,8 @@
       (set-index-mapping client index mapping)))
 
 
-  (add [_ data _options]
-    (add-data client data))
+  (add [_ data options]
+    (add-data client data options))
 
 
   (retrieve [_ id _options]

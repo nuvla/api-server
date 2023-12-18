@@ -4,6 +4,7 @@
 
 
 (def default-index-prefix "nuvla-")
+(def index-prefix-wildcard (str default-index-prefix "*"))
 
 
 (defn id->index

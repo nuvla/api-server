@@ -219,6 +219,7 @@
                                     (ltu/location))
             abs-uri             (str p/service-context uri)
             check-event         (fn [exp-state]
+                                  (ltu/refresh-es-indices)
                                   (let [filter (format "category='state' and content/resource/href='%s' and content/state='%s'" uri exp-state)
                                         state  (-> session-user
                                                    (content-type "application/x-www-form-urlencoded")

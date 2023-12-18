@@ -94,6 +94,8 @@
             (ltu/is-status 200)
             (ltu/message-matches "published successfully")))
 
+      (ltu/refresh-es-indices)
+
       (testing "module publication event was created"
         (is (= subtype (-> session-admin
                            (request event-url-filter

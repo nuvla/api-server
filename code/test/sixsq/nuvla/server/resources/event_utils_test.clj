@@ -1,10 +1,10 @@
 (ns sixsq.nuvla.server.resources.event-utils-test
-  (:require
-    [clojure.test :refer [deftest is testing use-fixtures]]
-    [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.event.utils :as t]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.time :as time]))
+  (:require [clojure.test :refer [deftest is testing use-fixtures]]
+            [sixsq.nuvla.server.resources.common.utils :as u]
+            [sixsq.nuvla.server.resources.event.utils :as t]
+            [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+            [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+            [sixsq.nuvla.server.util.time :as time]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
@@ -15,7 +15,7 @@
   {:request-method method
    :params         {:resource-name "resource"
                     :uuid          "12345"}
-   :headers        {"nuvla-authn-info" nuvla-authn-info}
+   :headers        {authn-info-header nuvla-authn-info}
    :body           body})
 
 
@@ -24,7 +24,7 @@
 
 (deftest build-event
   (with-redefs [time/now-str (constantly "2023-08-17T07:25:57.259Z")]
-    (let [id    (str "resource/" (u/random-uuid))
+    (let [id      (str "resource/" (u/random-uuid))
           context {:category "add"
                    :params   {:resource-name "resource"}}
           request (req {:nuvla-authn-info "super super group/nuvla-admin"
@@ -48,7 +48,7 @@
         (let [context (merge context {:resource {:id      id
                                                  :name    "Resource Name"
                                                  :subtype "resource subtype"}})
-              event (t/build-event context request {:status 201 :body {:resource-id id}})]
+              event   (t/build-event context request {:status 201 :body {:resource-id id}})]
           (is (= {:name          "resource.add"
                   :category      "add"
                   :description   (str "An anonymous user added resource " (-> context :resource :name) ".")
@@ -95,6 +95,7 @@
     (t/create-event "user/1" "hello" {:owners ["group/nuvla-admin"]}
                     :category category
                     :timestamp timestamp))
+  (ltu/refresh-es-indices)
   (is (= 6 (count (t/search-event "user/1" {}))))
   (is (= 0 (count (t/search-event "user/2" {}))))
   (is (= 3 (count (t/search-event "user/1" {:category "action"}))))

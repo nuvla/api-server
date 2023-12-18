@@ -49,7 +49,8 @@ an application.
   [resource request]
   (a/add-acl resource request))
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type
+                               :options {:refresh false}))
 
 
 (defn can-view-resource?

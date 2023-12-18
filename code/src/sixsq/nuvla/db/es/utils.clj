@@ -14,6 +14,8 @@
 (def ^:const sniff-interval-mills 5000)
 (def ^:const sniff-after-failure-delay-mills 1000)
 
+(def close! spandex/close!)
+
 (defn create-client
   [options]
   (spandex/client options))

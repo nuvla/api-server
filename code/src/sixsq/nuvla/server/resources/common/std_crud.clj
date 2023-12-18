@@ -25,7 +25,8 @@
   resource)
 
 (defn add-fn
-  [resource-name collection-acl resource-uri & {:keys [pre-validate-hook]
+  [resource-name collection-acl resource-uri & {:keys [pre-validate-hook
+                                                       options]
                                                 :or   {pre-validate-hook pass-through}}]
   (validate-collection-acl collection-acl)
   (fn [{:keys [body] :as request}]
@@ -40,7 +41,7 @@
         (crud/add-acl request)
         (pre-validate-hook request)
         crud/validate
-        db/add)))
+        (db/add options))))
 
 (defn select-keys-resource
   [resource {{:keys [select]} :cimi-params :as _request}]
