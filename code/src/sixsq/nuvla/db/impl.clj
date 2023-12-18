@@ -18,7 +18,7 @@
 
 
 (defn initialize [collection-id & [options]]
-  (p/initialize *impl* collection-id [options]))
+  (p/initialize *impl* collection-id options))
 
 
 (defn add [data & [options]]

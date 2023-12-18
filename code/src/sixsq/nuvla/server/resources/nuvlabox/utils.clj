@@ -379,10 +379,12 @@
   (let [nb-status (status-online-attributes
                     online online-new heartbeat-interval)]
     (r/throw-response-not-200
-      (db/scripted-edit id {:doc {:online             online-new
-                                  :heartbeat-interval heartbeat-interval}}))
+      (db/scripted-edit id {:refresh false
+                            :body    {:doc {:online             online-new
+                                            :heartbeat-interval heartbeat-interval}}}))
     (r/throw-response-not-200
-      (db/scripted-edit nuvlabox-status {:doc nb-status}))
+      (db/scripted-edit nuvlabox-status {:refresh false
+                                         :body    {:doc nb-status}}))
     (kafka-crud/publish-on-edit
       "nuvlabox-status"
       (r/json-response (assoc nb-status :id nuvlabox-status

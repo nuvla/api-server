@@ -132,7 +132,8 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                                                   :last-heartbeat
                                                   :next-heartbeat
                                                   :last-telemetry
-                                                  :next-telemetry]))
+                                                  :next-telemetry]
+                                 :options {:refresh false}))
 
 
 (defmethod crud/edit resource-type

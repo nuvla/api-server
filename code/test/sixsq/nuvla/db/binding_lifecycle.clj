@@ -86,7 +86,7 @@
                   (is (= updated-data retrieved-data))))))
 
           (testing "updating the entry by script (partial update)"
-            (let [options  {:doc {:two "4"}}
+            (let [options  {:body {:doc {:two "4"}}}
                   response (db/scripted-edit db my-id options)]
               (is (= 200 (:status response)))
 
@@ -99,7 +99,7 @@
               (is (= 200 (:status response)))))
 
           (testing "updating a deleted entry by script"
-            (let [options  {:doc {:two "4"}}
+            (let [options  {:body {:doc {:two "4"}}}
                   response (db/scripted-edit db my-id options)]
               (is (not= 200 (:status response)))))
 

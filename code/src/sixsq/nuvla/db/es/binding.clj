@@ -118,14 +118,18 @@
         (r/response-error (str "unexpected exception updating " id ": " (or error e)))))))
 
 (defn scripted-update-data
-  [client id options]
+  [client id {:keys [body refresh retry_on_conflict]
+              :or   {refresh           true
+                     retry_on_conflict 3}
+              :as   _options}]
   (try
     (let [[collection-id uuid] (cu/split-id id)
           index    (escu/collection-id->index collection-id)
           response (spandex/request client {:url          [index :_update uuid]
-                                            :query-string {:refresh true}
+                                            :query-string {:refresh           refresh
+                                                           :retry_on_conflict retry_on_conflict}
                                             :method       :post
-                                            :body         options})
+                                            :body         body})
           success? (or (shards-successful? response)
                        (noop? response))]
       (if success?

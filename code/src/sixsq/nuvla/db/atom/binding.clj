@@ -82,7 +82,7 @@
 
 (defn scripted-update-data [data-atom id options]
   (try
-    (swap! data-atom partial-update id options)
+    (swap! data-atom partial-update id (:body options))
     (r/response-updated id)
     (catch Exception e
       (ex-data e))))

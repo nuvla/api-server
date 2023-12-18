@@ -19,7 +19,8 @@
   [{:keys [parent] :as nuvlabox-status}]
   (let [propagate-status (status-fields-to-denormalize nuvlabox-status)]
     (when (seq propagate-status)
-      (db/scripted-edit parent {:doc propagate-status}))))
+      (db/scripted-edit parent {:body    {:doc propagate-status}
+                                :refresh false}))))
 
 (defn status-telemetry-attributes
   [nuvlabox-status
@@ -57,14 +58,15 @@
 
   (let [{:keys [infrastructure-service-group] :as _nuvlabox} (db/retrieve parent)
         swarm-node-id-set? (not (str/blank? swarm-node-id))
-        attributes {:swarm-enabled (or (= "swarm" orchestrator)
-                                       swarm-node-id-set?)
-                    :swarm-manager (or (= "manager" cluster-node-role)
-                                       (contains? (set cluster-managers) node-id)
-                                       swarm-node-id-set?)} ]
+        attributes         {:swarm-enabled (or (= "swarm" orchestrator)
+                                               swarm-node-id-set?)
+                            :swarm-manager (or (= "manager" cluster-node-role)
+                                               (contains? (set cluster-managers) node-id)
+                                               swarm-node-id-set?)}]
 
     (log/debugf "detect-swarm - parent: %s - isg: %s - attrs: %s - swarm-node-id: %s - orchestrator: %s - node-id: %s - cluster-node-role: %s - cluster-managers: %s"
                 parent infrastructure-service-group attributes swarm-node-id orchestrator node-id cluster-node-role cluster-managers)
     (when-let [resource-id (nb-utils/get-service "swarm" infrastructure-service-group)]
       (log/debugf "detect-swarm - parent: %s - resource-id: %s - scripted-edit: %s"
-                  parent resource-id (db/scripted-edit resource-id {:doc attributes})))))
+                  parent resource-id (db/scripted-edit resource-id {:refresh false
+                                                                    :body    {:doc attributes}})))))
