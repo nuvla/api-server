@@ -144,6 +144,8 @@
                     (ltu/body->edn)
                     (ltu/is-status 200))
 
+                (ltu/refresh-es-indices)
+
                 (let [cancel-job (first (test-utils/query-jobs
                                           {:target-resource bulk-job-id
                                            :action          "cancel_children_jobs"

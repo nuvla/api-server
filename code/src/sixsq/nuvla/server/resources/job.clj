@@ -99,7 +99,7 @@ request.
         (crud/add-acl request)
         (cond-> zk-path (assoc :tags [zk-path]))
         crud/validate
-        db/add)))
+        (db/add {:refresh false}))))
 
 
 (defmethod crud/add resource-type
@@ -127,7 +127,7 @@ request.
                        (u/set-updated-by request)
                        (utils/job-cond->edition)
                        (crud/validate))
-          response (db/edit job)]
+          response (db/edit job {:refresh false})]
       (when (utils/is-final-state? job)
         (interface/on-done job))
       response)
@@ -193,7 +193,7 @@ request.
                        (u/set-updated-by request)
                        (utils/job-cond->edition)
                        (crud/validate)
-                       db/edit)
+                       (db/edit {:refresh false}))
           job      (:body response)]
       (cancel-children-jobs-async job)
       (log/warn "Canceled job : " id)
@@ -224,7 +224,7 @@ request.
                        (u/set-updated-by request)
                        (utils/job-cond->edition)
                        (crud/validate)
-                       db/edit)]
+                       (db/edit {:refresh false}))]
       (interface/on-timeout (:body response))
       response)
     (catch Exception e
