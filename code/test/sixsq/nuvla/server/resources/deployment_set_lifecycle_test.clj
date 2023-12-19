@@ -1076,12 +1076,10 @@
                                        (ltu/is-key-value :action "bulk_deployment_set_start")
                                        (ltu/is-operation-present job-utils/action-cancel)
                                        (ltu/get-op-url job-utils/action-cancel))]
-          ;; cancel the start_deployment job
           (-> session-admin
               (request cancel-start-job-url)
               (ltu/body->edn)
               (ltu/is-status 200))
-          ;; the deployment set should go in ERROR state
           (-> session-admin
               (request dep-set-url)
               (ltu/body->edn)
@@ -1283,7 +1281,45 @@
                 (request dep-set-url)
                 (ltu/body->edn)
                 (ltu/is-status 200)
-                (ltu/is-key-value :state utils/state-partially-updated))))))))
+                (ltu/is-key-value :state utils/state-partially-updated))))))
+    (testing "Canceling start action but job not found for some reason"
+      (with-redefs [crud/get-resource-throw-nok
+                    (constantly u-applications-sets-v11)]
+        (let [{{{:keys [resource-id]} :body}
+               :response} (-> session-admin
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str valid-deployment-set))
+                              (ltu/body->edn)
+                              (ltu/is-status 201))
+              dep-set-url           (str p/service-context resource-id)
+              start-op-url          (-> session-admin
+                                        (request dep-set-url)
+                                        ltu/body->edn
+                                        (ltu/is-status 200)
+                                        (ltu/is-operation-present utils/action-start)
+                                        (ltu/get-op-url utils/action-start))
+              job-url (-> session-admin
+                          (request start-op-url)
+                          ltu/body->edn
+                          (ltu/is-status 202)
+                          ltu/location-url)
+              cancel-op-url (-> session-admin
+                                (request dep-set-url)
+                                ltu/body->edn
+                                (ltu/is-status 200)
+                                (ltu/is-operation-present utils/action-cancel)
+                                (ltu/get-op-url utils/action-cancel))]
+
+          (-> session-admin
+              (request job-url :request-method :delete)
+              ltu/body->edn
+              (ltu/is-status 200))
+          (-> session-admin
+              (request cancel-op-url)
+              ltu/body->edn
+              (ltu/is-status 404)
+              (ltu/message-matches "no running operation found that can be cancelled")))))))
 
 
 (deftest bad-methods

@@ -105,21 +105,21 @@ These resources represent a deployment set that regroups deployments.
    (divergence-map (load-resource-throw-not-allowed-action request) request))
   ([{:keys [applications-sets] :as deployment-set} request]
    (when (seq applications-sets)
-     (let [applications-sets   (-> deployment-set
-                                   utils/get-applications-sets-href
-                                   (crud/get-resource-throw-nok request))
-           missing-edges       (utils/get-missing-edges deployment-set request)
-           planned             (remove
-                                 #(contains? missing-edges (:target %))
-                                 (utils/plan deployment-set applications-sets))
-           divergence          (cond->
-                                 (os/divergence-map
-                                   planned
-                                   (utils/current-state deployment-set))
-                                 (seq missing-edges) (assoc :missing-edges (vec missing-edges)))
-           status              (if (some (comp pos? count) (vals divergence))
-                                 utils/operational-status-nok
-                                 utils/operational-status-ok)]
+     (let [applications-sets (-> deployment-set
+                                 utils/get-applications-sets-href
+                                 (crud/get-resource-throw-nok request))
+           missing-edges     (utils/get-missing-edges deployment-set request)
+           planned           (remove
+                               #(contains? missing-edges (:target %))
+                               (utils/plan deployment-set applications-sets))
+           divergence        (cond->
+                               (os/divergence-map
+                                 planned
+                                 (utils/current-state deployment-set))
+                               (seq missing-edges) (assoc :missing-edges (vec missing-edges)))
+           status            (if (some (comp pos? count) (vals divergence))
+                               utils/operational-status-nok
+                               utils/operational-status-ok)]
        (assoc divergence :status status)))))
 
 (defn create-module
@@ -358,8 +358,10 @@ These resources represent a deployment set that regroups deployments.
           {:cimi-params {:filter  (parser/parse-cimi-filter filter-str)
                          :orderby [["created" :desc]]
                          :last    1}})]
-    (crud/do-action-as-admin job-id job-utils/action-cancel))
-  (r/map-response "operation canceled" 200))
+    (if job-id
+      (do (crud/do-action-as-admin job-id job-utils/action-cancel)
+          (r/map-response "operation cancelled" 200))
+      (r/map-response "no running operation found that can be cancelled" 404))))
 
 (defmethod crud/do-action [resource-type utils/action-cancel]
   [request]
