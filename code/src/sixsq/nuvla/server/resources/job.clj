@@ -99,7 +99,7 @@ request.
         (crud/add-acl request)
         (cond-> zk-path (assoc :tags [zk-path]))
         crud/validate
-        (db/add {:refresh false}))))
+        db/add)))
 
 
 (defmethod crud/add resource-type
