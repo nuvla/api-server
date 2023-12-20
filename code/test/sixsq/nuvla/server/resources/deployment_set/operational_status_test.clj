@@ -113,13 +113,15 @@
       (set-deployment-state (rand-nth ["CREATED", "STARTING", "STOPPING", "STOPPED", "PAUSING", "PAUSED",
                                        "SUSPENDING", "SUSPENDED", "UPDATING", "PENDING", "ERROR"]))))
 
+(def deployment1? (set-random-deployment-id deployment1))
+
 ;;
 ;; Current deployment configurations
 ;;
 ;; + suffix indicates additional deployment (with respect to expected)
 ;; - suffix indicates missing deployment    (with respect to expected)
 ;; * suffix indicates updated deployment    (with respect to expected)
-;;
+;; ? suffix indicates duplicated deployment (with respect to expected)
 
 (defn ->current
   "Converts an expected deployment entry to a current deployment entry
@@ -204,4 +206,11 @@
     (is (= {:deployments-to-add    #{deployment1}
             :deployments-to-remove #{extra-deployment-id}
             :deployments-to-update #{[deployment2* deployment2]}}
-           (t/divergence-map expected deployment1-_deployment2*_extra-deployment+)))))
+           (t/divergence-map expected deployment1-_deployment2*_extra-deployment+))))
+  (testing "Duplicated deployments in current state should be removed"
+    (let [current [deployment1* deployment2* deployment1?]]
+      (is (= {:deployments-to-add    #{deployment3}
+              :deployments-to-remove #{(:id deployment1?)}
+              :deployments-to-update #{[deployment1* deployment1]
+                                       [deployment2* deployment2]}}
+             (t/divergence-map expected current))))))
