@@ -4,6 +4,21 @@
 
 ## Released
 
+## [6.4.1] - 2023-12-21
+
+- Bidnding ES - Disable refresh option
+  - Nuvlabox on edit
+  - Nuvlabox-status on editDeployment-parameter on edit
+  - Event on add
+  - Job on edit
+  - Deployment-parameter on edit
+- Common spec - Relax spec on resource description to allow empty strings
+- Deployment set
+  - Enhance cancel operation message when no running job
+  - Operational status detect duplicated deployments
+- NuvlaBox - parent and acl are required for matching for notifications
+- Event - make authn info and success attribute optional
+
 ## [6.4.0] - 2023-12-14
 
 - Event -  Auto event generation framework plus enabled events on module publication
