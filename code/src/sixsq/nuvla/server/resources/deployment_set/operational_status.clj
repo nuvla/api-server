@@ -1,50 +1,38 @@
 (ns sixsq.nuvla.server.resources.deployment-set.operational-status)
 
-
 (defn deployments-to-add
   [expected current]
-  (->> expected
-       (filter #(not (contains? current (first %))))
-       vals
-       set))
-
+  (set (keep (fn [[k [d]]] (when (not (contains? current k)) d)) expected)))
 
 (defn deployments-to-remove
   [expected current]
-  (->> current
-       (filter #(not (contains? expected (first %))))
-       (map (comp :id second))
-       set))
+  (set
+    (mapcat
+      (fn [[k deployments]]
+        (map :id (cond
+                   (not (contains? expected k)) deployments ;; not expected remove all
+                   (> (count deployments) 1) (rest deployments) ;; duplicated keep only 1 deployment
+                   :else [])))
+      current)))
 
 (defn update-app?
   [{{v1 :version env1 :environmental-variables} :application :as _expected-deployment}
    {{v2 :version env2 :environmental-variables} :application :keys [state] :as _current-deployment}]
   (let [relevant-keys (set (map :name env1))
-        env2 (filter #(relevant-keys (:name %)) env2)]
+        env2          (filter #(relevant-keys (:name %)) env2)]
     (or (not= v1 v2)
         (not= (seq env1) (seq env2))
         (and (not= "STARTED" state)
              (not= "UPDATED" state)))))
 
-
 (defn deployments-to-update
   [expected current]
   (->> expected
-       (keep (fn [[k d]]
-               (when-let [current-deployment (get current k)]
+       (keep (fn [[k [d]]]
+               (when-let [current-deployment (first (get current k))]
                  (when (update-app? d current-deployment)
                    [current-deployment d]))))
        set))
-
-
-(defn index-by
-  "Like group-by but expects exactly one value per grouped key.
-   If more than one value is present, the first one returned by `group-by` will be taken."
-  [f coll]
-  (->> coll
-       (group-by f)
-       (map (fn [[k v]] [k (first v)]))
-       (into {})))
 
 
 (defn remove-empty-entries
@@ -109,8 +97,8 @@
    ```
   "
   [expected current]
-  (let [expected1 (index-by deployment-unique-key-fn expected)
-        current1  (index-by deployment-unique-key-fn current)]
+  (let [expected1 (group-by deployment-unique-key-fn expected)
+        current1  (group-by deployment-unique-key-fn current)]
     (remove-empty-entries
       {:deployments-to-add    (deployments-to-add expected1 current1)
        :deployments-to-remove (deployments-to-remove expected1 current1)
