@@ -5,6 +5,7 @@
     [sixsq.nuvla.db.binding-lifecycle :as lifecycle]
     [sixsq.nuvla.db.binding-queries :as queries]
     [sixsq.nuvla.db.es.binding :as t]
+    [sixsq.nuvla.db.es.utils :as esu]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
@@ -13,18 +14,18 @@
 
 (deftest check-es-protocol
 
-  (with-open [client  (t/create-client {:hosts ["localhost:9200"]})
-              sniffer (t/create-sniffer client {})
+  (with-open [client  (esu/create-client {:hosts ["localhost:9200"]})
+              sniffer (esu/create-sniffer client {})
               binding (t/->ElasticsearchRestBinding client sniffer)]
     (lifecycle/check-binding-lifecycle binding))
 
-  (with-open [client  (t/create-client {:hosts ["localhost:9200"]})
-              sniffer (t/create-sniffer client {})
+  (with-open [client  (esu/create-client {:hosts ["localhost:9200"]})
+              sniffer (esu/create-sniffer client {})
               binding (t/->ElasticsearchRestBinding client sniffer)]
     (queries/check-binding-queries binding)))
 
 (deftest check-index-creation
-  (with-open [client (t/create-client {:hosts ["localhost:9200"]})]
+  (with-open [client (esu/create-client {:hosts ["localhost:9200"]})]
     (let [index-name "test-index-creation"]
       (t/create-index client index-name)
       (is (= {:number_of_shards   "3"

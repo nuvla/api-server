@@ -6,15 +6,11 @@
 
 
 ;; NOTE: ring uses lower-cased values of header names!
-(def ^:const authn-info-header
-  "nuvla-authn-info")
+(def ^:const authn-info-header "nuvla-authn-info")
 
+(def ^:const authn-cookie "com.sixsq.nuvla.cookie")
 
-(def ^:const authn-cookie
-  "com.sixsq.nuvla.cookie")
-
-(def ^:const future-session-cookie
-  "com.sixsq.nuvla.future-session")
+(def ^:const future-session-cookie "com.sixsq.nuvla.future-session")
 
 
 (defn parse-authn-header

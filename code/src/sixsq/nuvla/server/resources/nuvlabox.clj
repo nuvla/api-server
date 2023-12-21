@@ -285,7 +285,9 @@ particular NuvlaBox release.
         (wf-utils/update-playbooks id acl)))))
 
 
-(def edit-impl (std-crud/edit-fn resource-type :immutable-keys [:online]))
+(def edit-impl (std-crud/edit-fn resource-type
+                                 :immutable-keys [:online]
+                                 :options {:refresh false}))
 
 (defn restricted-body
   [{:keys [name description location tags ssh-keys capabilities acl

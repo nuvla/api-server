@@ -25,7 +25,8 @@
   resource)
 
 (defn add-fn
-  [resource-name collection-acl resource-uri & {:keys [pre-validate-hook]
+  [resource-name collection-acl resource-uri & {:keys [pre-validate-hook
+                                                       options]
                                                 :or   {pre-validate-hook pass-through}}]
   (validate-collection-acl collection-acl)
   (fn [{:keys [body] :as request}]
@@ -40,7 +41,7 @@
         (crud/add-acl request)
         (pre-validate-hook request)
         crud/validate
-        db/add)))
+        (db/add options))))
 
 (defn select-keys-resource
   [resource {{:keys [select]} :cimi-params :as _request}]
@@ -65,7 +66,8 @@
 (defn edit-fn
   [resource-name & {:keys [pre-validate-hook
                            pre-delete-attrs-hook
-                           immutable-keys]
+                           immutable-keys
+                           options]
                     :or   {pre-delete-attrs-hook pass-through
                            pre-validate-hook     pass-through
                            immutable-keys        []}}]
@@ -82,7 +84,7 @@
           (pre-validate-hook request)
           (dissoc :operations)
           crud/validate
-          db/edit
+          (db/edit options)
           (update :body crud/set-operations request))
       (catch Exception e
         (or (ex-data e) (throw e))))))

@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.middleware.logger-test
-  (:require
-    [clojure.test :refer [deftest is]]
-    [sixsq.nuvla.server.middleware.logger :as t]))
+  (:require [clojure.test :refer [deftest is]]
+            [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+            [sixsq.nuvla.server.middleware.logger :as t]))
 
 
 (def start 1450701200947)
@@ -17,7 +17,7 @@
   [{:keys [nuvla-authn-info query-string]}]
   {:request-method :get
    :uri            test-url
-   :headers    {"nuvla-authn-info" nuvla-authn-info}
+   :headers        {authn-info-header nuvla-authn-info}
    :query-string   query-string
    :body           "body-content"})
 

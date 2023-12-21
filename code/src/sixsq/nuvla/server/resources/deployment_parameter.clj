@@ -79,7 +79,8 @@ configuration option.
   (add-impl request))
 
 
-(def edit-impl (std-crud/edit-fn resource-type))
+(def edit-impl (std-crud/edit-fn resource-type
+                                 :options {:refresh false}))
 
 
 (defmethod crud/edit resource-type

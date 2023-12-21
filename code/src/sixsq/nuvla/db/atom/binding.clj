@@ -82,7 +82,7 @@
 
 (defn scripted-update-data [data-atom id options]
   (try
-    (swap! data-atom partial-update id options)
+    (swap! data-atom partial-update id (:body options))
     (r/response-updated id)
     (catch Exception e
       (ex-data e))))
@@ -119,19 +119,19 @@
     nil)
 
 
-  (add [_ data]
+  (add [_ data _options]
     (add-data data-atom data))
 
 
-  (retrieve [_ id]
+  (retrieve [_ id _options]
     (atomic-retrieve data-atom id))
 
 
-  (delete [_ data]
+  (delete [_ data _options]
     (delete-data data-atom data))
 
 
-  (edit [_ data]
+  (edit [_ data _options]
     (update-data data-atom data))
 
 

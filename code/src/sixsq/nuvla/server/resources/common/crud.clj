@@ -47,10 +47,10 @@
 
 
 (defn query-as-admin
-  "Calls the database query with with the administrator user identity merged
+  "Calls the database query with the administrator user identity merged
    into the given options."
   [collection-id options]
-  (db/query collection-id (merge options {:nuvla/authn auth/internal-identity})))
+  (db/query collection-id (assoc options :nuvla/authn auth/internal-identity) ))
 
 
 (defmulti bulk-delete resource-name-dispatch)

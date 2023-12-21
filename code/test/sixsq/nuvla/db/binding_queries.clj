@@ -93,14 +93,14 @@
         ;; add all of the docs to the database
         (doseq [doc docs]
           (let [doc-id   (:id doc)
-                response (db/add db doc)]
+                response (db/add db doc nil)]
             (is (= 201 (:status response)))
             (is (= doc-id (get-in response [:headers "Location"])))))
 
         ;; ensure that all of them can be retrieved individually
         (doseq [doc docs]
           (let [doc-id         (:id doc)
-                retrieved-data (db/retrieve db doc-id)]
+                retrieved-data (db/retrieve db doc-id nil)]
             (is (= doc retrieved-data))))
 
         ;; check that a query with an admin role retrieves everything
@@ -252,15 +252,15 @@
           (is (= 2 (:count query-meta))))
 
 
-        ;; delete all of the docs one by one
+        ;; delete all the docs one by one
         (doseq [doc docs]
-          (let [response (db/delete db doc)]
+          (let [response (db/delete db doc nil)]
             (is (= 200 (:status response)))))
 
-        ;; ensure that all of the docs have been deleted
+        ;; ensure that all the docs have been deleted
         (doseq [doc docs]
           (try
-            (db/delete db doc)
+            (db/delete db doc nil)
             (is (nil? "delete of non-existent resource did not throw an exception"))
             (catch Exception e
               (let [response (ex-data e)]
@@ -269,7 +269,7 @@
         ;; add all of the docs to the database
         (doseq [doc docs]
           (let [doc-id   (:id doc)
-                response (db/add db doc)]
+                response (db/add db doc nil)]
             (is (= 201 (:status response)))
             (is (= doc-id (get-in response [:headers "Location"])))))
 
@@ -299,7 +299,7 @@
               response (db/bulk-edit db collection-id options)]
           (is (= 0 (:updated response))))
 
-        ;; delete all of the docs
+        ;; delete all the docs
         (let [options  {:cimi-params {:filter (parser/parse-cimi-filter
                                                 (str "(sequence=0 and admin!=null) or (sequence=" n " and admin=null)"))}
                         :nuvla/authn auth/internal-identity}
