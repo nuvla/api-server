@@ -101,7 +101,7 @@
 
 
 (s/def ::description
-  (-> (st/spec ::core/nonblank-string)
+  (-> (st/spec string?)
       (assoc :name "description"
              :json-schema/description "human-readable description of resource"
              :json-schema/section "meta"
