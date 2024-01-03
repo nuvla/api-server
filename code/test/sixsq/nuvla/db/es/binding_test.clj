@@ -23,7 +23,7 @@
     (queries/check-binding-queries binding)))
 
 (deftest check-index-creation
-  (with-open [client (esu/create-client {:hosts ["localhost:9200"]})]
+  (with-open [client (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})]
     (let [index-name "test-index-creation"]
       (t/create-index client index-name)
       (is (= {:number_of_shards   "3"
