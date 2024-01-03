@@ -53,6 +53,10 @@ When the reviewer is happy with the pull request, he/she will "squash
 
 ### Testing
 
+#### Requirements
+- OpenJDK 11
+- Docker COE or Docker Desktop with Settings -> Advanced -> Allow the default Docker socket to be used (Creates /var/run/docker.sock)
+
 Add appropriate tests that verify the changes or additions you make to
 the source code.  For new resources in particular, ensure that you
 test the resource schema and provide a lifecycle test.

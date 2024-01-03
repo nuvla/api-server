@@ -24,8 +24,8 @@
 
   (testing "sniffer get closed when defined"
     (with-open [client  (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})
-                sniffer (spandex/sniffer client)]
-      (t/->ElasticsearchRestBinding client sniffer))))
+                sniffer (spandex/sniffer client)
+                _binding (t/->ElasticsearchRestBinding client sniffer)])))
 
 (deftest check-index-creation
   (with-open [client (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})]
