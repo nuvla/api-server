@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.db.es.binding-test
   (:require
-    [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.test :refer [deftest is use-fixtures testing]]
     [qbits.spandex :as spandex]
     [sixsq.nuvla.db.binding-lifecycle :as lifecycle]
     [sixsq.nuvla.db.binding-queries :as queries]
@@ -20,7 +20,12 @@
 
   (with-open [client  (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})
               binding (t/->ElasticsearchRestBinding client nil)]
-    (queries/check-binding-queries binding)))
+    (queries/check-binding-queries binding))
+
+  (testing "sniffer get closed when defined"
+    (with-open [client  (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})
+                sniffer (spandex/sniffer client)]
+      (t/->ElasticsearchRestBinding client sniffer))))
 
 (deftest check-index-creation
   (with-open [client (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})]

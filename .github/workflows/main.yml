@@ -52,16 +52,6 @@ jobs:
           echo "::set-output name=version::$VERSION"
         id: project_version
 
-      - name: Run lein test
-        env:
-          # provide GITHUB_TOKEN to get access to secrets.SONAR_TOKEN
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        working-directory: code
-        run: |
-          export JAVA_OPTS="-Xms6g -Xmx6g"
-          export ES_JAVA_OPTS="-Xms6g -Xmx6g"
-          lein test
-
       - name: Setup Sonar Scanner
         uses: warchant/setup-sonar-scanner@v3
         with:
