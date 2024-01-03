@@ -35,7 +35,7 @@
    [org.clojars.konstan/kinsky ~kinsky-version]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
-   [cc.qbits/spandex :exclusions [org.clojure/clojure]]
+   [cc.qbits/spandex "0.8.2" :exclusions [org.clojure/clojure]]
    [compojure]
    [com.draines/postal]
    [clj-http]
@@ -70,28 +70,15 @@
   :profiles
   {
    :provided {:dependencies [[org.clojure/clojure]
-                             [sixsq.nuvla.ring/code ~nuvla-ring-version
-                              ; fix netty conflicts with elasticsearch test dependencies
-                              :exclusions [io.netty/netty
-                                           io.netty/netty-buffer
-                                           io.netty/netty-codec
-                                           io.netty/netty-handler
-                                           io.netty/netty-resolver
-                                           io.netty/netty-transport
-                                           io.netty/netty-codec-http
-                                           io.netty/netty-handler-proxy
-                                           io.netty/netty-resolver-dns
-                                           io.netty/netty-transport-native-epoll]]
+                             [sixsq.nuvla.ring/code ~nuvla-ring-version]
                              [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
 
    :test     {:dependencies   [[me.raynes/fs]
                                [peridot]
+                               [clj-test-containers "0.7.4"]
                                [org.apache.logging.log4j/log4j-core] ;; needed for ES logging
                                [org.apache.logging.log4j/log4j-api] ;; needed for ES logging
                                [org.clojure/test.check]
-                               [org.elasticsearch.test/framework]
-                               [org.elasticsearch.client/transport]
-                               [org.codelibs.elasticsearch.module/lang-painless "7.0.0"]
                                [org.slf4j/slf4j-api]
                                [org.slf4j/slf4j-log4j12]
                                [com.cemerick/url]
@@ -113,10 +100,6 @@
                                       [me.raynes/fs]
                                       [peridot]
                                       [org.apache.curator/curator-test]
-                                      [org.elasticsearch.test/framework]
-                                      [org.elasticsearch.client/transport]
-                                      [org.codelibs.elasticsearch.module/lang-painless "7.0.0"]
-
                                       [org.apache.logging.log4j/log4j-core]]
               ;; paths
               :source-paths          ["src"]

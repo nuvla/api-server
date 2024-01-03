@@ -14,14 +14,12 @@
 
 (deftest check-es-protocol
 
-  (with-open [client  (esu/create-client {:hosts ["localhost:9200"]})
-              sniffer (esu/create-sniffer client {})
-              binding (t/->ElasticsearchRestBinding client sniffer)]
+  (let [client  (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})
+        binding (t/->ElasticsearchRestBinding client nil)]
     (lifecycle/check-binding-lifecycle binding))
 
-  (with-open [client  (esu/create-client {:hosts ["localhost:9200"]})
-              sniffer (esu/create-sniffer client {})
-              binding (t/->ElasticsearchRestBinding client sniffer)]
+  (with-open [client  (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})
+              binding (t/->ElasticsearchRestBinding client nil)]
     (queries/check-binding-queries binding)))
 
 (deftest check-index-creation
