@@ -16,7 +16,8 @@
 (defn keep-key?
   [arg]
   (let [[k _v] (seq arg)]                                    ;; seq avoids corner case where we're passed a map
-    (or (string? k) (#{:type :enabled :properties :format :copy_to :index} k))))
+    (or (string? k) (#{:type :enabled :properties :format :copy_to :index
+                       :time_series_metric :time_series_dimension} k))))
 
 
 (defn assoc-date

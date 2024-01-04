@@ -152,14 +152,14 @@
 (deftest readme-test
   (is (= {:type "object"
           :properties
-                {"sixsq.nuvla.db.es.common.es-mapping-test/id" {:type "long"}
-                 "age"                                         {:type "long"}
-                 "name"                                        {:type "keyword"}
-                 "likes"                                       {:type "object"}
-                 "languages"                                   {:type "keyword"}
-                 "address"                                     {:type       "object"
-                                                                :properties {"street" {:type "keyword"}
-                                                                             "zip"    {:type "keyword"}}}}}
+          {"sixsq.nuvla.db.es.common.es-mapping-test/id" {:type "long"}
+           "age"                                         {:type "long"}
+           "name"                                        {:type "keyword"}
+           "likes"                                       {:type "object"}
+           "languages"                                   {:type "keyword"}
+           "address"                                     {:type       "object"
+                                                          :properties {"street" {:type "keyword"}
+                                                                       "zip"    {:type "keyword"}}}}}
          (t/transform person-spec))))
 
 
@@ -172,6 +172,14 @@
               :description         "it's an int"
               :json-schema/default 42})))))
 
+(deftest es-mapping-test
+  (let [expected {:type               "half_float"
+                  :time_series_metric "gauge"}]
+    (is (= expected
+          (t/transform
+            (st/spec
+              {:spec                   number?
+               :json-schema/es-mapping expected}))))))
 
 (deftest deeply-nested-test
   (is (= {:type "keyword"}

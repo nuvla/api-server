@@ -8,7 +8,6 @@
 
 
 (deftest common-schema
-
   (are [spec expected] (= (t/transform spec) expected)
                        common/common-attrs {}
                        common/create-attrs {}
