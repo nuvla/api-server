@@ -73,7 +73,8 @@
                              [sixsq.nuvla.ring/code ~nuvla-ring-version]
                              [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
 
-   :test     {:dependencies   [[me.raynes/fs]
+   :test     {:dependencies   [[org.ow2.asm/asm "9.5"]
+                               [me.raynes/fs]
                                [peridot]
                                [clj-test-containers "0.7.4"]
                                [org.apache.logging.log4j/log4j-core] ;; needed for ES logging
