@@ -174,15 +174,18 @@
       (r/response-error (str "could not delete document " id)))))
 
 (defn query-data
-  [client collection-id {:keys [cimi-params] :as options}]
+  [client collection-id {:keys [cimi-params params] :as options}]
   (try
     (let [index                   (escu/collection-id->index collection-id)
           paging                  (paging/paging cimi-params)
           orderby                 (order/sorters cimi-params)
           aggregation             (aggregation/aggregators cimi-params)
+          ts-aggregation          (aggregation/tsds-aggregators params)
           selected                (select/select cimi-params)
-          query                   {:query (acl/and-acl-query (filter/filter cimi-params) options)}
-          body                    (merge paging orderby selected query aggregation)
+          query                   {:query (if ts-aggregation
+                                            (filter/filter cimi-params)
+                                            (acl/and-acl-query (filter/filter cimi-params) options))}
+          body                    (merge paging orderby selected query aggregation ts-aggregation)
           response                (spandex/request client {:url    [index :_search]
                                                            :method :post
                                                            :body   body})

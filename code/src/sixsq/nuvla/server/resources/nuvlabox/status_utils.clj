@@ -70,3 +70,13 @@
       (log/debugf "detect-swarm - parent: %s - resource-id: %s - scripted-edit: %s"
                   parent resource-id (db/scripted-edit resource-id {:refresh false
                                                                     :body    {:doc attributes}})))))
+
+(defn nuvlabox-status->ts
+  [{{{{cpu-load :load} :cpu {ram-used :used} :ram} :resources
+     :keys                                         [parent updated]}
+    :body :as _response}]
+  (cond-> {:nuvlabox_id parent
+           "@timestamp" updated}
+          cpu-load (assoc :cpu cpu-load)
+          ram-used (assoc :mem ram-used)))
+
