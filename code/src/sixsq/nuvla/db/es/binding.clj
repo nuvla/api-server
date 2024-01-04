@@ -313,8 +313,8 @@
                                     {:settings
                                      {:index.mode            "time_series",
                                       :index.routing_path    ["nuvlaedge-id"],
-                                      :index.look_back_time  "2d",
-                                      :index.look_ahead_time "10m",
+                                      :index.look_back_time  "2y",
+                                      :index.look_ahead_time "2h",
                                       ;:index.lifecycle.name  "nuvlabox-status-ts-1d-hf-ilm-policy"
                                       }
                                      :mappings
