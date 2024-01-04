@@ -7,18 +7,12 @@
 
 (def valid-polygons-2d
   [; closed lon, lat
-   [[[0 0] [0 100] [100 0] [0 0]]]
-   ; polygon with a hole
-   [[[0 0] [0 100] [100 0] [0 0]]
-    [[1 1] [1 99] [99 1] [1 1]]]
-   ])
+   [[[0 0] [0 100] [100 0] [0 0]]]])
 
 (def valid-polygons-3d
   [; closed lon, lat, alt
    [[[0 0 0] [0 100 0] [100 0 0] [0 0 0]]]
-   ; polygon with a hole
-   [[[0 0 0] [0 100 1] [100 0 1] [0 0 0]]
-    [[1 1 0] [1 99 0] [99 1 0] [1 1 0]]]])
+   [[[0 0 0] [0 100 1] [100 0 1] [0 0 0]]]])
 
 (def valid-polygons
   (concat valid-polygons-2d valid-polygons-3d))

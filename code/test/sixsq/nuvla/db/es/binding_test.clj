@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.db.es.binding-test
   (:require
-    [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.test :refer [deftest is use-fixtures testing]]
     [qbits.spandex :as spandex]
     [sixsq.nuvla.db.binding-lifecycle :as lifecycle]
     [sixsq.nuvla.db.binding-queries :as queries]
@@ -14,18 +14,21 @@
 
 (deftest check-es-protocol
 
-  (with-open [client  (esu/create-client {:hosts ["localhost:9200"]})
-              sniffer (esu/create-sniffer client {})
-              binding (t/->ElasticsearchRestBinding client sniffer)]
+  (let [client  (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})
+        binding (t/->ElasticsearchRestBinding client nil)]
     (lifecycle/check-binding-lifecycle binding))
 
-  (with-open [client  (esu/create-client {:hosts ["localhost:9200"]})
-              sniffer (esu/create-sniffer client {})
-              binding (t/->ElasticsearchRestBinding client sniffer)]
-    (queries/check-binding-queries binding)))
+  (with-open [client  (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})
+              binding (t/->ElasticsearchRestBinding client nil)]
+    (queries/check-binding-queries binding))
+
+  (testing "sniffer get closed when defined"
+    (with-open [client  (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})
+                sniffer (spandex/sniffer client)
+                _binding (t/->ElasticsearchRestBinding client sniffer)])))
 
 (deftest check-index-creation
-  (with-open [client (esu/create-client {:hosts ["localhost:9200"]})]
+  (with-open [client (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})]
     (let [index-name "test-index-creation"]
       (t/create-index client index-name)
       (is (= {:number_of_shards   "3"

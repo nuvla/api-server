@@ -79,7 +79,7 @@
           updated-doc (-> data
                           (acl-utils/force-admin-role-right-all)
                           (acl-utils/normalize-acl-for-resource))
-          response    (spandex/request client {:url          [index :_doc uuid :_create]
+          response    (spandex/request client {:url          [index :_create uuid]
                                                :query-string {:refresh refresh}
                                                :method       :put
                                                :body         updated-doc})
@@ -285,5 +285,6 @@
 
   Closeable
   (close [_]
-    (spandex/close! sniffer)
+    (when sniffer
+      (spandex/close! sniffer))
     (spandex/close! client)))

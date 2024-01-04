@@ -5,11 +5,12 @@
     [clojure.pprint :refer [pprint]]
     [clojure.string :as str]
     [clojure.test :refer [is join-fixtures]]
+    [clj-test-containers.core :as tc]
     [clojure.tools.logging :as log]
     [compojure.core :as cc]
     [kinsky.embedded-kraft :as ke]
-    [me.raynes.fs :as fs]
     [peridot.core :refer [request session]]
+    [qbits.spandex :as spandex]
     [sixsq.nuvla.db.es.utils :as esu]
     [sixsq.nuvla.db.es.common.utils :as escu]
     [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
@@ -35,14 +36,21 @@
     [zookeeper :as zk])
   (:import
     (java.util UUID)
-    (org.apache.curator.test TestingServer)
-    (org.elasticsearch.common.logging LogConfigurator)
-    (org.elasticsearch.common.settings Settings)
-    (org.elasticsearch.index.reindex ReindexPlugin)
-    (org.elasticsearch.node MockNode)
-    (org.elasticsearch.painless PainlessPlugin)
-    (org.elasticsearch.transport Netty4Plugin)))
+    (org.apache.curator.test TestingServer)))
 
+(def ^:private es-node-client-cache (atom nil))
+
+(defn es-node
+  []
+  (first @es-node-client-cache))
+
+(defn es-client
+  []
+  (second @es-node-client-cache))
+
+(defn es-test-endpoint
+  [es-node]
+  [(str "localhost:" (get (:mapped-ports es-node) 9200))])
 
 (defn random-string
   "provides a random string with optional prefix"
@@ -280,12 +288,10 @@
   (println message "<<--")
   response)
 
-
 (defn refresh-es-indices
   []
-  (let [client (esu/create-client {:hosts ["localhost:9200"]})]
-    (esu/refresh-index client escu/index-prefix-wildcard)
-    (esu/close! client)))
+  (let [client (es-client)]
+    (spandex/request client {:url [:_refresh], :method :post})))
 
 
 (defn strip-unwanted-attrs
@@ -355,54 +361,24 @@
   ([]
    (create-test-node (str (UUID/randomUUID))))
   ([^String cluster-name]
-   (let [tempDir  (str (fs/temp-dir "es-data-"))
-         settings (.. (Settings/builder)
-                      (put "cluster.name" cluster-name)
-                      (put "action.auto_create_index" true)
-                      (put "path.home" tempDir)
-                      (put "transport.netty.worker_count" 3)
-                      (put "node.data" true)
-                      (put "logger.level" "ERROR")
-                      (put "cluster.routing.allocation.disk.watermark.low" "1gb")
-                      (put "cluster.routing.allocation.disk.watermark.high" "500mb")
-                      (put "cluster.routing.allocation.disk.watermark.flood_stage" "100mb")
-                      (put "http.type" "netty4")
-                      (put "http.port" "9200")
-                      (put "transport.type" "netty4")
-                      (put "network.host" "127.0.0.1")
-                      (build))
-         plugins  [Netty4Plugin
-                   ReindexPlugin
-                   PainlessPlugin]]
-
-     (LogConfigurator/configureWithoutConfig settings)
-     (.. (MockNode. ^Settings settings plugins)
-         (start)))))
-
+   (-> (tc/create {:image-name    "docker.elastic.co/elasticsearch/elasticsearch:8.11.3"
+                   :env-vars      {"ES_JAVA_OPTS"                                          "-Xms512m -Xmx512m"
+                                   "xpack.security.enabled"                                "false"
+                                   "discovery.type"                                        "single-node"
+                                   "cluster.routing.allocation.disk.watermark.low"         "1gb"
+                                   "cluster.routing.allocation.disk.watermark.high"        "500mb"
+                                   "cluster.routing.allocation.disk.watermark.flood_stage" "100mb"
+                                   "cluster.name"                                          cluster-name}
+                   :exposed-ports [9200]})
+       (tc/start!))))
 
 (defn create-es-node-client
   []
   (log/info "creating elasticsearch node and client")
-  (let [node    (create-test-node)
-        client  (-> (esu/create-es-client)
-                    esu/wait-for-cluster)
-        sniffer (esu/create-es-sniffer client)]
-    [node client sniffer]))
-
-
-(defonce ^:private es-node-client-cache (atom nil))
-
-(defn es-node
-  []
-  (first @es-node-client-cache))
-
-(defn es-client
-  []
-  (second @es-node-client-cache))
-
-(defn es-sniffer
-  []
-  (nth @es-node-client-cache 2))
+  (let [node   (create-test-node)
+        client (-> (esu/create-es-client (es-test-endpoint node))
+                   esu/wait-for-cluster)]
+    [node client]))
 
 
 (defn set-es-node-client-cache
@@ -416,28 +392,6 @@
   ;; compare-and-set! can't be used because we want to avoid unnecessary
   ;; creation of ring application instances.
   (swap! es-node-client-cache (fn [current] (or current (create-es-node-client)))))
-
-
-(defn clear-es-node-client-cache
-  "Unconditionally clears the cached Elasticsearch node and client. Can be
-   used to force the re-initialization of the node and client. If the current
-   values are not nil, then the node and client will be closed, with errors
-   silently ignored."
-  []
-  (let [[[node client sniffer] _] (swap-vals! es-node-client-cache (constantly nil))]
-    (when client
-      (try
-        (.close client)
-        (catch Exception _)))
-    (when sniffer
-      (try
-        (.close sniffer)
-        (catch Exception _)))
-    (when node
-      (try
-        (.close node)
-        (catch Exception _)))))
-
 
 (defn profile
   [msg f & rest]
@@ -520,29 +474,29 @@
   (log/debug "executing with-test-kafka-fixture")
   (let [log-dir (ke/create-tmp-dir "kraft-combined-logs")
         kafka (profile "start kafka"
-                       ke/start-embedded-kafka
-                       {::ke/host          kafka-host
-                        ::ke/port          kafka-port
-                        ::ke/log-dirs      (str log-dir)
-                        ::ke/server-config {"auto.create.topics.enable" "true"
-                                            "transaction.timeout.ms"    "5000"}})]
-    (try
-      (when (= 0 (count @ka/producers!))
-        (profile "create kafka producers"
-                 ka/create-producers! (format "%s:%s" kafka-host kafka-port)))
-      (profile "run supplied function" f)
-      (catch Throwable t
-        (throw t))
-      (finally
-        (ka/close-producers!)
-        (log/debug "finalising with-test-kafka-fixture")
-        ;; FIXME: Closing Kafka server takes ~6 sec. Instead of closing Kafka
-        ;; server, delete all the topics. In case of the last test, the server
-        ;; will just go down with the JVM.
-        (let [ts (System/currentTimeMillis)]
-          (.close kafka)
-          (log/debug (str "--->: close kafka done in: "
-                          (- (System/currentTimeMillis) ts))))
+                         ke/start-embedded-kafka
+                         {::ke/host          kafka-host
+                          ::ke/port          kafka-port
+                          ::ke/log-dirs      (str log-dir)
+                          ::ke/server-config {"auto.create.topics.enable" "true"
+                                              "transaction.timeout.ms"    "5000"}})]
+      (try
+        (when (= 0 (count @ka/producers!))
+          (profile "create kafka producers"
+                   ka/create-producers! (format "%s:%s" kafka-host kafka-port)))
+        (profile "run supplied function" f)
+        (catch Throwable t
+          (throw t))
+        (finally
+          (ka/close-producers!)
+          (log/debug "finalising with-test-kafka-fixture")
+          ;; FIXME: Closing Kafka server takes ~6 sec. Instead of closing Kafka
+          ;; server, delete all the topics. In case of the last test, the server
+          ;; will just go down with the JVM.
+          (let [ts (System/currentTimeMillis)]
+            (.close kafka)
+            (log/debug (str "--->: close kafka done in: "
+                            (- (System/currentTimeMillis) ts))))
         (ke/delete-dir log-dir)))))
 
 
