@@ -161,7 +161,7 @@
     ;      (request user-abs-uri :request-method :delete)
     ;      (ltu/body->edn)
     ;      (ltu/is-status 200))
-      )))
+      ))
 
 
 (deftest bad-methods
