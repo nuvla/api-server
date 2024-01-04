@@ -2,8 +2,10 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
+    [sixsq.nuvla.server.resources.ts-nuvlaedge :as ts-nuvlaedge]
     [sixsq.nuvla.server.util.time :as time]))
 
 (def DENORMALIZED_FIELD [:online :inferred-location :nuvlabox-engine-version])
@@ -75,8 +77,13 @@
   [{{{{cpu-load :load} :cpu {ram-used :used} :ram} :resources
      :keys                                         [parent updated]}
     :body :as _response}]
-  (cond-> {:nuvlabox_id parent
-           "@timestamp" updated}
-          cpu-load (assoc :cpu cpu-load)
+  (cond-> {:nuvlaedge-id parent
+           "@timestamp"  updated}
+          cpu-load (assoc :load cpu-load)
           ram-used (assoc :mem ram-used)))
 
+(defn nuvlabox-status->ts-add-request
+  [response]
+  {:params      {:resource-name ts-nuvlaedge/resource-type}
+   :body        (nuvlabox-status->ts response)
+   :nuvla/authn auth/internal-identity})
