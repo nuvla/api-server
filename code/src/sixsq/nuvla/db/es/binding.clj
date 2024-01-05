@@ -305,28 +305,29 @@
                                              :number_of_replicas 2}}})
 (defn create-timeseries-mapping
   [collection-id client]
-  (spandex/request client {:url    [:_index_template (str (escu/collection-id->index collection-id) "-template")],
-                           :method :put
-                           :body   {:index_patterns [(str (escu/collection-id->index collection-id) "*")],
-                                    :data_stream    {},
-                                    :template
-                                    {:settings
-                                     {:index.mode            "time_series",
-                                      :index.routing_path    ["nuvlaedge-id"],
-                                      :index.look_back_time  "2y",
-                                      :index.look_ahead_time "2h",
-                                      ;:index.lifecycle.name  "nuvlabox-status-ts-1d-hf-ilm-policy"
-                                      }
-                                     :mappings
-                                     {:properties
-                                      {:nuvlaedge-id {:type "keyword", :time_series_dimension true},
-                                       :load {:type "half_float", :time_series_metric "gauge"},
-                                       :mem {:type "half_float", :time_series_metric "gauge"},}}
-                                     },
-                                    ;:composed_of    ["nuvalbox-status-ts-1d-hf-ilm-mapping"],
-                                    :priority       500,
-                                    :_meta          {:description "Template for NuvlaBox telemetry data"}}
-                           })
+  #_(spandex/request client {:url    [:_index_template (str (escu/collection-id->index collection-id) "-template")],
+                             :method :put
+                             :body   {:index_patterns [(str (escu/collection-id->index collection-id) "*")],
+                                      :data_stream    {},
+                                      :template
+                                      {:settings
+                                       {:index.mode                   "time_series",
+                                        :index.routing_path           ["nuvlaedge-id"],
+                                        :index.look_back_time  "7d",
+                                        :index.look_ahead_time        "2h",
+                                        :index.time_series.start_time "2023-01-01T00:00:00.000Z"
+                                        ;:index.lifecycle.name  "nuvlabox-status-ts-1d-hf-ilm-policy"
+                                        }
+                                       :mappings
+                                       {:properties
+                                        {:nuvlaedge-id {:type "keyword", :time_series_dimension true},
+                                         :load         {:type "half_float", :time_series_metric "gauge"},
+                                         :mem          {:type "half_float", :time_series_metric "gauge"},}}
+                                       },
+                                      ;:composed_of    ["nuvalbox-status-ts-1d-hf-ilm-mapping"],
+                                      :priority       500,
+                                      :_meta          {:description "Template for NuvlaBox telemetry data"}}
+                             })
   )
 
 (deftype ElasticsearchRestBinding [client sniffer]
