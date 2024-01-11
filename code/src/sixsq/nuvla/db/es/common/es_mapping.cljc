@@ -5,19 +5,20 @@
     [spec-tools.json-schema :as jsc]))
 
 
-(def dynamic-templates [{:strings {:match              "*"
-                                   :match_mapping_type "string"
-                                   :mapping            {:type    "keyword"
-                                                        :copy_to "fulltext"}}}
-                        {:longs {:match              "*"
-                                 :match_mapping_type "long"
-                                 :mapping            {:type "long"}}}])
+(def dynamic-templates-mapping
+  [{:strings {:match              "*"
+              :match_mapping_type "string"
+              :mapping            {:type    "keyword"
+                                   :copy_to "fulltext"}}}
+   {:longs {:match              "*"
+            :match_mapping_type "long"
+            :mapping            {:type "long"}}}])
 
 (defn keep-key?
   [arg]
-  (let [[k _v] (seq arg)]                                    ;; seq avoids corner case where we're passed a map
+  (let [[k _v] (seq arg)]                                   ;; seq avoids corner case where we're passed a map
     (or (string? k) (#{:type :enabled :properties :format :copy_to :index
-                       :time_series_metric :time_series_dimension} k))))
+                       :time_series_metric :time_series_dimension :field-type} k))))
 
 
 (defn assoc-date
@@ -96,11 +97,27 @@
   [m]
   (if (map? m)
     (let [{:keys [fulltext indexed] :or {indexed true, fulltext false}} m
-          {:keys [type] :as updated-m} (transform-type->es-type m)
+          {:keys [type field-type] :as updated-m} (transform-type->es-type m)
           result (cond-> updated-m
                          (and (= type "keyword") fulltext) (assoc :copy_to "fulltext")
-                         (not indexed) (assoc-not-indexed))]
-      (into {} (filter keep-key? result)))
+                         (not indexed) (assoc-not-indexed)
+                         (= field-type :dimension) (-> (dissoc :field-type)
+                                                       (assoc :time_series_dimension true))
+                         (= field-type :metric-gauge) (-> (dissoc :field-type)
+                                                          (assoc :time_series_metric "gauge"))
+                         (= field-type :metric-counter) (-> (dissoc :field-type)
+                                                            (assoc :time_series_metric "counter")))]
+      (if (map? result)
+        (->> result
+             (reduce (fn [m [k {:keys [field-type] :as v}]]
+                       (case field-type
+                         :timestamp (assoc m "@timestamp" (dissoc v :field-type))
+                         (assoc m k v))) {})
+             (filter keep-key?)
+             (into {}))
+        (->> result
+             (filter keep-key?)
+             (into {}))))
     m))
 
 
@@ -112,9 +129,11 @@
 
 
 (defn mapping
-  [spec]
-  (cond-> {:dynamic_templates dynamic-templates}
-          spec (merge (-> (transform spec)
-                          (dissoc :type)
-                          (assoc-in [:properties "fulltext" :type] "text")))))
+  ([spec]
+   (mapping spec nil))
+  ([spec {:keys [dynamic-templates fulltext] :or {dynamic-templates true fulltext true}}]
+   (cond-> {}
+           dynamic-templates (assoc :dynamic_templates dynamic-templates-mapping)
+           spec (merge (cond-> (dissoc (transform spec) :type)
+                               fulltext (assoc-in [:properties "fulltext" :type] "text"))))))
 
