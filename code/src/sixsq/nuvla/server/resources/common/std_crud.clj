@@ -276,6 +276,16 @@
       (log/errorf "exception when initializing database for %s: %s"
                   resource-url (.getMessage e)))))
 
+(defn initialize-as-timeseries
+  "Perform the initialization of the database for a given resource type stored as a time-series. If an
+   exception is thrown, it will be logged but then ignored."
+  [resource-url spec]
+  (try
+    (db/initialize resource-url {:spec spec, :timeseries true})
+    (catch Exception e
+      (log/errorf "exception when initializing database for %s: %s"
+                  resource-url (.getMessage e)))))
+
 
 (defn add-if-absent
   [resource-id resource-url resource]

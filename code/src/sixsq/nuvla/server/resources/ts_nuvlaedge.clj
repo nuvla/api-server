@@ -85,8 +85,14 @@ The `ts-nuvlaedge` resources create a timeseries related to nuvlaedge.
   (query-impl request))
 
 
+(def bulk-action-impl (std-crud/bulk-action-fn resource-type collection-acl collection-type))
+
+(defmethod crud/bulk-action [resource-type "bulk-insert"]
+  [request]
+  (bulk-action-impl request))
+
 (defn initialize
   []
-  (std-crud/initialize resource-type ::ts-nuvlaedge/schema)
+  (std-crud/initialize-as-timeseries resource-type ::ts-nuvlaedge/schema)
   ;(md/register resource-metadata)
   )

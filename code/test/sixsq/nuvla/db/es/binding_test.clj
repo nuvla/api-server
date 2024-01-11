@@ -5,6 +5,7 @@
     [sixsq.nuvla.db.binding-lifecycle :as lifecycle]
     [sixsq.nuvla.db.binding-queries :as queries]
     [sixsq.nuvla.db.es.binding :as t]
+    [sixsq.nuvla.db.es.common.es-mapping :as mapping]
     [sixsq.nuvla.db.es.utils :as esu]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.spec.ts-nuvlaedge :as ts-nuvlaedge]))
@@ -42,12 +43,13 @@
 (deftest check-timeseries-index
   (with-open [client (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})]
     (let [spec                  ::ts-nuvlaedge/schema
+          mapping               (mapping/mapping spec {:dynamic-templates false, :fulltext false})
           index-name            "test-ts-index"
           template-name         (str index-name "-template")
           datastream-index-name "test-ts-index-1"]
 
       (testing "Create timeseries template"
-        (t/create-timeseries-template client spec index-name)
+        (t/create-timeseries-template client index-name mapping)
         (let [response (-> (spandex/request client {:url (str "_index_template/" template-name)})
                            (get-in [:body :index_templates 0]))]
           (is (= template-name (:name response)))
@@ -62,6 +64,6 @@
         (t/create-datastream client datastream-index-name)
         (let [response (-> (spandex/request client {:url (str "_data_stream/" datastream-index-name)})
                            (get-in [:body :data_streams]))]
-          (prn :response response)
           (is (seq response)))))))
+
 
