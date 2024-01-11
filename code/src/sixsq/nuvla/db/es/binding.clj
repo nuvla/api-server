@@ -330,6 +330,55 @@
                              })
   )
 
+(defn create-timeseries-template
+  [client spec index]
+  (let [es-mapping (mapping/mapping spec {:dynamic-templates false, :fulltext false})
+        template-name (str index "-template")]
+    (try
+      (let [{:keys [status]} (spandex/request client {:url    [:_index_template template-name],
+                                                      :method :put
+                                                      :body   {:index_patterns [(str index "*")],
+                                                               :data_stream    {},
+                                                               :template
+                                                               {:settings
+                                                                {:index.mode                   "time_series",
+                                                                 ;:index.routing_path           ["nuvlaedge-id"],
+                                                                 ;:index.look_back_time         "7d",
+                                                                 ;:index.look_ahead_time        "2h",
+                                                                 ;:index.time_series.start_time "2023-01-01T00:00:00.000Z"
+                                                                 ;:index.lifecycle.name  "nuvlabox-status-ts-1d-hf-ilm-policy"
+                                                                 }
+                                                                :mappings es-mapping}}})]
+        (if (= 200 status)
+          (log/debug template-name "index template created/updated")
+          (log/error "unexpected status code when creating/updating" template-name "index template (" status ")")))
+      (catch Exception e
+        (let [{:keys [status body] :as _response} (ex-data e)
+              error (:error body)]
+          (log/error "unexpected status code when creating/updating" template-name "index template (" status "). " (or error e)))))))
+
+(defn create-datastream
+  [client datastream-index-name]
+  (try
+    (let [{:keys [status]} (spandex/request client {:url [:_data_stream datastream-index-name], :method :get})]
+      (if (= 200 status)
+        (log/debug datastream-index-name "datastream already exists")
+        (log/error "unexpected status code when checking" datastream-index-name "datastream (" status ")")))
+    (catch Exception e
+      (let [{:keys [status body]} (ex-data e)]
+        (try
+          (if (= 404 status)
+            (let [{{:keys [acknowledged]} :body}
+                  (spandex/request client {:url  [:_data_stream datastream-index-name], :method :put})]
+              (if acknowledged
+                (log/info datastream-index-name "datastream created")
+                (log/warn datastream-index-name "datastream may or may not have been created")))
+            (log/error "unexpected status code when checking" datastream-index-name "datastream (" status "). " body))
+          (catch Exception e
+            (let [{:keys [status body] :as _response} (ex-data e)
+                  error (:error body)]
+              (log/error "unexpected status code when creating" datastream-index-name "datastream (" status "). " (or error e)))))))))
+
 (deftype ElasticsearchRestBinding [client sniffer]
   Binding
 
