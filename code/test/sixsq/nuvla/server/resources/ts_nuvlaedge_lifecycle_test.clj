@@ -11,7 +11,7 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.time :as time]))
 
-(use-fixtures :once ltu/with-test-server-fixture)
+(use-fixtures :each ltu/with-test-server-fixture)
 
 (def base-uri (str p/service-context t/resource-type))
 
@@ -523,6 +523,7 @@
                  (->> body :aggregations :tsds-stats :buckets
                       (map (comp :value :only-pos-rate-tx)))))))))
 
+;; TODO: add test that normal user is not able to insert or query
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]

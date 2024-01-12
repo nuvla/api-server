@@ -15,8 +15,8 @@ The `ts-nuvlaedge` resources create a timeseries related to nuvlaedge.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:query       ["group/nuvla-user"]
-                     :add         ["group/nuvla-user"]})
+(def collection-acl {:query       ["group/nuvla-admin"]
+                     :add         ["group/nuvla-admin"]})
 
 
 ;;
