@@ -86,6 +86,10 @@
       date-from-unix-timestamp
       to-str))
 
+(defn truncated-to-minutes
+  [^OffsetDateTime date]
+  (.truncatedTo date ChronoUnit/MINUTES))
+
 (defn truncated-to-days
   [^OffsetDateTime date]
   (.truncatedTo date ChronoUnit/DAYS))
