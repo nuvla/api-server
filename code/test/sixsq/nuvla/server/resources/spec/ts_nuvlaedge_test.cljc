@@ -8,6 +8,7 @@
 (deftest check-schema
   (let [timestamp "1964-08-25T10:00:00.00Z"]
     (doseq [valid-entry [{:nuvlaedge-id "nuvlabox/1"
+                          :metric       "cpu"
                           :cpu          {:capacity            8
                                          :load                4.5
                                          :load-1              4.3
@@ -18,20 +19,24 @@
                                          :context-switches    382731}
                           :timestamp    timestamp}
                          {:nuvlaedge-id "nuvlabox/1"
+                          :metric       "ram"
                           :ram          {:capacity 4096
                                          :used     1000}
                           :timestamp    timestamp}
                          {:nuvlaedge-id "nuvlabox/1"
+                          :metric       "disk"
                           :disk         {:device   "root"
                                          :capacity 20000
                                          :used     10000}
                           :timestamp    timestamp}
                          {:nuvlaedge-id "nuvlabox/1"
+                          :metric       "network"
                           :network      {:interface         "eth0"
                                          :bytes-received    5247943
                                          :bytes-transmitted 41213}
                           :timestamp    timestamp}
                          {:nuvlaedge-id      "nuvlabox/1"
+                          :metric            "power-consumption"
                           :power-consumption {:metric-name        "IN_current"
                                               :energy-consumption 2.4
                                               :unit               "A"}
@@ -50,6 +55,8 @@
   (is (= (es-mapping/mapping ::ts-nuvlaedge/schema {:dynamic-templates false
                                                     :fulltext          false})
          {:properties {"nuvlaedge-id"      {:type                  "keyword"
+                                            :time_series_dimension true}
+                       "metric"            {:type                  "keyword"
                                             :time_series_dimension true}
                        "@timestamp"        {:type "date", :format "strict_date_optional_time||epoch_millis"}
                        "cpu"               {:type "object", :properties {"capacity"            {:type               "long"

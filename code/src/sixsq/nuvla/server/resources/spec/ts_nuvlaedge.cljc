@@ -13,6 +13,16 @@
              :json-schema/type "string"
              :json-schema/description "identifier of nuvlaedge")))
 
+(def metrics #{"cpu" "ram" "disk" "network" "power-consumption"})
+
+(s/def ::metric
+  (-> (st/spec metrics)
+      (assoc :name "metric"
+             :json-schema/field-type :dimension
+             :json-schema/type "string"
+             :json-schema/description "metric"
+             :json-schema/value-scope {:values (vec metrics)})))
+
 (s/def ::timestamp
   (-> (st/spec time/date-from-str)
       (assoc :name "@timestamp"
@@ -179,6 +189,7 @@
     :json-schema/description "{metric-name energy-consumption unit} for a specifc power consumption metric"))
 
 (def ts-nuvlaedge-keys-spec {:req-un [::nuvlaedge-id
+                                      ::metric
                                       ::timestamp]
                              :opt-un [::cpu
                                       ::ram

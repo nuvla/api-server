@@ -24,11 +24,16 @@ The `ts-nuvlaedge` resources create a timeseries related to nuvlaedge.
 ;;
 
 
-(defmethod crud/validate
-  resource-type
-  [resource]
-  resource)
+(def validate-fn (u/create-spec-validation-fn ::ts-nuvlaedge/schema))
 
+(defn validate
+  [resource]
+  (validate-fn resource))
+
+(defn validate-metrics
+  [metrics]
+  (doseq [metric metrics]
+    (validate metric)))
 
 ;;
 ;; use default ACL method
@@ -85,11 +90,12 @@ The `ts-nuvlaedge` resources create a timeseries related to nuvlaedge.
   (query-impl request))
 
 
-(def bulk-action-impl (std-crud/bulk-action-fn resource-type collection-acl collection-type))
+(def bulk-insert-impl (std-crud/bulk-insert-metrics-fn resource-type collection-acl collection-type))
 
 (defmethod crud/bulk-action [resource-type "bulk-insert"]
   [request]
-  (bulk-action-impl request))
+  (validate-metrics (:body request))
+  (bulk-insert-impl request))
 
 (defn initialize
   []

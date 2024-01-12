@@ -1,7 +1,8 @@
 (ns sixsq.nuvla.db.es.binding
   "Binding protocol implemented for an Elasticsearch database that makes use
    of the Elasticsearch REST API."
-  (:require [clojure.string :as str]
+  (:require [clojure.data.json :as json]
+            [clojure.string :as str]
             [clojure.tools.logging :as log]
             [qbits.spandex :as spandex]
             [sixsq.nuvla.auth.utils.acl :as acl-utils]
@@ -65,6 +66,10 @@
 (defn noop?
   [response]
   (= (get-in response [:body :result]) "noop"))
+
+(defn errors?
+  [response]
+  (get-in response [:body :errors]))
 
 (defn no-body-failures?
   [response]
@@ -204,6 +209,32 @@
             msg   (str "unexpected exception querying: " (or error e))]
         (throw (r/ex-response msg 500))))))
 
+(defn bulk-insert-metrics
+  [client collection-id data _options]
+  (try
+    (let [index          (escu/collection-id->index collection-id)
+          data-transform (fn [{:keys [timestamp] :as doc}]
+                           (-> doc
+                               (dissoc :timestamp)
+                               (assoc "@timestamp" timestamp)))
+          body           (spandex/chunks->body (interleave (repeat {:create {}})
+                                                           (map data-transform data)))
+          response       (spandex/request client {:url     [index :_bulk]
+                                                  :method  :put
+                                                  :headers {"Content-Type" "application/x-ndjson"}
+                                                  :body    body})
+          body-response  (:body response)
+          success?       (not (errors? response))]
+      (if success?
+        body-response
+        (let [msg (str "error when bulk inserting metrics: " body-response)]
+          (throw (r/ex-response msg 500)))))
+    (catch Exception e
+      (let [{:keys [body] :as _response} (ex-data e)
+            error (:error body)
+            msg   (str "unexpected exception bulk inserting metrics: " _response (or error e))]
+        (throw (r/ex-response msg 500))))))
+
 (defn bulk-edit-data
   [client collection-id
    {{:keys [doc]} :body
@@ -261,7 +292,7 @@
                                                                :data_stream    {},
                                                                :template
                                                                {:settings
-                                                                {:index.mode                   "time_series",
+                                                                {:index.mode "time_series",
                                                                  ;:index.routing_path           ["nuvlaedge-id"],
                                                                  ;:index.look_back_time         "7d",
                                                                  ;:index.look_ahead_time        "2h",
@@ -289,7 +320,7 @@
         (try
           (if (= 404 status)
             (let [{{:keys [acknowledged]} :body}
-                  (spandex/request client {:url  [:_data_stream datastream-index-name], :method :put})]
+                  (spandex/request client {:url [:_data_stream datastream-index-name], :method :put})]
               (if acknowledged
                 (log/info datastream-index-name "datastream created")
                 (log/warn datastream-index-name "datastream may or may not have been created")))
@@ -337,6 +368,9 @@
 
   (query [_ collection-id options]
     (query-data client collection-id options))
+
+  (bulk-insert-metrics [_ collection-id data options]
+    (bulk-insert-metrics client collection-id data options))
 
   (bulk-delete [_ collection-id options]
     (bulk-delete-data client collection-id options))
