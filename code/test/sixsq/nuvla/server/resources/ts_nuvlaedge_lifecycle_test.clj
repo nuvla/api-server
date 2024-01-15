@@ -107,156 +107,7 @@
                      :request-method :patch
                      :body (json/write-str conflicting-entries))
             (ltu/body->edn)
-            (ltu/is-status 500))))
-
-    ;; query with the ts-aggregation trick (to be changed later on)
-    ;; 1 query for cpu
-    ;; 1 query for mem
-    ;; 1 query per disk aggregating over all devices
-    ;; 1 query per disk grouping by device
-    ;; queris for network
-
-
-
-
-
-    #_(-> session-admin
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str {:nuvlaedge-id "nuvlabox/1"
-                                          "@timestamp"  (time/now-str)
-                                          :load         1.0}))
-          (ltu/body->edn)
-          (ltu/is-status 201))
-
-    #_(ltu/refresh-es-indices)
-
-    ;; admin query succeeds but is empty
-    #_(-> session-admin
-          (content-type "application/x-www-form-urlencoded")
-          (request base-uri
-                   :request-method :put
-                   :body (rc/form-encode
-                           {:tsds-aggregation
-                            (json/write-str
-                              {:aggregations
-                               {:tsds-stats
-                                {:date_histogram
-                                 {:field          "@timestamp"
-                                  :fixed_interval "10m"}
-                                 :aggregations
-                                 {:load {:avg {:field :load}}}}}})}))
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-count 1)
-          (ltu/is-operation-present :add)
-          (ltu/is-operation-absent :delete)
-          (ltu/is-operation-absent :edit))
-
-    ;;; user query succeeds but is empty
-    ;(-> session-user
-    ;    (request base-uri)
-    ;    (ltu/body->edn)
-    ;    (ltu/is-count zero?)
-    ;    (ltu/is-operation-present :add)
-    ;    (ltu/is-operation-absent :delete)
-    ;    (ltu/is-operation-absent :edit))
-    ;
-    ;;; anon query fails
-    ;(-> session-anon
-    ;    (request base-uri)
-    ;    (ltu/body->edn)
-    ;    (ltu/is-status 403))
-    ;
-    ;;; anon create must fail
-    ;(-> session-anon
-    ;    (request base-uri
-    ;             :request-method :post
-    ;             :body (json/write-str {:address "anon@example.com"}))
-    ;    (ltu/body->edn)
-    ;    (ltu/is-status 403))
-    ;
-    ;;; check email creation
-    ;(let [admin-uri     (-> session-admin
-    ;                        (request base-uri
-    ;                                 :request-method :post
-    ;                                 :body (json/write-str {:address   "admin@example.com"
-    ;                                                        :validated true}))
-    ;                        (ltu/body->edn)
-    ;                        (ltu/is-status 201)
-    ;                        (ltu/location))
-    ;      admin-abs-uri (str p/service-context admin-uri)
-    ;
-    ;      user-uri      (-> session-user
-    ;                        (request base-uri
-    ;                                 :request-method :post
-    ;                                 :body (json/write-str {:address   "user@example.com"
-    ;                                                        :validated true}))
-    ;                        (ltu/body->edn)
-    ;                        (ltu/is-status 201)
-    ;                        (ltu/location))
-    ;      user-abs-uri  (str p/service-context user-uri)]
-    ;
-    ;  ;; admin should see 2 email resources
-    ;  (-> session-admin
-    ;      (request base-uri)
-    ;      (ltu/body->edn)
-    ;      (ltu/is-status 200)
-    ;      (ltu/is-resource-uri t/collection-type)
-    ;      (ltu/is-count 2))
-    ;
-    ;  ;; user should see only 1
-    ;  (-> session-user
-    ;      (request base-uri)
-    ;      (ltu/body->edn)
-    ;      (ltu/is-status 200)
-    ;      (ltu/is-resource-uri t/collection-type)
-    ;      (ltu/is-count 1))
-    ;
-    ;  ;; verify contents of admin email
-    ;  (let [email        (-> session-admin
-    ;                         (request admin-abs-uri)
-    ;                         (ltu/body->edn)
-    ;                         (ltu/is-status 200)
-    ;                         (ltu/is-operation-absent :edit)
-    ;                         (ltu/is-operation-present :delete)
-    ;                         (ltu/is-operation-present :validate)
-    ;                         (ltu/body))
-    ;        validate-url (->> (u/get-op email :validate)
-    ;                          (str p/service-context))]
-    ;    (is (= "admin@example.com" (:address email)))
-    ;    (is (false? (:validated email)))
-    ;    (is validate-url)
-    ;
-    ;    )
-    ;
-    ;  ;; verify contents of user email
-    ;  (let [email        (-> session-user
-    ;                         (request user-abs-uri)
-    ;                         (ltu/body->edn)
-    ;                         (ltu/is-status 200)
-    ;                         (ltu/is-operation-absent :edit)
-    ;                         (ltu/is-operation-present :delete)
-    ;                         (ltu/is-operation-present :validate)
-    ;                         (ltu/body))
-    ;        validate-url (->> (u/get-op email "validate")
-    ;                          (str p/service-context))]
-    ;    (is (= "user@example.com" (:address email)))
-    ;    (is (false? (:validated email)))
-    ;    (is validate-url))
-    ;
-    ;  ;; admin can delete the email
-    ;  (-> session-admin
-    ;      (request admin-abs-uri :request-method :delete)
-    ;      (ltu/body->edn)
-    ;      (ltu/is-status 200))
-    ;
-    ;  ;; user can delete the email
-    ;  (-> session-user
-    ;      (request user-abs-uri :request-method :delete)
-    ;      (ltu/body->edn)
-    ;      (ltu/is-status 200))
-    ))
+            (ltu/is-status 500))))))
 
 (deftest query-ram
   (let [session-anon  (-> (ltu/ring-app)
@@ -432,8 +283,8 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           #_(ltu/is-key-value (comp :value :avg-ram first :buckets :tsds-stats)
-                            :aggregations
-                            1380.0)
+                              :aggregations
+                              1380.0)
           (ltu/is-count 7))
 
       (let [body (-> session-admin
@@ -457,12 +308,12 @@
                      (ltu/is-count 7)
                      (ltu/body))]
         #_(is (= (map (fn [{:keys [timestamp ram]}]
-                      {:key_as_string timestamp
-                       :doc_count     1
-                       :avg-ram       {:value (double (:used ram))}})
-                    entries)
-               (->> body :aggregations :tsds-stats :buckets
-                    (map #(dissoc % :key))))))
+                        {:key_as_string timestamp
+                         :doc_count     1
+                         :avg-ram       {:value (double (:used ram))}})
+                      entries)
+                 (->> body :aggregations :tsds-stats :buckets
+                      (map #(dissoc % :key))))))
 
       (let [body (-> session-admin
                      (content-type "application/x-www-form-urlencoded")
@@ -506,8 +357,8 @@
                                             {:field          "@timestamp"
                                              :fixed_interval "30s"}
                                             :aggregations
-                                            {:max-tx {:max {:field :network.bytes-transmitted}}
-                                             :rate-tx {:derivative {:buckets_path "max-tx"}}
+                                            {:max-tx           {:max {:field :network.bytes-transmitted}}
+                                             :rate-tx          {:derivative {:buckets_path "max-tx"}}
                                              :only-pos-rate-tx {:bucket_script
                                                                 {:buckets_path {:rateTx "rate-tx"}
                                                                  :script       "if (params.rateTx > 0) { return params.rateTx } else { return null }"}}}}}})}))
@@ -523,7 +374,44 @@
                  (->> body :aggregations :tsds-stats :buckets
                       (map (comp :value :only-pos-rate-tx)))))))))
 
-;; TODO: add test that normal user is not able to insert or query
+(deftest acl
+  (let [session-anon (-> (ltu/ring-app)
+                         session
+                         (content-type "application/json"))
+        session-user (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
+        entries      [{:nuvlaedge-id "nuvlabox/1"
+                       :metric       "ram"
+                       :ram          {:capacity 4096
+                                      :used     1000}
+                       :timestamp    (time/now-str)}]]
+    (testing "Normal user is not able to insert or query"
+      )
+
+    (-> session-user
+        (request (str base-uri "/bulk-insert")
+                 :headers {:bulk true}
+                 :request-method :patch
+                 :body (json/write-str entries))
+        (ltu/body->edn)
+        (ltu/is-status 403))
+
+    (-> session-user
+        (content-type "application/x-www-form-urlencoded")
+        (request base-uri
+                 :request-method :put
+                 :body (rc/form-encode
+                         {:last 0
+                          :tsds-aggregation
+                          (json/write-str
+                            {:aggregations
+                             {:tsds-stats
+                              {:date_histogram
+                               {:field          "@timestamp"
+                                :fixed_interval "1d"}
+                               :aggregations
+                               {:avg-ram {:avg {:field :ram.used}}}}}})}))
+        (ltu/body->edn)
+        (ltu/is-status 403))))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
