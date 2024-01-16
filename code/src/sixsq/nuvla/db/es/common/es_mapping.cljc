@@ -1,9 +1,9 @@
 (ns sixsq.nuvla.db.es.common.es-mapping
   "Utility for converting clojure.spec definitions to Elasticsearch mappings."
   (:require
+    [clojure.spec.alpha :as s]
     [clojure.walk :as w]
     [spec-tools.json-schema :as jsc]))
-
 
 (def dynamic-templates-mapping
   [{:strings {:match              "*"
@@ -137,3 +137,8 @@
            spec (merge (cond-> (dissoc (transform spec) :type)
                                fulltext (assoc-in [:properties "fulltext" :type] "text"))))))
 
+(defn time-series-routing-path
+  [spec]
+  (let [spec-form (s/form spec)]
+    (when (seq spec-form)
+      (-> spec-form second :time-series-routing-path))))

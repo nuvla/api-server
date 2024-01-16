@@ -283,7 +283,7 @@
         (throw (r/ex-response msg 500))))))
 
 (defn create-timeseries-template
-  [client index mapping]
+  [client index mapping routing-path]
   (let [template-name (str index "-template")]
     (try
       (let [{:keys [status]} (spandex/request client {:url    [:_index_template template-name],
@@ -292,13 +292,14 @@
                                                                :data_stream    {},
                                                                :template
                                                                {:settings
-                                                                {:index.mode "time_series",
-                                                                 ;:index.routing_path           ["nuvlaedge-id"],
-                                                                 ;:index.look_back_time         "7d",
-                                                                 ;:index.look_ahead_time        "2h",
-                                                                 ;:index.time_series.start_time "2023-01-01T00:00:00.000Z"
-                                                                 ;:index.lifecycle.name  "nuvlabox-status-ts-1d-hf-ilm-policy"
-                                                                 }
+                                                                (cond->
+                                                                  {:index.mode "time_series",
+                                                                   ;:index.look_back_time         "7d",
+                                                                   ;:index.look_ahead_time        "2h",
+                                                                   ;:index.time_series.start_time "2023-01-01T00:00:00.000Z"
+                                                                   ;:index.lifecycle.name  "nuvlabox-status-ts-1d-hf-ilm-policy"
+                                                                   }
+                                                                  routing-path (assoc :index.routing_path routing-path))
                                                                 :mappings mapping}}})]
         (if (= 200 status)
           (log/debug template-name "index template created/updated")
@@ -334,8 +335,9 @@
   [client collection-id {:keys [spec timeseries] :as _options}]
   (let [index (escu/collection-id->index collection-id)]
     (if timeseries
-      (let [mapping (mapping/mapping spec {:dynamic-templates false, :fulltext false})]
-        (create-timeseries-template client index mapping)
+      (let [mapping      (mapping/mapping spec {:dynamic-templates false, :fulltext false})
+            routing-path (mapping/time-series-routing-path spec)]
+        (create-timeseries-template client index mapping routing-path)
         (create-datastream client index))
       (let [mapping (mapping/mapping spec)]
         (create-index client index)

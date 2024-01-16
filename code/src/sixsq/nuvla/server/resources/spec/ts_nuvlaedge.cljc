@@ -198,4 +198,10 @@
                                       ::power-consumption]})
 
 
-(s/def ::schema (su/only-keys-maps ts-nuvlaedge-keys-spec))
+(s/def ::schema
+  (assoc (st/spec (su/only-keys-maps ts-nuvlaedge-keys-spec))
+    :time-series-routing-path ["nuvlaedge-id"
+                               "metric"
+                               "disk.device"
+                               "network.interface"
+                               "power-consumption.metric-name"]))

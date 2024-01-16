@@ -96,3 +96,12 @@
                                                                          "energy-consumption" {:type "double"
                                                                                                :time_series_metric "gauge"}
                                                                          "unit"               {:type "keyword"}}}}})))
+
+(deftest check-routing-path
+  (is (= ["nuvlaedge-id"
+          "metric"
+          "disk.device"
+          "network.interface"
+          "power-consumption.metric-name"]
+         (es-mapping/time-series-routing-path ::ts-nuvlaedge/schema))))
+
