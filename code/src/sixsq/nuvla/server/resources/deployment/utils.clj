@@ -264,18 +264,18 @@
     new))
 
 (defn keep-current-defined-key
-  [k current-seq new-seq]
-  (let [current-seq-indexed (gen-util/index-by current-seq :name)
-        get-current         #(get current-seq-indexed (:name %))]
+  [pk k current-seq new-seq]
+  (let [current-seq-indexed (gen-util/index-by current-seq pk)
+        get-current         #(get current-seq-indexed (get % pk))]
     (mapv #(keep-current-value k (get-current %) %) new-seq)))
 
 (defn keep-current-defined-values
   [current-seq new-seq]
-  (keep-current-defined-key :value current-seq new-seq))
+  (keep-current-defined-key :name :value current-seq new-seq))
 
 (defn keep-defined-file-contents
   [current-seq new-seq]
-  (keep-current-defined-key :file-content current-seq new-seq))
+  (keep-current-defined-key :file-name :file-content current-seq new-seq))
 
 (defn keep-module-defined-values
   [{defined-content :content :as _module_defined_values}
