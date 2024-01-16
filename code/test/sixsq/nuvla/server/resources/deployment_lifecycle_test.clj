@@ -112,7 +112,7 @@
           module-id          (setup-module session-user (valid-module subtype valid-module-content))
           valid-deployment   {:module {:href module-id}}
           invalid-deployment {:module {:href "module/doesnt-exist"}}
-          new-logo-url "change-logo.url"]
+          new-logo-url       "change-logo.url"]
 
       (testing "admin/user query succeeds but is empty"
         (doseq [session [session-admin session-user]]
@@ -631,6 +631,60 @@
                               :docker-compose "version: \"3.3\"\nservices:\n  web:\n    ..."}
         subtype              "application"]
     (lifecycle-deployment subtype valid-module-content)))
+
+
+(deftest regression-test-issue-tasklist-2908
+  (testing "Edit swarm files content"
+    (binding [config-nuvla/*stripe-api-key* nil]
+      (let [session-anon         (-> (ltu/ring-app)
+                                     session
+                                     (content-type "application/json"))
+            session-user         (header session-anon authn-info-header
+                                         (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
+            files                [{:file-name "file1.yaml", :file-content "file1 content"}
+                                  {:file-name "file2.yaml", :file-content "file2 content"}]
+            valid-module-content {:id             (str module-application/resource-type
+                                                       "/module-application-uuid")
+                                  :resource-type  module-application/resource-type
+                                  :created        timestamp
+                                  :updated        timestamp
+                                  :acl            valid-acl
+
+                                  :author         "someone"
+                                  :commit         "wip"
+
+                                  :files          files
+                                  :docker-compose "version: \"3.3\"\nservices:\n  web:\n    ..."}
+            subtype              "application"
+            module-id            (setup-module session-user
+                                               (assoc (valid-module subtype valid-module-content)
+                                                 :compatibility "swarm"))
+            valid-deployment     {:module {:href module-id}}
+            deployment-id        (-> session-user
+                                     (request base-uri
+                                              :request-method :post
+                                              :body (json/write-str valid-deployment))
+                                     (ltu/body->edn)
+                                     (ltu/is-status 201)
+                                     (ltu/location))
+            deployment-url       (str p/service-context deployment-id)
+            deployment           (-> session-user
+                                     (request deployment-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/body))
+            deployment           (-> session-user
+                                     (request deployment-url
+                                              :request-method :put
+                                              :body (json/write-str deployment))
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/body))]
+        (is (= files (get-in deployment [:module :content :files])))
+        (-> session-user
+            (request (str p/service-context module-id)
+                     :request-method :delete)
+            (ltu/is-status 200))))))
 
 
 (deftest lifecycle-error
