@@ -228,12 +228,12 @@
       (if success?
         body-response
         (let [msg (str "error when bulk inserting metrics: " body-response)]
-          (throw (r/ex-response msg 500)))))
+          (throw (r/ex-response msg 400)))))
     (catch Exception e
-      (let [{:keys [body] :as _response} (ex-data e)
+      (let [{:keys [body status] :as _response} (ex-data e)
             error (:error body)
             msg   (str "unexpected exception bulk inserting metrics: " _response (or error e))]
-        (throw (r/ex-response msg 500))))))
+        (throw (r/ex-response msg (or status 500)))))))
 
 (defn bulk-edit-data
   [client collection-id

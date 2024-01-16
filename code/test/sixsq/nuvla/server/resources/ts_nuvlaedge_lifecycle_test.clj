@@ -106,7 +106,7 @@
                      :request-method :patch
                      :body (json/write-str conflicting-entries))
             (ltu/body->edn)
-            (ltu/is-status 500))))))
+            (ltu/is-status 400))))))
 
 (deftest query-ram
   (let [session-anon  (-> (ltu/ring-app)
