@@ -22,7 +22,6 @@
                           (content-type "application/json"))
         session-admin (header session-anon authn-info-header
                               "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user  (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
         timestamp     (time/now-str)
         entries       [{:nuvlaedge-id "nuvlabox/1"
                         :metric       "cpu"
@@ -115,7 +114,6 @@
                           (content-type "application/json"))
         session-admin (header session-anon authn-info-header
                               "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user  (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
         now           (time/truncated-to-minutes (time/now))
         entries       [{:nuvlaedge-id "nuvlabox/1"
                         :metric       "ram"
@@ -206,7 +204,6 @@
                           (content-type "application/json"))
         session-admin (header session-anon authn-info-header
                               "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user  (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
         now           (time/truncated-to-minutes (time/now))
         entries       [{:nuvlaedge-id "nuvlabox/1"
                         :metric       "network"
@@ -282,9 +279,12 @@
                                   :max-bytes-rx {:max {:field :network.bytes-received}}}}}})}))
           (ltu/body->edn)
           (ltu/is-status 200)
-          #_(ltu/is-key-value (comp :value :avg-ram first :buckets :tsds-stats)
-                              :aggregations
-                              1380.0)
+          (ltu/is-key-value (comp :value :max-bytes-tx first :buckets :tsds-stats)
+                            :aggregations
+                            40.0)
+          (ltu/is-key-value (comp :value :max-bytes-rx first :buckets :tsds-stats)
+                            :aggregations
+                            40.0)
           (ltu/is-count 7))
 
       (let [body (-> session-admin
@@ -307,72 +307,69 @@
                      (ltu/is-status 200)
                      (ltu/is-count 7)
                      (ltu/body))]
-        #_(is (= (map (fn [{:keys [timestamp ram]}]
-                        {:key_as_string timestamp
-                         :doc_count     1
-                         :avg-ram       {:value (double (:used ram))}})
-                      entries)
-                 (->> body :aggregations :tsds-stats :buckets
-                      (map #(dissoc % :key))))))
+        (is (= (map (fn [{:keys [timestamp network]}]
+                      {:key_as_string timestamp
+                       :doc_count     1
+                       :max-bytes-tx  {:value (double (:bytes-transmitted network))}
+                       :max-bytes-rx  {:value (double (:bytes-received network))}})
+                    entries)
+               (->> body :aggregations :tsds-stats :buckets
+                    (map #(dissoc % :key))))))
 
-      (let [body (-> session-admin
-                     (content-type "application/x-www-form-urlencoded")
-                     (request base-uri
-                              :request-method :put
-                              :body (rc/form-encode
-                                      {:last 0
-                                       :tsds-aggregation
-                                       (json/write-str
-                                         {:aggregations
-                                          {:tsds-stats
-                                           {:date_histogram
-                                            {:field          "@timestamp"
-                                             :fixed_interval "1d"}
-                                            :aggregations
-                                            {:stats-bytes-tx {:extended_stats {:field :network.bytes-transmitted}}
-                                             :stats-bytes-rx {:extended_stats {:field :network.bytes-received}}}}}})}))
-                     (ltu/body->edn)
-                     (ltu/is-status 200)
-                     (ltu/is-count 7)
-                     (ltu/body))]
-        #_(is (= (map (fn [{:keys [timestamp ram]}]
-                        {:key_as_string timestamp
-                         :doc_count     1
-                         :avg-ram       {:value (double (:used ram))}})
-                      entries)
-                 (->> body :aggregations :tsds-stats :buckets
-                      (map #(dissoc % :key))))))
+      (-> session-admin
+          (content-type "application/x-www-form-urlencoded")
+          (request base-uri
+                   :request-method :put
+                   :body (rc/form-encode
+                           {:last 0
+                            :tsds-aggregation
+                            (json/write-str
+                              {:aggregations
+                               {:tsds-stats
+                                {:date_histogram
+                                 {:field          "@timestamp"
+                                  :fixed_interval "1d"}
+                                 :aggregations
+                                 {:stats-bytes-tx {:extended_stats {:field :network.bytes-transmitted}}
+                                  :stats-bytes-rx {:extended_stats {:field :network.bytes-received}}}}}})}))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 7)
+          (ltu/is-key-value (comp #(format "%.2f" %) :std_deviation :stats-bytes-tx first :buckets :tsds-stats)
+                            :aggregations
+                            (format "%.2f" 10.93))
+          (ltu/is-key-value (comp #(format "%.2f" %) :std_deviation :stats-bytes-rx first :buckets :tsds-stats)
+                            :aggregations
+                            (format "%.2f" 10.93))
+          (ltu/body))
 
-      (let [body (-> session-admin
-                     (content-type "application/x-www-form-urlencoded")
-                     (request base-uri
-                              :request-method :put
-                              :body (rc/form-encode
-                                      {:last 0
-                                       :tsds-aggregation
-                                       (json/write-str
-                                         {:aggregations
-                                          {:tsds-stats
-                                           {:date_histogram
-                                            {:field          "@timestamp"
-                                             :fixed_interval "30s"}
-                                            :aggregations
-                                            {:max-tx           {:max {:field :network.bytes-transmitted}}
-                                             :rate-tx          {:derivative {:buckets_path "max-tx"}}
-                                             :only-pos-rate-tx {:bucket_script
-                                                                {:buckets_path {:rateTx "rate-tx"}
-                                                                 :script       "if (params.rateTx > 0) { return params.rateTx } else { return null }"}}}}}})}))
-                     (ltu/body->edn)
-                     (ltu/is-status 200)
-                     (ltu/is-count 7)
-                     (ltu/body))]
-        #_(is (= (map (fn [{:keys [timestamp ram]}]
-                        {:key_as_string timestamp
-                         :doc_count     1
-                         :avg-ram       {:value (double (:used ram))}})
-                      entries)
-                 (->> body :aggregations :tsds-stats :buckets
-                      (map (comp :value :only-pos-rate-tx)))))))))
+      (let [body             (-> session-admin
+                                 (content-type "application/x-www-form-urlencoded")
+                                 (request base-uri
+                                          :request-method :put
+                                          :body (rc/form-encode
+                                                  {:last 0
+                                                   :tsds-aggregation
+                                                   (json/write-str
+                                                     {:aggregations
+                                                      {:tsds-stats
+                                                       {:date_histogram
+                                                        {:field          "@timestamp"
+                                                         :fixed_interval "30s"}
+                                                        :aggregations
+                                                        {:max-tx           {:max {:field :network.bytes-transmitted}}
+                                                         :rate-tx          {:derivative {:buckets_path "max-tx"}}
+                                                         :only-pos-rate-tx {:bucket_script
+                                                                            {:buckets_path {:rateTx "rate-tx"}
+                                                                             :script       "if (params.rateTx > 0) { return params.rateTx } else { return null }"}}}}}})}))
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/is-count 7)
+                                 (ltu/body))
+            only-pos-rate-tx (->> body :aggregations :tsds-stats :buckets
+                                  (keep :only-pos-rate-tx)
+                                  (map :value))]
+        (is (= '(10.0 5.0 15.0 5.0 10.0) only-pos-rate-tx))))))
 
 (deftest acl
   (let [session-anon (-> (ltu/ring-app)
