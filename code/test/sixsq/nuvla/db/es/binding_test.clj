@@ -44,12 +44,13 @@
   (with-open [client (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})]
     (let [spec                  ::ts-nuvlaedge/schema
           mapping               (mapping/mapping spec {:dynamic-templates false, :fulltext false})
+          routing-path          (mapping/time-series-routing-path ::ts-nuvlaedge/schema)
           index-name            "test-ts-index"
           template-name         (str index-name "-template")
           datastream-index-name "test-ts-index-1"]
 
       (testing "Create timeseries template"
-        (t/create-timeseries-template client index-name mapping)
+        (t/create-timeseries-template client index-name mapping routing-path)
         (let [response (-> (spandex/request client {:url (str "_index_template/" template-name)})
                            (get-in [:body :index_templates 0]))]
           (is (= template-name (:name response)))
@@ -57,7 +58,12 @@
                   :composed_of    []
                   :data_stream    {:hidden false, :allow_custom_routing false}}
                  (dissoc (:index_template response) :template)))
-          (is (= {:index {:mode "time_series"}}
+          (is (= {:index {:mode         "time_series"
+                          :routing_path ["nuvlaedge-id"
+                                         "metric"
+                                         "disk.device"
+                                         "network.interface"
+                                         "power-consumption.metric-name"]}}
                  (get-in response [:index_template :template :settings])))))
 
       (testing "Create timeseries datastream"
