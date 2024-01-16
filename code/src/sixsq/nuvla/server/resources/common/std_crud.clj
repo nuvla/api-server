@@ -213,6 +213,16 @@
                           (str "_" resource-name))]
       (create-bulk-job action-name resource-name authn-info acl body))))
 
+(defn bulk-insert-metrics-fn
+  [resource-name collection-acl _collection-uri]
+  (validate-collection-acl collection-acl)
+  (fn [{:keys [body] :as request}]
+    (throw-bulk-header-missing request)
+    (a/throw-cannot-add collection-acl request)
+    (a/throw-cannot-bulk-action collection-acl request)
+    (let [options    (select-keys request [:nuvla/authn :body])
+          response   (db/bulk-insert-metrics resource-name body options)]
+      (r/json-response response))))
 
 (def ^:const href-not-found-msg "requested href not found")
 
@@ -272,6 +282,16 @@
   [resource-url spec]
   (try
     (db/initialize resource-url {:spec spec})
+    (catch Exception e
+      (log/errorf "exception when initializing database for %s: %s"
+                  resource-url (.getMessage e)))))
+
+(defn initialize-as-timeseries
+  "Perform the initialization of the database for a given resource type stored as a time-series. If an
+   exception is thrown, it will be logged but then ignored."
+  [resource-url spec]
+  (try
+    (db/initialize resource-url {:spec spec, :timeseries true})
     (catch Exception e
       (log/errorf "exception when initializing database for %s: %s"
                   resource-url (.getMessage e)))))
