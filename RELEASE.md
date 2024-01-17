@@ -26,6 +26,5 @@ If you want to test what will happen with the release, leave off the
 "true" argument and the changes will only be made locally.
 
 When the tag is pushed to GitHub, CI will build the repository,
-create the container, and push it to Docker Hub.  Check the Travis
-build and ensure that the new container version appears in the Docker
-Hub. 
+create the Docker image, and push it to Docker Hub. Check the GitHub Actions
+build and ensure that the new container version appears in the Docker Hub. 
