@@ -4,6 +4,10 @@
 
 ## Released
 
+## [6.4.2] - 2024-01-17
+
+- Fix: app config files content gets overwritten.  
+
 ## [6.4.1] - 2023-12-21
 
 - Bidnding ES - Disable refresh option
