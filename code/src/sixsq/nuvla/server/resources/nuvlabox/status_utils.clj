@@ -115,18 +115,20 @@
 
 (defn nuvlabox-status->ts-bulk-insert-request-body
   [{:keys [parent current-time] :as nuvlabox-status}]
-  (->> [:cpu :ram :disk :network :power-consumption]
-       (map (fn [metric]
-              (->> (nuvlabox-status->metric-data nuvlabox-status metric)
-                   (map #(assoc {:nuvlaedge-id parent
-                                 :metric       (name metric)
-                                 :timestamp    current-time}
-                           metric %)))))
-       (apply concat)))
+  (when current-time
+    (->> [:cpu :ram :disk :network :power-consumption]
+         (map (fn [metric]
+                (->> (nuvlabox-status->metric-data nuvlabox-status metric)
+                     (map #(assoc {:nuvlaedge-id parent
+                                   :metric       (name metric)
+                                   :timestamp    current-time}
+                             metric %)))))
+         (apply concat))))
 
 (defn nuvlabox-status->ts-bulk-insert-request
   [response]
-  {:params      {:resource-name ts-nuvlaedge/resource-type
+  {:headers     {"bulk" true}
+   :params      {:resource-name ts-nuvlaedge/resource-type
                  :action        "bulk-insert"}
    :body        (nuvlabox-status->ts-bulk-insert-request-body (:body response))
    :nuvla/authn auth/internal-identity})

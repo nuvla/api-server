@@ -39,119 +39,119 @@
                                        :inferred-location       [46.2 6.1]
                                        :nuvlabox-engine-version "2.0.0"}))))
 
-(deftest nuvlabox-status->ts-bulk-insert-request-body
-  (testing "nuvlabox status -> metric time-series conversion"
-    (let [nuvlaedge-id    "nuvlabox/1"
-          sampling-time   "2023-05-10T08:13:17Z"
-          nuvlabox-status {:id            "nuvlabox-status/f17b6239-44a9-41a1-b732-43ba11cc1af2",
-                           :resource-type "nuvlabox-status",
-                           :parent        nuvlaedge-id,
-                           :current-time  sampling-time,
-                           :updated       "2023-05-10T08:18:17.636Z",
-                           :created       "2022-01-10T15:56:39.017Z",
-                           :resources     {:cpu               {:load                0.45,
-                                                               :system-calls        0,
-                                                               :capacity            4,
-                                                               :interrupts          5667887,
-                                                               :topic               "cpu",
-                                                               :software-interrupts 4721525,
-                                                               :raw-sample          "{\"capacity\": 4, \"load\": 0.45, \"load-1\": 0.29, \"load-5\": 0.33, \"context-switches\": 18627865, \"interrupts\": 5667887, \"software-interrupts\": 4721525, \"system-calls\": 0}",
-                                                               :load-5              0.33,
-                                                               :context-switches    18627865,
-                                                               :load-1              0.29},
-                                           :ram               {:topic      "ram",
-                                                               :raw-sample "{\"capacity\": 32076, \"used\": 6445}",
-                                                               :capacity   32076,
-                                                               :used       6445},
-                                           :disks             [{:device     "sda1",
-                                                                :capacity   4,
-                                                                :used       2,
-                                                                :topic      "disks",
-                                                                :raw-sample "{\"device\": \"sda1\", \"capacity\": 4, \"used\": 2}"}
-                                                               {:device     "sda2",
-                                                                :capacity   2,
-                                                                :used       0,
-                                                                :topic      "disks",
-                                                                :raw-sample "{\"device\": \"sda2\", \"capacity\": 2, \"used\": 0}"}],
-                                           :net-stats         [{:interface         "enp0s31f6",
-                                                                :bytes-transmitted 49143,
-                                                                :bytes-received    260519}
-                                                               {:interface         "vpn",
-                                                                :bytes-transmitted 1051424260,
-                                                                :bytes-received    142997340}
-                                                               {:interface         "vethd2e8653",
-                                                                :bytes-transmitted 1862,
-                                                                :bytes-received    1848}
-                                                               {:interface         "br_LAN",
-                                                                :bytes-transmitted 55559,
-                                                                :bytes-received    244881}]
-                                           :power-consumption [{:metric-name "CPU_current", :energy-consumption 112, :unit "mA"}
-                                                               {:metric-name "CPU_voltage", :energy-consumption 19296, :unit "mV"}
-                                                               {:metric-name "CPU_power", :energy-consumption 2161, :unit "mW"}]}}]
-      (is (= [{:nuvlaedge-id nuvlaedge-id
-               :metric       "cpu"
-               :timestamp    sampling-time
-               :cpu          {:capacity            4,
-                              :load                0.45,
-                              :load-1              0.29,
-                              :load-5              0.33,
-                              :context-switches    18627865,
-                              :interrupts          5667887,
-                              :software-interrupts 4721525,
-                              :system-calls        0}}
-              {:nuvlaedge-id nuvlaedge-id
-               :metric       "ram"
-               :timestamp    sampling-time
-               :ram          {:capacity 32076,
-                              :used     6445}}
-              {:nuvlaedge-id nuvlaedge-id
-               :metric       "disk"
-               :timestamp    sampling-time
-               :disk         {:device   "sda1",
-                              :capacity 4,
-                              :used     2}}
-              {:nuvlaedge-id nuvlaedge-id
-               :metric       "disk"
-               :timestamp    sampling-time
-               :disk         {:device   "sda2",
-                              :capacity 2,
-                              :used     0}}
-              {:nuvlaedge-id nuvlaedge-id
-               :metric       "network"
-               :timestamp    sampling-time
-               :network      {:interface         "enp0s31f6",
-                              :bytes-transmitted 49143,
-                              :bytes-received    260519}}
-              {:nuvlaedge-id nuvlaedge-id
-               :metric       "network"
-               :timestamp    sampling-time
-               :network      {:interface         "vpn",
-                              :bytes-transmitted 1051424260,
-                              :bytes-received    142997340}}
-              {:nuvlaedge-id nuvlaedge-id
-               :metric       "network"
-               :timestamp    sampling-time
-               :network      {:interface         "vethd2e8653",
-                              :bytes-transmitted 1862,
-                              :bytes-received    1848}}
-              {:nuvlaedge-id nuvlaedge-id
-               :metric       "network"
-               :timestamp    sampling-time
-               :network      {:interface         "br_LAN",
-                              :bytes-transmitted 55559,
-                              :bytes-received    244881}}
-              {:nuvlaedge-id      nuvlaedge-id
-               :metric            "power-consumption"
-               :timestamp         sampling-time
-               :power-consumption {:metric-name "CPU_current", :energy-consumption 112, :unit "mA"}}
-              {:nuvlaedge-id      nuvlaedge-id
-               :metric            "power-consumption"
-               :timestamp         sampling-time
-               :power-consumption {:metric-name "CPU_voltage", :energy-consumption 19296, :unit "mV"}}
-              {:nuvlaedge-id      nuvlaedge-id
-               :metric            "power-consumption"
-               :timestamp         sampling-time
-               :power-consumption {:metric-name "CPU_power", :energy-consumption 2161, :unit "mW"}}]
-             (vec (t/nuvlabox-status->ts-bulk-insert-request-body nuvlabox-status)))))))
-
+(deftest nuvlabox-status->ts-bulk-insert
+  (let [nuvlaedge-id                      "nuvlabox/1"
+        sampling-time                     "2023-05-10T08:13:17Z"
+        nuvlabox-status                   {:id            "nuvlabox-status/f17b6239-44a9-41a1-b732-43ba11cc1af2",
+                                           :resource-type "nuvlabox-status",
+                                           :parent        nuvlaedge-id,
+                                           :current-time  sampling-time,
+                                           :updated       "2023-05-10T08:18:17.636Z",
+                                           :created       "2022-01-10T15:56:39.017Z",
+                                           :resources     {:cpu               {:load                0.45,
+                                                                               :system-calls        0,
+                                                                               :capacity            4,
+                                                                               :interrupts          5667887,
+                                                                               :topic               "cpu",
+                                                                               :software-interrupts 4721525,
+                                                                               :raw-sample          "{\"capacity\": 4, \"load\": 0.45, \"load-1\": 0.29, \"load-5\": 0.33, \"context-switches\": 18627865, \"interrupts\": 5667887, \"software-interrupts\": 4721525, \"system-calls\": 0}",
+                                                                               :load-5              0.33,
+                                                                               :context-switches    18627865,
+                                                                               :load-1              0.29},
+                                                           :ram               {:topic      "ram",
+                                                                               :raw-sample "{\"capacity\": 32076, \"used\": 6445}",
+                                                                               :capacity   32076,
+                                                                               :used       6445},
+                                                           :disks             [{:device     "sda1",
+                                                                                :capacity   4,
+                                                                                :used       2,
+                                                                                :topic      "disks",
+                                                                                :raw-sample "{\"device\": \"sda1\", \"capacity\": 4, \"used\": 2}"}
+                                                                               {:device     "sda2",
+                                                                                :capacity   2,
+                                                                                :used       0,
+                                                                                :topic      "disks",
+                                                                                :raw-sample "{\"device\": \"sda2\", \"capacity\": 2, \"used\": 0}"}],
+                                                           :net-stats         [{:interface         "enp0s31f6",
+                                                                                :bytes-transmitted 49143,
+                                                                                :bytes-received    260519}
+                                                                               {:interface         "vpn",
+                                                                                :bytes-transmitted 1051424260,
+                                                                                :bytes-received    142997340}
+                                                                               {:interface         "vethd2e8653",
+                                                                                :bytes-transmitted 1862,
+                                                                                :bytes-received    1848}
+                                                                               {:interface         "br_LAN",
+                                                                                :bytes-transmitted 55559,
+                                                                                :bytes-received    244881}]
+                                                           :power-consumption [{:metric-name "CPU_current", :energy-consumption 112, :unit "mA"}
+                                                                               {:metric-name "CPU_voltage", :energy-consumption 19296, :unit "mV"}
+                                                                               {:metric-name "CPU_power", :energy-consumption 2161, :unit "mW"}]}}
+        expected-bulk-insert-request-body [{:nuvlaedge-id nuvlaedge-id
+                                            :metric       "cpu"
+                                            :timestamp    sampling-time
+                                            :cpu          {:capacity            4,
+                                                           :load                0.45,
+                                                           :load-1              0.29,
+                                                           :load-5              0.33,
+                                                           :context-switches    18627865,
+                                                           :interrupts          5667887,
+                                                           :software-interrupts 4721525,
+                                                           :system-calls        0}}
+                                           {:nuvlaedge-id nuvlaedge-id
+                                            :metric       "ram"
+                                            :timestamp    sampling-time
+                                            :ram          {:capacity 32076,
+                                                           :used     6445}}
+                                           {:nuvlaedge-id nuvlaedge-id
+                                            :metric       "disk"
+                                            :timestamp    sampling-time
+                                            :disk         {:device   "sda1",
+                                                           :capacity 4,
+                                                           :used     2}}
+                                           {:nuvlaedge-id nuvlaedge-id
+                                            :metric       "disk"
+                                            :timestamp    sampling-time
+                                            :disk         {:device   "sda2",
+                                                           :capacity 2,
+                                                           :used     0}}
+                                           {:nuvlaedge-id nuvlaedge-id
+                                            :metric       "network"
+                                            :timestamp    sampling-time
+                                            :network      {:interface         "enp0s31f6",
+                                                           :bytes-transmitted 49143,
+                                                           :bytes-received    260519}}
+                                           {:nuvlaedge-id nuvlaedge-id
+                                            :metric       "network"
+                                            :timestamp    sampling-time
+                                            :network      {:interface         "vpn",
+                                                           :bytes-transmitted 1051424260,
+                                                           :bytes-received    142997340}}
+                                           {:nuvlaedge-id nuvlaedge-id
+                                            :metric       "network"
+                                            :timestamp    sampling-time
+                                            :network      {:interface         "vethd2e8653",
+                                                           :bytes-transmitted 1862,
+                                                           :bytes-received    1848}}
+                                           {:nuvlaedge-id nuvlaedge-id
+                                            :metric       "network"
+                                            :timestamp    sampling-time
+                                            :network      {:interface         "br_LAN",
+                                                           :bytes-transmitted 55559,
+                                                           :bytes-received    244881}}
+                                           {:nuvlaedge-id      nuvlaedge-id
+                                            :metric            "power-consumption"
+                                            :timestamp         sampling-time
+                                            :power-consumption {:metric-name "CPU_current", :energy-consumption 112, :unit "mA"}}
+                                           {:nuvlaedge-id      nuvlaedge-id
+                                            :metric            "power-consumption"
+                                            :timestamp         sampling-time
+                                            :power-consumption {:metric-name "CPU_voltage", :energy-consumption 19296, :unit "mV"}}
+                                           {:nuvlaedge-id      nuvlaedge-id
+                                            :metric            "power-consumption"
+                                            :timestamp         sampling-time
+                                            :power-consumption {:metric-name "CPU_power", :energy-consumption 2161, :unit "mW"}}]
+        bulk-insert-request-body          (t/nuvlabox-status->ts-bulk-insert-request-body nuvlabox-status)]
+    (testing "nuvlabox status -> metric time-serie conversion"
+      (is (= expected-bulk-insert-request-body (vec bulk-insert-request-body))))))
 
