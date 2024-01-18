@@ -14,7 +14,9 @@
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.resources.nuvlabox-status-2 :as nb-status-2]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.resources.ts-nuvlaedge :as ts-nuvlaedge]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
@@ -26,7 +28,7 @@
 (def nuvlabox-base-uri (str p/service-context nb/resource-type))
 
 
-(def timestamp "1964-08-25T10:00:00Z")
+(def timestamp (time/now-str))
 
 
 (def nuvlabox-id "nuvlabox/some-random-uuid")
@@ -44,6 +46,7 @@
 (def valid-state
   {:id                          (str nb-status/resource-type "/uuid")
    :resource-type               nb-status/resource-type
+   :current-time                timestamp
    :created                     timestamp
    :updated                     timestamp
 
@@ -190,7 +193,29 @@
                        {:jobs []})))
               (let [nb-status (db/retrieve status-id)]
                 (is (= resources-updated (:resources nb-status)))
-                (is (= resources-prev (:resources-prev nb-status))))))
+                (is (= resources-prev (:resources-prev nb-status))))
+              (testing "new metrics data is added to ts-nuvlaedge time-serie"
+                (ltu/refresh-es-indices)
+                (let [ts-nuvlaedge-url (str p/service-context ts-nuvlaedge/resource-type)
+                      metric-data      (-> session-admin
+                                           (content-type "application/x-www-form-urlencoded")
+                                           (request ts-nuvlaedge-url
+                                                    :request-method :put
+                                                    :body (rc/form-encode
+                                                            {:last 0
+                                                             :tsds-aggregation
+                                                             (json/write-str
+                                                               {:aggregations
+                                                                {:tsds-stats
+                                                                 {:date_histogram
+                                                                  {:field          "@timestamp"
+                                                                   :fixed_interval "1d"}
+                                                                  :aggregations
+                                                                  {:avg-ram {:avg {:field :ram.used}}}}}})}))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 200)
+                                           (ltu/body))]
+                  (is (= 2000.0 (get-in metric-data [:aggregations :tsds-stats :buckets 0 :avg-ram :value])))))))
 
           (testing "verify that the update was written to disk"
             (-> session-nb

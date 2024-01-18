@@ -104,12 +104,17 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
         (cond-> (some? resources-prev)
                 (assoc :resources-prev resources-prev)))))
 
+(defn bulk-insert-metrics
+  [response]
+  (some-> (utils/nuvlabox-status->ts-bulk-insert-request response)
+          (crud/bulk-action)))
+
 (defn post-edit
   [response request]
   (utils/denormalize-changes-nuvlabox (r/response-body response))
   (utils/detect-swarm response request)
   (kafka-crud/publish-on-edit resource-type response)
-  #_(crud/add (utils/nuvlabox-status->ts-add-request response))
+  (bulk-insert-metrics response)
   (utils/special-body-nuvlabox response request))
 
 (defn pre-validate-hook
