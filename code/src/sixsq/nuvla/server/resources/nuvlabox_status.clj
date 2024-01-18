@@ -106,7 +106,8 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 
 (defn bulk-insert-metrics
   [response]
-  (crud/bulk-action (utils/nuvlabox-status->ts-bulk-insert-request response)))
+  (some-> (utils/nuvlabox-status->ts-bulk-insert-request response)
+          (crud/bulk-action)))
 
 (defn post-edit
   [response request]

@@ -127,8 +127,10 @@
 
 (defn nuvlabox-status->ts-bulk-insert-request
   [response]
-  {:headers     {"bulk" true}
-   :params      {:resource-name ts-nuvlaedge/resource-type
-                 :action        "bulk-insert"}
-   :body        (nuvlabox-status->ts-bulk-insert-request-body (:body response))
-   :nuvla/authn auth/internal-identity})
+  (let [body (nuvlabox-status->ts-bulk-insert-request-body (:body response))]
+    (when (seq body)
+      {:headers     {"bulk" true}
+       :params      {:resource-name ts-nuvlaedge/resource-type
+                     :action        "bulk-insert"}
+       :body        body
+       :nuvla/authn auth/internal-identity})))
