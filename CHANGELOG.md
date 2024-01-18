@@ -4,6 +4,12 @@
 
 ## Released
 
+## [6.4.3] - 2024-01-18
+
+- Test release. No changes.
+
+## Released
+
 ## [6.4.2] - 2024-01-17
 
 - Fix: app config files content gets overwritten.  
