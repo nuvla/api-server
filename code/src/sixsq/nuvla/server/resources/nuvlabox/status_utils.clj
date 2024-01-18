@@ -73,17 +73,60 @@
                   parent resource-id (db/scripted-edit resource-id {:refresh false
                                                                     :body    {:doc attributes}})))))
 
-(defn nuvlabox-status->ts
-  [{{{{cpu-load :load} :cpu {ram-used :used} :ram} :resources
-     :keys                                         [parent updated]}
-    :body :as _response}]
-  (cond-> {:nuvlaedge-id parent
-           "@timestamp"  updated}
-          cpu-load (assoc :load cpu-load)
-          ram-used (assoc :mem ram-used)))
+(defmulti nuvlabox-status->metric-data (fn [_ metric] metric))
 
-(defn nuvlabox-status->ts-add-request
+(defmethod nuvlabox-status->metric-data :default
+  [{:keys [resources]} metric]
+  (when-let [metric-data (get resources metric)]
+    [metric-data]))
+
+(defmethod nuvlabox-status->metric-data :cpu
+  [{{:keys [cpu]} :resources} _]
+  (when cpu
+    [(select-keys cpu
+                  [:capacity
+                   :load
+                   :load-1
+                   :load-5
+                   :context-switches
+                   :interrupts
+                   :software-interrupts
+                   :system-calls])]))
+
+(defmethod nuvlabox-status->metric-data :ram
+  [{{:keys [ram]} :resources} _]
+  (when ram
+    [(select-keys ram [:capacity :used])]))
+
+(defmethod nuvlabox-status->metric-data :disk
+  [{{:keys [disks]} :resources} _]
+  (when (seq disks)
+    (mapv #(select-keys % [:device :capacity :used]) disks)))
+
+(defmethod nuvlabox-status->metric-data :network
+  [{{:keys [net-stats]} :resources} _]
+  (when (seq net-stats)
+    (mapv #(select-keys % [:interface :bytes-transmitted :bytes-received]) net-stats)))
+
+(defmethod nuvlabox-status->metric-data :power-consumption
+  [{{:keys [power-consumption]} :resources} _]
+  (when (seq power-consumption)
+    (mapv #(select-keys % [:metric-name :energy-consumption :unit]) power-consumption)))
+
+(defn nuvlabox-status->ts-bulk-insert-request-body
+  [{:keys [parent current-time] :as nuvlabox-status}]
+  (->> [:cpu :ram :disk :network :power-consumption]
+       (map (fn [metric]
+              (->> (nuvlabox-status->metric-data nuvlabox-status metric)
+                   (map #(assoc {:nuvlaedge-id parent
+                                 :metric       (name metric)
+                                 :timestamp    current-time}
+                           metric %)))))
+       (apply concat)))
+
+(defn nuvlabox-status->ts-bulk-insert-request
   [response]
-  {:params      {:resource-name ts-nuvlaedge/resource-type}
-   :body        (nuvlabox-status->ts response)
+  {:params      {:resource-name ts-nuvlaedge/resource-type
+                 :action        "bulk-insert"}
+   :body        (nuvlabox-status->ts-bulk-insert-request-body (:body response))
    :nuvla/authn auth/internal-identity})
