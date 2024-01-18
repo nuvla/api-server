@@ -35,6 +35,7 @@
    [org.clojars.konstan/kinsky ~kinsky-version]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
+   ;; TODO: remove explicit version once parent is updated.
    [cc.qbits/spandex "0.8.2" :exclusions [org.clojure/clojure]]
    [compojure]
    [com.draines/postal]
