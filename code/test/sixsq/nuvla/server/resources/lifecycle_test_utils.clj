@@ -87,6 +87,13 @@
                                      (get-in m# [:response :body :message])))
         m#)) ~m ~status))
 
+(defmacro is-header
+  [m header value]
+  `((fn [m# header# value#]
+      (let [actual# (get-in m# [:response :headers header#])]
+        (is (= value# actual#) (str "Expecting header " header# " with value " value# " got " (or actual# "nil") ". Message: "
+                                     (get-in m# [:response :body :message])))
+        m#)) ~m ~header ~value))
 
 (defmacro is-key-value
   ([m f k v]

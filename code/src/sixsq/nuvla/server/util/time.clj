@@ -22,6 +22,8 @@
 
 (def after? t/after?)
 
+(def duration t/duration)
+
 (defn now
   []
   (t/with-clock utc-clock
