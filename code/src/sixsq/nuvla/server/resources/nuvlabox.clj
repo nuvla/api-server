@@ -1058,16 +1058,12 @@ particular NuvlaBox release.
 
 (defmethod crud/do-action [resource-type "data"]
   [{{:keys [uuid dataset from to granularity]} :params {accept-header "accept"} :headers :as request}]
-  (when-not dataset (logu/log-and-throw-400 "dataset parameter is mandatory"))
-  (when (empty? from) (logu/log-and-throw-400 "from parameter is mandatory"))
-  (when (empty? to) (logu/log-and-throw-400 "to parameter is mandatory"))
-  (when (empty? granularity) (logu/log-and-throw-400 "granularity parameter is mandatory"))
-  (let [id            (u/resource-id resource-type uuid)
-        ;; make sure the nuvlabox resource can be retrieved before retrieving any data
-        _nuvlabox     (crud/retrieve-by-id id request)
-        datasets      (if (coll? dataset) dataset [dataset])
+  (let [datasets      (if (coll? dataset) dataset [dataset])
+        _             (when-not (seq datasets) (logu/log-and-throw-400 "dataset parameter is mandatory"))
         from          (time/date-from-str from)
         to            (time/date-from-str to)
+        _             (when-not from (logu/log-and-throw-400 (str "from parameter is mandatory, with format " time/iso8601-format)))
+        _             (when-not to (logu/log-and-throw-400 (str "to parameter is mandatory, with format " time/iso8601-format)))
         _             (when-not (time/before? from to)
                         (logu/log-and-throw-400 "from must be before to"))
         max-n-buckets 200
@@ -1076,22 +1072,33 @@ particular NuvlaBox release.
         _             (when (> n-buckets max-n-buckets)
                         (logu/log-and-throw-400 "too many data points requested. Please restrict the time interval or increase the time granularity."))
         granularity   (status-utils/granularity->ts-interval granularity)
+        _             (when (empty? granularity) (logu/log-and-throw-400 "granularity parameter is mandatory"))
+        id            (u/resource-id resource-type uuid)
+        ;; make sure the nuvlabox resource can be retrieved before retrieving any data
+        _nuvlabox     (crud/retrieve-by-id id request)
         dataset-opts  {"cpu-stats"               {:metric       "cpu"
-                                                  :aggregations {:avg-cpu-load {:avg {:field :cpu.load}}}}
+                                                  :aggregations {:avg-cpu-capacity    {:avg {:field :cpu.capacity}}
+                                                                 :avg-cpu-load        {:avg {:field :cpu.load}}
+                                                                 :avg-cpu-load-1      {:avg {:field :cpu.load-1}}
+                                                                 :avg-load-5          {:avg {:field :cpu.load-5}}
+                                                                 :context-switches    {:max {:field :cpu.context-switches}}
+                                                                 :interrupts          {:max {:field :cpu.interrupts}}
+                                                                 :software-interrupts {:max {:field :cpu.software-interrupts}}
+                                                                 :system-calls        {:max {:field :cpu.system-calls}}}}
                        "ram-stats"               {:metric       "ram"
-                                                  :aggregations {:max-ram-capacity {:max {:field :ram.capacity}}
+                                                  :aggregations {:avg-ram-capacity {:avg {:field :ram.capacity}}
                                                                  :avg-ram-used     {:avg {:field :ram.used}}}}
                        "disk-stats"              {:metric       "disk"
                                                   :group-by     :disk.device
-                                                  :aggregations {:max-disk-capacity {:max {:field :disk.capacity}}
-                                                                 :avg-bytes-used    {:avg {:field :disk.used}}}}
+                                                  :aggregations {:avg-disk-capacity {:avg {:field :disk.capacity}}
+                                                                 :avg-disk-used     {:avg {:field :disk.used}}}}
                        "network-stats"           {:metric       "network"
                                                   :group-by     :network.interface
                                                   :aggregations {:bytes-received    {:max {:field :network.bytes-received}}
                                                                  :bytes-transmitted {:max {:field :network.bytes-transmitted}}}}
                        "power-consumption-stats" {:metric       "power-consumption"
                                                   :group-by     :power-consumption.metric-name
-                                                  :aggregations {:avg-energy-consumption {:avg {:field :power-consumption.energy-consumption}}
+                                                  :aggregations {:energy-consumption {:max {:field :power-consumption.energy-consumption}}
                                                                  #_:unit                   #_{:first {:field :power-consumption.unit}}}}}
         _             (when-not (every? (set (keys dataset-opts)) datasets)
                         (logu/log-and-throw-400 (str "unknown datasets: "
