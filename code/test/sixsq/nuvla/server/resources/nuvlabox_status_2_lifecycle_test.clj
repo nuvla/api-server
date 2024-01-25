@@ -273,7 +273,7 @@
                                          :aggregations {:avg-cpu-capacity    10.0
                                                         :avg-cpu-load        5.5
                                                         :avg-cpu-load-1      nil
-                                                        :avg-load-5          nil
+                                                        :avg-cpu-load-5      nil
                                                         :context-switches    nil
                                                         :interrupts          nil
                                                         :software-interrupts nil
@@ -388,7 +388,7 @@
                                         (ltu/is-header "Content-Type" "text/csv")
                                         (ltu/is-header "Content-disposition" "attachment;filename=export.csv")
                                         (ltu/body)))]
-                  (is (= (str "nuvlaedge-id,timestamp,doc-count,avg-cpu-capacity,avg-cpu-load,avg-cpu-load-1,avg-load-5,context-switches,interrupts,software-interrupts,system-calls\n"
+                  (is (= (str "nuvlaedge-id,timestamp,doc-count,avg-cpu-capacity,avg-cpu-load,avg-cpu-load-1,avg-cpu-load-5,context-switches,interrupts,software-interrupts,system-calls\n"
                               (str/join "," [nuvlabox-id
                                              (time/to-str (time/truncated-to-days now))
                                              1 10.0 5.5 nil nil nil nil nil nil]) "\n")

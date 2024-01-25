@@ -1080,7 +1080,7 @@ particular NuvlaBox release.
                                                   :aggregations {:avg-cpu-capacity    {:avg {:field :cpu.capacity}}
                                                                  :avg-cpu-load        {:avg {:field :cpu.load}}
                                                                  :avg-cpu-load-1      {:avg {:field :cpu.load-1}}
-                                                                 :avg-load-5          {:avg {:field :cpu.load-5}}
+                                                                 :avg-cpu-load-5      {:avg {:field :cpu.load-5}}
                                                                  :context-switches    {:max {:field :cpu.context-switches}}
                                                                  :interrupts          {:max {:field :cpu.interrupts}}
                                                                  :software-interrupts {:max {:field :cpu.software-interrupts}}
