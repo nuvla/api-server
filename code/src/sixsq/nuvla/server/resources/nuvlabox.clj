@@ -6,6 +6,7 @@ particular NuvlaBox release.
 "
   (:require
     [clojure.data.json :as json]
+    [clojure.set :as set]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -19,15 +20,18 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
+    [sixsq.nuvla.server.resources.nuvlabox.status-utils :as status-utils]
     [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as wf-utils]
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.common-body :as common-body]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
+    [sixsq.nuvla.server.resources.ts-nuvlaedge :as ts-nuvlaedge]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -1050,6 +1054,75 @@ particular NuvlaBox release.
       (crud/edit-by-id-as-admin id {:state utils/state-commissioned}))
     (catch Exception e
       (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/do-action [resource-type "data"]
+  [{{:keys [uuid dataset from to granularity]} :params {accept-header "accept"} :headers :as request}]
+  (let [datasets      (if (coll? dataset) dataset [dataset])
+        _             (when-not (seq datasets) (logu/log-and-throw-400 "dataset parameter is mandatory"))
+        from          (time/date-from-str from)
+        to            (time/date-from-str to)
+        _             (when-not from (logu/log-and-throw-400 (str "from parameter is mandatory, with format " time/iso8601-format)))
+        _             (when-not to (logu/log-and-throw-400 (str "to parameter is mandatory, with format " time/iso8601-format)))
+        _             (when-not (time/before? from to)
+                        (logu/log-and-throw-400 "from must be before to"))
+        max-n-buckets 200
+        n-buckets     (.dividedBy (time/duration from to)
+                                  (status-utils/granularity->duration granularity))
+        _             (when (> n-buckets max-n-buckets)
+                        (logu/log-and-throw-400 "too many data points requested. Please restrict the time interval or increase the time granularity."))
+        granularity   (status-utils/granularity->ts-interval granularity)
+        _             (when (empty? granularity) (logu/log-and-throw-400 "granularity parameter is mandatory"))
+        id            (u/resource-id resource-type uuid)
+        ;; make sure the nuvlabox resource can be retrieved before retrieving any data
+        _nuvlabox     (crud/retrieve-by-id id request)
+        dataset-opts  {"cpu-stats"               {:metric       "cpu"
+                                                  :aggregations {:avg-cpu-capacity    {:avg {:field :cpu.capacity}}
+                                                                 :avg-cpu-load        {:avg {:field :cpu.load}}
+                                                                 :avg-cpu-load-1      {:avg {:field :cpu.load-1}}
+                                                                 :avg-cpu-load-5      {:avg {:field :cpu.load-5}}
+                                                                 :context-switches    {:max {:field :cpu.context-switches}}
+                                                                 :interrupts          {:max {:field :cpu.interrupts}}
+                                                                 :software-interrupts {:max {:field :cpu.software-interrupts}}
+                                                                 :system-calls        {:max {:field :cpu.system-calls}}}}
+                       "ram-stats"               {:metric       "ram"
+                                                  :aggregations {:avg-ram-capacity {:avg {:field :ram.capacity}}
+                                                                 :avg-ram-used     {:avg {:field :ram.used}}}}
+                       "disk-stats"              {:metric       "disk"
+                                                  :group-by     :disk.device
+                                                  :aggregations {:avg-disk-capacity {:avg {:field :disk.capacity}}
+                                                                 :avg-disk-used     {:avg {:field :disk.used}}}}
+                       "network-stats"           {:metric       "network"
+                                                  :group-by     :network.interface
+                                                  :aggregations {:bytes-received    {:max {:field :network.bytes-received}}
+                                                                 :bytes-transmitted {:max {:field :network.bytes-transmitted}}}}
+                       "power-consumption-stats" {:metric       "power-consumption"
+                                                  :group-by     :power-consumption.metric-name
+                                                  :aggregations {:energy-consumption {:max {:field :power-consumption.energy-consumption}}
+                                                                 #_:unit                   #_{:first {:field :power-consumption.unit}}}}}
+        _             (when-not (every? (set (keys dataset-opts)) datasets)
+                        (logu/log-and-throw-400 (str "unknown datasets: "
+                                                     (str/join "," (sort (set/difference (set datasets)
+                                                                                         (set (keys dataset-opts))))))))
+        _             (when (and (= "text/csv" accept-header) (not= 1 (count datasets)))
+                        (logu/log-and-throw-400 (str "exactly one dataset must be specified with accept header 'text/csv'")))
+        resps         (map #(utils/query-metrics (merge {:nuvlaedge-id id
+                                                         :from         from
+                                                         :to           to
+                                                         :granularity  granularity}
+                                                        (get dataset-opts %)))
+                           datasets)]
+    (case accept-header
+      (nil "application/json")
+      ; by default return a json response
+      (r/json-response (zipmap datasets resps))
+      "text/csv"
+      (let [{:keys [aggregations] group-by-field :group-by} (get dataset-opts (first datasets))]
+        (r/csv-response "export.csv" (utils/metrics-data->csv (cond-> [:nuvlaedge-id]
+                                                                      group-by-field (conj group-by-field))
+                                                              (keys aggregations)
+                                                              (first resps))))
+      (logu/log-and-throw-400 (str "format not supported: " accept-header)))))
 
 
 ;;

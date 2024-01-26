@@ -43,6 +43,13 @@
       (r/response)
       (r/content-type "text/plain")))
 
+(defn csv-response
+  "Provides a 200 response with the content type header set to csv."
+  [filename body]
+  (-> body
+      (r/response)
+      (r/content-type "text/csv")
+      (r/header "Content-disposition" (str "attachment;filename=" filename))))
 
 (defn map-response
   "Provides a generic map response with the given message, status, resource

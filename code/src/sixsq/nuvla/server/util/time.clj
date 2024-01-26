@@ -5,7 +5,9 @@
 
 (def rfc822-formatter (t/formatter :rfc-1123-date-time))
 
-(def iso8601-formatter (t/formatter "uuuu-MM-dd'T'HH:mm:ss[.SSS]XXXXX"
+(def iso8601-format "uuuu-MM-dd'T'HH:mm:ss[.SSS]XXXXX")
+
+(def iso8601-formatter (t/formatter iso8601-format
                                     {:resolver-style :strict}))
 
 (def utc-clock (t/system-clock "UTC"))
@@ -21,6 +23,8 @@
 (def before? t/before?)
 
 (def after? t/after?)
+
+(def duration t/duration)
 
 (defn now
   []

@@ -6,6 +6,7 @@
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [sixsq.nuvla.server.resources.ts-nuvlaedge :as ts-nuvlaedge]
+    [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.time :as time]))
 
 (def DENORMALIZED_FIELD [:online :inferred-location :nuvlabox-engine-version])
@@ -104,7 +105,7 @@
     (mapv #(select-keys % [:device :capacity :used]) disks)))
 
 (defmethod nuvlabox-status->metric-data :network
-  [{{:keys [net-stats]} :resources} _]
+  [{{:keys [net-stats] :as resources} :resources} _]
   (when (seq net-stats)
     (mapv #(select-keys % [:interface :bytes-transmitted :bytes-received]) net-stats)))
 
@@ -134,3 +135,25 @@
                      :action        "bulk-insert"}
        :body        body
        :nuvla/authn auth/internal-identity})))
+
+(defn granularity->duration
+  "Converts from a string of the form <n>-<units> to java.time duration"
+  [granularity]
+  (let [[_ n unit] (re-matches #"(.*)-(.*)" (name granularity))]
+    (try
+      (time/duration (Integer/parseInt n) (keyword unit))
+      (catch Exception _
+        (logu/log-and-throw-400 (str "unrecognized value for granularity " granularity))))))
+
+(defn granularity->ts-interval
+  "Converts from a string of the form <n>-<units> to an ElasticSearch interval string"
+  [granularity]
+  (let [[_ n unit] (re-matches #"(.*)-(.*)" (name granularity))]
+    (str n (case unit
+             "seconds" "s"
+             "minutes" "m"
+             "hours" "h"
+             "days" "d"
+             "weeks" "d"
+             "months" "M"
+             (logu/log-and-throw-400 (str "unrecognized value for granularity " granularity))))))
