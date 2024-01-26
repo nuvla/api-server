@@ -242,7 +242,7 @@
           (testing "metrics data"
             (let [nuvlabox-data-url (str nuvlabox-url "/data")
                   now               (time/now)
-                  metrics-request   (fn [{:keys [datasets from from-str to to-str granularity accept-header] :or {accept-header "application/json"}}]
+                  metrics-request   (fn [{:keys [datasets from from-str to to-str granularity accept-header] #_:or #_{accept-header "application/json"}}]
                                       (-> session-nb
                                           (content-type "application/x-www-form-urlencoded")
                                           (header "accept" accept-header)
@@ -332,7 +332,7 @@
                                            :from          (time/minus now (time/duration-unit 1 :days))
                                            :to            now
                                            :granularity   "1-days"})))
-                  (is (= "exactly one dataset must be specified with accept header 'text/csv"
+                  (is (= "exactly one dataset must be specified with accept header 'text/csv'"
                          (invalid-request {:accept-header "text/csv"
                                            :datasets      ["cpu-stats" "network-stats"]
                                            :from          (time/minus now (time/duration-unit 1 :days))

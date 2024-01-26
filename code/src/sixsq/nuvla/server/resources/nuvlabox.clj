@@ -1105,7 +1105,7 @@ particular NuvlaBox release.
                                                      (str/join "," (sort (set/difference (set datasets)
                                                                                          (set (keys dataset-opts))))))))
         _             (when (and (= "text/csv" accept-header) (not= 1 (count datasets)))
-                        (logu/log-and-throw-400 (str "exactly one dataset must be specified with accept header 'text/csv")))
+                        (logu/log-and-throw-400 (str "exactly one dataset must be specified with accept header 'text/csv'")))
         resps         (map #(utils/query-metrics (merge {:nuvlaedge-id id
                                                          :from         from
                                                          :to           to
@@ -1113,14 +1113,15 @@ particular NuvlaBox release.
                                                         (get dataset-opts %)))
                            datasets)]
     (case accept-header
+      (nil "application/json")
+      ; by default return a json response
+      (r/json-response (zipmap datasets resps))
       "text/csv"
       (let [{:keys [aggregations] group-by-field :group-by} (get dataset-opts (first datasets))]
         (r/csv-response "export.csv" (utils/metrics-data->csv (cond-> [:nuvlaedge-id]
                                                                       group-by-field (conj group-by-field))
                                                               (keys aggregations)
                                                               (first resps))))
-      "application/json"
-      (r/json-response (zipmap datasets resps))
       (logu/log-and-throw-400 (str "format not supported: " accept-header)))))
 
 
