@@ -282,8 +282,46 @@
             msg   (str "unexpected exception delete by query: " (or error e))]
         (throw (r/ex-response msg 500))))))
 
+(def hot-warm-cold-delete-policy
+  {:hot    {:min_age "0ms"
+            :actions {:set_priority {:priority 100}
+                      :rollover     {:max_size "1gb"
+                                     :max_age  "30d"}}}
+   ;; changing min_age from 1d to 30m for testing
+   :warm   {:min_age "30m"
+            :actions {:set_priority {:priority 50}
+                      :downsample   {:fixed_interval "5m"}}}
+   ;; changing min_age from 30d to 2h for testing
+   :cold   {:min_age    "2h"
+            :actions    {:set_priority {:priority 0}
+                         :downsample   {:fixed_interval "1h"}}}
+   ;; changing min_age from 365d to 4h for testing
+   :delete {:min_age "4h"
+            :actions {:delete {:delete_searchable_snapshot true}}}})
+
+(defn create-or-update-lifecycle-policy
+  [client index ilm-policy]
+  (let [policy-name (str index "-ilm-policy")]
+    (try
+      (let [{:keys [status]}
+            (spandex/request
+              client
+              {:url    [:_ilm :policy policy-name]
+               :method :put
+               :body   {:policy
+                        {:_meta  {:description (str "ILM policy for " index)}
+                         :phases ilm-policy}}})]
+        (if (= 200 status)
+          (do (log/debug policy-name "ILM policy created/updated")
+              policy-name)
+          (log/error "unexpected status code when creating/updating" policy-name "ILM policy (" status ")")))
+      (catch Exception e
+        (let [{:keys [status body] :as _response} (ex-data e)
+              error (:error body)]
+          (log/error "unexpected status code when creating/updating" policy-name "ILM policy (" status "). " (or error e)))))))
+
 (defn create-timeseries-template
-  [client index mapping routing-path]
+  [client index mapping {:keys [routing-path look-back-time look-ahead-time start-time lifecycle-name]}]
   (let [template-name (str index "-template")]
     (try
       (let [{:keys [status]} (spandex/request client {:url    [:_index_template template-name],
@@ -299,10 +337,15 @@
                                                                    ;:index.time_series.start_time "2023-01-01T00:00:00.000Z"
                                                                    ;:index.lifecycle.name  "nuvlabox-status-ts-1d-hf-ilm-policy"
                                                                    }
-                                                                  routing-path (assoc :index.routing_path routing-path))
+                                                                  routing-path (assoc :index.routing_path routing-path)
+                                                                  look-ahead-time (assoc :index.look_back_time look-ahead-time)
+                                                                  look-back-time (assoc :index.look_back_time look-back-time)
+                                                                  start-time (assoc :index.time_series.start_time start-time)
+                                                                  lifecycle-name (assoc :index.lifecycle.name lifecycle-name))
                                                                 :mappings mapping}}})]
         (if (= 200 status)
-          (log/debug template-name "index template created/updated")
+          (do (log/debug template-name "index template created/updated")
+              template-name)
           (log/error "unexpected status code when creating/updating" template-name "index template (" status ")")))
       (catch Exception e
         (let [{:keys [status body] :as _response} (ex-data e)
@@ -332,12 +375,14 @@
               (log/error "unexpected status code when creating" datastream-index-name "datastream (" status "). " (or error e)))))))))
 
 (defn initialize-db
-  [client collection-id {:keys [spec timeseries] :as _options}]
+  [client collection-id {:keys [spec timeseries ilm-policy] :or {ilm-policy hot-warm-cold-delete-policy} :as _options}]
   (let [index (escu/collection-id->index collection-id)]
     (if timeseries
-      (let [mapping      (mapping/mapping spec {:dynamic-templates false, :fulltext false})
-            routing-path (mapping/time-series-routing-path spec)]
-        (create-timeseries-template client index mapping routing-path)
+      (let [mapping         (mapping/mapping spec {:dynamic-templates false, :fulltext false})
+            routing-path    (mapping/time-series-routing-path spec)
+            ilm-policy-name (create-or-update-lifecycle-policy client index ilm-policy)]
+        (create-timeseries-template client index mapping {:routing-path   routing-path
+                                                          :lifecycle-name ilm-policy-name})
         (create-datastream client index))
       (let [mapping (mapping/mapping spec)]
         (create-index client index)
