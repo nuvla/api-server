@@ -286,17 +286,14 @@
   {:hot    {:min_age "0ms"
             :actions {:set_priority {:priority 100}
                       :rollover     {:max_size "1gb"
-                                     :max_age  "30d"}}}
-   ;; changing min_age from 1d to 30m for testing
-   :warm   {:min_age "30m"
+                                     :max_age  "1d"}}}
+   :warm   {:min_age "7d"
             :actions {:set_priority {:priority 50}
-                      :downsample   {:fixed_interval "5m"}}}
-   ;; changing min_age from 30d to 2h for testing
-   :cold   {:min_age    "2h"
+                      :downsample   {:fixed_interval "1h"}}}
+   :cold   {:min_age    "30d"
             :actions    {:set_priority {:priority 0}
-                         :downsample   {:fixed_interval "1h"}}}
-   ;; changing min_age from 365d to 4h for testing
-   :delete {:min_age "4h"
+                         :downsample   {:fixed_interval "1d"}}}
+   :delete {:min_age "365d"
             :actions {:delete {:delete_searchable_snapshot true}}}})
 
 (defn create-or-update-lifecycle-policy
@@ -338,7 +335,7 @@
                                                                    ;:index.lifecycle.name  "nuvlabox-status-ts-1d-hf-ilm-policy"
                                                                    }
                                                                   routing-path (assoc :index.routing_path routing-path)
-                                                                  look-ahead-time (assoc :index.look_back_time look-ahead-time)
+                                                                  look-ahead-time (assoc :index.look_ahead_time look-ahead-time)
                                                                   look-back-time (assoc :index.look_back_time look-back-time)
                                                                   start-time (assoc :index.time_series.start_time start-time)
                                                                   lifecycle-name (assoc :index.lifecycle.name lifecycle-name))
