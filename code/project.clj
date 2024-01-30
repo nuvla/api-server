@@ -2,7 +2,7 @@
 (def nuvla-ring-version "2.0.8")
 (def kinsky-version "0.3.1")
 
-(defproject sixsq.nuvla.server/api-jar "6.4.2-SNAPSHOT"
+(defproject sixsq.nuvla.server/api-jar "6.4.4-SNAPSHOT"
 
   :description "core api server"
 
@@ -35,6 +35,7 @@
    [org.clojars.konstan/kinsky ~kinsky-version]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
+   ;; TODO: remove explicit version once parent is updated.
    [cc.qbits/spandex "0.8.2" :exclusions [org.clojure/clojure]]
    [compojure]
    [com.draines/postal]

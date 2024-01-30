@@ -88,7 +88,7 @@ formatting standardized.
 
 ## Copyright
 
-Copyright &copy; 2019-2023, SixSq SA
+Copyright &copy; 2019-2024, SixSq SA
 
 ## License
 
