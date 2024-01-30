@@ -290,9 +290,9 @@
    :warm   {:min_age "7d"
             :actions {:set_priority {:priority 50}
                       :downsample   {:fixed_interval "1h"}}}
-   :cold   {:min_age    "30d"
-            :actions    {:set_priority {:priority 0}
-                         :downsample   {:fixed_interval "1d"}}}
+   :cold   {:min_age "30d"
+            :actions {:set_priority {:priority 0}
+                      :downsample   {:fixed_interval "1d"}}}
    :delete {:min_age "365d"
             :actions {:delete {:delete_searchable_snapshot true}}}})
 
@@ -372,14 +372,20 @@
               (log/error "unexpected status code when creating" datastream-index-name "datastream (" status "). " (or error e)))))))))
 
 (defn initialize-db
-  [client collection-id {:keys [spec timeseries ilm-policy] :or {ilm-policy hot-warm-cold-delete-policy} :as _options}]
+  [client collection-id {:keys [spec timeseries ilm-policy look-back-time look-ahead-time start-time]
+                         :or   {ilm-policy     hot-warm-cold-delete-policy
+                                look-back-time "7d"}
+                         :as   _options}]
   (let [index (escu/collection-id->index collection-id)]
     (if timeseries
       (let [mapping         (mapping/mapping spec {:dynamic-templates false, :fulltext false})
             routing-path    (mapping/time-series-routing-path spec)
             ilm-policy-name (create-or-update-lifecycle-policy client index ilm-policy)]
-        (create-timeseries-template client index mapping {:routing-path   routing-path
-                                                          :lifecycle-name ilm-policy-name})
+        (create-timeseries-template client index mapping {:routing-path    routing-path
+                                                          :lifecycle-name  ilm-policy-name
+                                                          :look-ahead-time look-ahead-time
+                                                          :look-back-time  look-back-time
+                                                          :start-time      start-time})
         (create-datastream client index))
       (let [mapping (mapping/mapping spec)]
         (create-index client index)
