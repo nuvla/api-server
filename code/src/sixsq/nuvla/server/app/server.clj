@@ -3,6 +3,7 @@
     [clojure.tools.logging :as log]
     [compojure.core :as compojure]
     [environ.core :as env]
+    [nrepl.transport :as transport]
     [ring.middleware.cookies :refer [wrap-cookies]]
     [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
     [ring.middleware.keyword-params :refer [wrap-keyword-params]]
@@ -29,7 +30,11 @@
 (def default-db-binding-ns "sixsq.nuvla.db.es.loader")
 
 (defonce server (when-let [nrepl-port (some-> (env/env :nrepl-port) Integer/parseInt)]
-                  (nrepl/start-server :port nrepl-port)))
+                  (log/warn "Starting nREPL on port" nrepl-port)
+                  (nrepl/start-server :port nrepl-port :bind "0.0.0.0"
+                                      :greeting-fn (fn [transport]
+                                                     (transport/send transport {:out (str ";; Hello, you are connected to Nuvla API-SERVER ;)"
+                                                                                          \newline)})))))
 
 
 (defn- create-ring-handler
