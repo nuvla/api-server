@@ -13,7 +13,7 @@
              :json-schema/type "string"
              :json-schema/description "identifier of nuvlaedge")))
 
-(def metrics #{"cpu" "ram" "disk" "network" "power-consumption"})
+(def metrics #{"online-status" "cpu" "ram" "disk" "network" "power-consumption"})
 
 (s/def ::metric
   (-> (st/spec metrics)
@@ -30,21 +30,33 @@
              :json-schema/description "UTC timestamp"
              :json-schema/type "date-time")))
 
+(s/def ::online
+  (assoc (st/spec #{0 1})
+    :name "online"
+    :json-schema/field-type :metric-gauge
+    :json-schema/type "integer"
+    :json-schema/description "online/offline"))
+
+(s/def ::online-status
+  (assoc (st/spec (su/only-keys :req-un [::online]))
+    :name "online-status"
+    :json-schema/type "map"
+    :json-schema/display-name "Online status"
+    :json-schema/description "Online/offline"))
+
 (s/def ::capacity
   (assoc (st/spec pos-int?)
     :name "capacity"
     :json-schema/field-type :metric-gauge
     :json-schema/type "integer"
-    :json-schema/description "total capacity of the resource"
-    :json-schema/order 11))
+    :json-schema/description "total capacity of the resource"))
 
 (s/def ::load
   (assoc (st/spec (s/and number? #(not (neg? %))))
     :name "load"
     :json-schema/field-type :metric-gauge
     :json-schema/type "double"
-    :json-schema/description "CPU load"
-    :json-schema/order 12))
+    :json-schema/description "CPU load"))
 
 (s/def ::load-1
   (assoc (st/spec (s/and number? #(not (neg? %))))
@@ -191,7 +203,8 @@
 (def ts-nuvlaedge-keys-spec {:req-un [::nuvlaedge-id
                                       ::metric
                                       ::timestamp]
-                             :opt-un [::cpu
+                             :opt-un [::online-status
+                                      ::cpu
                                       ::ram
                                       ::disk
                                       ::network
