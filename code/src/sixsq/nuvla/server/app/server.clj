@@ -22,10 +22,14 @@
     [sixsq.nuvla.server.middleware.redirect-cep :refer [redirect-cep]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as resources]
     [sixsq.nuvla.server.util.kafka :as kafka]
-    [sixsq.nuvla.server.util.zookeeper :as zku]))
+    [sixsq.nuvla.server.util.zookeeper :as zku]
+    [nrepl.server :as nrepl]))
 
 
 (def default-db-binding-ns "sixsq.nuvla.db.es.loader")
+
+(defonce server (when-let [nrepl-port (some-> (env/env :nrepl-port) Integer/parseInt)]
+                  (nrepl/start-server :port nrepl-port)))
 
 
 (defn- create-ring-handler
