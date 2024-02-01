@@ -15,6 +15,7 @@
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.resources.nuvlabox-status-2 :as nb-status-2]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
+    [sixsq.nuvla.server.resources.ts-nuvlaedge :as ts-nuvlaedge]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
     [sixsq.nuvla.server.util.time :as time]))
 
@@ -535,15 +536,18 @@
             (ltu/is-status 200))
 
         (testing "admin edition doesn't set online flag"
-          (-> session-admin
-              (request status-url
-                       :request-method :put
-                       :body (json/write-str {}))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value :online nil)
-              (ltu/is-key-value :last-heartbeat nil)
-              (ltu/is-key-value :next-heartbeat nil)))
+          (let [called (atom false)]
+            (with-redefs [ts-nuvlaedge/bulk-insert-impl (fn [& _] (reset! called true))]
+              (-> session-admin
+                  (request status-url
+                           :request-method :put
+                           :body (json/write-str {}))
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/is-key-value :online nil)
+                  (ltu/is-key-value :last-heartbeat nil)
+                  (ltu/is-key-value :next-heartbeat nil)))
+            (is (false? @called) "metrics were inserted, but they should not have")))
 
         (-> session-admin
             (request status-url)
@@ -551,20 +555,23 @@
             (ltu/is-status 200))
 
         (testing "nuvlabox can do a legacy heartbeat"
-          (-> session-nb
-              (request status-url
-                       :request-method :put
-                       :body (json/write-str {:nuvlabox-engine-version "1.0.2"}))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value :jobs []))
-          (-> session-user
-              (request status-url)
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value :online true)
-              (ltu/is-key-value some? :next-heartbeat true)
-              (ltu/is-key-value some? :last-heartbeat true))
+          (let [called (atom false)]
+            (with-redefs [ts-nuvlaedge/bulk-insert-impl (fn [& _] (reset! called true))]
+              (-> session-nb
+                  (request status-url
+                           :request-method :put
+                           :body (json/write-str {:nuvlabox-engine-version "1.0.2"}))
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/is-key-value :jobs []))
+              (-> session-user
+                  (request status-url)
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/is-key-value :online true)
+                  (ltu/is-key-value some? :next-heartbeat true)
+                  (ltu/is-key-value some? :last-heartbeat true)))
+            (is (true? @called) "metrics were not inserted, but they should have"))
 
           (testing "online flag is propagated to nuvlabox"
             (-> session-admin
@@ -592,22 +599,24 @@
               (ltu/is-key-value count :jobs 1)))
 
         (testing "admin can set offline"
-          (-> session-admin
-              (request (-> session-admin
-                           (request nuvlabox-url)
-                           (ltu/body->edn)
-                           (ltu/is-status 200)
-                           (ltu/get-op-url nb-utils/action-set-offline)))
-              (ltu/body->edn)
-              (ltu/is-status 200)))
-
-        (-> session-admin
-            (request status-url)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :online false)
-            (ltu/is-key-value some? :last-heartbeat true)
-            (ltu/is-key-value some? :next-heartbeat true))
+          (let [called (atom false)]
+            (with-redefs [ts-nuvlaedge/bulk-insert-impl (fn [& _] (reset! called true))]
+              (-> session-admin
+                  (request (-> session-admin
+                               (request nuvlabox-url)
+                               (ltu/body->edn)
+                               (ltu/is-status 200)
+                               (ltu/get-op-url nb-utils/action-set-offline)))
+                  (ltu/body->edn)
+                  (ltu/is-status 200))
+              (-> session-admin
+                  (request status-url)
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/is-key-value :online false)
+                  (ltu/is-key-value some? :last-heartbeat true)
+                  (ltu/is-key-value some? :next-heartbeat true))
+              (is (true? @called) "metrics were not inserted, but they should have"))))
 
         (testing "when a nuvlabox send telemetry that has a spec validation
           issue, the heartbeat is still updated"
