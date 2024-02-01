@@ -22,11 +22,11 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.resources.nuvlabox.status-utils :as status-utils]
     [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as wf-utils]
+    [sixsq.nuvla.server.resources.nuvlabox.ts-nuvlaedge-utils :as ts-nuvlaedge-utils]
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.common-body :as common-body]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
-    [sixsq.nuvla.server.resources.ts-nuvlaedge :as ts-nuvlaedge]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
@@ -1106,11 +1106,12 @@ particular NuvlaBox release.
                                                                                          (set (keys dataset-opts))))))))
         _             (when (and (= "text/csv" accept-header) (not= 1 (count datasets)))
                         (logu/log-and-throw-400 (str "exactly one dataset must be specified with accept header 'text/csv'")))
-        resps         (map #(utils/query-metrics (merge {:nuvlaedge-id id
-                                                         :from         from
-                                                         :to           to
-                                                         :granularity  granularity}
-                                                        (get dataset-opts %)))
+        resps         (map #(ts-nuvlaedge-utils/query-metrics
+                              (merge {:nuvlaedge-id id
+                                      :from         from
+                                      :to           to
+                                      :granularity  granularity}
+                                     (get dataset-opts %)))
                            datasets)]
     (case accept-header
       (nil "application/json")
@@ -1118,10 +1119,11 @@ particular NuvlaBox release.
       (r/json-response (zipmap datasets resps))
       "text/csv"
       (let [{:keys [aggregations] group-by-field :group-by} (get dataset-opts (first datasets))]
-        (r/csv-response "export.csv" (utils/metrics-data->csv (cond-> [:nuvlaedge-id]
-                                                                      group-by-field (conj group-by-field))
-                                                              (keys aggregations)
-                                                              (first resps))))
+        (r/csv-response "export.csv" (ts-nuvlaedge-utils/metrics-data->csv
+                                       (cond-> [:nuvlaedge-id]
+                                               group-by-field (conj group-by-field))
+                                       (keys aggregations)
+                                       (first resps))))
       (logu/log-and-throw-400 (str "format not supported: " accept-header)))))
 
 
