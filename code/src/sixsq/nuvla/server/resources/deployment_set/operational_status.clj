@@ -1,5 +1,20 @@
 (ns sixsq.nuvla.server.resources.deployment-set.operational-status)
 
+(def deployments-to-add-k :deployments-to-add)
+(def deployments-to-update-k :deployments-to-update)
+(def deployments-to-remove-k :deployments-to-remove)
+
+(defn operational-status-values-set
+  [deployment-set]
+  (update deployment-set :operational-status
+          (fn [operational-status]
+            (->> operational-status
+                 (map (fn [[k v]]
+                        (if (#{deployments-to-add-k deployments-to-update-k deployments-to-remove-k} k)
+                          [k (set v)]
+                          [k v])))
+                 (into {})))))
+
 (defn deployments-to-add
   [expected current]
   (set (keep (fn [[k [d]]] (when (not (contains? current k)) d)) expected)))
@@ -100,6 +115,6 @@
   (let [expected1 (group-by deployment-unique-key-fn expected)
         current1  (group-by deployment-unique-key-fn current)]
     (remove-empty-entries
-      {:deployments-to-add    (deployments-to-add expected1 current1)
-       :deployments-to-remove (deployments-to-remove expected1 current1)
-       :deployments-to-update (deployments-to-update expected1 current1)})))
+      {deployments-to-add-k    (deployments-to-add expected1 current1)
+       deployments-to-remove-k (deployments-to-remove expected1 current1)
+       deployments-to-update-k (deployments-to-update expected1 current1)})))
