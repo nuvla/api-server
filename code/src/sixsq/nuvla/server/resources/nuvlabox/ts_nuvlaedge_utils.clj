@@ -86,61 +86,64 @@
 (defmethod nuvlabox-status->metric-data :default
   [{:keys [resources]} metric]
   (when-let [metric-data (get resources metric)]
-    [metric-data]))
+    [{metric metric-data}]))
 
 (defmethod nuvlabox-status->metric-data :online-status
   [{:keys [online]} _]
   (when (some? online)
-    [{:online (if online 1 0)}]))
+    [{:timestamp     (time/now-str)
+      :online-status {:online (if online 1 0)}}]))
 
 (defmethod nuvlabox-status->metric-data :cpu
   [{{:keys [cpu]} :resources} _]
   (when cpu
-    [(select-keys cpu
-                  [:capacity
-                   :load
-                   :load-1
-                   :load-5
-                   :context-switches
-                   :interrupts
-                   :software-interrupts
-                   :system-calls])]))
+    [{:cpu (select-keys cpu
+                        [:capacity
+                         :load
+                         :load-1
+                         :load-5
+                         :context-switches
+                         :interrupts
+                         :software-interrupts
+                         :system-calls])}]))
 
 (defmethod nuvlabox-status->metric-data :ram
   [{{:keys [ram]} :resources} _]
   (when ram
-    [(select-keys ram [:capacity :used])]))
+    [{:ram (select-keys ram [:capacity :used])}]))
 
 (defmethod nuvlabox-status->metric-data :disk
   [{{:keys [disks]} :resources} _]
   (when (seq disks)
-    (mapv #(select-keys % [:device :capacity :used]) disks)))
+    (mapv (fn [data] {:disk (select-keys data [:device :capacity :used])}) disks)))
 
 (defmethod nuvlabox-status->metric-data :network
   [{{:keys [net-stats]} :resources} _]
   (when (seq net-stats)
-    (mapv #(select-keys % [:interface :bytes-transmitted :bytes-received]) net-stats)))
+    (mapv (fn [data] {:network (select-keys data [:interface :bytes-transmitted :bytes-received])}) net-stats)))
 
 (defmethod nuvlabox-status->metric-data :power-consumption
   [{{:keys [power-consumption]} :resources} _]
   (when (seq power-consumption)
-    (mapv #(select-keys % [:metric-name :energy-consumption :unit]) power-consumption)))
+    (mapv (fn [data] {:power-consumption (select-keys data [:metric-name :energy-consumption :unit])}) power-consumption)))
 
 (defn nuvlabox-status->ts-bulk-insert-request-body
   [{:keys [parent current-time] :as nuvlabox-status}]
-  (when current-time
-    (->> [:online-status :cpu :ram :disk :network :power-consumption]
-         (map (fn [metric]
-                (->> (nuvlabox-status->metric-data nuvlabox-status metric)
-                     (map #(assoc {:nuvlaedge-id parent
-                                   :metric       (name metric)
-                                   :timestamp    current-time}
-                             metric %)))))
-         (apply concat))))
+  (->> [:online-status :cpu :ram :disk :network :power-consumption]
+       (map (fn [metric]
+              (->> (nuvlabox-status->metric-data nuvlabox-status metric)
+                   (map #(merge
+                           {:nuvlaedge-id parent
+                            :metric       (name metric)
+                            :timestamp    current-time}
+                           %)))))
+       (apply concat)))
 
 (defn nuvlabox-status->ts-bulk-insert-request
   [nb-status]
-  (let [body (nuvlabox-status->ts-bulk-insert-request-body nb-status)]
+  (let [body (->> (nuvlabox-status->ts-bulk-insert-request-body nb-status)
+                  ;; only retain metrics where a timestamp is defined
+                  (filter :timestamp))]
     (when (seq body)
       {:headers     {"bulk" true}
        :params      {:resource-name ts-nuvlaedge/resource-type

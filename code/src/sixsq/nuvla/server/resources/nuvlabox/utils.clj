@@ -391,9 +391,7 @@
       (r/json-response (assoc nb-status :id nuvlabox-status
                                         :parent id
                                         :acl (:acl nuvlabox))))
-    (ts-nuvlaedge-utils/bulk-insert-metrics (assoc nb-status
-                                              :current-time (time/now-str)
-                                              :parent id))
+    (ts-nuvlaedge-utils/bulk-insert-metrics (assoc nb-status :parent id))
     nuvlabox))
 
 (defn get-jobs
@@ -427,8 +425,7 @@
   (if (and (nuvlabox-request? request)
            (not (has-heartbeat-support? nuvlabox)))
     (merge nuvlabox-status
-           (status-online-attributes online true refresh-interval)
-           (when-not (:current-time nuvlabox-status) {:current-time (time/now-str)}))
+           (status-online-attributes online true refresh-interval))
     nuvlabox-status))
 
 (defn get-service

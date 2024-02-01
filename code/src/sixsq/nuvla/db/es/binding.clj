@@ -285,8 +285,8 @@
 (def hot-warm-cold-delete-policy
   {:hot    {:min_age "0ms"
             :actions {:set_priority {:priority 100}
-                      :rollover     {:max_size "1gb"
-                                     :max_age  "1d"}}}
+                      :rollover     {:max_primary_shard_size "10gb"
+                                     :max_age                "1d"}}}
    :warm   {:min_age "7d"
             :actions {:set_priority {:priority 50}
                       :downsample   {:fixed_interval "1h"}}}
