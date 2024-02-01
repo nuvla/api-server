@@ -8,12 +8,15 @@ Collection for holding notification method configurations.
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.event-config :as ec]
+    [sixsq.nuvla.server.resources.common.event-context :as ectx]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.notification-method :as notif-method-schema]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.response :as ru]))
 
 
@@ -26,6 +29,21 @@ Collection for holding notification method configurations.
 (def collection-acl {:query ["group/nuvla-user"]
                      :add   ["group/nuvla-user"]})
 
+;;
+;; Events
+;;
+
+(defmethod ec/events-enabled? resource-type
+  [_resource-type]
+  true)
+
+(defmethod ec/log-event? (str resource-type ".add")
+  [_event _response]
+  false)
+
+(defmethod ec/log-event? (str resource-type ".delete")
+  [_event _response]
+  false)
 
 ;;
 ;; initialization
@@ -140,3 +158,42 @@ Collection for holding notification method configurations.
   [request]
   (query-impl request))
 
+;;
+;; Events
+;;
+
+(def event-context-keys [:name
+                         :description
+                         :method
+                         :destination])
+
+(defn set-event-context
+  [resource]
+  (ectx/add-to-context :event-name "test.notification")
+  (ectx/add-to-context :resource (select-keys resource event-context-keys)))
+
+(def ^:const test-response-message "notification method test submitted")
+
+(defmethod crud/do-action [resource-type "test"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [resource (crud/retrieve-by-id-as-admin (str resource-type "/" uuid))]
+      (set-event-context resource)
+      (r/map-response test-response-message 201))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+(defn set-resource-ops
+  [{:keys [id] :as resource} request]
+  (let [ops (cond-> [(u/action-map id :test)]
+                    (a/can-edit? resource request) (conj (u/operation-map id :edit))
+                    (a/can-delete? resource request) (conj (u/operation-map id :delete)))]
+    (if (seq ops)
+      (assoc resource :operations ops)
+      (dissoc resource :operations))))
+
+(defmethod crud/set-operations resource-type
+  [resource request]
+  (if (u/is-collection? resource-type)
+    (crud/set-standard-collection-operations resource request)
+    (set-resource-ops resource request)))
