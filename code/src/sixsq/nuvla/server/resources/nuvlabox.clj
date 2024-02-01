@@ -1076,7 +1076,9 @@ particular NuvlaBox release.
         id            (u/resource-id resource-type uuid)
         ;; make sure the nuvlabox resource can be retrieved before retrieving any data
         _nuvlabox     (crud/retrieve-by-id id request)
-        dataset-opts  {"cpu-stats"               {:metric       "cpu"
+        dataset-opts  {"online-status-stats"     {:metric       "online-status"
+                                                  :aggregations {:avg-online {:avg {:field :online-status.online}}}}
+                       "cpu-stats"               {:metric       "cpu"
                                                   :aggregations {:avg-cpu-capacity    {:avg {:field :cpu.capacity}}
                                                                  :avg-cpu-load        {:avg {:field :cpu.load}}
                                                                  :avg-cpu-load-1      {:avg {:field :cpu.load-1}}
