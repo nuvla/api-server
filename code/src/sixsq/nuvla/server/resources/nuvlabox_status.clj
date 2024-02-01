@@ -11,6 +11,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.nuvlabox.status-utils :as utils]
+    [sixsq.nuvla.server.resources.nuvlabox.ts-nuvlaedge-utils :as ts-nuvlaedge-utils]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-status :as nb-status]
@@ -104,17 +105,12 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
         (cond-> (some? resources-prev)
                 (assoc :resources-prev resources-prev)))))
 
-(defn bulk-insert-metrics
-  [response]
-  (some-> (utils/nuvlabox-status->ts-bulk-insert-request response)
-          (crud/bulk-action)))
-
 (defn post-edit
   [response request]
   (utils/denormalize-changes-nuvlabox (r/response-body response))
   (utils/detect-swarm response request)
   (kafka-crud/publish-on-edit resource-type response)
-  (bulk-insert-metrics response)
+  (ts-nuvlaedge-utils/bulk-insert-metrics (:body response))
   (utils/special-body-nuvlabox response request))
 
 (defn pre-validate-hook

@@ -7,7 +7,11 @@
 
 (deftest check-schema
   (let [timestamp "1964-08-25T10:00:00.00Z"]
-    (doseq [valid-entry [{:nuvlaedge-id "nuvlabox/1"
+    (doseq [valid-entry [{:nuvlaedge-id  "nuvlabox/1"
+                          :metric        "online-status"
+                          :online-status {:online 1}
+                          :timestamp     timestamp}
+                         {:nuvlaedge-id "nuvlabox/1"
                           :metric       "cpu"
                           :cpu          {:capacity            8
                                          :load                4.5
@@ -59,6 +63,9 @@
                        "metric"            {:type                  "keyword"
                                             :time_series_dimension true}
                        "@timestamp"        {:type "date", :format "strict_date_optional_time||epoch_millis"}
+                       "online-status"     {:properties {"online" {:time_series_metric "gauge"
+                                                                   :type               "long"}}
+                                            :type       "object"}
                        "cpu"               {:type "object", :properties {"capacity"            {:type               "long"
                                                                                                 :time_series_metric "gauge"}
                                                                          "load"                {:type               "double"
@@ -77,23 +84,23 @@
                                                                                                 :time_series_metric "counter"}}}
                        "ram"               {:type "object", :properties {"capacity" {:type               "long"
                                                                                      :time_series_metric "gauge"}
-                                                                         "used"     {:type "long"
+                                                                         "used"     {:type               "long"
                                                                                      :time_series_metric "gauge"}}}
                        "disk"              {:type "object", :properties {"device"   {:type                  "keyword"
                                                                                      :time_series_dimension true}
                                                                          "capacity" {:type               "long"
                                                                                      :time_series_metric "gauge"}
-                                                                         "used"     {:type "long"
+                                                                         "used"     {:type               "long"
                                                                                      :time_series_metric "gauge"}}}
                        "network"           {:type "object", :properties {"interface"         {:type                  "keyword"
                                                                                               :time_series_dimension true}
-                                                                         "bytes-received"    {:type "double"
+                                                                         "bytes-received"    {:type               "double"
                                                                                               :time_series_metric "counter"}
-                                                                         "bytes-transmitted" {:type "double"
+                                                                         "bytes-transmitted" {:type               "double"
                                                                                               :time_series_metric "counter"}}}
                        "power-consumption" {:type "object", :properties {"metric-name"        {:type                  "keyword"
                                                                                                :time_series_dimension true}
-                                                                         "energy-consumption" {:type "double"
+                                                                         "energy-consumption" {:type               "double"
                                                                                                :time_series_metric "gauge"}
                                                                          "unit"               {:type "keyword"}}}}})))
 
