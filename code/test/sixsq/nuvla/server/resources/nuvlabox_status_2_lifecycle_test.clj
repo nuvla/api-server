@@ -196,7 +196,9 @@
                 (is (= (-> session-nb
                            (request status-url
                                     :request-method :put
-                                    :body (json/write-str {:resources resources-updated}))
+                                    :body (json/write-str {:current-time (time/now-str)
+                                                           :online       true
+                                                           :resources    resources-updated}))
                            (ltu/body->edn)
                            (ltu/is-status 200)
                            ltu/body)
@@ -257,7 +259,8 @@
                 (ltu/refresh-es-indices)
                 (let [from        (time/minus (time/now) (time/duration-unit 1 :days))
                       to          now
-                      metric-data (-> (metrics-request {:datasets    ["cpu-stats"
+                      metric-data (-> (metrics-request {:datasets    ["online-status-stats"
+                                                                      "cpu-stats"
                                                                       "ram-stats"
                                                                       "disk-stats"
                                                                       "network-stats"
@@ -268,6 +271,11 @@
                                       (ltu/is-status 200)
                                       (ltu/body->edn)
                                       (ltu/body))]
+                  (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
+                           :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
+                                         :doc-count    1
+                                         :aggregations {:avg-online 1.0}}]}]
+                         (:online-status-stats metric-data)))
                   (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
                            :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                          :doc-count    1
