@@ -8,6 +8,7 @@
             [sixsq.nuvla.server.resources.common.utils :as u]
             [sixsq.nuvla.server.resources.module.utils :as module-utils]
             [sixsq.nuvla.server.resources.nuvlabox :as nuvlabox]
+            [sixsq.nuvla.server.resources.deployment-set.operational-status :as op-status]
             [tilakone.core :as tk]))
 
 (def action-start "start")
@@ -204,9 +205,13 @@
   [action]
   (str "bulk_" (action-job-name action)))
 
+(defn dep-set-changed?
+  [next current]
+  (not= next (op-status/operational-status-values-set current)))
+
 (defn save-deployment-set
   [next current]
-  (if (not= next current)
+  (if (dep-set-changed? next current)
     (-> next
         (u/update-timestamps)
         (crud/validate)
