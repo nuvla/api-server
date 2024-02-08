@@ -783,7 +783,7 @@
                                (ltu/body))]
 
         (-> session-user
-            (request (str p/service-context module-id)
+            (request module-url
                      :request-method :put
                      :body (json/write-str
                              (assoc-in module
@@ -826,6 +826,54 @@
           (request (str p/service-context module-id)
                    :request-method :delete)
           (ltu/is-status 200)))))
+
+(deftest lifecycle-module-update
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session-anon       (-> (ltu/ring-app)
+                                 session
+                                 (content-type "application/json"))
+          session-user       (header session-anon authn-info-header
+                                     "user/jane user/jane group/nuvla-user group/nuvla-anon")
+          module-id          (setup-module session-user (valid-module "component" valid-component))
+
+          valid-deployment   {:module {:href module-id}}
+          deployment-id      (-> session-user
+                                 (request base-uri
+                                          :request-method :post
+                                          :body (json/write-str valid-deployment))
+                                 (ltu/body->edn)
+                                 (ltu/is-status 201)
+                                 (ltu/location))
+          deployment-url     (str p/service-context deployment-id)
+          module-url         (str p/service-context module-id)
+          module             (-> session-user
+                                 (request module-url)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/body))
+          module-content-id  (-> session-user
+                                 (request module-url
+                                          :request-method :put
+                                          :body (json/write-str
+                                                  (-> module
+                                                      (assoc-in [:content :commit] "changed image version")
+                                                      (assoc-in
+                                                        [:content :image]
+                                                        {:image-name "ubuntu"
+                                                         :tag        "18.04"}))))
+                                 ltu/body->edn
+                                 (ltu/is-status 200)
+                                 ltu/body
+                                 (get-in [:versions 1 :href]))
+          latest-module-href (str module-id "_1")]
+      (-> session-user
+          (request deployment-url
+                   :request-method :put
+                   :body (json/write-str {:module {:href latest-module-href}}))
+          ltu/body->edn
+          (ltu/is-status 200)
+          (ltu/is-key-value :href :module latest-module-href)
+          (ltu/is-key-value (comp :id :content) :module module-content-id)))))
 
 
 (deftest lifecycle-bulk-update-force-delete
