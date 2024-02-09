@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.ts-nuvlaedge-utils
   (:require [clojure.data.csv :as csv]
             [clojure.data.json :as json]
+            [clojure.string :as str]
             [sixsq.nuvla.auth.utils :as auth]
             [sixsq.nuvla.db.filter.parser :as parser]
             [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -22,8 +23,10 @@
          :aggregations tsds-aggregations}}}
       {:aggregations tsds-aggregations})))
 
-(defn build-metrics-query [{:keys [nuvlaedge-id from to metric] :as options}]
-  (let [nuvlabox-id-filter (str "nuvlaedge-id='" nuvlaedge-id "'")
+(defn build-metrics-query [{:keys [nuvlaedge-ids from to metric] :as options}]
+  (let [nuvlabox-id-filter (str "nuvlaedge-id=[" (str/join " " (map #(str "'" % "'")
+                                                                    nuvlaedge-ids))
+                                "]")
         time-range-filter  (str "@timestamp>'" (time/to-str from) "'"
                                 " and "
                                 "@timestamp<'" (time/to-str to) "'")
@@ -41,23 +44,27 @@
      :params      {:tsds-aggregation (json/write-str (build-aggregations-clause options))}}))
 
 (defn ->metrics-resp
-  [{:keys [nuvlaedge-id aggregations] group-by-field :group-by} resp]
-  (let [ts-data (fn [tsds-stats]
-                  (map
-                    (fn [{:keys [key_as_string doc_count] :as bucket}]
-                      {:timestamp    key_as_string
-                       :doc-count    doc_count
-                       :aggregations (->> (keys aggregations)
-                                          (select-keys bucket)
-                                          (map (fn [[k {:keys [value]}]] [k value]))
-                                          (into {}))})
-                    (:buckets tsds-stats)))]
+  [{:keys [mode nuvlaedge-ids aggregations response-aggs] group-by-field :group-by} resp]
+  (let [ts-data    (fn [tsds-stats]
+                     (map
+                       (fn [{:keys [key_as_string doc_count] :as bucket}]
+                         {:timestamp    key_as_string
+                          :doc-count    doc_count
+                          :aggregations (->> (or response-aggs (keys aggregations))
+                                             (select-keys bucket)
+                                             (map (fn [[k {:keys [value]}]] [k value]))
+                                             (into {}))})
+                       (:buckets tsds-stats)))
+        dimensions (case mode
+                     :single-edge-query
+                     {:nuvlaedge-id (first nuvlaedge-ids)}
+                     :multi-edge-query
+                     {:nuvlaedge-count (count nuvlaedge-ids)})]
     (if group-by-field
       (for [{:keys [key tsds-stats]} (get-in resp [0 :aggregations :by-field :buckets])]
-        {:dimensions {:nuvlaedge-id  nuvlaedge-id
-                      group-by-field key}
+        {:dimensions (assoc dimensions group-by-field key)
          :ts-data    (ts-data tsds-stats)})
-      [{:dimensions {:nuvlaedge-id nuvlaedge-id}
+      [{:dimensions dimensions
         :ts-data    (ts-data (get-in resp [0 :aggregations :tsds-stats]))}])))
 
 (defn query-metrics

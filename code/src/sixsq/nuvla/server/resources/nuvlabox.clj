@@ -12,6 +12,7 @@ particular NuvlaBox release.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.auth.utils.acl :as acl-utils]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -1055,9 +1056,103 @@ particular NuvlaBox release.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
+(def single-edge-datasets
+  {"online-status-stats"     {:metric       "online-status"
+                              :aggregations {:avg-online {:avg {:field :online-status.online}}}}
+   "cpu-stats"               {:metric       "cpu"
+                              :aggregations {:avg-cpu-capacity    {:avg {:field :cpu.capacity}}
+                                             :avg-cpu-load        {:avg {:field :cpu.load}}
+                                             :avg-cpu-load-1      {:avg {:field :cpu.load-1}}
+                                             :avg-cpu-load-5      {:avg {:field :cpu.load-5}}
+                                             :context-switches    {:max {:field :cpu.context-switches}}
+                                             :interrupts          {:max {:field :cpu.interrupts}}
+                                             :software-interrupts {:max {:field :cpu.software-interrupts}}
+                                             :system-calls        {:max {:field :cpu.system-calls}}}}
+   "ram-stats"               {:metric       "ram"
+                              :aggregations {:avg-ram-capacity {:avg {:field :ram.capacity}}
+                                             :avg-ram-used     {:avg {:field :ram.used}}}}
+   "disk-stats"              {:metric       "disk"
+                              :group-by     :disk.device
+                              :aggregations {:avg-disk-capacity {:avg {:field :disk.capacity}}
+                                             :avg-disk-used     {:avg {:field :disk.used}}}}
+   "network-stats"           {:metric       "network"
+                              :group-by     :network.interface
+                              :aggregations {:bytes-received    {:max {:field :network.bytes-received}}
+                                             :bytes-transmitted {:max {:field :network.bytes-transmitted}}}}
+   "power-consumption-stats" {:metric       "power-consumption"
+                              :group-by     :power-consumption.metric-name
+                              :aggregations {:energy-consumption {:max {:field :power-consumption.energy-consumption}}
+                                             #_:unit                   #_{:first {:field :power-consumption.unit}}}}})
 
-(defmethod crud/do-action [resource-type "data"]
-  [{{:keys [uuid dataset from to granularity]} :params {accept-header "accept"} :headers :as request}]
+(def multi-edge-datasets
+  (let [group-by-field     (fn [field aggs]
+                             {:terms        {:field field}
+                              :aggregations aggs})
+        group-by-edge      (fn [aggs] (group-by-field :nuvlaedge-id aggs))
+        group-by-device    (fn [aggs] (group-by-field :disk.device aggs))
+        group-by-interface (fn [aggs] (group-by-field :network.interface aggs))]
+    {"online-status-stats"     {:metric        "online-status"
+                                :aggregations  {:avg-online     (group-by-edge {:by-edge {:avg {:field :online-status.online}}})
+                                                :avg-avg-online {:avg_bucket {:buckets_path :avg-online>by-edge}}}
+                                :response-aggs [:avg-avg-online]}
+     "cpu-stats"               {:metric        "cpu"
+                                :aggregations  {:avg-cpu-capacity        (group-by-edge {:by-edge {:avg {:field :cpu.capacity}}})
+                                                :avg-cpu-load            (group-by-edge {:by-edge {:avg {:field :cpu.load}}})
+                                                :avg-cpu-load-1          (group-by-edge {:by-edge {:avg {:field :cpu.load-1}}})
+                                                :avg-cpu-load-5          (group-by-edge {:by-edge {:avg {:field :cpu.load-5}}})
+                                                :context-switches        (group-by-edge {:by-edge {:max {:field :cpu.context-switches}}})
+                                                :interrupts              (group-by-edge {:by-edge {:max {:field :cpu.interrupts}}})
+                                                :software-interrupts     (group-by-edge {:by-edge {:max {:field :cpu.software-interrupts}}})
+                                                :system-calls            (group-by-edge {:by-edge {:max {:field :cpu.system-calls}}})
+                                                :sum-avg-cpu-capacity    {:sum_bucket {:buckets_path :avg-cpu-capacity>by-edge}}
+                                                :sum-avg-cpu-load        {:sum_bucket {:buckets_path :avg-cpu-load>by-edge}}
+                                                :sum-avg-cpu-load-1      {:sum_bucket {:buckets_path :avg-cpu-load-1>by-edge}}
+                                                :sum-avg-cpu-load-5      {:sum_bucket {:buckets_path :avg-cpu-load-5>by-edge}}
+                                                :sum-context-switches    {:sum_bucket {:buckets_path :context-switches>by-edge}}
+                                                :sum-interrupts          {:sum_bucket {:buckets_path :interrupts>by-edge}}
+                                                :sum-software-interrupts {:sum_bucket {:buckets_path :software-interrupts>by-edge}}
+                                                :sum-system-calls        {:sum_bucket {:buckets_path :system-calls>by-edge}}}
+                                :response-aggs [:sum-avg-cpu-capacity :sum-avg-cpu-load :sum-avg-cpu-load-1 :sum-avg-cpu-load-5
+                                                :sum-context-switches :sum-interrupts :sum-software-interrupts :sum-system-calls]}
+     "ram-stats"               {:metric        "ram"
+                                :aggregations  {:avg-ram-capacity     (group-by-edge {:by-edge {:avg {:field :ram.capacity}}})
+                                                :avg-ram-used         (group-by-edge {:by-edge {:avg {:field :ram.used}}})
+                                                :sum-avg-ram-capacity {:sum_bucket {:buckets_path :avg-ram-capacity>by-edge}}
+                                                :sum-avg-ram-used     {:sum_bucket {:buckets_path :avg-ram-used>by-edge}}}
+                                :response-aggs [:sum-avg-ram-capacity :sum-avg-ram-used]}
+     "disk-stats"              {:metric        "disk"
+                                :aggregations  {:avg-disk-capacity     (group-by-edge
+                                                                         {:by-edge                 (group-by-device
+                                                                                                     {:by-device {:avg {:field :disk.capacity}}})
+                                                                          :total-avg-edge-capacity {:sum_bucket {:buckets_path :by-edge>by-device}}})
+                                                :avg-disk-used         (group-by-edge
+                                                                         {:by-edge                      (group-by-device
+                                                                                                          {:by-device {:avg {:field :disk.used}}})
+                                                                          :total-avg-edge-used-capacity {:sum_bucket {:buckets_path :by-edge>by-device}}})
+                                                :sum-avg-disk-capacity {:sum_bucket {:buckets_path :avg-disk-capacity>total-avg-edge-capacity}}
+                                                :sum-avg-disk-used     {:sum_bucket {:buckets_path :avg-disk-used>total-avg-edge-used-capacity}}}
+                                :response-aggs [:sum-avg-disk-capacity :sum-avg-disk-used]}
+     "network-stats"           {:metric        "network"
+                                :aggregations  {:bytes-received        (group-by-edge
+                                                                         {:by-edge                   (group-by-interface
+                                                                                                       {:by-interface {:max {:field :network.bytes-received}}})
+                                                                          :total-edge-bytes-received {:sum_bucket {:buckets_path :by-edge>by-interface}}})
+                                                :bytes-transmitted     (group-by-edge
+                                                                         {:by-edge                      (group-by-interface
+                                                                                                          {:by-interface {:max {:field :network.bytes-transmitted}}})
+                                                                          :total-edge-bytes-transmitted {:sum_bucket {:buckets_path :by-edge>by-interface}}})
+                                                :sum-bytes-received    {:sum_bucket {:buckets_path :bytes-received>total-edge-bytes-received}}
+                                                :sum-bytes-transmitted {:sum_bucket {:buckets_path :bytes-transmitted>total-edge-bytes-transmitted}}}
+                                :response-aggs [:sum-bytes-received :sum-bytes-transmitted]}
+     "power-consumption-stats" {:metric        "power-consumption"
+                                :group-by      :power-consumption.metric-name
+                                :aggregations  {:energy-consumption     (group-by-edge {:by-edge {:max {:field :power-consumption.energy-consumption}}})
+                                                #_:unit                   #_{:first {:field :power-consumption.unit}}
+                                                :sum-energy-consumption {:sum_bucket {:buckets_path :energy-consumption>by-edge}}}
+                                :response-aggs [:sum-energy-consumption]}}))
+
+(defn query-data
+  [{:keys [mode uuid filter dataset from to granularity accept-header]} request]
   (let [datasets      (if (coll? dataset) dataset [dataset])
         _             (when-not (seq datasets) (logu/log-and-throw-400 "dataset parameter is mandatory"))
         from          (time/date-from-str from)
@@ -1073,35 +1168,17 @@ particular NuvlaBox release.
                         (logu/log-and-throw-400 "too many data points requested. Please restrict the time interval or increase the time granularity."))
         granularity   (status-utils/granularity->ts-interval granularity)
         _             (when (empty? granularity) (logu/log-and-throw-400 "granularity parameter is mandatory"))
-        id            (u/resource-id resource-type uuid)
-        ;; make sure the nuvlabox resource can be retrieved before retrieving any data
-        _nuvlabox     (crud/retrieve-by-id id request)
-        dataset-opts  {"online-status-stats"     {:metric       "online-status"
-                                                  :aggregations {:avg-online {:avg {:field :online-status.online}}}}
-                       "cpu-stats"               {:metric       "cpu"
-                                                  :aggregations {:avg-cpu-capacity    {:avg {:field :cpu.capacity}}
-                                                                 :avg-cpu-load        {:avg {:field :cpu.load}}
-                                                                 :avg-cpu-load-1      {:avg {:field :cpu.load-1}}
-                                                                 :avg-cpu-load-5      {:avg {:field :cpu.load-5}}
-                                                                 :context-switches    {:max {:field :cpu.context-switches}}
-                                                                 :interrupts          {:max {:field :cpu.interrupts}}
-                                                                 :software-interrupts {:max {:field :cpu.software-interrupts}}
-                                                                 :system-calls        {:max {:field :cpu.system-calls}}}}
-                       "ram-stats"               {:metric       "ram"
-                                                  :aggregations {:avg-ram-capacity {:avg {:field :ram.capacity}}
-                                                                 :avg-ram-used     {:avg {:field :ram.used}}}}
-                       "disk-stats"              {:metric       "disk"
-                                                  :group-by     :disk.device
-                                                  :aggregations {:avg-disk-capacity {:avg {:field :disk.capacity}}
-                                                                 :avg-disk-used     {:avg {:field :disk.used}}}}
-                       "network-stats"           {:metric       "network"
-                                                  :group-by     :network.interface
-                                                  :aggregations {:bytes-received    {:max {:field :network.bytes-received}}
-                                                                 :bytes-transmitted {:max {:field :network.bytes-transmitted}}}}
-                       "power-consumption-stats" {:metric       "power-consumption"
-                                                  :group-by     :power-consumption.metric-name
-                                                  :aggregations {:energy-consumption {:max {:field :power-consumption.energy-consumption}}
-                                                                 #_:unit                   #_{:first {:field :power-consumption.unit}}}}}
+        id            (when uuid (u/resource-id resource-type uuid))
+        ;; fetch the relevant and allowed nuvlaboxes before retrieving any data
+        nuvlaboxes    (if id
+                        [(crud/retrieve-by-id id request)]
+                        (-> (crud/query (cond-> request
+                                                filter (assoc :cimi-params {:filter (parser/parse-cimi-filter filter)})))
+                            :body
+                            :resources))
+        dataset-opts  (case mode
+                        :single-edge-query single-edge-datasets
+                        :multi-edge-query multi-edge-datasets)
         _             (when-not (every? (set (keys dataset-opts)) datasets)
                         (logu/log-and-throw-400 (str "unknown datasets: "
                                                      (str/join "," (sort (set/difference (set datasets)
@@ -1109,10 +1186,11 @@ particular NuvlaBox release.
         _             (when (and (= "text/csv" accept-header) (not= 1 (count datasets)))
                         (logu/log-and-throw-400 (str "exactly one dataset must be specified with accept header 'text/csv'")))
         resps         (map #(ts-nuvlaedge-utils/query-metrics
-                              (merge {:nuvlaedge-id id
-                                      :from         from
-                                      :to           to
-                                      :granularity  granularity}
+                              (merge {:mode          mode
+                                      :nuvlaedge-ids (map :id nuvlaboxes)
+                                      :from          from
+                                      :to            to
+                                      :granularity   granularity}
                                      (get dataset-opts %)))
                            datasets)]
     (case accept-header
@@ -1120,13 +1198,42 @@ particular NuvlaBox release.
       ; by default return a json response
       (r/json-response (zipmap datasets resps))
       "text/csv"
-      (let [{:keys [aggregations] group-by-field :group-by} (get dataset-opts (first datasets))]
+      (let [{:keys [aggregations response-aggs] group-by-field :group-by} (get dataset-opts (first datasets))]
         (r/csv-response "export.csv" (ts-nuvlaedge-utils/metrics-data->csv
-                                       (cond-> [:nuvlaedge-id]
+                                       (cond-> (case mode
+                                                 :single-edge-query
+                                                 [:nuvlaedge-id]
+                                                 :multi-edge-query
+                                                 [:nuvlaedge-count])
                                                group-by-field (conj group-by-field))
-                                       (keys aggregations)
+                                       (or response-aggs (keys aggregations))
                                        (first resps))))
       (logu/log-and-throw-400 (str "format not supported: " accept-header)))))
+
+(defmethod crud/do-action [resource-type "data"]
+  [{:keys [params] {accept-header "accept"} :headers :as request}]
+  (query-data (assoc params :mode :single-edge-query
+                            :accept-header accept-header) request))
+
+(defn bulk-query-data
+  [_ {:keys [body] {accept-header "accept"} :headers :as request}]
+  (query-data (assoc body :mode :multi-edge-query
+                          :accept-header accept-header) request))
+
+(def validate-bulk-data-body (u/create-spec-validation-request-body-fn
+                               ::nuvlabox/bulk-data-body))
+
+(defn bulk-data
+  [request bulk-impl]
+  (-> request
+      validate-bulk-data-body
+      bulk-impl))
+
+(def bulk-data-impl (std-crud/generic-bulk-operation-fn resource-type collection-acl bulk-query-data))
+
+(defmethod crud/bulk-action [resource-type "data"]
+  [request]
+  (bulk-data request bulk-data-impl))
 
 
 ;;

@@ -1,7 +1,10 @@
 (ns sixsq.nuvla.server.resources.spec.nuvlabox
   (:require
     [clojure.spec.alpha :as s]
+    [sixsq.nuvla.server.resources.nuvlabox.status-utils :as nb-status-utils]
+    [sixsq.nuvla.server.resources.nuvlabox.status-utils :as nb-status-utils]
     [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -89,8 +92,19 @@
                           ::credential-api-key
                           ::host-level-management-api-key]})
 
-
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      attributes))
 
+;; actions
+
+(s/def ::dataset (s/coll-of ::core/nonblank-string))
+(s/def ::filter (st/spec ::core/nonblank-string))
+(s/def ::from (st/spec ::core/timestamp))
+(s/def ::to (st/spec ::core/timestamp))
+(s/def ::granularity (st/spec nb-status-utils/granularity->duration))
+(s/def ::bulk-data-body (su/only-keys-maps {:req-un [::dataset
+                                                     ::from
+                                                     ::to
+                                                     ::granularity]
+                                            :opt-un [::filter]}))
