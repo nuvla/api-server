@@ -224,6 +224,14 @@
           response   (db/bulk-insert-metrics resource-name body options)]
       (r/json-response response))))
 
+(defn generic-bulk-operation-fn
+  [resource-name collection-acl bulk-op-fn]
+  (validate-collection-acl collection-acl)
+  (fn [request]
+    (throw-bulk-header-missing request)
+    (a/throw-cannot-bulk-action collection-acl request)
+    (bulk-op-fn resource-name request)))
+
 (def ^:const href-not-found-msg "requested href not found")
 
 
