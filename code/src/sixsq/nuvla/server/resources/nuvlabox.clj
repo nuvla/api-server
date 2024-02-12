@@ -1092,9 +1092,13 @@ particular NuvlaBox release.
         group-by-device    (fn [aggs] (group-by-field :disk.device aggs))
         group-by-interface (fn [aggs] (group-by-field :network.interface aggs))]
     {"online-status-stats"     {:metric        "online-status"
-                                :aggregations  {:avg-online     (group-by-edge {:by-edge {:avg {:field :online-status.online}}})
-                                                :avg-avg-online {:avg_bucket {:buckets_path :avg-online>by-edge}}}
+                                :aggregations  {:avg-online     (group-by-edge {:edge-avg-online {:avg {:field :online-status.online}}})
+                                                :avg-avg-online {:avg_bucket {:buckets_path :avg-online>edge-avg-online}}}
                                 :response-aggs [:avg-avg-online]}
+     "online-status-by-edge"   {:metric        "online-status"
+                                :aggregations  {:avg-online     (group-by-edge {:edge-avg-online {:avg {:field :online-status.online}}})
+                                                :avg-avg-online {:avg_bucket {:buckets_path :avg-online>edge-avg-online}}}
+                                :response-aggs [:avg-online :avg-avg-online]}
      "cpu-stats"               {:metric        "cpu"
                                 :aggregations  {:avg-cpu-capacity        (group-by-edge {:by-edge {:avg {:field :cpu.capacity}}})
                                                 :avg-cpu-load            (group-by-edge {:by-edge {:avg {:field :cpu.load}}})
@@ -1188,7 +1192,9 @@ particular NuvlaBox release.
                         (logu/log-and-throw-400 (str "exactly one dataset must be specified with accept header 'text/csv'")))
         resps         (map #(ts-nuvlaedge-utils/query-metrics
                               (merge {:mode          mode
-                                      :nuvlaedge-ids (map :id nuvlaboxes)
+                                      :nuvlaedge-ids (concat (map :id nuvlaboxes)
+                                                             #_(map (fn [_n] (str "nuvlabox/" (u/random-uuid)))
+                                                                    (range 1000)))
                                       :from          from
                                       :to            to
                                       :granularity   granularity}

@@ -524,57 +524,57 @@
               (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
                        :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                      :doc-count    1
-                                     :aggregations {:avg-online 1.0}}]}]
+                                     :aggregations {:avg-online {:value 1.0}}}]}]
                      (:online-status-stats metric-data)))
               (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
                        :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                      :doc-count    1
-                                     :aggregations {:avg-cpu-capacity    10.0
-                                                    :avg-cpu-load        5.5
-                                                    :avg-cpu-load-1      nil
-                                                    :avg-cpu-load-5      nil
-                                                    :context-switches    nil
-                                                    :interrupts          nil
-                                                    :software-interrupts nil
-                                                    :system-calls        nil}}]}]
+                                     :aggregations {:avg-cpu-capacity    {:value 10.0}
+                                                    :avg-cpu-load        {:value 5.5}
+                                                    :avg-cpu-load-1      {:value nil}
+                                                    :avg-cpu-load-5      {:value nil}
+                                                    :context-switches    {:value nil}
+                                                    :interrupts          {:value nil}
+                                                    :software-interrupts {:value nil}
+                                                    :system-calls        {:value nil}}}]}]
                      (:cpu-stats metric-data)))
               (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
                        :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                      :doc-count    1
-                                     :aggregations {:avg-ram-capacity 4096.0
-                                                    :avg-ram-used     2000.0}}]}]
+                                     :aggregations {:avg-ram-capacity {:value 4096.0}
+                                                    :avg-ram-used     {:value 2000.0}}}]}]
                      (:ram-stats metric-data)))
               (is (= #{{:dimensions {:nuvlaedge-id nuvlabox-id
                                      :disk.device  "root"}
                         :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                       :doc-count    1
-                                      :aggregations {:avg-disk-capacity 20000.0
-                                                     :avg-disk-used     20000.0}}]}
+                                      :aggregations {:avg-disk-capacity {:value 20000.0}
+                                                     :avg-disk-used     {:value 20000.0}}}]}
                        {:dimensions {:nuvlaedge-id nuvlabox-id
                                      :disk.device  "datastore"}
                         :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                       :doc-count    1
-                                      :aggregations {:avg-disk-capacity 20000.0
-                                                     :avg-disk-used     15000.0}}]}}
+                                      :aggregations {:avg-disk-capacity {:value 20000.0}
+                                                     :avg-disk-used     {:value 15000.0}}}]}}
                      (set (:disk-stats metric-data))))
               (is (= #{{:dimensions {:nuvlaedge-id      nuvlabox-id
                                      :network.interface "eth0"}
                         :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                       :doc-count    1
-                                      :aggregations {:bytes-received    5579821.0
-                                                     :bytes-transmitted 44145.0}}]}
+                                      :aggregations {:bytes-received    {:value 5579821.0}
+                                                     :bytes-transmitted {:value 44145.0}}}]}
                        {:dimensions {:nuvlaedge-id      nuvlabox-id
                                      :network.interface "vpn"}
                         :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                       :doc-count    1
-                                      :aggregations {:bytes-received    3019.0
-                                                     :bytes-transmitted 78.0}}]}}
+                                      :aggregations {:bytes-received    {:value 3019.0}
+                                                     :bytes-transmitted {:value 78.0}}}]}}
                      (set (:network-stats metric-data))))
               (is (= #{{:dimensions {:nuvlaedge-id                  nuvlabox-id
                                      :power-consumption.metric-name "IN_current"}
                         :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                       :doc-count    1
-                                      :aggregations {:energy-consumption 2.4
+                                      :aggregations {:energy-consumption {:value 2.4}
                                                      #_:unit                 #_"A"}}]}}
                      (set (:power-consumption-stats metric-data))))))
 
@@ -745,6 +745,7 @@
             (let [from        (time/minus (time/now) (time/duration-unit 1 :days))
                   to          now
                   metric-data (-> (metrics-request {:datasets    ["online-status-stats"
+                                                                  "online-status-by-edge"
                                                                   "cpu-stats"
                                                                   "ram-stats"
                                                                   "disk-stats"
@@ -759,43 +760,56 @@
               (is (= [{:dimensions {:nuvlaedge-count 2}
                        :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                      :doc-count    2
-                                     :aggregations {:avg-avg-online 1.0}}]}]
+                                     :aggregations {:avg-avg-online {:value 1.0}}}]}]
                      (:online-status-stats metric-data)))
               (is (= [{:dimensions {:nuvlaedge-count 2}
                        :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                      :doc-count    2
-                                     :aggregations {:sum-avg-cpu-capacity    20.0
-                                                    :sum-avg-cpu-load        11.0
-                                                    :sum-avg-cpu-load-1      0.0
-                                                    :sum-avg-cpu-load-5      0.0
-                                                    :sum-context-switches    0.0
-                                                    :sum-interrupts          0.0
-                                                    :sum-software-interrupts 0.0
-                                                    :sum-system-calls        0.0}}]}]
+                                     :aggregations {:avg-avg-online {:value 1.0}
+                                                    :avg-online     {:buckets                     #{{:doc_count       1
+                                                                                                     :edge-avg-online {:value 1.0}
+                                                                                                     :key             nuvlabox-id}
+                                                                                                    {:doc_count       1
+                                                                                                     :edge-avg-online {:value 1.0}
+                                                                                                     :key             nuvlabox-id-2}}
+                                                                     :doc_count_error_upper_bound 0
+                                                                     :sum_other_doc_count         0}}}]}]
+                     (update-in (:online-status-by-edge metric-data) [0 :ts-data 0 :aggregations :avg-online :buckets] set)))
+              (is (= [{:dimensions {:nuvlaedge-count 2}
+                       :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
+                                     :doc-count    2
+                                     :aggregations {:sum-avg-cpu-capacity    {:value 20.0}
+                                                    :sum-avg-cpu-load        {:value 11.0}
+                                                    :sum-avg-cpu-load-1      {:value 0.0}
+                                                    :sum-avg-cpu-load-5      {:value 0.0}
+                                                    :sum-context-switches    {:value 0.0}
+                                                    :sum-interrupts          {:value 0.0}
+                                                    :sum-software-interrupts {:value 0.0}
+                                                    :sum-system-calls        {:value 0.0}}}]}]
                      (:cpu-stats metric-data)))
               (is (= [{:dimensions {:nuvlaedge-count 2}
                        :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                      :doc-count    2
-                                     :aggregations {:sum-avg-ram-capacity 8192.0
-                                                    :sum-avg-ram-used     4000.0}}]}]
+                                     :aggregations {:sum-avg-ram-capacity {:value 8192.0}
+                                                    :sum-avg-ram-used     {:value 4000.0}}}]}]
                      (:ram-stats metric-data)))
               (is (= #{{:dimensions {:nuvlaedge-count 2}
-                        :ts-data    [{:aggregations {:sum-avg-disk-capacity 80000.0
-                                                     :sum-avg-disk-used     70000.0}
-                                      :doc-count    4
-                                      :timestamp    "2024-02-09T00:00:00.000Z"}]}}
+                        :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
+                                      :aggregations {:sum-avg-disk-capacity {:value 80000.0}
+                                                     :sum-avg-disk-used     {:value 70000.0}}
+                                      :doc-count    4}]}}
                      (set (:disk-stats metric-data))))
               (is (= #{{:dimensions {:nuvlaedge-count 2}
-                        :ts-data    [{:aggregations {:sum-bytes-received    1.116568E7
-                                                     :sum-bytes-transmitted 88446.0}
-                                      :doc-count    4
-                                      :timestamp    "2024-02-09T00:00:00.000Z"}]}}
+                        :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
+                                      :aggregations {:sum-bytes-received    {:value 1.116568E7}
+                                                     :sum-bytes-transmitted {:value 88446.0}}
+                                      :doc-count    4}]}}
                      (set (:network-stats metric-data))))
               (is (= #{{:dimensions {:nuvlaedge-count               2
                                      :power-consumption.metric-name "IN_current"}
                         :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                       :doc-count    2
-                                      :aggregations {:sum-energy-consumption 4.8
+                                      :aggregations {:sum-energy-consumption {:value 4.8}
                                                      #_:unit                 #_"A"}}]}}
                      (set (:power-consumption-stats metric-data))))))
 
