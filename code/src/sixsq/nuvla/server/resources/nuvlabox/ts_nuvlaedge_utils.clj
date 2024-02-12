@@ -52,8 +52,8 @@
                           :doc-count    doc_count
                           :aggregations (->> (or response-aggs (keys aggregations))
                                              (select-keys bucket)
-                                             (map (fn [[k {:keys [value]}]] [k value]))
-                                             (into {}))})
+                                             #_(map (fn [[k agg-bucket]] [k (agg-resp agg-bucket)]))
+                                             #_(into {}))})
                        (:buckets tsds-stats)))
         dimensions (case mode
                      :single-edge-query
@@ -85,7 +85,7 @@
                          {:keys [timestamp doc-count aggregations]} ts-data]
                      (concat (map dimensions dimension-keys)
                              [timestamp doc-count]
-                             (map aggregations aggregation-keys))))
+                             (map #(get-in aggregations [% :value]) aggregation-keys))))
     (.toString writer)))
 
 (defmulti nuvlabox-status->metric-data (fn [_ metric] metric))
