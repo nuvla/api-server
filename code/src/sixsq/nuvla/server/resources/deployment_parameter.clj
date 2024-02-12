@@ -72,6 +72,7 @@ configuration option.
 
 (defmethod crud/add resource-type
   [{{:keys [parent name value acl]} :body :as request}]
+  (crud/retrieve-by-id parent request)
   (when (= name "ss:state")
     (event-utils/create-event parent value acl
                               :severity "medium"
