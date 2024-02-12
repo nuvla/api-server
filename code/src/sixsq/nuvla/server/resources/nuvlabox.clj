@@ -1173,7 +1173,8 @@ particular NuvlaBox release.
         nuvlaboxes    (if id
                         [(crud/retrieve-by-id id request)]
                         (-> (crud/query (cond-> request
-                                                filter (assoc :cimi-params {:filter (parser/parse-cimi-filter filter)})))
+                                                filter (assoc :cimi-params {:filter (parser/parse-cimi-filter filter)
+                                                                            :last   10000})))
                             :body
                             :resources))
         dataset-opts  (case mode
