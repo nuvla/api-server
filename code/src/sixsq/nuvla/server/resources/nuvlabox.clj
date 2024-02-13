@@ -1084,6 +1084,18 @@ particular NuvlaBox release.
                               :aggregations {:energy-consumption {:max {:field :power-consumption.energy-consumption}}
                                              #_:unit                   #_{:first {:field :power-consumption.unit}}}}})
 
+(defn add-edges-count [_opts resp]
+  (update-in resp [0 :ts-data]
+             (fn [ts-data]
+               (map (fn [ts-data-point]
+                      (update ts-data-point
+                              :aggregations
+                              (fn [{:keys [avg-online] :as aggs}]
+                                (-> aggs
+                                    (dissoc :avg-online)
+                                    (assoc :edges-count (count (:buckets avg-online)))))))
+                    ts-data))))
+
 (defn add-edge-names-fn
   [nuvlaboxes]
   (let [edge-names-by-id (->> nuvlaboxes
@@ -1113,7 +1125,8 @@ particular NuvlaBox release.
     {"online-status-stats"     {:metric        "online-status"
                                 :aggregations  {:avg-online     (group-by-edge {:edge-avg-online {:avg {:field :online-status.online}}})
                                                 :avg-avg-online {:avg_bucket {:buckets_path :avg-online>edge-avg-online}}}
-                                :response-aggs [:avg-avg-online]}
+                                :response-aggs [:avg-online :avg-avg-online]
+                                :post-process-fn add-edges-count}
      "online-status-by-edge"   {:metric          "online-status"
                                 :aggregations    {:avg-online     (group-by-edge {:edge-avg-online {:avg {:field :online-status.online}}})
                                                   :avg-avg-online {:avg_bucket {:buckets_path :avg-online>edge-avg-online}}}
