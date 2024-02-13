@@ -764,7 +764,8 @@
               (is (= [{:dimensions {:nuvlaedge-count 2}
                        :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                      :doc-count    2
-                                     :aggregations {:avg-avg-online {:value 1.0}}}]}]
+                                     :aggregations {:avg-avg-online {:value 1.0}
+                                                    :edges-count    2}}]}]
                      (:online-status-stats metric-data)))
               (is (= [{:dimensions {:nuvlaedge-count 2}
                        :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
