@@ -44,6 +44,10 @@
 (def valid-nuvlabox {:name  nb-name
                      :owner nuvlabox-owner})
 
+(def nb-name2 "nb-test-status2")
+
+(def valid-nuvlabox2 {:name  nb-name2
+                      :owner nuvlabox-owner})
 
 (def valid-state
   {:id                          (str nb-status/resource-type "/uuid")
@@ -699,7 +703,7 @@
               nuvlabox-id-2     (-> session-user
                                     (request nuvlabox-base-uri
                                              :request-method :post
-                                             :body (json/write-str valid-nuvlabox))
+                                             :body (json/write-str valid-nuvlabox2))
                                     (ltu/body->edn)
                                     (ltu/is-status 201)
                                     (ltu/location))
@@ -769,10 +773,12 @@
                                      :aggregations {:avg-avg-online {:value 1.0}
                                                     :avg-online     {:buckets                     #{{:doc_count       1
                                                                                                      :edge-avg-online {:value 1.0}
-                                                                                                     :key             nuvlabox-id}
+                                                                                                     :key             nuvlabox-id
+                                                                                                     :name            nb-name}
                                                                                                     {:doc_count       1
                                                                                                      :edge-avg-online {:value 1.0}
-                                                                                                     :key             nuvlabox-id-2}}
+                                                                                                     :key             nuvlabox-id-2
+                                                                                                     :name            nb-name2}}
                                                                      :doc_count_error_upper_bound 0
                                                                      :sum_other_doc_count         0}}}]}]
                      (update-in (:online-status-by-edge metric-data) [0 :ts-data 0 :aggregations :avg-online :buckets] set)))
