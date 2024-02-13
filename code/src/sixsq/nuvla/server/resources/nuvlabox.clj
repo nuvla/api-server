@@ -1084,7 +1084,26 @@ particular NuvlaBox release.
                               :aggregations {:energy-consumption {:max {:field :power-consumption.energy-consumption}}
                                              #_:unit                   #_{:first {:field :power-consumption.unit}}}}})
 
-(def multi-edge-datasets
+(defn add-edge-names-fn
+  [nuvlaboxes]
+  (let [edge-names-by-id (->> nuvlaboxes
+                              (map (fn [{:keys [id name]}]
+                                     [id name]))
+                              (into {}))]
+    (fn [_opts resp]
+      (let [update-buckets (fn [buckets]
+                             (map (fn [{edge-id :key :as bucket}]
+                                    (assoc bucket :name (get edge-names-by-id edge-id)))
+                                  buckets))]
+        (update-in resp [0 :ts-data]
+                   (fn [ts-data]
+                     (map (fn [ts-data-point]
+                            (update-in ts-data-point [:aggregations :avg-online :buckets]
+                                       update-buckets))
+                          ts-data)))))))
+
+(defn multi-edge-datasets
+  [{:keys [nuvlaboxes]}]
   (let [group-by-field     (fn [field aggs]
                              {:terms        {:field field}
                               :aggregations aggs})
@@ -1095,10 +1114,11 @@ particular NuvlaBox release.
                                 :aggregations  {:avg-online     (group-by-edge {:edge-avg-online {:avg {:field :online-status.online}}})
                                                 :avg-avg-online {:avg_bucket {:buckets_path :avg-online>edge-avg-online}}}
                                 :response-aggs [:avg-avg-online]}
-     "online-status-by-edge"   {:metric        "online-status"
-                                :aggregations  {:avg-online     (group-by-edge {:edge-avg-online {:avg {:field :online-status.online}}})
-                                                :avg-avg-online {:avg_bucket {:buckets_path :avg-online>edge-avg-online}}}
-                                :response-aggs [:avg-online :avg-avg-online]}
+     "online-status-by-edge"   {:metric          "online-status"
+                                :aggregations    {:avg-online     (group-by-edge {:edge-avg-online {:avg {:field :online-status.online}}})
+                                                  :avg-avg-online {:avg_bucket {:buckets_path :avg-online>edge-avg-online}}}
+                                :response-aggs   [:avg-online :avg-avg-online]
+                                :post-process-fn (add-edge-names-fn nuvlaboxes)}
      "cpu-stats"               {:metric        "cpu"
                                 :aggregations  {:avg-cpu-capacity        (group-by-edge {:by-edge {:avg {:field :cpu.capacity}}})
                                                 :avg-cpu-load            (group-by-edge {:by-edge {:avg {:field :cpu.load}}})
@@ -1181,31 +1201,34 @@ particular NuvlaBox release.
                                                                             :last   10000})))
                             :body
                             :resources))
-        dataset-opts  (case mode
+        datasets-opts (case mode
                         :single-edge-query single-edge-datasets
-                        :multi-edge-query multi-edge-datasets)
-        _             (when-not (every? (set (keys dataset-opts)) datasets)
+                        :multi-edge-query (multi-edge-datasets {:nuvlaboxes nuvlaboxes}))
+        _             (when-not (every? (set (keys datasets-opts)) datasets)
                         (logu/log-and-throw-400 (str "unknown datasets: "
                                                      (str/join "," (sort (set/difference (set datasets)
-                                                                                         (set (keys dataset-opts))))))))
+                                                                                         (set (keys datasets-opts))))))))
         _             (when (and (= "text/csv" accept-header) (not= 1 (count datasets)))
                         (logu/log-and-throw-400 (str "exactly one dataset must be specified with accept header 'text/csv'")))
-        resps         (map #(ts-nuvlaedge-utils/query-metrics
-                              (merge {:mode          mode
-                                      :nuvlaedge-ids (concat (map :id nuvlaboxes)
-                                                             #_(map (fn [_n] (str "nuvlabox/" (u/random-uuid)))
-                                                                    (range 1000)))
-                                      :from          from
-                                      :to            to
-                                      :granularity   granularity}
-                                     (get dataset-opts %)))
+        resps         (map (fn [dataset-key]
+                             (let [{:keys [post-process-fn] :as dataset-opts} (get datasets-opts dataset-key)
+                                   query-opts (merge {:mode          mode
+                                                      :nuvlaedge-ids (concat (map :id nuvlaboxes)
+                                                                             #_(map (fn [_n] (str "nuvlabox/" (u/random-uuid)))
+                                                                                    (range 1000)))
+                                                      :from          from
+                                                      :to            to
+                                                      :granularity   granularity}
+                                                     dataset-opts)]
+                               (cond->> (ts-nuvlaedge-utils/query-metrics query-opts)
+                                        post-process-fn (post-process-fn query-opts))))
                            datasets)]
     (case accept-header
       (nil "application/json")
       ; by default return a json response
       (r/json-response (zipmap datasets resps))
       "text/csv"
-      (let [{:keys [aggregations response-aggs] group-by-field :group-by} (get dataset-opts (first datasets))]
+      (let [{:keys [aggregations response-aggs] group-by-field :group-by} (get datasets-opts (first datasets))]
         (r/csv-response "export.csv" (ts-nuvlaedge-utils/metrics-data->csv
                                        (cond-> (case mode
                                                  :single-edge-query
