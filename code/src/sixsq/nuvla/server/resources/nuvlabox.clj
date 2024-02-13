@@ -1121,11 +1121,13 @@ particular NuvlaBox release.
                       ts-data)))))
 
 (defn add-virtual-edge-number-by-status-fn
-  [nuvlaboxes]
+  [{:keys [granularity]} nuvlaboxes]
   (let [active-edges-count (fn [timestamp]
-                             (count (filter #(time/before? (time/date-from-str (:created %))
-                                                           (time/date-from-str timestamp))
-                                            nuvlaboxes)))]
+                             (let [next-interval-start (time/plus (time/date-from-str timestamp)
+                                                                  (status-utils/granularity->duration granularity))]
+                               (count (filter #(time/before? (time/date-from-str (:created %))
+                                                             next-interval-start)
+                                              nuvlaboxes))))]
     (fn [resp]
       (update-in resp [0 :ts-data]
                  (fn [ts-data]
@@ -1175,7 +1177,7 @@ particular NuvlaBox release.
                             ts-data))))))
 
 (defn multi-edge-datasets
-  [{:keys [nuvlaboxes]}]
+  [{:keys [base-query-opts nuvlaboxes]}]
   (let [group-by-field     (fn [field aggs]
                              {:terms        {:field field}
                               :aggregations aggs})
@@ -1185,7 +1187,7 @@ particular NuvlaBox release.
     {"online-status-stats"     {:metric          "online-status"
                                 :aggregations    {:avg-online     (group-by-edge {:edge-avg-online {:avg {:field :online-status.online}}})
                                                   :avg-avg-online {:avg_bucket {:buckets_path :avg-online>edge-avg-online}}}
-                                :post-process-fn (comp (add-virtual-edge-number-by-status-fn nuvlaboxes)
+                                :post-process-fn (comp (add-virtual-edge-number-by-status-fn base-query-opts nuvlaboxes)
                                                        dissoc-edges-stats
                                                        (add-online-status-adjusted-average-fn nuvlaboxes)
                                                        add-edges-count)
@@ -1263,53 +1265,55 @@ particular NuvlaBox release.
 
 (defn query-data
   [{:keys [mode uuid filter dataset from to granularity accept-header]} request]
-  (let [datasets      (if (coll? dataset) dataset [dataset])
-        _             (when-not (seq datasets) (logu/log-and-throw-400 "dataset parameter is mandatory"))
-        from          (time/date-from-str from)
-        to            (time/date-from-str to)
-        _             (when-not from (logu/log-and-throw-400 (str "from parameter is mandatory, with format " time/iso8601-format)))
-        _             (when-not to (logu/log-and-throw-400 (str "to parameter is mandatory, with format " time/iso8601-format)))
-        _             (when-not (time/before? from to)
-                        (logu/log-and-throw-400 "from must be before to"))
-        max-n-buckets 200
-        n-buckets     (.dividedBy (time/duration from to)
-                                  (status-utils/granularity->duration granularity))
-        _             (when (> n-buckets max-n-buckets)
-                        (logu/log-and-throw-400 "too many data points requested. Please restrict the time interval or increase the time granularity."))
-        granularity   (status-utils/granularity->ts-interval granularity)
-        _             (when (empty? granularity) (logu/log-and-throw-400 "granularity parameter is mandatory"))
-        id            (when uuid (u/resource-id resource-type uuid))
+  (let [datasets        (if (coll? dataset) dataset [dataset])
+        _               (when-not (seq datasets) (logu/log-and-throw-400 "dataset parameter is mandatory"))
+        from            (time/date-from-str from)
+        to              (time/date-from-str to)
+        _               (when-not from (logu/log-and-throw-400 (str "from parameter is mandatory, with format " time/iso8601-format)))
+        _               (when-not to (logu/log-and-throw-400 (str "to parameter is mandatory, with format " time/iso8601-format)))
+        _               (when-not (time/before? from to)
+                          (logu/log-and-throw-400 "from must be before to"))
+        max-n-buckets   200
+        n-buckets       (.dividedBy (time/duration from to)
+                                    (status-utils/granularity->duration granularity))
+        _               (when (> n-buckets max-n-buckets)
+                          (logu/log-and-throw-400 "too many data points requested. Please restrict the time interval or increase the time granularity."))
+        ts-interval     (status-utils/granularity->ts-interval granularity)
+        _               (when (empty? ts-interval) (logu/log-and-throw-400 "granularity parameter is mandatory"))
+        id              (when uuid (u/resource-id resource-type uuid))
         ;; fetch the relevant and allowed nuvlaboxes before retrieving any data
-        nuvlaboxes    (if id
-                        [(crud/retrieve-by-id id request)]
-                        (-> (crud/query (cond-> request
-                                                filter (assoc :cimi-params {:filter (parser/parse-cimi-filter filter)
-                                                                            :last   10000})))
-                            :body
-                            :resources))
-        datasets-opts (case mode
-                        :single-edge-query single-edge-datasets
-                        :multi-edge-query (multi-edge-datasets {:nuvlaboxes nuvlaboxes}))
-        _             (when-not (every? (set (keys datasets-opts)) datasets)
-                        (logu/log-and-throw-400 (str "unknown datasets: "
-                                                     (str/join "," (sort (set/difference (set datasets)
-                                                                                         (set (keys datasets-opts))))))))
-        _             (when (and (= "text/csv" accept-header) (not= 1 (count datasets)))
-                        (logu/log-and-throw-400 (str "exactly one dataset must be specified with accept header 'text/csv'")))
-        resps         (map (fn [dataset-key]
-                             (let [{:keys [post-process-fn] :as dataset-opts} (get datasets-opts dataset-key)
-                                   query-opts (merge {:mode          mode
-                                                      :nuvlaedge-ids (concat (map :id nuvlaboxes)
-                                                                             #_(map (fn [_n] (str "nuvlabox/" (u/random-uuid)))
-                                                                                    (range 1000)))
-                                                      :from          from
-                                                      :to            to
-                                                      :granularity   granularity}
-                                                     dataset-opts)]
-                               (cond->> (ts-nuvlaedge-utils/query-metrics query-opts)
-                                        post-process-fn (post-process-fn)
-                                        true (keep-response-aggs-only query-opts))))
-                           datasets)]
+        nuvlaboxes      (if id
+                          [(crud/retrieve-by-id id request)]
+                          (-> (crud/query (cond-> request
+                                                  filter (assoc :cimi-params {:filter (parser/parse-cimi-filter filter)
+                                                                              :last   10000})))
+                              :body
+                              :resources))
+        base-query-opts {:mode          mode
+                         :nuvlaedge-ids (concat (map :id nuvlaboxes)
+                                                #_(map (fn [_n] (str "nuvlabox/" (u/random-uuid)))
+                                                       (range 1000)))
+                         :from          from
+                         :to            to
+                         :granularity   granularity
+                         :ts-interval   ts-interval}
+        datasets-opts   (case mode
+                          :single-edge-query single-edge-datasets
+                          :multi-edge-query (multi-edge-datasets {:base-query-opts base-query-opts
+                                                                  :nuvlaboxes      nuvlaboxes}))
+        _               (when-not (every? (set (keys datasets-opts)) datasets)
+                          (logu/log-and-throw-400 (str "unknown datasets: "
+                                                       (str/join "," (sort (set/difference (set datasets)
+                                                                                           (set (keys datasets-opts))))))))
+        _               (when (and (= "text/csv" accept-header) (not= 1 (count datasets)))
+                          (logu/log-and-throw-400 (str "exactly one dataset must be specified with accept header 'text/csv'")))
+        resps           (map (fn [dataset-key]
+                               (let [{:keys [post-process-fn] :as dataset-opts} (get datasets-opts dataset-key)
+                                     query-opts (merge base-query-opts dataset-opts)]
+                                 (cond->> (ts-nuvlaedge-utils/query-metrics query-opts)
+                                          post-process-fn (post-process-fn)
+                                          true (keep-response-aggs-only query-opts))))
+                             datasets)]
     (case accept-header
       (nil "application/json")
       ; by default return a json response
