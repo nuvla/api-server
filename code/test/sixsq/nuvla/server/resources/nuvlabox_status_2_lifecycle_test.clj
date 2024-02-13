@@ -848,27 +848,27 @@
               (is (= [{:dimensions {:nuvlaedge-count 3}
                        :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
                                      :doc-count    0
-                                     :aggregations {:avg-avg-online          {:value nil}
-                                                    :adjusted-avg-avg-online {:value nil}
-                                                    :edges-count             {:value 0}
+                                     :aggregations {:avg-avg-online              {:value nil}
+                                                    :adjusted-avg-avg-online     {:value nil}
+                                                    :edges-count                 {:value 0}
                                                     :virtual-edges-offline       {:value nil}
                                                     :virtual-edges-online        {:value nil}
                                                     :virtual-edges-unknown-state {:value 0}}}
                                     {:timestamp    (time/to-str midnight-today)
                                      :doc-count    2
-                                     :aggregations {:avg-avg-online          {:value 1.0}
-                                                    :adjusted-avg-avg-online {:value 0.6666666666666666}
-                                                    :edges-count             {:value 2}
+                                     :aggregations {:avg-avg-online              {:value 1.0}
+                                                    :adjusted-avg-avg-online     {:value 0.6666666666666666}
+                                                    :edges-count                 {:value 2}
                                                     :virtual-edges-offline       {:value 0.0}
                                                     :virtual-edges-online        {:value 2.0}
-                                                    :virtual-edges-unknown-state {:value 0}}}]}]
+                                                    :virtual-edges-unknown-state {:value 1}}}]}]
                      (:online-status-stats metric-data)))
               (is (= [{:dimensions {:nuvlaedge-count 3}
                        :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
                                      :doc-count    0
                                      :aggregations {:avg-avg-online          {:value nil}
                                                     :adjusted-avg-avg-online {:value nil}
-                                                    :avg-online              {:buckets []
+                                                    :avg-online              {:buckets                     []
                                                                               :doc_count_error_upper_bound 0
                                                                               :sum_other_doc_count         0}
                                                     :edges-count             {:value 0}}}
@@ -1011,7 +1011,7 @@
                                          0, 0, nil, nil, nil, nil, 0]) "\n"
                           (str/join "," [3
                                          (time/to-str midnight-today)
-                                         2, 2, 1.0, 0.6666666666666666, 2.0, 0.0, 0]) "\n")
+                                         2, 2, 1.0, 0.6666666666666666, 2.0, 0.0, 1]) "\n")
                      (csv-request "online-status-stats")))
               (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-avg-cpu-capacity,sum-avg-cpu-load,sum-avg-cpu-load-1,sum-avg-cpu-load-5,sum-context-switches,sum-interrupts,sum-software-interrupts,sum-system-calls\n"
                           (str/join "," [3
