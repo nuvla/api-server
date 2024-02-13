@@ -1104,7 +1104,8 @@ particular NuvlaBox release.
                                 (dissoc aggs :avg-online))))
                     ts-data))))
 
-(defn add-online-status-adjusted-average-fn [nuvlaboxes]
+(defn add-online-status-adjusted-average-fn
+  [nuvlaboxes]
   (fn [resp]
     (update-in resp [0 :ts-data]
                (fn [ts-data]
@@ -1118,6 +1119,28 @@ particular NuvlaBox release.
                                                                                  (/ (* avg-avg-online edges-count)
                                                                                     (count nuvlaboxes)))}))))
                       ts-data)))))
+
+(defn add-virtual-edge-number-by-status-fn
+  [nuvlaboxes]
+  (let [active-edges-count (fn [timestamp]
+                             (count (filter #(time/before? (time/date-from-str (:created %))
+                                                           (time/date-from-str timestamp))
+                                            nuvlaboxes)))]
+    (fn [resp]
+      (update-in resp [0 :ts-data]
+                 (fn [ts-data]
+                   (map (fn [{:keys [timestamp aggregations] :as ts-data-point}]
+                          (let [avg-avg-online  (get-in aggregations [:avg-avg-online :value])
+                                edges-count-agg (get-in aggregations [:edges-count :value])
+                                n-active-edges  (active-edges-count timestamp)]
+                            (-> ts-data-point
+                                (assoc-in [:aggregations :virtual-edges-online]
+                                          {:value (some->> avg-avg-online (* edges-count-agg))})
+                                (assoc-in [:aggregations :virtual-edges-offline]
+                                          {:value (some->> avg-avg-online (- 1) (* edges-count-agg))})
+                                (assoc-in [:aggregations :virtual-edges-unknown-state]
+                                          {:value (max 0 (- n-active-edges edges-count-agg))}))))
+                        ts-data))))))
 
 (defn add-edge-names-fn
   [nuvlaboxes]
@@ -1162,12 +1185,16 @@ particular NuvlaBox release.
     {"online-status-stats"     {:metric          "online-status"
                                 :aggregations    {:avg-online     (group-by-edge {:edge-avg-online {:avg {:field :online-status.online}}})
                                                   :avg-avg-online {:avg_bucket {:buckets_path :avg-online>edge-avg-online}}}
-                                :post-process-fn (comp dissoc-edges-stats
+                                :post-process-fn (comp (add-virtual-edge-number-by-status-fn nuvlaboxes)
+                                                       dissoc-edges-stats
                                                        (add-online-status-adjusted-average-fn nuvlaboxes)
                                                        add-edges-count)
                                 :response-aggs   [:edges-count
                                                   :avg-avg-online
-                                                  :adjusted-avg-avg-online]}
+                                                  :adjusted-avg-avg-online
+                                                  :virtual-edges-online
+                                                  :virtual-edges-offline
+                                                  :virtual-edges-unknown-state]}
      "online-status-by-edge"   {:metric          "online-status"
                                 :aggregations    {:avg-online     (group-by-edge {:edge-avg-online {:avg {:field :online-status.online}}})
                                                   :avg-avg-online {:avg_bucket {:buckets_path :avg-online>edge-avg-online}}}

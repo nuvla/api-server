@@ -10,11 +10,14 @@
   (:import (java.io StringWriter)))
 
 (defn build-aggregations-clause
-  [{:keys [granularity aggregations] group-by-field :group-by}]
+  [{:keys [from to granularity aggregations] group-by-field :group-by}]
   (let [tsds-aggregations {:tsds-stats
                            {:date_histogram
-                            {:field          "@timestamp"
-                             :fixed_interval granularity}
+                            {:field           "@timestamp"
+                             :fixed_interval  granularity
+                             :min_doc_count   0
+                             :extended_bounds {:min (time/to-str from)
+                                               :max (time/to-str to)}}
                             :aggregations aggregations}}]
     (if group-by-field
       {:aggregations
