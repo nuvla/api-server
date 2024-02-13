@@ -1084,17 +1084,40 @@ particular NuvlaBox release.
                               :aggregations {:energy-consumption {:max {:field :power-consumption.energy-consumption}}
                                              #_:unit                   #_{:first {:field :power-consumption.unit}}}}})
 
-(defn add-edges-count [_opts resp]
+(defn add-edges-count [resp]
   (update-in resp [0 :ts-data]
              (fn [ts-data]
                (map (fn [ts-data-point]
                       (update ts-data-point
                               :aggregations
                               (fn [{:keys [avg-online] :as aggs}]
-                                (-> aggs
-                                    (dissoc :avg-online)
-                                    (assoc :edges-count (count (:buckets avg-online)))))))
+                                (assoc aggs :edges-count {:value (count (:buckets avg-online))}))))
                     ts-data))))
+
+(defn dissoc-edges-stats [resp]
+  (update-in resp [0 :ts-data]
+             (fn [ts-data]
+               (map (fn [ts-data-point]
+                      (update ts-data-point
+                              :aggregations
+                              (fn [aggs]
+                                (dissoc aggs :avg-online))))
+                    ts-data))))
+
+(defn add-online-status-adjusted-average-fn [nuvlaboxes]
+  (fn [resp]
+    (update-in resp [0 :ts-data]
+               (fn [ts-data]
+                 (map (fn [ts-data-point]
+                        (update ts-data-point
+                                :aggregations
+                                (fn [{{avg-avg-online :value} :avg-avg-online
+                                      {edges-count :value}    :edges-count
+                                      :as                     aggs}]
+                                  (assoc aggs :adjusted-avg-avg-online {:value (when avg-avg-online
+                                                                                 (/ (* avg-avg-online edges-count)
+                                                                                    (count nuvlaboxes)))}))))
+                      ts-data)))))
 
 (defn add-edge-names-fn
   [nuvlaboxes]
@@ -1102,7 +1125,7 @@ particular NuvlaBox release.
                               (map (fn [{:keys [id name]}]
                                      [id name]))
                               (into {}))]
-    (fn [_opts resp]
+    (fn [resp]
       (let [update-buckets (fn [buckets]
                              (map (fn [{edge-id :key :as bucket}]
                                     (assoc bucket :name (get edge-names-by-id edge-id)))
@@ -1114,6 +1137,20 @@ particular NuvlaBox release.
                                        update-buckets))
                           ts-data)))))))
 
+(defn keep-response-aggs-only
+  [{:keys [response-aggs] :as _opts} resp]
+  (->> resp
+       (map #(update % :ts-data
+                     (fn [ts-data]
+                       (map (fn [ts-data-point]
+                              (update ts-data-point
+                                      :aggregations
+                                      (fn [aggs]
+                                        (if response-aggs
+                                          (select-keys aggs response-aggs)
+                                          aggs))))
+                            ts-data))))))
+
 (defn multi-edge-datasets
   [{:keys [nuvlaboxes]}]
   (let [group-by-field     (fn [field aggs]
@@ -1122,16 +1159,25 @@ particular NuvlaBox release.
         group-by-edge      (fn [aggs] (group-by-field :nuvlaedge-id aggs))
         group-by-device    (fn [aggs] (group-by-field :disk.device aggs))
         group-by-interface (fn [aggs] (group-by-field :network.interface aggs))]
-    {"online-status-stats"     {:metric        "online-status"
-                                :aggregations  {:avg-online     (group-by-edge {:edge-avg-online {:avg {:field :online-status.online}}})
-                                                :avg-avg-online {:avg_bucket {:buckets_path :avg-online>edge-avg-online}}}
-                                :response-aggs [:avg-online :avg-avg-online]
-                                :post-process-fn add-edges-count}
+    {"online-status-stats"     {:metric          "online-status"
+                                :aggregations    {:avg-online     (group-by-edge {:edge-avg-online {:avg {:field :online-status.online}}})
+                                                  :avg-avg-online {:avg_bucket {:buckets_path :avg-online>edge-avg-online}}}
+                                :post-process-fn (comp dissoc-edges-stats
+                                                       (add-online-status-adjusted-average-fn nuvlaboxes)
+                                                       add-edges-count)
+                                :response-aggs   [:edges-count
+                                                  :avg-avg-online
+                                                  :adjusted-avg-avg-online]}
      "online-status-by-edge"   {:metric          "online-status"
                                 :aggregations    {:avg-online     (group-by-edge {:edge-avg-online {:avg {:field :online-status.online}}})
                                                   :avg-avg-online {:avg_bucket {:buckets_path :avg-online>edge-avg-online}}}
-                                :response-aggs   [:avg-online :avg-avg-online]
-                                :post-process-fn (add-edge-names-fn nuvlaboxes)}
+                                :post-process-fn (comp (add-online-status-adjusted-average-fn nuvlaboxes)
+                                                       add-edges-count
+                                                       (add-edge-names-fn nuvlaboxes))
+                                :response-aggs   [:edges-count
+                                                  :avg-online
+                                                  :avg-avg-online
+                                                  :adjusted-avg-avg-online]}
      "cpu-stats"               {:metric        "cpu"
                                 :aggregations  {:avg-cpu-capacity        (group-by-edge {:by-edge {:avg {:field :cpu.capacity}}})
                                                 :avg-cpu-load            (group-by-edge {:by-edge {:avg {:field :cpu.load}}})
@@ -1234,7 +1280,8 @@ particular NuvlaBox release.
                                                       :granularity   granularity}
                                                      dataset-opts)]
                                (cond->> (ts-nuvlaedge-utils/query-metrics query-opts)
-                                        post-process-fn (post-process-fn query-opts))))
+                                        post-process-fn (post-process-fn)
+                                        true (keep-response-aggs-only query-opts))))
                            datasets)]
     (case accept-header
       (nil "application/json")

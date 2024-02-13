@@ -49,6 +49,12 @@
 (def valid-nuvlabox2 {:name  nb-name2
                       :owner nuvlabox-owner})
 
+(def nb-name3 "nb-test-status3")
+
+(def valid-nuvlabox3 {:name  nb-name3
+                      :owner nuvlabox-owner})
+
+
 (def valid-state
   {:id                          (str nb-status/resource-type "/uuid")
    :resource-type               nb-status/resource-type
@@ -730,6 +736,14 @@
                                     (ltu/body->edn)
                                     (ltu/is-status 200)
                                     ltu/body)
+              ;; add yet another nuvlabox for which we send no metrics
+              nuvlabox-id-3     (-> session-user
+                                    (request nuvlabox-base-uri
+                                             :request-method :post
+                                             :body (json/write-str valid-nuvlabox3))
+                                    (ltu/body->edn)
+                                    (ltu/is-status 201)
+                                    (ltu/location))
               nuvlabox-data-url (str p/service-context nuvlabox/resource-type "/data")
               now               (time/now)
               metrics-request   (fn [{:keys [datasets from from-str to to-str granularity accept-header]}]
@@ -739,7 +753,9 @@
                                                :request-method :patch
                                                :headers {:bulk true}
                                                :body (json/write-str
-                                                       {:filter      (str "(id='" nuvlabox-id "' or id='" nuvlabox-id-2 "')")
+                                                       {:filter      (str "(id='" nuvlabox-id "'"
+                                                                          " or id='" nuvlabox-id-2 "'"
+                                                                          " or id='" nuvlabox-id-3 "')")
                                                         :dataset     datasets
                                                         :from        (if from (time/to-str from) from-str)
                                                         :to          (if to (time/to-str to) to-str)
@@ -761,28 +777,31 @@
                                   (ltu/is-status 200)
                                   (ltu/body->edn)
                                   (ltu/body))]
-              (is (= [{:dimensions {:nuvlaedge-count 2}
+              (is (= [{:dimensions {:nuvlaedge-count 3}
                        :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                      :doc-count    2
-                                     :aggregations {:avg-avg-online {:value 1.0}
-                                                    :edges-count    2}}]}]
+                                     :aggregations {:avg-avg-online          {:value 1.0}
+                                                    :adjusted-avg-avg-online {:value 0.6666666666666666}
+                                                    :edges-count             {:value 2}}}]}]
                      (:online-status-stats metric-data)))
-              (is (= [{:dimensions {:nuvlaedge-count 2}
+              (is (= [{:dimensions {:nuvlaedge-count 3}
                        :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                      :doc-count    2
-                                     :aggregations {:avg-avg-online {:value 1.0}
-                                                    :avg-online     {:buckets                     #{{:doc_count       1
-                                                                                                     :edge-avg-online {:value 1.0}
-                                                                                                     :key             nuvlabox-id
-                                                                                                     :name            nb-name}
-                                                                                                    {:doc_count       1
-                                                                                                     :edge-avg-online {:value 1.0}
-                                                                                                     :key             nuvlabox-id-2
-                                                                                                     :name            nb-name2}}
-                                                                     :doc_count_error_upper_bound 0
-                                                                     :sum_other_doc_count         0}}}]}]
+                                     :aggregations {:avg-avg-online          {:value 1.0}
+                                                    :adjusted-avg-avg-online {:value 0.6666666666666666}
+                                                    :avg-online              {:buckets                     #{{:doc_count       1
+                                                                                                              :edge-avg-online {:value 1.0}
+                                                                                                              :key             nuvlabox-id
+                                                                                                              :name            nb-name}
+                                                                                                             {:doc_count       1
+                                                                                                              :edge-avg-online {:value 1.0}
+                                                                                                              :key             nuvlabox-id-2
+                                                                                                              :name            nb-name2}}
+                                                                              :doc_count_error_upper_bound 0
+                                                                              :sum_other_doc_count         0}
+                                                    :edges-count             {:value 2}}}]}]
                      (update-in (:online-status-by-edge metric-data) [0 :ts-data 0 :aggregations :avg-online :buckets] set)))
-              (is (= [{:dimensions {:nuvlaedge-count 2}
+              (is (= [{:dimensions {:nuvlaedge-count 3}
                        :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                      :doc-count    2
                                      :aggregations {:sum-avg-cpu-capacity    {:value 20.0}
@@ -794,25 +813,25 @@
                                                     :sum-software-interrupts {:value 0.0}
                                                     :sum-system-calls        {:value 0.0}}}]}]
                      (:cpu-stats metric-data)))
-              (is (= [{:dimensions {:nuvlaedge-count 2}
+              (is (= [{:dimensions {:nuvlaedge-count 3}
                        :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                      :doc-count    2
                                      :aggregations {:sum-avg-ram-capacity {:value 8192.0}
                                                     :sum-avg-ram-used     {:value 4000.0}}}]}]
                      (:ram-stats metric-data)))
-              (is (= #{{:dimensions {:nuvlaedge-count 2}
+              (is (= #{{:dimensions {:nuvlaedge-count 3}
                         :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                       :aggregations {:sum-avg-disk-capacity {:value 80000.0}
                                                      :sum-avg-disk-used     {:value 70000.0}}
                                       :doc-count    4}]}}
                      (set (:disk-stats metric-data))))
-              (is (= #{{:dimensions {:nuvlaedge-count 2}
+              (is (= #{{:dimensions {:nuvlaedge-count 3}
                         :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                       :aggregations {:sum-bytes-received    {:value 1.116568E7}
                                                      :sum-bytes-transmitted {:value 88446.0}}
                                       :doc-count    4}]}}
                      (set (:network-stats metric-data))))
-              (is (= #{{:dimensions {:nuvlaedge-count               2
+              (is (= #{{:dimensions {:nuvlaedge-count               3
                                      :power-consumption.metric-name "IN_current"}
                         :ts-data    [{:timestamp    (time/to-str (time/truncated-to-days now))
                                       :doc-count    2
@@ -873,32 +892,37 @@
                                     (ltu/is-header "Content-Type" "text/csv")
                                     (ltu/is-header "Content-disposition" "attachment;filename=export.csv")
                                     (ltu/body)))]
+              (is (= (str "nuvlaedge-count,timestamp,doc-count,edges-count,avg-avg-online,adjusted-avg-avg-online\n"
+                          (str/join "," [3
+                                         (time/to-str (time/truncated-to-days now))
+                                         2, 2, 1.0, 0.6666666666666666]) "\n")
+                     (csv-request "online-status-stats")))
               (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-avg-cpu-capacity,sum-avg-cpu-load,sum-avg-cpu-load-1,sum-avg-cpu-load-5,sum-context-switches,sum-interrupts,sum-software-interrupts,sum-system-calls\n"
-                          (str/join "," [2
+                          (str/join "," [3
                                          (time/to-str (time/truncated-to-days now))
                                          2, 20.0, 11.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) "\n")
                      (csv-request "cpu-stats")))
               (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-avg-ram-capacity,sum-avg-ram-used\n"
-                          (str/join "," [2
+                          (str/join "," [3
                                          (time/to-str (time/truncated-to-days now))
                                          2
                                          8192.0
                                          4000.0]) "\n")
                      (csv-request "ram-stats")))
               (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-avg-disk-capacity,sum-avg-disk-used\n"
-                          (str/join "," [2
+                          (str/join "," [3
                                          (time/to-str (time/truncated-to-days now))
                                          4, 80000.0, 70000.0]) "\n")
                      (csv-request "disk-stats")))
               (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-bytes-received,sum-bytes-transmitted\n"
-                          (str/join "," [2
+                          (str/join "," [3
                                          (time/to-str (time/truncated-to-days now))
                                          4
                                          1.116568E7
                                          88446.0]) "\n")
                      (csv-request "network-stats")))
               (is (= (str "nuvlaedge-count,power-consumption.metric-name,timestamp,doc-count,sum-energy-consumption\n"
-                          (str/join "," [2
+                          (str/join "," [3
                                          "IN_current"
                                          (time/to-str (time/truncated-to-days now))
                                          2

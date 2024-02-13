@@ -44,13 +44,13 @@
      :params      {:tsds-aggregation (json/write-str (build-aggregations-clause options))}}))
 
 (defn ->metrics-resp
-  [{:keys [mode nuvlaedge-ids aggregations response-aggs] group-by-field :group-by} resp]
+  [{:keys [mode nuvlaedge-ids aggregations] group-by-field :group-by} resp]
   (let [ts-data    (fn [tsds-stats]
                      (map
                        (fn [{:keys [key_as_string doc_count] :as bucket}]
                          {:timestamp    key_as_string
                           :doc-count    doc_count
-                          :aggregations (->> (or response-aggs (keys aggregations))
+                          :aggregations (->> (keys aggregations)
                                              (select-keys bucket)
                                              #_(map (fn [[k agg-bucket]] [k (agg-resp agg-bucket)]))
                                              #_(into {}))})
