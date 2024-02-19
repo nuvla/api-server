@@ -1,5 +1,7 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.utils
   (:require
+    [clojure.data.csv :as csv]
+    [clojure.data.json :as json]
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
@@ -13,10 +15,11 @@
     [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.job.utils :as job-utils]
-    [sixsq.nuvla.server.resources.nuvlabox.ts-nuvlaedge-utils :as ts-nuvlaedge-utils]
+    [sixsq.nuvla.server.resources.ts-nuvlaedge :as ts-nuvlaedge]
     [sixsq.nuvla.server.util.kafka-crud :as kafka-crud]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.time :as time]))
+    [sixsq.nuvla.server.util.time :as time])
+  (:import (java.io StringWriter)))
 
 (def ^:const state-new "NEW")
 (def ^:const state-activated "ACTIVATED")
@@ -373,6 +376,8 @@
           (some? online)
           (assoc :online-prev online)))
 
+(declare bulk-insert-metrics)
+
 (defn set-online!
   [{:keys [id nuvlabox-status heartbeat-interval online]
     :or   {heartbeat-interval default-heartbeat-interval}
@@ -391,7 +396,7 @@
       (r/json-response (assoc nb-status :id nuvlabox-status
                                         :parent id
                                         :acl (:acl nuvlabox))))
-    (ts-nuvlaedge-utils/bulk-insert-metrics (assoc nb-status :parent id))
+    (bulk-insert-metrics (assoc nb-status :parent id) false)
     nuvlabox))
 
 (defn get-jobs
@@ -441,3 +446,167 @@
         first
         :id)))
 
+;; ts-nuvlaedge utils
+
+(defn build-aggregations-clause
+  [{:keys [from to ts-interval aggregations] group-by-field :group-by}]
+  (let [tsds-aggregations {:tsds-stats
+                           {:date_histogram
+                            {:field           "@timestamp"
+                             :fixed_interval  ts-interval
+                             :min_doc_count   0
+                             :extended_bounds {:min (time/to-str from)
+                                               :max (time/to-str to)}}
+                            :aggregations aggregations}}]
+    (if group-by-field
+      {:aggregations
+       {:by-field
+        {:terms        {:field group-by-field}
+         :aggregations tsds-aggregations}}}
+      {:aggregations tsds-aggregations})))
+
+(defn build-metrics-query [{:keys [nuvlaedge-ids from to metric] :as options}]
+  (let [nuvlabox-id-filter (str "nuvlaedge-id=[" (str/join " " (map #(str "'" % "'")
+                                                                    nuvlaedge-ids))
+                                "]")
+        time-range-filter  (str "@timestamp>'" (time/to-str from) "'"
+                                " and "
+                                "@timestamp<'" (time/to-str to) "'")
+        metric-filter      (str "metric='" metric "'")]
+    {:cimi-params {:last 0
+                   :filter
+                   (parser/parse-cimi-filter
+                     (str "("
+                          (apply str
+                                 (interpose " and "
+                                            [nuvlabox-id-filter
+                                             time-range-filter
+                                             metric-filter]))
+                          ")"))}
+     :params      {:tsds-aggregation (json/write-str (build-aggregations-clause options))}}))
+
+(defn ->metrics-resp
+  [{:keys [mode nuvlaedge-ids aggregations] group-by-field :group-by} resp]
+  (let [ts-data    (fn [tsds-stats]
+                     (map
+                       (fn [{:keys [key_as_string doc_count] :as bucket}]
+                         {:timestamp    key_as_string
+                          :doc-count    doc_count
+                          :aggregations (->> (keys aggregations)
+                                             (select-keys bucket)
+                                             #_(map (fn [[k agg-bucket]] [k (agg-resp agg-bucket)]))
+                                             #_(into {}))})
+                       (:buckets tsds-stats)))
+        dimensions (case mode
+                     :single-edge-query
+                     {:nuvlaedge-id (first nuvlaedge-ids)}
+                     :multi-edge-query
+                     {:nuvlaedge-count (count nuvlaedge-ids)})]
+    (if group-by-field
+      (for [{:keys [key tsds-stats]} (get-in resp [0 :aggregations :by-field :buckets])]
+        {:dimensions (assoc dimensions group-by-field key)
+         :ts-data    (ts-data tsds-stats)})
+      [{:dimensions dimensions
+        :ts-data    (ts-data (get-in resp [0 :aggregations :tsds-stats]))}])))
+
+(defn query-metrics
+  [options]
+  (->> (build-metrics-query options)
+       (crud/query-as-admin ts-nuvlaedge/resource-type)
+       (->metrics-resp options)))
+
+(defn metrics-data->csv [dimension-keys aggregation-keys response]
+  (with-open [writer (StringWriter.)]
+    ;; write cav header
+    (csv/write-csv writer [(concat (map name dimension-keys)
+                                   ["timestamp" "doc-count"]
+                                   (map name aggregation-keys))])
+    ;; write csv data
+    (csv/write-csv writer
+                   (for [{:keys [dimensions ts-data]} response
+                         {:keys [timestamp doc-count aggregations]} ts-data]
+                     (concat (map dimensions dimension-keys)
+                             [timestamp doc-count]
+                             (map #(get-in aggregations [% :value]) aggregation-keys))))
+    (.toString writer)))
+
+(defmulti nuvlabox-status->metric-data (fn [_ _nb metric _] metric))
+
+(defmethod nuvlabox-status->metric-data :default
+  [{:keys [resources]} _nb metric _from-telemetry]
+  (when-let [metric-data (get resources metric)]
+    [{metric metric-data}]))
+
+(defmethod nuvlabox-status->metric-data :online-status
+  [{:keys [online]} {:keys [refresh-interval heartbeat-interval] :as nb} _ from-telemetry]
+  (when online
+    ;; when online status is sent via heartbeats, do not store those sent via telemetry
+    (when (or (not (has-heartbeat-support? nb)) (not from-telemetry))
+      [{:timestamp     (time/now-str)
+        :online-status {:online-seconds
+                        (if (has-heartbeat-support? nb)
+                          heartbeat-interval refresh-interval)}}])))
+
+(defmethod nuvlabox-status->metric-data :cpu
+  [{{:keys [cpu]} :resources} _nb _metric _from-telemetry]
+  (when cpu
+    [{:cpu (select-keys cpu
+                        [:capacity
+                         :load
+                         :load-1
+                         :load-5
+                         :context-switches
+                         :interrupts
+                         :software-interrupts
+                         :system-calls])}]))
+
+(defmethod nuvlabox-status->metric-data :ram
+  [{{:keys [ram]} :resources} _nb _metric _from-telemetry]
+  (when ram
+    [{:ram (select-keys ram [:capacity :used])}]))
+
+(defmethod nuvlabox-status->metric-data :disk
+  [{{:keys [disks]} :resources} _nb _metric _from-telemetry]
+  (when (seq disks)
+    (mapv (fn [data] {:disk (select-keys data [:device :capacity :used])}) disks)))
+
+(defmethod nuvlabox-status->metric-data :network
+  [{{:keys [net-stats]} :resources} _nb _metric _from-telemetry]
+  (when (seq net-stats)
+    (mapv (fn [data] {:network (select-keys data [:interface :bytes-transmitted :bytes-received])}) net-stats)))
+
+(defmethod nuvlabox-status->metric-data :power-consumption
+  [{{:keys [power-consumption]} :resources} _nb _metric _from-telemetry]
+  (when (seq power-consumption)
+    (mapv (fn [data] {:power-consumption (select-keys data [:metric-name :energy-consumption :unit])}) power-consumption)))
+
+(defn nuvlabox-status->ts-bulk-insert-request-body
+  [{:keys [parent current-time] :as nuvlabox-status} from-telemetry]
+  (let [nb (crud/retrieve-by-id-as-admin parent)]
+    (->> [:online-status :cpu :ram :disk :network :power-consumption]
+         (map (fn [metric]
+                (->> (nuvlabox-status->metric-data nuvlabox-status nb metric from-telemetry)
+                     (map #(merge
+                             {:nuvlaedge-id parent
+                              :metric       (name metric)
+                              :timestamp    current-time}
+                             %)))))
+         (apply concat))))
+
+(defn nuvlabox-status->ts-bulk-insert-request
+  [nb-status from-telemetry]
+  (let [body (->> (nuvlabox-status->ts-bulk-insert-request-body nb-status from-telemetry)
+                  ;; only retain metrics where a timestamp is defined
+                  (filter :timestamp))]
+    (when (seq body)
+      {:headers     {"bulk" true}
+       :params      {:resource-name ts-nuvlaedge/resource-type
+                     :action        "bulk-insert"}
+       :body        body
+       :nuvla/authn auth/internal-identity})))
+
+(defn bulk-insert-metrics
+  [nb-status from-telemetry]
+  (some-> nb-status
+          (nuvlabox-status->ts-bulk-insert-request from-telemetry)
+          (crud/bulk-action)))

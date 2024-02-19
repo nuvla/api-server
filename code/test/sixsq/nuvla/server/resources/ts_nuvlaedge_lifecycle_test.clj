@@ -25,7 +25,7 @@
         timestamp     (time/now-str)
         entries       [{:nuvlaedge-id  "nuvlabox/1"
                         :metric        "online-status"
-                        :online-status {:online 1}
+                        :online-status {:online-seconds 120}
                         :timestamp     timestamp}
                        {:nuvlaedge-id "nuvlabox/1"
                         :metric       "cpu"
@@ -121,19 +121,11 @@
         now           (time/truncated-to-minutes (time/now))
         entries       [{:nuvlaedge-id  "nuvlabox/1"
                         :metric        "online-status"
-                        :online-status {:online 1}
+                        :online-status {:online-seconds 30}
                         :timestamp     (time/to-str (time/plus now (time/duration-unit 30 :seconds)))}
                        {:nuvlaedge-id  "nuvlabox/1"
                         :metric        "online-status"
-                        :online-status {:online 0}
-                        :timestamp     (time/to-str (time/plus now (time/duration-unit 60 :seconds)))}
-                       {:nuvlaedge-id  "nuvlabox/1"
-                        :metric        "online-status"
-                        :online-status {:online 0}
-                        :timestamp     (time/to-str (time/plus now (time/duration-unit 90 :seconds)))}
-                       {:nuvlaedge-id  "nuvlabox/1"
-                        :metric        "online-status"
-                        :online-status {:online 1}
+                        :online-status {:online-seconds 30}
                         :timestamp     (time/to-str (time/plus now (time/duration-unit 120 :seconds)))}]]
 
     (-> session-admin
@@ -163,13 +155,13 @@
                                  {:field          "@timestamp"
                                   :fixed_interval "1d"}
                                  :aggregations
-                                 {:avg-online {:avg {:field :online-status.online}}}}}})}))
+                                 {:sum-online {:sum {:field :online-status.online-seconds}}}}}})}))
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-key-value (comp :value :avg-online first :buckets :tsds-stats)
+          (ltu/is-key-value (comp :value :sum-online first :buckets :tsds-stats)
                             :aggregations
-                            0.5)
-          (ltu/is-count 4)))))
+                            60.0)
+          (ltu/is-count 2)))))
 
 (deftest query-ram
   (let [session-anon  (-> (ltu/ring-app)

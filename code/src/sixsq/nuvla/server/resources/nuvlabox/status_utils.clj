@@ -81,6 +81,11 @@
       (catch Exception _
         (logu/log-and-throw-400 (str "unrecognized value for granularity " granularity))))))
 
+(defn granularity->seconds
+  "Converts from a string of the form <n>-<units> to an integer number of seconds"
+  [granularity]
+  (some-> granularity granularity->duration (.getSeconds)))
+
 (defn granularity->ts-interval
   "Converts from a string of the form <n>-<units> to an ElasticSearch interval string"
   [granularity]
