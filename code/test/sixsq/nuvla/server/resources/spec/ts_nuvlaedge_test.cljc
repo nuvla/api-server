@@ -9,7 +9,7 @@
   (let [timestamp "1964-08-25T10:00:00.00Z"]
     (doseq [valid-entry [{:nuvlaedge-id  "nuvlabox/1"
                           :metric        "online-status"
-                          :online-status {:online 1}
+                          :online-status {:online-seconds 120}
                           :timestamp     timestamp}
                          {:nuvlaedge-id "nuvlabox/1"
                           :metric       "cpu"
@@ -63,8 +63,8 @@
                        "metric"            {:type                  "keyword"
                                             :time_series_dimension true}
                        "@timestamp"        {:type "date", :format "strict_date_optional_time||epoch_millis"}
-                       "online-status"     {:properties {"online" {:time_series_metric "gauge"
-                                                                   :type               "long"}}
+                       "online-status"     {:properties {"online-seconds" {:time_series_metric "gauge"
+                                                                           :type               "long"}}
                                             :type       "object"}
                        "cpu"               {:type "object", :properties {"capacity"            {:type               "long"
                                                                                                 :time_series_metric "gauge"}

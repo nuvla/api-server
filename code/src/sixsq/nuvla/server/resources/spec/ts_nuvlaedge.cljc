@@ -30,15 +30,15 @@
              :json-schema/description "UTC timestamp"
              :json-schema/type "date-time")))
 
-(s/def ::online
-  (assoc (st/spec #{0 1})
-    :name "online"
+(s/def ::online-seconds
+  (assoc (st/spec pos-int?)
+    :name "online-seconds"
     :json-schema/field-type :metric-gauge
     :json-schema/type "integer"
-    :json-schema/description "online/offline"))
+    :json-schema/description "seconds online"))
 
 (s/def ::online-status
-  (assoc (st/spec (su/only-keys :req-un [::online]))
+  (assoc (st/spec (su/only-keys :req-un [::online-seconds]))
     :name "online-status"
     :json-schema/type "map"
     :json-schema/display-name "Online status"
