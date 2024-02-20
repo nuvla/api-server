@@ -483,6 +483,14 @@
                                                                 (ltu/is-status 200)
                                                                 (ltu/get-op-url :activate)))
                                                    (ltu/body->edn)
+                                                   (ltu/is-status 200))
+                                  _            (-> session-user
+                                                   (request (-> session-user
+                                                                (request nuvlabox-url)
+                                                                (ltu/body->edn)
+                                                                (ltu/is-status 200)
+                                                                (ltu/get-op-url :commission)))
+                                                   (ltu/body->edn)
                                                    (ltu/is-status 200))]
                               nuvlabox-id))
           nuvlabox-id     (create-nuvlabox valid-nuvlabox)

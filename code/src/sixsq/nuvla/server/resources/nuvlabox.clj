@@ -1167,7 +1167,7 @@ particular NuvlaBox release.
                              (let [next-interval-start (time/plus (time/date-from-str timestamp)
                                                                   (status-utils/granularity->duration granularity))]
                                (->> nuvlaboxes
-                                    (filter #(not= utils/state-new (:state %)))
+                                    (filter #(= utils/state-commissioned (:state %)))
                                     (filter #(time/before? (time/date-from-str (:created %))
                                                            next-interval-start))
                                     count)))]
@@ -1329,7 +1329,7 @@ particular NuvlaBox release.
                                                                                     :last   10000})))
                                :body
                                :resources))
-        nuvlaboxes      (filter #(not= "NEW" (:state %)) nuvlaboxes)
+        nuvlaboxes      (filter #(= utils/state-commissioned (:state %)) nuvlaboxes)
         base-query-opts {:mode          mode
                          :nuvlaedge-ids (concat (map :id nuvlaboxes)
                                                 #_(map (fn [_n] (str "nuvlabox/" (u/random-uuid)))
