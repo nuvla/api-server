@@ -12,7 +12,8 @@
     [sixsq.nuvla.server.resources.hook-reset-password :as hrp]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session-password-lifecycle-test :as password-test]
-    [sixsq.nuvla.server.resources.session-template :as st]))
+    [sixsq.nuvla.server.resources.session-template :as st]
+    [sixsq.nuvla.server.util.general :as gen-util]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -66,7 +67,7 @@
               #"An email with instructions has been sent to your email address."))
 
         (let [callback-url (->> @reset-link
-                                codec/url-decode
+                                gen-util/decode-uri-component
                                 (re-matches #".*callback=(.*?)&.*")
                                 second)]
           (-> session-anon

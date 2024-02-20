@@ -4,7 +4,6 @@ Contains the functions necessary to create a user resource from an invitation
 using an email address.
 "
   (:require
-    [ring.util.codec :as codec]
     [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.server.resources.callback-user-password-set :as callback-pass-set]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -13,7 +12,8 @@ using an email address.
     [sixsq.nuvla.server.resources.user-interface :as p]
     [sixsq.nuvla.server.resources.user-template-email-invitation :as email-invitation]
     [sixsq.nuvla.server.resources.user.password :as password-utils]
-    [sixsq.nuvla.server.resources.user.utils :as user-utils]))
+    [sixsq.nuvla.server.resources.user.utils :as user-utils]
+    [sixsq.nuvla.server.util.general :as gen-util]))
 
 
 ;;
@@ -57,9 +57,9 @@ using an email address.
                          base-uri id :expires (u/ttl->timestamp 2592000))] ;;30 days
       (user-utils/create-user-subresources id :email email)
 
-      (-> (str redirect-url "?callback=" (codec/url-encode callback-url)
-               "&type=" (codec/url-encode "invitation")
-               "&username=" (codec/url-encode email))
+      (-> (str redirect-url "?callback=" (gen-util/encode-uri-component callback-url)
+               "&type=" (gen-util/encode-uri-component "invitation")
+               "&username=" (gen-util/encode-uri-component email))
           (email-utils/send-invitation-email email invited-by)))
     (catch Exception e
       (user-utils/delete-user id)
