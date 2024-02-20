@@ -3,6 +3,7 @@
     [clojure.data.csv :as csv]
     [clojure.data.json :as json]
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
@@ -608,6 +609,9 @@
 
 (defn bulk-insert-metrics
   [nb-status from-telemetry]
-  (some-> nb-status
-          (nuvlabox-status->ts-bulk-insert-request from-telemetry)
-          (crud/bulk-action)))
+  (try
+    (some-> nb-status
+            (nuvlabox-status->ts-bulk-insert-request from-telemetry)
+            (crud/bulk-action))
+    (catch Exception ex
+      (log/error "An error occurred inserting metrics: " ex))))
