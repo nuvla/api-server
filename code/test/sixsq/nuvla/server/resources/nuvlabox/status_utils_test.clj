@@ -4,7 +4,7 @@
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.nuvlabox.status-utils :as t]
-    [sixsq.nuvla.server.resources.nuvlabox.ts-nuvlaedge-utils :as ts-nuvlaedge-utils]))
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]))
 
 (deftest status-fields-to-denormalize
   (are [expected nuvlabox-status]
@@ -152,7 +152,6 @@
                                             :metric            "power-consumption"
                                             :timestamp         sampling-time
                                             :power-consumption {:metric-name "CPU_power", :energy-consumption 2161, :unit "mW"}}]
-        bulk-insert-request-body          (ts-nuvlaedge-utils/nuvlabox-status->ts-bulk-insert-request-body nuvlabox-status)]
+        bulk-insert-request-body          (nb-utils/nuvlabox-status->ts-bulk-insert-request-body nuvlabox-status false)]
     (testing "nuvlabox status -> metric time-serie conversion"
       (is (= expected-bulk-insert-request-body (vec bulk-insert-request-body))))))
-
