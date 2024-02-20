@@ -1166,22 +1166,25 @@ particular NuvlaBox release.
   (let [active-edges-count (fn [timestamp]
                              (let [next-interval-start (time/plus (time/date-from-str timestamp)
                                                                   (status-utils/granularity->duration granularity))]
-                               (count (filter #(time/before? (time/date-from-str (:created %))
-                                                             next-interval-start)
-                                              nuvlaboxes))))]
+                               (->> nuvlaboxes
+                                    (filter #(not= utils/state-new (:state %)))
+                                    (filter #(time/before? (time/date-from-str (:created %))
+                                                           next-interval-start))
+                                    count)))]
     (fn [resp]
       (update-in resp [0 :ts-data]
                  (fn [ts-data]
                    (map (fn [{:keys [timestamp aggregations] :as ts-data-point}]
-                          (let [global-avg-online (get-in aggregations [:global-avg-online :value])
-                                edges-count-agg   (get-in aggregations [:edges-count :value])
-                                _n-active-edges   (active-edges-count timestamp)
-                                ]
+                          (let [global-avg-online    (get-in aggregations [:global-avg-online :value])
+                                edges-count-agg      (get-in aggregations [:edges-count :value])
+                                n-virt-online-edges  (or (some->> global-avg-online (* edges-count-agg)) 0)
+                                n-active-edges       (active-edges-count timestamp)
+                                n-virt-offline-edges (- n-active-edges n-virt-online-edges)]
                             (-> ts-data-point
                                 (assoc-in [:aggregations :virtual-edges-online]
-                                          {:value (some->> global-avg-online (* edges-count-agg))})
+                                          {:value n-virt-online-edges})
                                 (assoc-in [:aggregations :virtual-edges-offline]
-                                          {:value (some->> global-avg-online (- 1) (* edges-count-agg))})
+                                          {:value n-virt-offline-edges})
                                 #_(assoc-in [:aggregations :virtual-edges-unknown-state]
                                             {:value (max 0 (- n-active-edges edges-count-agg))}))))
                         ts-data))))))
@@ -1301,7 +1304,7 @@ particular NuvlaBox release.
                                 :response-aggs [:sum-energy-consumption]}}))
 
 (defn query-data
-  [{:keys [mode uuid filter dataset from to granularity accept-header]} request]
+  [{:keys [mode uuid dataset from to granularity accept-header] cimi-filter :filter} request]
   (let [datasets        (if (coll? dataset) dataset [dataset])
         _               (when-not (seq datasets) (logu/log-and-throw-400 "dataset parameter is mandatory"))
         from            (time/date-from-str from)
@@ -1321,11 +1324,12 @@ particular NuvlaBox release.
         ;; fetch the relevant and allowed nuvlaboxes before retrieving any data
         nuvlaboxes      (if id
                           [(crud/retrieve-by-id id request)]
-                          (-> (crud/query (cond-> request
-                                                  filter (assoc :cimi-params {:filter (parser/parse-cimi-filter filter)
-                                                                              :last   10000})))
-                              :body
-                              :resources))
+                          (->> (crud/query (cond-> request
+                                                   cimi-filter (assoc :cimi-params {:filter (parser/parse-cimi-filter cimi-filter)
+                                                                                    :last   10000})))
+                               :body
+                               :resources))
+        nuvlaboxes      (filter #(not= "NEW" (:state %)) nuvlaboxes)
         base-query-opts {:mode          mode
                          :nuvlaedge-ids (concat (map :id nuvlaboxes)
                                                 #_(map (fn [_n] (str "nuvlabox/" (u/random-uuid)))
