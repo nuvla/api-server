@@ -462,34 +462,46 @@
 
 (deftest metric-data
   (binding [config-nuvla/*stripe-api-key* nil]
-    (let [session       (-> (ltu/ring-app)
-                            session
-                            (content-type "application/json"))
-          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-          session-user  (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
-          nuvlabox-id   (-> session-user
-                            (request nuvlabox-base-uri
-                                     :request-method :post
-                                     :body (json/write-str valid-nuvlabox))
-                            (ltu/body->edn)
-                            (ltu/is-status 201)
-                            (ltu/location))
-          nuvlabox-url  (str p/service-context nuvlabox-id)
+    (let [session         (-> (ltu/ring-app)
+                              session
+                              (content-type "application/json"))
+          session-admin   (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-user    (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
+          create-nuvlabox (fn [body]
+                            (let [nuvlabox     (-> session-user
+                                                   (request nuvlabox-base-uri
+                                                            :request-method :post
+                                                            :body (json/write-str body))
+                                                   (ltu/body->edn)
+                                                   (ltu/is-status 201))
+                                  nuvlabox-id  (ltu/location nuvlabox)
+                                  nuvlabox-url (str p/service-context nuvlabox-id)
+                                  _            (-> session-user
+                                                   (request (-> session-user
+                                                                (request nuvlabox-url)
+                                                                (ltu/body->edn)
+                                                                (ltu/is-status 200)
+                                                                (ltu/get-op-url :activate)))
+                                                   (ltu/body->edn)
+                                                   (ltu/is-status 200))]
+                              nuvlabox-id))
+          nuvlabox-id     (create-nuvlabox valid-nuvlabox)
+          nuvlabox-url    (str p/service-context nuvlabox-id)
 
-          valid-acl     {:owners    ["group/nuvla-admin"]
-                         :edit-data [nuvlabox-id]}
+          valid-acl       {:owners    ["group/nuvla-admin"]
+                           :edit-data [nuvlabox-id]}
 
-          session-nb    (header session authn-info-header (str nuvlabox-id " " nuvlabox-id " group/nuvla-user group/nuvla-anon"))
-          status-id     (-> session-admin
-                            (request base-uri
-                                     :request-method :post
-                                     :body (json/write-str (assoc valid-state :parent nuvlabox-id
-                                                                              :acl valid-acl)))
-                            (ltu/body->edn)
-                            (ltu/is-status 201)
-                            (ltu/body-resource-id))
-          status-url    (str p/service-context
-                             status-id)]
+          session-nb      (header session authn-info-header (str nuvlabox-id " " nuvlabox-id " group/nuvla-user group/nuvla-anon"))
+          status-id       (-> session-admin
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str (assoc valid-state :parent nuvlabox-id
+                                                                                :acl valid-acl)))
+                              (ltu/body->edn)
+                              (ltu/is-status 201)
+                              (ltu/body-resource-id))
+          status-url      (str p/service-context
+                               status-id)]
 
       ;; update the nuvlabox
       (-> session-nb
@@ -770,14 +782,7 @@
 
       (testing "metrics data on multiple nuvlaboxes"
         (let [;; add another nuvlabox
-              nuvlabox-id-2      (-> session-user
-                                     (request nuvlabox-base-uri
-                                              :request-method :post
-                                              :body (json/write-str valid-nuvlabox2))
-                                     (ltu/body->edn)
-                                     (ltu/is-status 201)
-                                     (ltu/location))
-
+              nuvlabox-id-2      (create-nuvlabox valid-nuvlabox2)
               valid-acl-2        {:owners    ["group/nuvla-admin"]
                                   :edit-data [nuvlabox-id-2]}
 
@@ -802,10 +807,12 @@
                                      (ltu/is-status 200)
                                      ltu/body)
               ;; add yet another nuvlabox for which we send no metrics
-              nuvlabox-id-3      (-> session-user
+              nuvlabox-id-3      (create-nuvlabox valid-nuvlabox3)
+              ;; and another one which we leave in state NEW, so it should not be considered as offline
+              nuvlabox-id-4      (-> session-user
                                      (request nuvlabox-base-uri
                                               :request-method :post
-                                              :body (json/write-str valid-nuvlabox3))
+                                              :body (json/write-str valid-nuvlabox))
                                      (ltu/body->edn)
                                      (ltu/is-status 201)
                                      (ltu/location))
@@ -822,7 +829,8 @@
                                                 :body (json/write-str
                                                         {:filter      (str "(id='" nuvlabox-id "'"
                                                                            " or id='" nuvlabox-id-2 "'"
-                                                                           " or id='" nuvlabox-id-3 "')")
+                                                                           " or id='" nuvlabox-id-3 "'"
+                                                                           " or id='" nuvlabox-id-4 "')")
                                                          :dataset     datasets
                                                          :from        (if from (time/to-str from) from-str)
                                                          :to          (if to (time/to-str to) to-str)
@@ -855,7 +863,7 @@
                                       {:timestamp    (time/to-str midnight-today)
                                        :doc-count    2
                                        :aggregations {:edges-count           {:value 2}
-                                                      :virtual-edges-offline {:value (- 2 online-edges)}
+                                                      :virtual-edges-offline {:value (- 3 online-edges)}
                                                       :virtual-edges-online  {:value online-edges}}})]}]
                      (:availability-stats metric-data)))
               (is (= [{:dimensions {:nuvlaedge-count 3}
@@ -1007,7 +1015,7 @@
                                            0, 0, 0.0, 0.0]) "\n"
                             (str/join "," [3
                                            (time/to-str midnight-today)
-                                           2, 2, online-edges, (- 2 online-edges)]) "\n")
+                                           2, 2, online-edges, (- 3 online-edges)]) "\n")
                        (csv-request "availability-stats"))))
               (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-avg-cpu-capacity,sum-avg-cpu-load,sum-avg-cpu-load-1,sum-avg-cpu-load-5,sum-context-switches,sum-interrupts,sum-software-interrupts,sum-system-calls\n"
                           (str/join "," [3

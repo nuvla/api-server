@@ -32,6 +32,7 @@
 (def ^:const capability-job-pull "NUVLA_JOB_PULL")
 (def ^:const capability-heartbeat "NUVLA_HEARTBEAT")
 
+(def ^:const action-commission "commission")
 (def ^:const action-heartbeat "heartbeat")
 (def ^:const action-set-offline "set-offline")
 
