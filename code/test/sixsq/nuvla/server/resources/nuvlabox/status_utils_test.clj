@@ -4,7 +4,8 @@
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.nuvlabox.status-utils :as t]
-    [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]))
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
+    [sixsq.nuvla.server.util.time :as time]))
 
 (deftest status-fields-to-denormalize
   (are [expected nuvlabox-status]
@@ -49,6 +50,7 @@
                                            :current-time  sampling-time,
                                            :updated       "2023-05-10T08:18:17.636Z",
                                            :created       "2022-01-10T15:56:39.017Z",
+                                           :online        true
                                            :resources     {:cpu               {:load                0.45,
                                                                                :system-calls        0,
                                                                                :capacity            4,
@@ -151,7 +153,35 @@
                                            {:nuvlaedge-id      nuvlaedge-id
                                             :metric            "power-consumption"
                                             :timestamp         sampling-time
-                                            :power-consumption {:metric-name "CPU_power", :energy-consumption 2161, :unit "mW"}}]
-        bulk-insert-request-body          (nb-utils/nuvlabox-status->ts-bulk-insert-request-body nuvlabox-status false)]
-    (testing "nuvlabox status -> metric time-serie conversion"
-      (is (= expected-bulk-insert-request-body (vec bulk-insert-request-body))))))
+                                            :power-consumption {:metric-name "CPU_power", :energy-consumption 2161, :unit "mW"}}]]
+    (testing "nuvlabox status -> metric time-serie conversion for nuvlabox without hearthbeat support"
+      (is (= (concat [{:metric        "online-status"
+                       :nuvlaedge-id  "nuvlabox/1"
+                       :online-status {:online-seconds 60}
+                       :timestamp     "now"}]
+                     expected-bulk-insert-request-body)
+             (with-redefs [crud/retrieve-by-id-as-admin (constantly {:refresh-interval 60})
+                           time/now-str                 (constantly "now")]
+               (nb-utils/nuvlabox-status->ts-bulk-insert-request-body nuvlabox-status false))))
+      (is (= (concat [{:metric        "online-status"
+                       :nuvlaedge-id  "nuvlabox/1"
+                       :online-status {:online-seconds 60}
+                       :timestamp     "now"}]
+                     expected-bulk-insert-request-body)
+             (with-redefs [crud/retrieve-by-id-as-admin (constantly {:refresh-interval 60})
+                           time/now-str                 (constantly "now")]
+               (nb-utils/nuvlabox-status->ts-bulk-insert-request-body nuvlabox-status true)))))
+    (testing "nuvlabox status -> metric time-serie conversion for nuvlabox with hearthbeat support"
+      (is (= (concat [{:metric        "online-status"
+                       :nuvlaedge-id  "nuvlabox/1"
+                       :online-status {:online-seconds 20}
+                       :timestamp     "now"}]
+                     expected-bulk-insert-request-body)
+             (with-redefs [crud/retrieve-by-id-as-admin (constantly {:capabilities       [nb-utils/capability-heartbeat]
+                                                                     :heartbeat-interval 20})
+                           time/now-str                 (constantly "now")]
+               (nb-utils/nuvlabox-status->ts-bulk-insert-request-body nuvlabox-status false))))
+      (is (= expected-bulk-insert-request-body
+             (vec (with-redefs [crud/retrieve-by-id-as-admin (constantly {:capabilities       [nb-utils/capability-heartbeat]
+                                                                          :heartbeat-interval 20})]
+                    (nb-utils/nuvlabox-status->ts-bulk-insert-request-body nuvlabox-status true))))))))
