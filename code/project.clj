@@ -49,7 +49,7 @@
    [metosin/spec-tools]
    [org.bouncycastle/bcpkix-jdk15on "1.70"]
    [selmer "1.12.50"]
-   [org.clojure/data.csv "1.0.1"]
+   [org.clojure/data.csv "1.1.0"]
    [org.clojure/data.json]
    [org.clojure/java.classpath]
    [org.clojure/tools.namespace]
