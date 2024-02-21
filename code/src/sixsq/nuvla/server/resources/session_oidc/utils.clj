@@ -3,7 +3,7 @@
     [clj-http.client :as http]
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [ring.util.codec :as codec]
+    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.util.log :as logu]))
 
@@ -131,8 +131,8 @@
    (create-redirect-url authorizeURL client-id callback-url nil))
   ([authorizeURL client-id callback-url scope]
    (-> (str authorizeURL "?response_type=code")
-       (str "&client_id=" (codec/url-encode client-id))
-       (cond-> scope (str "&scope=" (codec/url-encode scope)))
+       (str "&client_id=" (gen-util/encode-uri-component client-id))
+       (cond-> scope (str "&scope=" (gen-util/encode-uri-component scope)))
        (str "&redirect_uri=" callback-url))))
 
 

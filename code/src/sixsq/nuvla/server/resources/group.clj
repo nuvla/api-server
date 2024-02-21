@@ -7,7 +7,6 @@ that start with 'nuvla-' are reserved for the server.
   (:require
     [clojure.spec.alpha :as s]
     [clojure.string :as str]
-    [ring.util.codec :as codec]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.auth.utils :as auth]
@@ -23,6 +22,7 @@ that start with 'nuvla-' are reserved for the server.
     [sixsq.nuvla.server.resources.spec.core :as spec-core]
     [sixsq.nuvla.server.resources.spec.group :as group]
     [sixsq.nuvla.server.resources.spec.group-template :as group-tpl]
+    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -243,9 +243,9 @@ that start with 'nuvla-' are reserved for the server.
                                        set-password-url (assoc :set-password-url set-password-url))
                          :expires (u/ttl->timestamp 2592000)) ;; expire after one month
           invite-url   (if (and (nil? user-id) set-password-url)
-                         (str set-password-url "?callback=" (codec/url-encode callback-url)
-                              "&type=" (codec/url-encode "invitation")
-                              "&username=" (codec/url-encode email))
+                         (str set-password-url "?callback=" (gen-util/encode-uri-component callback-url)
+                              "&type=" (gen-util/encode-uri-component "invitation")
+                              "&username=" (gen-util/encode-uri-component email))
                          callback-url)]
       (email-utils/send-join-group-email id invited-by invite-url email)
       (r/map-response (format "successfully invited to %s" id) 200 id))
