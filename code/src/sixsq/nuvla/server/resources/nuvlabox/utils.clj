@@ -20,7 +20,9 @@
     [sixsq.nuvla.server.util.kafka-crud :as kafka-crud]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time])
-  (:import (java.io StringWriter)))
+  (:import (java.io StringWriter)
+           (java.text DecimalFormat DecimalFormatSymbols)
+           (java.util Locale)))
 
 (def ^:const state-new "NEW")
 (def ^:const state-activated "ACTIVATED")
@@ -524,12 +526,19 @@
                                    ["timestamp" "doc-count"]
                                    (map name aggregation-keys))])
     ;; write csv data
-    (csv/write-csv writer
-                   (for [{:keys [dimensions ts-data]} response
-                         {:keys [timestamp doc-count aggregations]} ts-data]
-                     (concat (map dimensions dimension-keys)
-                             [timestamp doc-count]
-                             (map #(get-in aggregations [% :value]) aggregation-keys))))
+    (let [df (DecimalFormat. "0.####" (DecimalFormatSymbols. Locale/US))]
+      (csv/write-csv writer
+                     (for [{:keys [dimensions ts-data]} response
+                           {:keys [timestamp doc-count aggregations]} ts-data]
+                       (concat (map dimensions dimension-keys)
+                               [timestamp doc-count]
+                               (map (fn [agg-key]
+                                      (let [v (get-in aggregations [agg-key :value])]
+                                        (if (float? v)
+                                          ;; format floats with 4 decimal and dot separator
+                                          (.format df v)
+                                          v)))
+                                    aggregation-keys)))))
     (.toString writer)))
 
 (defmulti nuvlabox-status->metric-data (fn [_ _nb metric _] metric))

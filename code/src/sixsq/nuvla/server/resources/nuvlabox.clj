@@ -1057,7 +1057,7 @@ particular NuvlaBox release.
 
 (defn compute-bucket-availability
   [sum-online seconds-in-bucket]
-  (let [avg (/ sum-online seconds-in-bucket)]
+  (let [avg (/ (or sum-online 0.0) seconds-in-bucket)]
     (if (> avg 1.0) 1.0 avg)))
 
 (defn compute-seconds-in-bucket
@@ -1161,16 +1161,19 @@ particular NuvlaBox release.
                                 (assoc aggs :edges-count {:value (count (:buckets by-edge))}))))
                     ts-data))))
 
+(defn bucket-end-time
+  [backet-start-time granularity]
+  (time/plus (time/date-from-str backet-start-time)
+             (status-utils/granularity->duration granularity)))
+
+(defn edges-at
+  "Returns the edges which were created before the given timestamp"
+  [nuvlaboxes timestamp]
+  (filter #(time/before? (time/date-from-str (:created %)) timestamp) nuvlaboxes))
+
 (defn add-virtual-edge-number-by-status-fn
   [{:keys [granularity]} nuvlaboxes]
-  (let [active-edges-count (fn [timestamp]
-                             (let [next-interval-start (time/plus (time/date-from-str timestamp)
-                                                                  (status-utils/granularity->duration granularity))]
-                               (->> nuvlaboxes
-                                    (filter #(= utils/state-commissioned (:state %)))
-                                    (filter #(time/before? (time/date-from-str (:created %))
-                                                           next-interval-start))
-                                    count)))]
+  (let [edges-count (fn [timestamp] (count (edges-at nuvlaboxes (bucket-end-time timestamp granularity))))]
     (fn [resp]
       (update-in resp [0 :ts-data]
                  (fn [ts-data]
@@ -1178,8 +1181,8 @@ particular NuvlaBox release.
                           (let [global-avg-online    (get-in aggregations [:global-avg-online :value])
                                 edges-count-agg      (get-in aggregations [:edges-count :value])
                                 n-virt-online-edges  (or (some->> global-avg-online (* edges-count-agg)) 0)
-                                n-active-edges       (active-edges-count timestamp)
-                                n-virt-offline-edges (- n-active-edges n-virt-online-edges)]
+                                n-edges              (edges-count timestamp)
+                                n-virt-offline-edges (- n-edges n-virt-online-edges)]
                             (-> ts-data-point
                                 (assoc-in [:aggregations :virtual-edges-online]
                                           {:value n-virt-online-edges})
@@ -1205,6 +1208,29 @@ particular NuvlaBox release.
                      (map (fn [ts-data-point]
                             (update-in ts-data-point [:aggregations :by-edge :buckets]
                                        update-buckets))
+                          ts-data)))))))
+
+(defn add-missing-edges-fn
+  [{:keys [granularity]} nuvlaboxes]
+  (let [edge-ids (fn [timestamp]
+                   (->> (bucket-end-time timestamp granularity)
+                        (edges-at nuvlaboxes)
+                        (map :id)
+                        set))]
+    (fn [resp]
+      (let [update-buckets (fn [timestamp buckets]
+                             (let [bucket-edge-ids  (set (map :key buckets))
+                                   missing-edge-ids (set/difference (edge-ids timestamp) bucket-edge-ids)]
+                               (concat buckets
+                                       (map (fn [missing-edge-id]
+                                              {:key       missing-edge-id
+                                               :doc_count 0})
+                                            missing-edge-ids))))]
+        (update-in resp [0 :ts-data]
+                   (fn [ts-data]
+                     (map (fn [{:keys [timestamp] :as ts-data-point}]
+                            (update-in ts-data-point [:aggregations :by-edge :buckets]
+                                       (partial update-buckets timestamp)))
                           ts-data)))))))
 
 (defn keep-response-aggs-only
@@ -1234,7 +1260,8 @@ particular NuvlaBox release.
                                 :post-process-fn (comp (add-virtual-edge-number-by-status-fn base-query-opts nuvlaboxes)
                                                        compute-global-availability
                                                        (compute-nuvlaboxes-availabilities base-query-opts nuvlaboxes)
-                                                       add-edges-count)
+                                                       add-edges-count
+                                                       (add-missing-edges-fn base-query-opts nuvlaboxes))
                                 :response-aggs   [:edges-count
                                                   :virtual-edges-online
                                                   :virtual-edges-offline]}
@@ -1243,7 +1270,8 @@ particular NuvlaBox release.
                                 :post-process-fn (comp compute-global-availability
                                                        (compute-nuvlaboxes-availabilities base-query-opts nuvlaboxes)
                                                        add-edges-count
-                                                       (add-edge-names-fn nuvlaboxes))
+                                                       (add-edge-names-fn nuvlaboxes)
+                                                       (add-missing-edges-fn base-query-opts nuvlaboxes))
                                 :response-aggs   [:edges-count
                                                   :by-edge
                                                   :global-avg-online]}
