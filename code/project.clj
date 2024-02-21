@@ -87,7 +87,8 @@
                                [org.slf4j/slf4j-log4j12]
                                [com.cemerick/url]
                                [org.apache.curator/curator-test]
-                               [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]
+                               [org.clojars.konstan/kinsky-test-jar ~kinsky-version]
+                               [same/ish "0.1.6"]]
               :resource-paths ["test-resources"]
               :env            {:nuvla-session-key           "test-resources/session.key"
                                :nuvla-session-crt           "test-resources/session.crt"
