@@ -5,6 +5,7 @@
     [clojure.test :refer [deftest is testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
+    [same.core :refer [ish?]]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -17,7 +18,9 @@
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [sixsq.nuvla.server.resources.ts-nuvlaedge :as ts-nuvlaedge]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [sixsq.nuvla.server.util.time :as time]))
+    [sixsq.nuvla.server.util.time :as time])
+  (:import (java.text DecimalFormat DecimalFormatSymbols)
+           (java.util Locale)))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
@@ -722,7 +725,7 @@
                                          0 nil nil nil nil nil nil nil nil]) "\n"
                           (str/join "," [nuvlabox-id
                                          (time/to-str midnight-today)
-                                         1 10.0 5.5 nil nil nil nil nil nil]) "\n")
+                                         1 10 5.5 nil nil nil nil nil nil]) "\n")
                      (csv-request "cpu-stats")))
               (is (= (str "nuvlaedge-id,timestamp,doc-count,avg-ram-capacity,avg-ram-used\n"
                           (str/join "," [nuvlabox-id
@@ -730,9 +733,7 @@
                                          0 nil nil]) "\n"
                           (str/join "," [nuvlabox-id
                                          (time/to-str midnight-today)
-                                         1
-                                         4096.0
-                                         2000.0]) "\n")
+                                         1 4096 2000]) "\n")
                      (csv-request "ram-stats")))
               (is (= #{"nuvlaedge-id,disk.device,timestamp,doc-count,avg-disk-capacity,avg-disk-used"
                        (str/join "," [nuvlabox-id
@@ -742,7 +743,7 @@
                        (str/join "," [nuvlabox-id
                                       "root"
                                       (time/to-str midnight-today)
-                                      1, 20000.0, 20000.0])
+                                      1, 20000, 20000])
                        (str/join "," [nuvlabox-id
                                       "datastore"
                                       (time/to-str midnight-yesterday)
@@ -750,9 +751,7 @@
                        (str/join "," [nuvlabox-id
                                       "datastore"
                                       (time/to-str midnight-today)
-                                      1
-                                      20000.0
-                                      15000.0])}
+                                      1 20000 15000])}
                      (set (str/split-lines (csv-request "disk-stats")))))
               (is (= #{"nuvlaedge-id,network.interface,timestamp,doc-count,bytes-received,bytes-transmitted"
                        (str/join "," [nuvlabox-id
@@ -762,9 +761,7 @@
                        (str/join "," [nuvlabox-id
                                       "eth0"
                                       (time/to-str midnight-today)
-                                      1
-                                      5579821.0
-                                      44145.0])
+                                      1 5579821 44145])
                        (str/join "," [nuvlabox-id
                                       "vpn"
                                       (time/to-str midnight-yesterday)
@@ -772,9 +769,7 @@
                        (str/join "," [nuvlabox-id
                                       "vpn"
                                       (time/to-str midnight-today)
-                                      1
-                                      3019.0
-                                      78.0])}
+                                      1 3019 78])}
                      (set (str/split-lines (csv-request "network-stats")))))
               (is (= #{"nuvlaedge-id,power-consumption.metric-name,timestamp,doc-count,energy-consumption"
                        (str/join "," [nuvlabox-id
@@ -814,7 +809,7 @@
                                      (ltu/body->edn)
                                      (ltu/is-status 200)
                                      ltu/body)
-              ;; add yet another nuvlabox for which we send no metrics
+              ;; add yet another nuvlabox in state COMMISSIONED, but for which we send no metrics
               nuvlabox-id-3      (create-nuvlabox valid-nuvlabox3)
               ;; and another one which we leave in state NEW, so it should not be considered as offline
               nuvlabox-id-4      (-> session-user
@@ -860,107 +855,113 @@
                                   (ltu/is-status 200)
                                   (ltu/body->edn)
                                   (ltu/body))]
-              (is (= [{:dimensions {:nuvlaedge-count 3}
-                       :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
-                                     :doc-count    0
-                                     :aggregations {:edges-count           {:value 0}
-                                                    :virtual-edges-offline {:value 0.0}
-                                                    :virtual-edges-online  {:value 0.0}}}
-                                    (let [global-avg-online (/ 60.0 (time/time-between midnight-today to :seconds))
-                                          online-edges      (* 2 global-avg-online)]
-                                      {:timestamp    (time/to-str midnight-today)
-                                       :doc-count    2
-                                       :aggregations {:edges-count           {:value 2}
-                                                      :virtual-edges-offline {:value (- 3 online-edges)}
-                                                      :virtual-edges-online  {:value online-edges}}})]}]
-                     (:availability-stats metric-data)))
-              (is (= [{:dimensions {:nuvlaedge-count 3}
-                       :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
-                                     :doc-count    0
-                                     :aggregations {:global-avg-online {:value 0.0}
-                                                    :by-edge           {:buckets                     []
-                                                                        :doc_count_error_upper_bound 0
-                                                                        :sum_other_doc_count         0}
-                                                    :edges-count       {:value 0}}}
-                                    (let [edge-avg-online (/ 60.0 (time/time-between midnight-today to :seconds))]
-                                      {:timestamp    (time/to-str midnight-today)
-                                       :doc-count    2
-                                       :aggregations {:global-avg-online {:value edge-avg-online}
-                                                      :by-edge           {:buckets                     #{{:doc_count       1
-                                                                                                          :edge-avg-online {:value edge-avg-online}
-                                                                                                          :key             nuvlabox-id
-                                                                                                          :name            nb-name}
-                                                                                                         {:doc_count       1
-                                                                                                          :edge-avg-online {:value edge-avg-online}
-                                                                                                          :key             nuvlabox-id-2
-                                                                                                          :name            nb-name2}}
-                                                                          :doc_count_error_upper_bound 0
-                                                                          :sum_other_doc_count         0}
-                                                      :edges-count       {:value 2}}})]}]
-                     (update-in (:availability-by-edge metric-data) [0 :ts-data 1 :aggregations :by-edge :buckets] set)))
-              (is (= [{:dimensions {:nuvlaedge-count 3}
-                       :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
-                                     :doc-count    0
-                                     :aggregations {:sum-avg-cpu-capacity    {:value 0.0}
-                                                    :sum-avg-cpu-load        {:value 0.0}
-                                                    :sum-avg-cpu-load-1      {:value 0.0}
-                                                    :sum-avg-cpu-load-5      {:value 0.0}
-                                                    :sum-context-switches    {:value 0.0}
-                                                    :sum-interrupts          {:value 0.0}
-                                                    :sum-software-interrupts {:value 0.0}
-                                                    :sum-system-calls        {:value 0.0}}}
-                                    {:timestamp    (time/to-str midnight-today)
-                                     :doc-count    2
-                                     :aggregations {:sum-avg-cpu-capacity    {:value 20.0}
-                                                    :sum-avg-cpu-load        {:value 11.0}
-                                                    :sum-avg-cpu-load-1      {:value 0.0}
-                                                    :sum-avg-cpu-load-5      {:value 0.0}
-                                                    :sum-context-switches    {:value 0.0}
-                                                    :sum-interrupts          {:value 0.0}
-                                                    :sum-software-interrupts {:value 0.0}
-                                                    :sum-system-calls        {:value 0.0}}}]}]
-                     (:cpu-stats metric-data)))
-              (is (= [{:dimensions {:nuvlaedge-count 3}
-                       :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
-                                     :doc-count    0
-                                     :aggregations {:sum-avg-ram-capacity {:value 0.0}
-                                                    :sum-avg-ram-used     {:value 0.0}}}
-                                    {:timestamp    (time/to-str midnight-today)
-                                     :doc-count    2
-                                     :aggregations {:sum-avg-ram-capacity {:value 8192.0}
-                                                    :sum-avg-ram-used     {:value 4000.0}}}]}]
-                     (:ram-stats metric-data)))
-              (is (= #{{:dimensions {:nuvlaedge-count 3}
-                        :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
-                                      :aggregations {:sum-avg-disk-capacity {:value 0.0}
-                                                     :sum-avg-disk-used     {:value 0.0}}
-                                      :doc-count    0}
-                                     {:timestamp    (time/to-str midnight-today)
-                                      :aggregations {:sum-avg-disk-capacity {:value 80000.0}
-                                                     :sum-avg-disk-used     {:value 70000.0}}
-                                      :doc-count    4}]}}
-                     (set (:disk-stats metric-data))))
-              (is (= #{{:dimensions {:nuvlaedge-count 3}
-                        :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
-                                      :aggregations {:sum-bytes-received    {:value 0.0}
-                                                     :sum-bytes-transmitted {:value 0.0}}
-                                      :doc-count    0}
-                                     {:timestamp    (time/to-str midnight-today)
-                                      :aggregations {:sum-bytes-received    {:value 1.116568E7}
-                                                     :sum-bytes-transmitted {:value 88446.0}}
-                                      :doc-count    4}]}}
-                     (set (:network-stats metric-data))))
-              (is (= #{{:dimensions {:nuvlaedge-count               3
-                                     :power-consumption.metric-name "IN_current"}
-                        :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
-                                      :doc-count    0
-                                      :aggregations {:sum-energy-consumption {:value 0.0}
-                                                     #_:unit                 #_"A"}}
-                                     {:timestamp    (time/to-str midnight-today)
-                                      :doc-count    2
-                                      :aggregations {:sum-energy-consumption {:value 4.8}
-                                                     #_:unit                 #_"A"}}]}}
-                     (set (:power-consumption-stats metric-data))))))
+              (is (ish? [{:dimensions {:nuvlaedge-count 3}
+                          :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
+                                        :doc-count    0
+                                        :aggregations {:edges-count           {:value 0}
+                                                       :virtual-edges-offline {:value 0.0}
+                                                       :virtual-edges-online  {:value 0.0}}}
+                                       (let [global-avg-online (/ 60.0 (time/time-between midnight-today to :seconds))
+                                             online-edges      (* 2 global-avg-online)]
+                                         {:timestamp    (time/to-str midnight-today)
+                                          :doc-count    2
+                                          :aggregations {:edges-count           {:value 3}
+                                                         :virtual-edges-offline {:value (- 3 online-edges)}
+                                                         :virtual-edges-online  {:value online-edges}}})]}]
+                        (:availability-stats metric-data)))
+              (is (ish? [{:dimensions {:nuvlaedge-count 3}
+                          :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
+                                        :doc-count    0
+                                        :aggregations {:global-avg-online {:value 0.0}
+                                                       :by-edge           {:buckets                     []
+                                                                           :doc_count_error_upper_bound 0
+                                                                           :sum_other_doc_count         0}
+                                                       :edges-count       {:value 0}}}
+                                       (let [edge-avg-online (* (/ 60.0 (time/time-between midnight-today to :seconds)))]
+                                         {:timestamp    (time/to-str midnight-today)
+                                          :doc-count    2
+                                          :aggregations {:global-avg-online {:value (* (/ 2 3) edge-avg-online)}
+                                                         :by-edge
+                                                         {:buckets
+                                                          #{{:doc_count       1
+                                                             :edge-avg-online {:value edge-avg-online}
+                                                             :key             nuvlabox-id
+                                                             :name            nb-name}
+                                                            {:doc_count       1
+                                                             :edge-avg-online {:value edge-avg-online}
+                                                             :key             nuvlabox-id-2
+                                                             :name            nb-name2}
+                                                            {:doc_count       0
+                                                             :edge-avg-online {:value 0.0}
+                                                             :key             nuvlabox-id-3
+                                                             :name            nb-name3}}
+                                                          :doc_count_error_upper_bound 0
+                                                          :sum_other_doc_count         0}
+                                                         :edges-count       {:value 3}}})]}]
+                        (update-in (:availability-by-edge metric-data) [0 :ts-data 1 :aggregations :by-edge :buckets] set)))
+              (is (ish? [{:dimensions {:nuvlaedge-count 3}
+                          :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
+                                        :doc-count    0
+                                        :aggregations {:sum-avg-cpu-capacity    {:value 0.0}
+                                                       :sum-avg-cpu-load        {:value 0.0}
+                                                       :sum-avg-cpu-load-1      {:value 0.0}
+                                                       :sum-avg-cpu-load-5      {:value 0.0}
+                                                       :sum-context-switches    {:value 0.0}
+                                                       :sum-interrupts          {:value 0.0}
+                                                       :sum-software-interrupts {:value 0.0}
+                                                       :sum-system-calls        {:value 0.0}}}
+                                       {:timestamp    (time/to-str midnight-today)
+                                        :doc-count    2
+                                        :aggregations {:sum-avg-cpu-capacity    {:value 20.0}
+                                                       :sum-avg-cpu-load        {:value 11.0}
+                                                       :sum-avg-cpu-load-1      {:value 0.0}
+                                                       :sum-avg-cpu-load-5      {:value 0.0}
+                                                       :sum-context-switches    {:value 0.0}
+                                                       :sum-interrupts          {:value 0.0}
+                                                       :sum-software-interrupts {:value 0.0}
+                                                       :sum-system-calls        {:value 0.0}}}]}]
+                        (:cpu-stats metric-data)))
+              (is (ish? [{:dimensions {:nuvlaedge-count 3}
+                          :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
+                                        :doc-count    0
+                                        :aggregations {:sum-avg-ram-capacity {:value 0.0}
+                                                       :sum-avg-ram-used     {:value 0.0}}}
+                                       {:timestamp    (time/to-str midnight-today)
+                                        :doc-count    2
+                                        :aggregations {:sum-avg-ram-capacity {:value 8192.0}
+                                                       :sum-avg-ram-used     {:value 4000.0}}}]}]
+                        (:ram-stats metric-data)))
+              (is (ish? #{{:dimensions {:nuvlaedge-count 3}
+                           :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
+                                         :aggregations {:sum-avg-disk-capacity {:value 0.0}
+                                                        :sum-avg-disk-used     {:value 0.0}}
+                                         :doc-count    0}
+                                        {:timestamp    (time/to-str midnight-today)
+                                         :aggregations {:sum-avg-disk-capacity {:value 80000.0}
+                                                        :sum-avg-disk-used     {:value 70000.0}}
+                                         :doc-count    4}]}}
+                        (set (:disk-stats metric-data))))
+              (is (ish? #{{:dimensions {:nuvlaedge-count 3}
+                           :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
+                                         :aggregations {:sum-bytes-received    {:value 0.0}
+                                                        :sum-bytes-transmitted {:value 0.0}}
+                                         :doc-count    0}
+                                        {:timestamp    (time/to-str midnight-today)
+                                         :aggregations {:sum-bytes-received    {:value 1.116568E7}
+                                                        :sum-bytes-transmitted {:value 88446.0}}
+                                         :doc-count    4}]}}
+                        (set (:network-stats metric-data))))
+              (is (ish? #{{:dimensions {:nuvlaedge-count               3
+                                        :power-consumption.metric-name "IN_current"}
+                           :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
+                                         :doc-count    0
+                                         :aggregations {:sum-energy-consumption {:value 0.0}
+                                                        #_:unit                 #_"A"}}
+                                        {:timestamp    (time/to-str midnight-today)
+                                         :doc-count    2
+                                         :aggregations {:sum-energy-consumption {:value 4.8}
+                                                        #_:unit                 #_"A"}}]}}
+                        (set (:power-consumption-stats metric-data))))))
 
           (testing "query request validation"
             (let [invalid-request (fn [options]
@@ -1016,56 +1017,55 @@
                                     (ltu/is-header "Content-disposition" "attachment;filename=export.csv")
                                     (ltu/body)))]
               (let [global-avg-online (/ 60.0 (time/time-between midnight-today to :seconds))
-                    online-edges      (* 2 global-avg-online)]
+                    online-edges      (* 2 global-avg-online)
+                    fmt               #(.format (DecimalFormat. "0.####" (DecimalFormatSymbols. Locale/US)) %)]
                 (is (= (str "nuvlaedge-count,timestamp,doc-count,edges-count,virtual-edges-online,virtual-edges-offline\n"
                             (str/join "," [3
                                            (time/to-str midnight-yesterday)
-                                           0, 0, 0.0, 0.0]) "\n"
+                                           0, 0, 0, 0]) "\n"
                             (str/join "," [3
                                            (time/to-str midnight-today)
-                                           2, 2, online-edges, (- 3 online-edges)]) "\n")
+                                           2, 3, (fmt online-edges), (fmt (- 3 online-edges))]) "\n")
                        (csv-request "availability-stats"))))
               (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-avg-cpu-capacity,sum-avg-cpu-load,sum-avg-cpu-load-1,sum-avg-cpu-load-5,sum-context-switches,sum-interrupts,sum-software-interrupts,sum-system-calls\n"
                           (str/join "," [3
                                          (time/to-str midnight-yesterday)
-                                         0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) "\n"
+                                         0, 0, 0, 0, 0, 0, 0, 0, 0]) "\n"
                           (str/join "," [3
                                          (time/to-str midnight-today)
-                                         2, 20.0, 11.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) "\n")
+                                         2, 20, 11, 0, 0, 0, 0, 0, 0]) "\n")
                      (csv-request "cpu-stats")))
               (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-avg-ram-capacity,sum-avg-ram-used\n"
                           (str/join "," [3
                                          (time/to-str midnight-yesterday)
-                                         0, 0.0, 0.0]) "\n"
+                                         0, 0, 0]) "\n"
                           (str/join "," [3
                                          (time/to-str midnight-today)
                                          2
-                                         8192.0
-                                         4000.0]) "\n")
+                                         8192
+                                         4000]) "\n")
                      (csv-request "ram-stats")))
               (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-avg-disk-capacity,sum-avg-disk-used\n"
                           (str/join "," [3
                                          (time/to-str midnight-yesterday)
-                                         0, 0.0, 0.0]) "\n"
+                                         0, 0, 0]) "\n"
                           (str/join "," [3
                                          (time/to-str midnight-today)
-                                         4, 80000.0, 70000.0]) "\n")
+                                         4, 80000, 70000]) "\n")
                      (csv-request "disk-stats")))
               (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-bytes-received,sum-bytes-transmitted\n"
                           (str/join "," [3
                                          (time/to-str midnight-yesterday)
-                                         0 0.0 0.0]) "\n"
+                                         0 0 0]) "\n"
                           (str/join "," [3
                                          (time/to-str midnight-today)
-                                         4
-                                         1.116568E7
-                                         88446.0]) "\n")
+                                         4 11165680 88446]) "\n")
                      (csv-request "network-stats")))
               (is (= (str "nuvlaedge-count,power-consumption.metric-name,timestamp,doc-count,sum-energy-consumption\n"
                           (str/join "," [3
                                          "IN_current"
                                          (time/to-str midnight-yesterday)
-                                         0 0.0]) "\n"
+                                         0 0]) "\n"
                           (str/join "," [3
                                          "IN_current"
                                          (time/to-str midnight-today)
