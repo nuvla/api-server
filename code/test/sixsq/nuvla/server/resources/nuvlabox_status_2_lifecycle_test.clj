@@ -16,7 +16,7 @@
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.resources.nuvlabox-status-2 :as nb-status-2]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
-    [sixsq.nuvla.server.resources.ts-nuvlaedge :as ts-nuvlaedge]
+    [sixsq.nuvla.server.resources.ts-nuvlaedge-telemetry :as ts-ne-telemetry]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
     [sixsq.nuvla.server.util.time :as time])
   (:import (java.text DecimalFormat DecimalFormatSymbols)
@@ -359,7 +359,7 @@
 
         (testing "admin edition doesn't set online flag"
           (let [called (atom false)]
-            (with-redefs [ts-nuvlaedge/bulk-insert-impl (fn [& _] (reset! called true))]
+            (with-redefs [ts-ne-telemetry/bulk-insert-impl (fn [& _] (reset! called true))]
               (-> session-admin
                   (request status-url
                            :request-method :put
@@ -378,7 +378,7 @@
 
         (testing "nuvlabox can do a legacy heartbeat"
           (let [called (atom false)]
-            (with-redefs [ts-nuvlaedge/bulk-insert-impl (fn [& _] (reset! called true))]
+            (with-redefs [ts-ne-telemetry/bulk-insert-impl (fn [& _] (reset! called true))]
               (-> session-nb
                   (request status-url
                            :request-method :put
@@ -422,7 +422,7 @@
 
         (testing "admin can set offline"
           (let [called (atom false)]
-            (with-redefs [ts-nuvlaedge/bulk-insert-impl (fn [& _] (reset! called true))]
+            (with-redefs [ts-ne-telemetry/bulk-insert-impl (fn [& _] (reset! called true))]
               (-> session-admin
                   (request (-> session-admin
                                (request nuvlabox-url)

@@ -3,7 +3,7 @@
     [clojure.test :refer [is deftest]]
     [sixsq.nuvla.db.es.common.es-mapping :as es-mapping]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
-    [sixsq.nuvla.server.resources.spec.ts-nuvlaedge :as ts-nuvlaedge]))
+    [sixsq.nuvla.server.resources.spec.ts-nuvlaedge-telemetry :as ts-nuvlaedge]))
 
 (deftest check-schema
   (let [timestamp "1964-08-25T10:00:00.00Z"]

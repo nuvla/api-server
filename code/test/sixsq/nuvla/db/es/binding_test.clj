@@ -10,7 +10,7 @@
     [sixsq.nuvla.db.es.common.utils :as escu]
     [sixsq.nuvla.db.es.utils :as esu]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.spec.ts-nuvlaedge :as ts-nuvlaedge]
+    [sixsq.nuvla.server.resources.spec.ts-nuvlaedge-telemetry :as ts-nuvlaedge]
     [sixsq.nuvla.server.util.time :as time]))
 
 
