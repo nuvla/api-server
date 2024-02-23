@@ -1,11 +1,12 @@
-(ns sixsq.nuvla.server.resources.ts-nuvlaedge
+(ns sixsq.nuvla.server.resources.ts-nuvlaedge-availability
   "
-The `ts-nuvlaedge` resources create a timeseries related to nuvlaedge.
+The `ts-nuvlaedge` resources create a timeseries related to nuvlaedge availability.
 "
   (:require
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
-    [sixsq.nuvla.server.resources.spec.ts-nuvlaedge :as ts-nuvlaedge]
+    [sixsq.nuvla.db.es.binding :as es-binding]
+    [sixsq.nuvla.server.resources.spec.ts-nuvlaedge-availability :as ts-nuvlaedge-availability]
     [sixsq.nuvla.server.resources.common.utils :as u]))
 
 
@@ -15,8 +16,8 @@ The `ts-nuvlaedge` resources create a timeseries related to nuvlaedge.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:query       ["group/nuvla-admin"]
-                     :add         ["group/nuvla-admin"]})
+(def collection-acl {:query ["group/nuvla-admin"]
+                     :add   ["group/nuvla-admin"]})
 
 
 ;;
@@ -24,16 +25,11 @@ The `ts-nuvlaedge` resources create a timeseries related to nuvlaedge.
 ;;
 
 
-(def validate-fn (u/create-spec-validation-fn ::ts-nuvlaedge/schema))
+(def validate-fn (u/create-spec-validation-fn ::ts-nuvlaedge-availability/schema))
 
 (defn validate
   [resource]
   (validate-fn resource))
-
-(defn validate-metrics
-  [metrics]
-  (doseq [metric metrics]
-    (validate metric)))
 
 ;;
 ;; use default ACL method
@@ -43,14 +39,15 @@ The `ts-nuvlaedge` resources create a timeseries related to nuvlaedge.
   [resource _request]
   resource)
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-type
-                               :options {:refresh false
-                                         :ts true}))
+(def add-impl (std-crud/add-metric-fn resource-type collection-acl resource-type
+                                      :validate-fn validate
+                                      :options {:refresh false
+                                                :ts      true}))
 
 
 (defmethod crud/add resource-type
   [request]
-  (add-impl request ))
+  (add-impl request))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -90,15 +87,10 @@ The `ts-nuvlaedge` resources create a timeseries related to nuvlaedge.
   (query-impl request))
 
 
-(def bulk-insert-impl (std-crud/bulk-insert-metrics-fn resource-type collection-acl collection-type))
-
-(defmethod crud/bulk-action [resource-type "bulk-insert"]
-  [request]
-  (validate-metrics (:body request))
-  (bulk-insert-impl request))
-
 (defn initialize
   []
-  (std-crud/initialize-as-timeseries resource-type ::ts-nuvlaedge/schema)
+  (std-crud/initialize-as-timeseries resource-type ::ts-nuvlaedge-availability/schema
+                                     {:ilm-policy es-binding/hot-delete-policy})
   ;(md/register resource-metadata)
   )
+

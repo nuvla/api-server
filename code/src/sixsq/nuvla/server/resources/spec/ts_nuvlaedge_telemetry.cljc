@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.ts-nuvlaedge
+(ns sixsq.nuvla.server.resources.spec.ts-nuvlaedge-telemetry
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.core :as core]

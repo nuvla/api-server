@@ -16,9 +16,11 @@
     [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.job.utils :as job-utils]
-    [sixsq.nuvla.server.resources.ts-nuvlaedge :as ts-nuvlaedge]
+    [sixsq.nuvla.server.resources.ts-nuvlaedge-telemetry :as ts-nuvlaedge]
+    [sixsq.nuvla.server.resources.ts-nuvlaedge-availability :as ts-nuvlaedge-availability]
     [sixsq.nuvla.server.util.kafka-crud :as kafka-crud]
     [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.time :as t]
     [sixsq.nuvla.server.util.time :as time])
   (:import (java.io StringWriter)
            (java.text DecimalFormat DecimalFormatSymbols)
@@ -381,6 +383,7 @@
           (assoc :online-prev online)))
 
 (declare bulk-insert-metrics)
+(declare track-availability)
 
 (defn set-online!
   [{:keys [id nuvlabox-status heartbeat-interval online]
@@ -401,6 +404,7 @@
                                         :parent id
                                         :acl (:acl nuvlabox))))
     (bulk-insert-metrics (assoc nb-status :parent id) false)
+    (track-availability (assoc nb-status :parent id) false)
     nuvlabox))
 
 (defn get-jobs
@@ -451,6 +455,23 @@
         :id)))
 
 ;; ts-nuvlaedge utils
+
+(defn latest-availability-status
+  ([nuvlaedge-id]
+   (latest-availability-status nuvlaedge-id nil))
+  ([nuvlaedge-id before-timestamp]
+   (->> {:cimi-params {:filter (cimi-params-impl/cimi-filter
+                                  {:filter (cond-> (str "nuvlaedge-id='" nuvlaedge-id "'")
+                                                   before-timestamp
+                                                   (str " and @timestamp<'" (time/to-str before-timestamp) "'"))
+                                   :last   1})
+                       :select  ["@timestamp" "online"]
+                       :orderby [["@timestamp" :desc]]}
+         ;; sending an empty :tsds-aggregation to avoid acl checks. TODO: find a cleaner way
+         :params      {:tsds-aggregation "{}"}}
+        (crud/query-as-admin ts-nuvlaedge-availability/resource-type)
+        second
+        first)))
 
 (defn build-aggregations-clause
   [{:keys [from to ts-interval aggregations] group-by-field :group-by}]
@@ -591,7 +612,7 @@
   (when (seq power-consumption)
     (mapv (fn [data] {:power-consumption (select-keys data [:metric-name :energy-consumption :unit])}) power-consumption)))
 
-(defn nuvlabox-status->ts-bulk-insert-request-body
+(defn nuvlabox-status->bulk-insert-metrics-request-body
   [{:keys [parent current-time] :as nuvlabox-status} from-telemetry]
   (let [nb (crud/retrieve-by-id-as-admin parent)]
     (->> [:online-status :cpu :ram :disk :network :power-consumption]
@@ -604,9 +625,9 @@
                              %)))))
          (apply concat))))
 
-(defn nuvlabox-status->ts-bulk-insert-request
+(defn nuvlabox-status->bulk-insert-metrics-request
   [nb-status from-telemetry]
-  (let [body (->> (nuvlabox-status->ts-bulk-insert-request-body nb-status from-telemetry)
+  (let [body (->> (nuvlabox-status->bulk-insert-metrics-request-body nb-status from-telemetry)
                   ;; only retain metrics where a timestamp is defined
                   (filter :timestamp))]
     (when (seq body)
@@ -620,7 +641,41 @@
   [nb-status from-telemetry]
   (try
     (some-> nb-status
-            (nuvlabox-status->ts-bulk-insert-request from-telemetry)
+            (nuvlabox-status->bulk-insert-metrics-request from-telemetry)
             (crud/bulk-action))
     (catch Exception ex
       (log/error "An error occurred inserting metrics: " ex))))
+
+(defn nuvlabox-status->insert-availability-request-body
+  [{:keys [parent online] :as _nuvlabox-status} from-telemetry]
+  (when (some? online)
+    (let [nb (crud/retrieve-by-id-as-admin parent)]
+      ;; when online status is sent via heartbeats, do not store those sent via telemetry
+      (when (or (not (has-heartbeat-support? nb)) (not from-telemetry))
+        (let [now    (time/now)
+              latest (latest-availability-status (:id nb) now)]
+          ;; when availability status has changed, or no availability data was recorded for the day yet
+          (when (or (not= (:online latest)
+                          (if online 1 0))
+                    (not= (some-> (:timestamp latest) t/date-from-str (.toLocalDate))
+                          (.toLocalDate now)))
+            {:nuvlaedge-id parent
+             :timestamp    (time/to-str now)
+             :online       (if (true? online) 1 0)}))))))
+
+(defn nuvlabox-status->insert-availability-request
+  [nb-status from-telemetry]
+  (let [body (nuvlabox-status->insert-availability-request-body nb-status from-telemetry)]
+    (when body
+      {:params      {:resource-name ts-nuvlaedge-availability/resource-type}
+       :body        body
+       :nuvla/authn auth/internal-identity})))
+
+(defn track-availability
+  [nb-status from-telemetry]
+  (try
+    (some-> nb-status
+            (nuvlabox-status->insert-availability-request from-telemetry)
+            (crud/add))
+    (catch Exception ex
+      (log/error "An error occurred updating availability: " ex))))
