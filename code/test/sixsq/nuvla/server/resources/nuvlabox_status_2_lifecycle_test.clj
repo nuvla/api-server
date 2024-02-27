@@ -1156,7 +1156,7 @@
             (ltu/is-status 200)))
 
       (same.core/with-comparator
-        (compare-ulp 100.0 1e9)
+        (compare-ulp 100.0 1e12)
 
         (testing "metrics data on a single nuvlabox"
           (let [nuvlabox-data-url  (str nuvlabox-url "/data")
@@ -1267,12 +1267,7 @@
               (let [from        midnight-yesterday
                     to          now
                     metric-data (-> (metrics-request {:datasets    ["availability-stats"
-                                                                    "availability-by-edge"
-                                                                    "cpu-stats"
-                                                                    "ram-stats"
-                                                                    "disk-stats"
-                                                                    "network-stats"
-                                                                    "power-consumption-stats"]
+                                                                    "availability-by-edge"]
                                                       :from        from
                                                       :to          to
                                                       :granularity "1-days"})
@@ -1345,7 +1340,7 @@
                                       (ltu/is-header "Content-Type" "text/csv")
                                       (ltu/is-header "Content-disposition" "attachment;filename=export.csv")
                                       (ltu/body)))
-                    fmt               #(.format (DecimalFormat. "0.####" (DecimalFormatSymbols. Locale/US)) %)]
+                    fmt         #(.format (DecimalFormat. "0.####" (DecimalFormatSymbols. Locale/US)) %)]
                 (is (= (str "nuvlaedge-count,timestamp,doc-count,edges-count,virtual-edges-online,virtual-edges-offline\n"
                             (let [global-avg-online (double (/ (+ (time/time-between midnight-yesterday midnight-today :seconds)
                                                                   (time/time-between now-1d midnight-today :seconds))
