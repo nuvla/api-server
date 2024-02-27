@@ -1093,30 +1093,62 @@ particular NuvlaBox release.
     [sum-time-online (:online (or (last relevant-hits)
                                   {:online latest-status}))]))
 
+(defn update-resp-ts-data
+  [resp f]
+  (update-in resp [0 :ts-data] f))
+
+(defn update-resp-ts-data-points
+  [resp f]
+  (update-resp-ts-data
+    resp
+    (fn [ts-data]
+      (map f ts-data))))
+
+(defn update-resp-ts-data-point-aggs
+  [resp f]
+  (update-resp-ts-data-points
+    resp
+    (fn [ts-data-point]
+      (update ts-data-point :aggregations (partial f ts-data-point)))))
+
+(defn add-aggregation
+  "Add a new aggregation with the given key (or path).
+   A function is invoked to compute the new aggregation with the current aggregations passed as parameter."
+  [m agg-key-or-path f]
+  (update m
+          :aggregations
+          (fn [aggs]
+            (cond
+              (keyword? agg-key-or-path)
+              (assoc-in aggs [agg-key-or-path :value] (f aggs))
+
+              (vector? agg-key-or-path)
+              (assoc-in aggs (conj agg-key-or-path :value) (f aggs))))))
+
 (defn compute-nuvlabox-availability*
   "Compute availability for a single nuvlabox."
   [resp now granularity nuvlaedge-id update-path agg-key]
-  (let [hits            (->> (get-in resp [0 :hits])
-                             (map #(update % :timestamp time/date-from-str))
-                             reverse)
-        first-bucket-ts (some-> resp first :ts-data first :timestamp time/date-from-str)
-        prev-status     (:online (utils/latest-availability-status nuvlaedge-id first-bucket-ts))]
-    (update-in resp [0 :ts-data]
-               (fn [ts-data]
-                 (->>
-                   (reduce
-                     (fn [[ts-data latest-status] ts-data-point]
-                       (let [seconds-in-bucket (compute-seconds-in-bucket ts-data-point granularity now)
-                             [sum-online latest-status] (bucket-online-stats nuvlaedge-id ts-data-point granularity now hits latest-status)]
-                         [(conj ts-data (update-in ts-data-point
+  (let [hits                 (->> (get-in resp [0 :hits])
+                                  (map #(update % :timestamp time/date-from-str))
+                                  reverse)
+        first-bucket-ts      (some-> resp first :ts-data first :timestamp time/date-from-str)
+        prev-status          (:online (utils/latest-availability-status nuvlaedge-id first-bucket-ts))
+        update-ts-data-point (fn [[ts-data latest-status] ts-data-point]
+                               (let [seconds-in-bucket (compute-seconds-in-bucket ts-data-point granularity now)
+                                     [sum-online latest-status] (bucket-online-stats nuvlaedge-id ts-data-point granularity now hits latest-status)]
+                                 [(conj ts-data
+                                        (update-in ts-data-point
                                                    update-path
                                                    (fn [aggs]
                                                      (assoc-in aggs [agg-key :value]
                                                                (compute-bucket-availability sum-online seconds-in-bucket)))))
-                          latest-status]))
-                     [[] prev-status]
-                     ts-data)
-                   first)))))
+                                  latest-status]))]
+    (update-resp-ts-data
+      resp
+      (fn [ts-data]
+        (first (reduce update-ts-data-point
+                       [[] prev-status]
+                       ts-data))))))
 
 (defn compute-nuvlabox-availability
   [{:keys [nuvlaedge-ids granularity]}]
@@ -1128,16 +1160,12 @@ particular NuvlaBox release.
   [{:keys [granularity]}]
   (let [now (time/now)]
     (fn [resp]
-      (update-in resp [0 :ts-data]
-                 (fn [ts-data]
-                   (map (fn [ts-data-point]
-                          (let [seconds-in-bucket (compute-seconds-in-bucket ts-data-point granularity now)]
-                            (update ts-data-point
-                                    :aggregations
-                                    (fn [aggs]
-                                      (assoc-in aggs [:avg-online :value]
-                                                (compute-bucket-availability (-> aggs :sum-online :value) seconds-in-bucket))))))
-                        ts-data))))))
+      (update-resp-ts-data-point-aggs
+        resp
+        (fn [ts-data-point aggs]
+          (let [seconds-in-bucket (compute-seconds-in-bucket ts-data-point granularity now)]
+            (assoc-in aggs [:avg-online :value]
+                      (compute-bucket-availability (-> aggs :sum-online :value) seconds-in-bucket))))))))
 
 (defn dissoc-hits
   [resp]
@@ -1178,76 +1206,6 @@ particular NuvlaBox release.
                               :aggregations {:energy-consumption {:max {:field :power-consumption.energy-consumption}}
                                              #_:unit                   #_{:first {:field :power-consumption.unit}}}}})
 
-(defn compute-nuvlaboxes-availabilities
-  [{:keys [granularity nuvlaedge-ids]} _nuvlaboxes]
-  (let [now               (time/now)
-        init-edge-buckets (fn [resp]
-                            (update-in resp [0 :ts-data]
-                                       (fn [ts-data]
-                                         (map #(assoc-in % [:aggregations :by-edge :buckets]
-                                                         (mapv (fn [ne-id] {:key ne-id}) nuvlaedge-ids)) ts-data))))]
-    (fn [resp]
-      (reduce
-        (fn [resp [idx nuvlaedge-id]]
-          (let [edge-bucket-path [:aggregations :by-edge :buckets idx]]
-            (-> resp
-                (compute-nuvlabox-availability* now granularity nuvlaedge-id
-                                                edge-bucket-path
-                                                :edge-avg-online))))
-        (init-edge-buckets resp)
-        (map-indexed vector nuvlaedge-ids)))))
-
-(defn hb-compute-nuvlaboxes-availabilities
-  [{:keys [granularity]} _nuvlaboxes]
-  (let [now (time/now)]
-    (fn [resp]
-      (update-in resp [0 :ts-data]
-                 (fn [ts-data]
-                   (map (fn [ts-data-point]
-                          (let [seconds-in-bucket (compute-seconds-in-bucket ts-data-point granularity now)]
-                            (update ts-data-point
-                                    :aggregations
-                                    (fn [aggs]
-                                      (update-in aggs [:by-edge :buckets]
-                                                 (fn [buckets]
-                                                   (map #(-> %
-                                                             (assoc-in [:edge-avg-online :value]
-                                                                       (compute-bucket-availability
-                                                                         (-> % :edge-sum-online :value)
-                                                                         seconds-in-bucket))
-                                                             (dissoc :edge-sum-online))
-                                                        buckets)))))))
-                        ts-data))))))
-
-(defn compute-global-availability [resp]
-  (update-in resp [0 :ts-data]
-             (fn [ts-data]
-               (map (fn [ts-data-point]
-                      (update ts-data-point
-                              :aggregations
-                              (fn [{:keys [by-edge] :as aggs}]
-                                (let [avgs-online (map #(or (some-> % :edge-avg-online :value) 0)
-                                                       (:buckets by-edge))]
-                                  ;; here we can compute the average of the averages, beacause we give the same weight
-                                  ;; to each edge (caveat: an edge created in the middle of a bucket will have the same
-                                  ;; weight then an edge that was there since the beginning of the bucket).
-                                  (assoc aggs :global-avg-online
-                                              {:value (if (seq avgs-online)
-                                                        (/ (apply + avgs-online)
-                                                           (count avgs-online))
-                                                        0.0)})))))
-                    ts-data))))
-
-(defn add-edges-count [resp]
-  (update-in resp [0 :ts-data]
-             (fn [ts-data]
-               (map (fn [ts-data-point]
-                      (update ts-data-point
-                              :aggregations
-                              (fn [{:keys [by-edge] :as aggs}]
-                                (assoc aggs :edges-count {:value (count (:buckets by-edge))}))))
-                    ts-data))))
-
 (defn bucket-end-time
   [backet-start-time granularity]
   (time/plus (time/date-from-str backet-start-time)
@@ -1258,26 +1216,101 @@ particular NuvlaBox release.
   [nuvlaboxes timestamp]
   (filter #(time/before? (time/date-from-str (:created %)) timestamp) nuvlaboxes))
 
+(defn expected-bucket-edge-ids
+  [nuvlaboxes granularity {:keys [timestamp] :as _ts-data-point}]
+  (->> (bucket-end-time timestamp granularity)
+       (edges-at nuvlaboxes)
+       (map :id)))
+
+(defn init-edge-buckets
+  [resp nuvlaboxes granularity]
+  (update-resp-ts-data-points
+    resp
+    (fn [ts-data-point]
+      (assoc-in ts-data-point [:aggregations :by-edge :buckets]
+                (mapv (fn [ne-id] {:key ne-id})
+                      (expected-bucket-edge-ids nuvlaboxes granularity ts-data-point))))))
+
+(defn compute-nuvlaboxes-availabilities
+  [{:keys [granularity nuvlaedge-ids]} nuvlaboxes]
+  (let [now (time/now)]
+    (fn [resp]
+      (reduce
+        (fn [resp [idx nuvlaedge-id]]
+          (let [edge-bucket-path [:aggregations :by-edge :buckets idx]]
+            (-> resp
+                (compute-nuvlabox-availability* now granularity nuvlaedge-id
+                                                edge-bucket-path
+                                                :edge-avg-online))))
+        (init-edge-buckets resp nuvlaboxes granularity)
+        (map-indexed vector nuvlaedge-ids)))))
+
+(defn hb-compute-nuvlaboxes-availabilities
+  [{:keys [granularity]} _nuvlaboxes]
+  (let [now (time/now)]
+    (fn [resp]
+      (update-resp-ts-data-point-aggs
+        resp
+        (fn [ts-data-point aggs]
+          (let [seconds-in-bucket (compute-seconds-in-bucket ts-data-point granularity now)]
+            (update-in aggs [:by-edge :buckets]
+                       (fn [buckets]
+                         (map #(-> %
+                                   (assoc-in [:edge-avg-online :value]
+                                             (compute-bucket-availability
+                                               (-> % :edge-sum-online :value)
+                                               seconds-in-bucket))
+                                   (dissoc :edge-sum-online))
+                              buckets)))))))))
+
+(defn compute-global-availability [resp]
+  (update-resp-ts-data-point-aggs
+    resp
+    (fn [_ts-data-point {:keys [by-edge] :as aggs}]
+      (let [avgs-online (map #(or (some-> % :edge-avg-online :value) 0)
+                             (:buckets by-edge))]
+        ;; here we can compute the average of the averages, beacause we give the same weight
+        ;; to each edge (caveat: an edge created in the middle of a bucket will have the same
+        ;; weight then an edge that was there since the beginning of the bucket).
+        (assoc aggs :global-avg-online
+                    {:value (if (seq avgs-online)
+                              (/ (apply + avgs-online)
+                                 (count avgs-online))
+                              0.0)})))))
+
+(defn add-edges-count [resp]
+  (update-resp-ts-data-point-aggs
+    resp
+    (fn [_ts-data-point {:keys [by-edge] :as aggs}]
+      (assoc aggs :edges-count {:value (count (:buckets by-edge))}))))
+
 (defn add-virtual-edge-number-by-status-fn
   [{:keys [granularity]} nuvlaboxes]
   (let [edges-count (fn [timestamp] (count (edges-at nuvlaboxes (bucket-end-time timestamp granularity))))]
     (fn [resp]
-      (update-in resp [0 :ts-data]
-                 (fn [ts-data]
-                   (map (fn [{:keys [timestamp aggregations] :as ts-data-point}]
-                          (let [global-avg-online    (get-in aggregations [:global-avg-online :value])
-                                edges-count-agg      (get-in aggregations [:edges-count :value])
-                                n-virt-online-edges  (double (or (some->> global-avg-online (* edges-count-agg)) 0))
-                                n-edges              (edges-count timestamp)
-                                n-virt-offline-edges (- n-edges n-virt-online-edges)]
-                            (-> ts-data-point
-                                (assoc-in [:aggregations :virtual-edges-online]
-                                          {:value n-virt-online-edges})
-                                (assoc-in [:aggregations :virtual-edges-offline]
-                                          {:value n-virt-offline-edges})
-                                #_(assoc-in [:aggregations :virtual-edges-unknown-state]
-                                            {:value (max 0 (- n-active-edges edges-count-agg))}))))
-                        ts-data))))))
+      (update-resp-ts-data-points
+        resp
+        (fn [{:keys [timestamp aggregations] :as ts-data-point}]
+          (let [global-avg-online    (get-in aggregations [:global-avg-online :value])
+                edges-count-agg      (get-in aggregations [:edges-count :value])
+                n-virt-online-edges  (double (or (some->> global-avg-online (* edges-count-agg)) 0))
+                n-edges              (edges-count timestamp)
+                n-virt-offline-edges (- n-edges n-virt-online-edges)]
+            (-> ts-data-point
+                (assoc-in [:aggregations :virtual-edges-online]
+                          {:value n-virt-online-edges})
+                (assoc-in [:aggregations :virtual-edges-offline]
+                          {:value n-virt-offline-edges})
+                #_(assoc-in [:aggregations :virtual-edges-unknown-state]
+                            {:value (max 0 (- n-active-edges edges-count-agg))}))))))))
+
+(defn update-resp-edge-buckets
+  [resp f]
+  (update-resp-ts-data-point-aggs
+    resp
+    (fn [ts-data-point aggs]
+      (update-in aggs [:by-edge :buckets]
+                 (partial map (partial f ts-data-point))))))
 
 (defn add-edge-names-fn
   [nuvlaboxes]
@@ -1286,53 +1319,38 @@ particular NuvlaBox release.
                                      [id name]))
                               (into {}))]
     (fn [resp]
-      (let [update-buckets (fn [buckets]
-                             (map (fn [{edge-id :key :as bucket}]
-                                    (assoc bucket :name (get edge-names-by-id edge-id)))
-                                  buckets))]
-        (update-in resp [0 :ts-data]
-                   (fn [ts-data]
-                     (map (fn [ts-data-point]
-                            (update-in ts-data-point [:aggregations :by-edge :buckets]
-                                       update-buckets))
-                          ts-data)))))))
+      (update-resp-edge-buckets
+        resp
+        (fn [_ts-data-point {edge-id :key :as bucket}]
+          (assoc bucket :name (get edge-names-by-id edge-id)))))))
 
 (defn add-missing-edges-fn
   [{:keys [granularity]} nuvlaboxes]
-  (let [edge-ids (fn [timestamp]
-                   (->> (bucket-end-time timestamp granularity)
-                        (edges-at nuvlaboxes)
-                        (map :id)
-                        set))]
-    (fn [resp]
-      (let [update-buckets (fn [timestamp buckets]
-                             (let [bucket-edge-ids  (set (map :key buckets))
-                                   missing-edge-ids (set/difference (edge-ids timestamp) bucket-edge-ids)]
-                               (concat buckets
-                                       (map (fn [missing-edge-id]
-                                              {:key       missing-edge-id
-                                               :doc_count 0})
-                                            missing-edge-ids))))]
-        (update-in resp [0 :ts-data]
-                   (fn [ts-data]
-                     (map (fn [{:keys [timestamp] :as ts-data-point}]
-                            (update-in ts-data-point [:aggregations :by-edge :buckets]
-                                       (partial update-buckets timestamp)))
-                          ts-data)))))))
+  (fn [resp]
+    (letfn [(update-buckets
+              [ts-data-point buckets]
+              (let [bucket-edge-ids  (set (map :key buckets))
+                    missing-edge-ids (set/difference (set (expected-bucket-edge-ids nuvlaboxes granularity ts-data-point))
+                                                     bucket-edge-ids)]
+                (concat buckets
+                        (map (fn [missing-edge-id]
+                               {:key       missing-edge-id
+                                :doc_count 0})
+                             missing-edge-ids))))]
+      (update-resp-ts-data-points
+        resp
+        (fn [ts-data-point]
+          (update-in ts-data-point [:aggregations :by-edge :buckets]
+                     (partial update-buckets ts-data-point)))))))
 
 (defn keep-response-aggs-only
   [{:keys [response-aggs] :as _opts} resp]
-  (->> resp
-       (map #(update % :ts-data
-                     (fn [ts-data]
-                       (map (fn [ts-data-point]
-                              (update ts-data-point
-                                      :aggregations
-                                      (fn [aggs]
-                                        (if response-aggs
-                                          (select-keys aggs response-aggs)
-                                          aggs))))
-                            ts-data))))))
+  (update-resp-ts-data-point-aggs
+    resp
+    (fn [_ts-data-point aggs]
+      (if response-aggs
+        (select-keys aggs response-aggs)
+        aggs))))
 
 (defn multi-edge-datasets
   [{:keys [base-query-opts nuvlaboxes]}]
