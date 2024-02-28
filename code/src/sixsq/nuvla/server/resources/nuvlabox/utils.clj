@@ -403,7 +403,6 @@
       (r/json-response (assoc nb-status :id nuvlabox-status
                                         :parent id
                                         :acl (:acl nuvlabox))))
-    (bulk-insert-metrics (assoc nb-status :parent id) false)
     (track-availability (assoc nb-status :parent id) false)
     nuvlabox))
 
@@ -589,16 +588,6 @@
   (when-let [metric-data (get resources metric)]
     [{metric metric-data}]))
 
-(defmethod nuvlabox-status->metric-data :online-status
-  [{:keys [online]} {:keys [refresh-interval heartbeat-interval] :as nb} _ from-telemetry]
-  (when online
-    ;; when online status is sent via heartbeats, do not store those sent via telemetry
-    (when (or (not (has-heartbeat-support? nb)) (not from-telemetry))
-      [{:timestamp     (time/now-str)
-        :online-status {:online-seconds
-                        (if (has-heartbeat-support? nb)
-                          heartbeat-interval refresh-interval)}}])))
-
 (defmethod nuvlabox-status->metric-data :cpu
   [{{:keys [cpu]} :resources} _nb _metric _from-telemetry]
   (when cpu
@@ -635,7 +624,7 @@
 (defn nuvlabox-status->bulk-insert-metrics-request-body
   [{:keys [parent current-time] :as nuvlabox-status} from-telemetry]
   (let [nb (crud/retrieve-by-id-as-admin parent)]
-    (->> [:online-status :cpu :ram :disk :network :power-consumption]
+    (->> [:cpu :ram :disk :network :power-consumption]
          (map (fn [metric]
                 (->> (nuvlabox-status->metric-data nuvlabox-status nb metric from-telemetry)
                      (map #(merge
