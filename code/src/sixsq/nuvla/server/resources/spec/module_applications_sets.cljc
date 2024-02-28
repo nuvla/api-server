@@ -5,6 +5,7 @@
     [sixsq.nuvla.server.resources.spec.container :as container-spec]
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment]
+    [sixsq.nuvla.server.resources.spec.module-application :as module-application]
     [sixsq.nuvla.server.resources.spec.module-component :as module-component]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -57,7 +58,8 @@
   (assoc (st/spec (su/only-keys :req-un [::id
                                          ::version]
                                 :opt-un [::environmental-variables
-                                         ::deployment/registries-credentials]))
+                                         ::deployment/registries-credentials
+                                         ::module-application/files]))
     :name "application"
     :json-schema/type "map"))
 
