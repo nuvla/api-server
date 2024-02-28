@@ -1095,7 +1095,9 @@ particular NuvlaBox release.
 
 (defn update-resp-ts-data
   [resp f]
-  (update-in resp [0 :ts-data] f))
+  (-> resp
+      vec
+      (update-in [0 :ts-data] f)))
 
 (defn update-resp-ts-data-points
   [resp f]
@@ -1110,20 +1112,6 @@ particular NuvlaBox release.
     resp
     (fn [ts-data-point]
       (update ts-data-point :aggregations (partial f ts-data-point)))))
-
-(defn add-aggregation
-  "Add a new aggregation with the given key (or path).
-   A function is invoked to compute the new aggregation with the current aggregations passed as parameter."
-  [m agg-key-or-path f]
-  (update m
-          :aggregations
-          (fn [aggs]
-            (cond
-              (keyword? agg-key-or-path)
-              (assoc-in aggs [agg-key-or-path :value] (f aggs))
-
-              (vector? agg-key-or-path)
-              (assoc-in aggs (conj agg-key-or-path :value) (f aggs))))))
 
 (defn compute-nuvlabox-availability*
   "Compute availability for a single nuvlabox."
@@ -1156,17 +1144,6 @@ particular NuvlaBox release.
     (fn [resp]
       (compute-nuvlabox-availability* resp now granularity (first nuvlaedge-ids) [:aggregations] :avg-online))))
 
-(defn hb-compute-nuvlabox-availability
-  [{:keys [granularity]}]
-  (let [now (time/now)]
-    (fn [resp]
-      (update-resp-ts-data-point-aggs
-        resp
-        (fn [ts-data-point aggs]
-          (let [seconds-in-bucket (compute-seconds-in-bucket ts-data-point granularity now)]
-            (assoc-in aggs [:avg-online :value]
-                      (compute-bucket-availability (-> aggs :sum-online :value) seconds-in-bucket))))))))
-
 (defn dissoc-hits
   [resp]
   (update-in resp [0] dissoc :hits))
@@ -1176,10 +1153,6 @@ particular NuvlaBox release.
   {"availability-stats"      {:metric          "availability"
                               :post-process-fn (comp dissoc-hits
                                                      (compute-nuvlabox-availability base-query-opts))
-                              :response-aggs   [:avg-online]}
-   "hb-availability-stats"   {:metric          "online-status"
-                              :aggregations    {:sum-online {:sum {:field :online-status.online-seconds}}}
-                              :post-process-fn (hb-compute-nuvlabox-availability base-query-opts)
                               :response-aggs   [:avg-online]}
    "cpu-stats"               {:metric       "cpu"
                               :aggregations {:avg-cpu-capacity    {:avg {:field :cpu.capacity}}
@@ -1245,31 +1218,13 @@ particular NuvlaBox release.
         (init-edge-buckets resp nuvlaboxes granularity)
         (map-indexed vector nuvlaedge-ids)))))
 
-(defn hb-compute-nuvlaboxes-availabilities
-  [{:keys [granularity]} _nuvlaboxes]
-  (let [now (time/now)]
-    (fn [resp]
-      (update-resp-ts-data-point-aggs
-        resp
-        (fn [ts-data-point aggs]
-          (let [seconds-in-bucket (compute-seconds-in-bucket ts-data-point granularity now)]
-            (update-in aggs [:by-edge :buckets]
-                       (fn [buckets]
-                         (map #(-> %
-                                   (assoc-in [:edge-avg-online :value]
-                                             (compute-bucket-availability
-                                               (-> % :edge-sum-online :value)
-                                               seconds-in-bucket))
-                                   (dissoc :edge-sum-online))
-                              buckets)))))))))
-
 (defn compute-global-availability [resp]
   (update-resp-ts-data-point-aggs
     resp
     (fn [_ts-data-point {:keys [by-edge] :as aggs}]
       (let [avgs-online (map #(or (some-> % :edge-avg-online :value) 0)
                              (:buckets by-edge))]
-        ;; here we can compute the average of the averages, beacause we give the same weight
+        ;; here we can compute the average of the averages, because we give the same weight
         ;; to each edge (caveat: an edge created in the middle of a bucket will have the same
         ;; weight then an edge that was there since the beginning of the bucket).
         (assoc aggs :global-avg-online
@@ -1370,16 +1325,6 @@ particular NuvlaBox release.
                                 :response-aggs   [:edges-count
                                                   :virtual-edges-online
                                                   :virtual-edges-offline]}
-     "hb-availability-stats"   {:metric          "online-status"
-                                :aggregations    {:by-edge (group-by-edge {:edge-sum-online {:sum {:field :online-status.online-seconds}}})}
-                                :post-process-fn (comp (add-virtual-edge-number-by-status-fn base-query-opts nuvlaboxes)
-                                                       compute-global-availability
-                                                       (hb-compute-nuvlaboxes-availabilities base-query-opts nuvlaboxes)
-                                                       add-edges-count
-                                                       (add-missing-edges-fn base-query-opts nuvlaboxes))
-                                :response-aggs   [:edges-count
-                                                  :virtual-edges-online
-                                                  :virtual-edges-offline]}
      "availability-by-edge"    {:metric          "availability"
                                 :post-process-fn (comp dissoc-hits
                                                        compute-global-availability
@@ -1387,16 +1332,6 @@ particular NuvlaBox release.
                                                        (add-edge-names-fn nuvlaboxes)
                                                        (add-missing-edges-fn base-query-opts nuvlaboxes)
                                                        (compute-nuvlaboxes-availabilities base-query-opts nuvlaboxes))
-                                :response-aggs   [:edges-count
-                                                  :by-edge
-                                                  :global-avg-online]}
-     "hb-availability-by-edge" {:metric          "online-status"
-                                :aggregations    {:by-edge (group-by-edge {:edge-sum-online {:sum {:field :online-status.online-seconds}}})}
-                                :post-process-fn (comp compute-global-availability
-                                                       (hb-compute-nuvlaboxes-availabilities base-query-opts nuvlaboxes)
-                                                       add-edges-count
-                                                       (add-edge-names-fn nuvlaboxes)
-                                                       (add-missing-edges-fn base-query-opts nuvlaboxes))
                                 :response-aggs   [:edges-count
                                                   :by-edge
                                                   :global-avg-online]}
