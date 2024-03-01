@@ -9,13 +9,22 @@
 
 
 (def app1-env-vars [{:name  "var_1_value"
-                     :value "overwritten var1 overwritten in deployment set"}
+                     :value "var1 overwritten in app set or deployment set"}
                     {:name  "var_2"
-                     :value "overwritten in deployment set"}])
+                     :value "var2 overwritten in app set or deployment set"}])
 (def app1-env-vars* [{:name  "var_1_value"
-                      :value "overwritten var1 overwritten in deployment set"}
+                      :value "var1 overwritten in app set or deployment set"}
                      {:name  "var_2"
                       :value "modified later in deployment set"}])
+
+(def app1-files [{:file-name    "file1"
+                  :file-content "file1 overwritten in app set or deployment set"}
+                 {:file-name    "file2"
+                  :file-content "file2 overwritten in app set or deployment set"}])
+(def app1-files* [{:file-name    "file1"
+                   :file-content "file1 overwritten in app set or deployment set"}
+                  {:file-name    "file2"
+                   :file-content "modified later in deployment set"}])
 
 (def target1-id "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316")
 (def target2-id "credential/bc258c46-4771-45d3-9b38-97afdf185f44")
@@ -26,13 +35,15 @@
   {:app-set     "set-1"
    :application {:id                      app1-id
                  :version                 1
-                 :environmental-variables app1-env-vars}
+                 :environmental-variables app1-env-vars
+                 :files                   app1-files}
    :target      target1-id})
 (def deployment2
   {:app-set     "set-1"
    :application {:id                      app1-id
                  :version                 1
-                 :environmental-variables app1-env-vars}
+                 :environmental-variables app1-env-vars
+                 :files                   app1-files}
    :target      target2-id})
 (def deployment3
   {:app-set     "set-1"
@@ -87,7 +98,8 @@
    :app-set     "set-1"
    :application {:id                      app1-id
                  :version                 1
-                 :environmental-variables app1-env-vars}
+                 :environmental-variables app1-env-vars
+                 :files                   app1-files}
    :target      target3-id})
 
 ;;
@@ -98,6 +110,8 @@
   (-> deployment1
       (update-in [:application :environmental-variables]
                  (constantly app1-env-vars*))
+      (update-in [:application :files]
+                 (constantly app1-files*))
       set-random-deployment-id
       (set-deployment-state "STARTED")))
 

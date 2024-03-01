@@ -266,18 +266,34 @@
     (merge (env-to-map environmental-variables)
            (env-to-map overwrite-environmental-variables))))
 
+(defn file-to-map
+  [files]
+  (array-map-to-map files :file-name :file-content))
+
+(defn merge-files
+  [files overwrite-files]
+  (mapv
+    (fn [[k v]] {:file-name k :file-content v})
+    (merge (file-to-map files)
+           (file-to-map overwrite-files))))
+
 (defn merge-app
   [{:keys [environmental-variables
+           files
            version] :as application}
    application-overwrite]
   (let [env        (merge-env
                      environmental-variables
                      (:environmental-variables application-overwrite))
+        files      (merge-files
+                     files
+                     (:files application-overwrite))
         regs-creds (:registries-credentials application-overwrite)]
     (-> application
         (assoc :version (or (:version application-overwrite) version))
         (cond->
           (seq env) (assoc :environmental-variables env)
+          (seq files) (assoc :files files)
           (seq regs-creds) (assoc :registries-credentials regs-creds)))))
 
 (defn merge-apps
@@ -317,17 +333,22 @@
   [{:keys [id] :as _deployment-set}]
   (let [deployments (current-deployments id)]
     (for [{:keys                     [nuvlabox parent state app-set registries-credentials] deployment-id :id
-           {application-href :href {:keys [environmental-variables]} :content
+           {application-href :href {:keys [environmental-variables files]} :content
             :as              module} :module} deployments
           :let [env-vars (->> environmental-variables
                               (map #(select-keys % [:name :value]))
-                              (filter :value))]]
+                              (filter :value))
+                files    (->> files
+                              (map #(select-keys % [:file-name :file-content]))
+                              (filter :file-content))]]
       {:id          deployment-id
        :app-set     app-set
        :application (cond-> {:id      (module-utils/full-uuid->uuid application-href)
                              :version (module-utils/module-current-version module)}
                             (seq env-vars)
                             (assoc :environmental-variables env-vars)
+                            (seq files)
+                            (assoc :files files)
                             (seq registries-credentials)
                             (assoc :registries-credentials registries-credentials))
        :target      (or nuvlabox parent)

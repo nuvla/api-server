@@ -66,7 +66,9 @@
        {:id      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8",
         :version 1,
         :environmental-variables
-        [{:name "var_1_value", :value "overwritten var1"}]}]}
+        [{:name "var_1_value", :value "overwritten var1"}]
+        :files
+        [{:file-name "file1", :file-content "overwritten file1 content"}]}]}
      {:name        "set-2",
       :description "set 2 nginx pro only",
       :applications
@@ -170,6 +172,7 @@
                                                      :value "overwritten var1 overwritten in deployment set"}
                                                     {:name  "var_2"
                                                      :value "overwritten in deployment set"}]
+                          :files                   [{:file-name "file1", :file-content "overwritten file1 content"}]
                           :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
                           :version                 1}
             :target      "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
@@ -178,6 +181,7 @@
                                                      :value "overwritten var1 overwritten in deployment set"}
                                                     {:name  "var_2"
                                                      :value "overwritten in deployment set"}]
+                          :files                   [{:file-name "file1", :file-content "overwritten file1 content"}]
                           :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
                           :version                 1}
             :target      "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
@@ -216,6 +220,7 @@
                            :version 0}
                           {:environmental-variables [{:name  "var_1_value"
                                                       :value "overwritten var1"}]
+                           :files                   [{:file-name "file1", :file-content "overwritten file1 content"}]
                            :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
                            :version                 1}]
            :name         "set-1"}
@@ -451,12 +456,13 @@
                   (ltu/is-key-value count :deployments-to-update 0))))
 
           (let [plan             (utils/plan u-deployment-set u-applications-sets-v11)
-                fake-deployment  (fn [{:keys [target] {app-id :id app-ver :version :keys [environmental-variables]} :application}]
+                fake-deployment  (fn [{:keys [target] {app-id :id app-ver :version :keys [environmental-variables files]} :application}]
                                    {:id                  (str "deployment/" (u/random-uuid))
                                     :parent              target
                                     :state               "STARTED"
                                     :module              {:content       {:id                      (str "module/" app-ver)
-                                                                          :environmental-variables environmental-variables}
+                                                                          :environmental-variables environmental-variables
+                                                                          :files                   files}
                                                           :versions      (map (fn [i] {:href (str "module/" i)}) (range 3))
                                                           :published     true
                                                           :id            app-id
@@ -945,17 +951,17 @@
                           ltu/location-url)]
       (testing "deployment created only on existing edges, a missing-edges entry is there"
         (-> session-user
-           (request dep-set-url)
-           ltu/body->edn
-           (ltu/is-status 200)
-           (ltu/is-key-value :operational-status
-                             {:deployments-to-add
-                              [{:target  ne-id,
-                                :application
-                                {:id module-id, :version 0},
-                                :app-set "Main"}],
-                              :missing-edges [ne-id-not-exist],
-                              :status        "NOK"}))))))
+            (request dep-set-url)
+            ltu/body->edn
+            (ltu/is-status 200)
+            (ltu/is-key-value :operational-status
+                              {:deployments-to-add
+                               [{:target  ne-id,
+                                 :application
+                                 {:id module-id, :version 0},
+                                 :app-set "Main"}],
+                               :missing-edges [ne-id-not-exist],
+                               :status        "NOK"}))))))
 
 (deftest lifecycle-deployment-detach
   (binding [config-nuvla/*stripe-api-key* nil]
@@ -1292,18 +1298,18 @@
                                        :body (json/write-str valid-deployment-set))
                               (ltu/body->edn)
                               (ltu/is-status 201))
-              dep-set-url           (str p/service-context resource-id)
-              start-op-url          (-> session-admin
-                                        (request dep-set-url)
-                                        ltu/body->edn
-                                        (ltu/is-status 200)
-                                        (ltu/is-operation-present utils/action-start)
-                                        (ltu/get-op-url utils/action-start))
-              job-url (-> session-admin
-                          (request start-op-url)
-                          ltu/body->edn
-                          (ltu/is-status 202)
-                          ltu/location-url)
+              dep-set-url   (str p/service-context resource-id)
+              start-op-url  (-> session-admin
+                                (request dep-set-url)
+                                ltu/body->edn
+                                (ltu/is-status 200)
+                                (ltu/is-operation-present utils/action-start)
+                                (ltu/get-op-url utils/action-start))
+              job-url       (-> session-admin
+                                (request start-op-url)
+                                ltu/body->edn
+                                (ltu/is-status 202)
+                                ltu/location-url)
               cancel-op-url (-> session-admin
                                 (request dep-set-url)
                                 ltu/body->edn
