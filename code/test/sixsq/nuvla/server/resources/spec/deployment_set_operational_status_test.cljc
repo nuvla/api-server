@@ -14,20 +14,26 @@
                     :value "overwritten var1 overwritten in deployment set"}
                    {:name  "var_2"
                     :value "overwritten in deployment set"}])
+(def app-files [{:file-name    "file1"
+                 :file-content "file1 content"}
+                {:file-name    "file2"
+                 :file-content "file2 content"}])
 (def target-id "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316")
 (def current-deployment
   {:id          deployment-id-3
    :app-set     "set-1"
    :application {:id                      app-id
                  :version                 1
-                 :environmental-variables app-env-vars}
+                 :environmental-variables app-env-vars
+                 :files app-files}
    :target      target-id
    :state       "STARTED"})
 (def target-deployment
   {:app-set     "set-1"
    :application {:id                      app-id
                  :version                 1
-                 :environmental-variables app-env-vars}
+                 :environmental-variables app-env-vars
+                 :files app-files}
    :target      target-id})
 
 (def valid-operational-status

@@ -43,7 +43,9 @@
                          :environmental-variables
                          [{:name  "var_1_value",
                            :value "overwritten var1 overwritten in deployment set"}
-                          {:name "var_2", :value "overwritten in deployment set"}]}]}
+                          {:name "var_2", :value "overwritten in deployment set"}]
+                         :files
+                         [{:file-name "file2", :file-content "overwritten in deployment set"}]}]}
                       {}
                       {}]}])
 
@@ -137,7 +139,9 @@
                         :environmental-variables
                         [{:name  "var_1_value",
                           :value "overwritten var1 overwritten in deployment set"}
-                         {:name "var_2", :value "overwritten in deployment set"}]}]})
+                         {:name "var_2", :value "overwritten in deployment set"}]
+                        :files
+                        [{:file-name "file2", :file-content "overwritten in deployment set"}]}]})
 (def u-deployment-set
   {:updated       "2023-04-12T12:35:00.564Z",
    :name          "New dep set",
@@ -172,7 +176,9 @@
                                                      :value "overwritten var1 overwritten in deployment set"}
                                                     {:name  "var_2"
                                                      :value "overwritten in deployment set"}]
-                          :files                   [{:file-name "file1", :file-content "overwritten file1 content"}]
+                          :files                   [{:file-name "file1", :file-content "overwritten file1 content"}
+                                                    {:file-content "overwritten in deployment set"
+                                                     :file-name    "file2"}]
                           :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
                           :version                 1}
             :target      "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
@@ -181,7 +187,9 @@
                                                      :value "overwritten var1 overwritten in deployment set"}
                                                     {:name  "var_2"
                                                      :value "overwritten in deployment set"}]
-                          :files                   [{:file-name "file1", :file-content "overwritten file1 content"}]
+                          :files                   [{:file-name "file1", :file-content "overwritten file1 content"}
+                                                    {:file-content "overwritten in deployment set"
+                                                     :file-name    "file2"}]
                           :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
                           :version                 1}
             :target      "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
@@ -239,6 +247,7 @@
                                                       :value "overwritten var1 overwritten in deployment set"}
                                                      {:name  "var_2"
                                                       :value "overwritten in deployment set"}]
+                           :files                   [{:file-name "file2", :file-content "overwritten in deployment set"}]
                            :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
                            :version                 1}]
            :targets      ["credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"
@@ -257,6 +266,7 @@
                                       :value "overwritten var1 overwritten in deployment set"}
                                      {:name  "var_2"
                                       :value "overwritten in deployment set"}]
+           :files                   [{:file-name "file2", :file-content "overwritten in deployment set"}]
            :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
            :version                 1}])))
 

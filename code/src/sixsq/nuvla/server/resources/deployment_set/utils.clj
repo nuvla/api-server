@@ -337,10 +337,12 @@
             :as              module} :module} deployments
           :let [env-vars (->> environmental-variables
                               (map #(select-keys % [:name :value]))
-                              (filter :value))
+                              (filter :value)
+                              vec)
                 files    (->> files
                               (map #(select-keys % [:file-name :file-content]))
-                              (filter :file-content))]]
+                              (filter :file-content)
+                              vec)]]
       {:id          deployment-id
        :app-set     app-set
        :application (cond-> {:id      (module-utils/full-uuid->uuid application-href)
