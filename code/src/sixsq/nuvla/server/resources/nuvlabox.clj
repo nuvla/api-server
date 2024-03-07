@@ -1070,11 +1070,16 @@ particular NuvlaBox release.
     (time/time-between start end :seconds)))
 
 (defn edge-at
-  "Returns the edge if it was created before the given timestamp, nil otherwise"
-  [nuvlabox timestamp]
-  (some-> (:created nuvlabox)
-          (time/date-from-str)
-          (time/before? timestamp)))
+  "Returns the edge if it was created before the given timestamp, and if sent
+   a metric datapoint before the given timestamp, nil otherwise"
+  [{:keys [created first-availability-status] :as _nuvlabox} timestamp]
+  (and (some-> created
+               (time/date-from-str)
+               (time/before? timestamp))
+       (some-> first-availability-status
+               :timestamp
+               time/date-from-str
+               (time/before? timestamp))))
 
 (defn bucket-online-stats
   "Compute online stats for a bucket."
@@ -1089,15 +1094,16 @@ particular NuvlaBox release.
         sum-time-online (reduce
                           (fn [online-secs [{from :timestamp :keys [online]}
                                             {to :timestamp}]]
-                            (cond
-                              (edge-at nuvlabox from)
-                              (+ (or online-secs 0)
-                                 (* (or online 0) (time/time-between from to :seconds)))
-                              (edge-at nuvlabox to)
-                              (+ (or online-secs 0)
-                                 (* (or online 0) (time/time-between (time/date-from-str (:created nuvlabox)) to :seconds)))
-                              :else
-                              nil))
+                            (when (some? online)
+                              (cond
+                                (edge-at nuvlabox from)
+                                (+ (or online-secs 0)
+                                   (* online (time/time-between from to :seconds)))
+                                (edge-at nuvlabox to)
+                                (+ (or online-secs 0)
+                                   (* online (time/time-between (time/date-from-str (:created nuvlabox)) to :seconds)))
+                                :else
+                                nil)))
                           nil
                           (map vector
                                (cons {:timestamp start
@@ -1130,7 +1136,7 @@ particular NuvlaBox release.
 
 (defn compute-nuvlabox-availability*
   "Compute availability for a single nuvlabox."
-  [resp now granularity {nuvlaedge-id :id :as nuvlabox} update-path agg-key]
+  [resp now granularity {nuvlaedge-id :id :as nuvlabox} update-fn]
   (let [hits                 (->> (get-in resp [0 :hits])
                                   (map #(update % :timestamp time/date-from-str))
                                   reverse)
@@ -1138,16 +1144,16 @@ particular NuvlaBox release.
         prev-status          (some-> nuvlaedge-id
                                      (utils/latest-availability-status first-bucket-ts)
                                      :online)
-        update-ts-data-point (fn [[ts-data latest-status] ts-data-point]
-                               (let [seconds-in-bucket (compute-seconds-in-bucket ts-data-point granularity now)
-                                     [sum-time-online latest-status] (bucket-online-stats nuvlabox ts-data-point granularity now hits latest-status)]
-                                 [(conj ts-data
-                                        (update-in ts-data-point
-                                                   update-path
-                                                   (fn [aggs]
-                                                     (assoc-in aggs [agg-key :value]
-                                                               (compute-bucket-availability sum-time-online seconds-in-bucket)))))
-                                  latest-status]))]
+        update-ts-data-point (fn [[ts-data latest-status] {:keys [timestamp] :as ts-data-point}]
+                               (if (edge-at nuvlabox (time/date-from-str timestamp))
+                                 (let [seconds-in-bucket (compute-seconds-in-bucket ts-data-point granularity now)
+                                       [sum-time-online latest-status] (bucket-online-stats nuvlabox ts-data-point granularity now hits latest-status)]
+                                   [(conj ts-data
+                                          (update-fn
+                                            ts-data-point
+                                            (compute-bucket-availability sum-time-online seconds-in-bucket)))
+                                    latest-status])
+                                 [(conj ts-data ts-data-point) latest-status]))]
     (update-resp-ts-data
       resp
       (fn [ts-data]
@@ -1157,9 +1163,14 @@ particular NuvlaBox release.
 
 (defn compute-nuvlabox-availability
   [{:keys [granularity]} nuvlabox]
-  (let [now (time/now)]
+  (let [now          (time/now)
+        update-av-fn (fn [ts-data-point availability]
+                       (update ts-data-point
+                               :aggregations
+                               (fn [aggs]
+                                 (assoc-in aggs [:avg-online :value] availability))))]
     (fn [resp]
-      (compute-nuvlabox-availability* resp now granularity nuvlabox [:aggregations] :avg-online))))
+      (compute-nuvlabox-availability* resp now granularity nuvlabox update-av-fn))))
 
 (defn dissoc-hits
   [resp]
@@ -1226,28 +1237,37 @@ particular NuvlaBox release.
   (let [now (time/now)]
     (fn [resp]
       (reduce
-        (fn [resp [idx nuvlabox]]
-          (let [edge-bucket-path [:aggregations :by-edge :buckets idx]]
+        (fn [resp nuvlabox]
+          (let [edge-bucket-update-fn
+                (fn [ts-data-point availability]
+                  (let [idx (->> (get-in ts-data-point [:aggregations :by-edge :buckets])
+                                    (keep-indexed #(when (= (:key %2) (:id nuvlabox)) %1))
+                                    first)]
+                    (cond-> ts-data-point
+                            idx (update-in [:aggregations :by-edge :buckets idx]
+                                           (fn [aggs]
+                                             (assoc-in aggs [:edge-avg-online :value]
+                                                       availability))))))]
             (-> resp
                 (compute-nuvlabox-availability* now granularity nuvlabox
-                                                edge-bucket-path
-                                                :edge-avg-online))))
+                                                edge-bucket-update-fn))))
         (init-edge-buckets resp nuvlaboxes granularity)
-        (map-indexed vector nuvlaboxes)))))
+        nuvlaboxes))))
 
 (defn compute-global-availability [resp]
   (update-resp-ts-data-point-aggs
     resp
     (fn [_ts-data-point {:keys [by-edge] :as aggs}]
-      (let [avgs-online (map #(or (some-> % :edge-avg-online :value) 0)
-                             (:buckets by-edge))]
+      (let [avgs-count  (count (:buckets by-edge))
+            avgs-online (keep #(-> % :edge-avg-online :value)
+                              (:buckets by-edge))]
         ;; here we can compute the average of the averages, because we give the same weight
         ;; to each edge (caveat: an edge created in the middle of a bucket will have the same
         ;; weight then an edge that was there since the beginning of the bucket).
         (assoc aggs :global-avg-online
                     {:value (if (seq avgs-online)
                               (/ (apply + avgs-online)
-                                 (count avgs-online))
+                                 avgs-count)
                               nil)})))))
 
 (defn add-edges-count [resp]
@@ -1434,7 +1454,9 @@ particular NuvlaBox release.
                                                                                     :last   10000})))
                                :body
                                :resources))
-        nuvlaboxes      (filter #(= utils/state-commissioned (:state %)) nuvlaboxes)
+        nuvlaboxes      (->> nuvlaboxes
+                             (filter #(= utils/state-commissioned (:state %)))
+                             (map #(assoc % :first-availability-status (utils/first-availability-status (:id %)))))
         base-query-opts {:mode          mode
                          :nuvlaedge-ids (concat (map :id nuvlaboxes)
                                                 #_(map (fn [_n] (str "nuvlabox/" (u/random-uuid)))
