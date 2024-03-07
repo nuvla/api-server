@@ -11,8 +11,8 @@
   env vars on the server startup. Kafka producers publish the key/value messages
   to the topic provided by the resources.
 
-  The use of the sliding buffer (implemented as non blocking buffer) is
-  justified by the fact that Kafka producers can block but we don't want server
+  The use of the sliding buffer (implemented as non-blocking buffer) is
+  justified by the fact that Kafka producers can block, but we don't want server
   resources to block on publication to the communication channel.
 
   The communication channel is a dynamic var to allow for external reset if
@@ -66,10 +66,11 @@
 
 
 ; Communication channel.
-(def comm-chan! (atom (when (need-init?)
-                        (let [len (comm-channel-len-from-env)]
-                          (log/info "initialise async comm channel of len:" len)
-                          (chan (a/sliding-buffer len))))))
+(def comm-chan!
+  (atom (when (need-init?)
+          (let [len (comm-channel-len-from-env)]
+            (log/info "initialise async comm channel with kafka of len:" len)
+            (chan (a/sliding-buffer len))))))
 
 
 (defn comm-chan-set!
@@ -142,14 +143,14 @@
   (a/go-loop []
     (if (some? @comm-chan!)
       (when-let [{:keys [topic key value] :as msg} (<! @comm-chan!)]
-        (log/debugf "producer %s consumed from comm chan: %s" id msg)
+        (log/debugf "kafka producer %s consumed from comm chan: %s" id msg)
         (try
           (kc/send! producer topic key value)
-          (log/debugf "producer %s published: %s %s %s" id topic key value)
+          (log/debugf "kafka producer %s published: %s %s %s" id topic key value)
           (catch Exception e
-            (log/errorf "producer %s %s failed publishing to kafka: %s" id producer e)))
+            (log/errorf "kafka producer %s %s failed publishing to kafka: %s" id producer e)))
         (recur))
-      (log/warn "comm channel is not defined"))))
+      (log/warn "kafka comm channel is not defined"))))
 
 
 (defn register-producer
@@ -185,11 +186,11 @@
   (when (seq @producers!)
     (log/debugf "closing kafka producers: %s" @producers!)
     (doseq [[id p] @producers!]
-      (log/debugf "closing producer %s: %s" id p)
+      (log/debugf "closing kafka producer %s: %s" id p)
       (try
         (kc/close! p)
         (catch Exception e
-          (log/errorf "failed closing producer %s %s: %s" id p e))))
+          (log/errorf "failed closing kafka producer %s %s: %s" id p e))))
     (reset! producers! {})))
 
 
@@ -201,7 +202,7 @@
 (defn publish!
   "Publishes `key`/`value` message to Kafka `topic`."
   [topic key value]
-  (log/debugf "publish: %s %s %s" topic key value)
+  (log/debugf "kafka publish: %s %s %s" topic key value)
   (put! @comm-chan! {:topic topic
                      :key   key
                      :value value}))
