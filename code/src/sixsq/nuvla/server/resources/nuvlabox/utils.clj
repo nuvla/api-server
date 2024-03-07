@@ -455,6 +455,19 @@
 
 ;; ts-nuvlaedge utils
 
+(defn first-availability-status
+  [nuvlaedge-id]
+  (->> {:cimi-params {:filter  (cimi-params-impl/cimi-filter
+                                 {:filter (str "nuvlaedge-id='" nuvlaedge-id "'")
+                                  :last   1})
+                      :select  ["@timestamp" "online"]
+                      :orderby [["@timestamp" :asc]]}
+        ;; sending an empty :tsds-aggregation to avoid acl checks. TODO: find a cleaner way
+        :params      {:tsds-aggregation "{}"}}
+       (crud/query-as-admin ts-nuvlaedge-availability/resource-type)
+       second
+       first))
+
 (defn latest-availability-status
   ([nuvlaedge-id]
    (latest-availability-status nuvlaedge-id nil))
