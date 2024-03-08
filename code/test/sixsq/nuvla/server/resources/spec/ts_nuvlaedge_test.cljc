@@ -3,15 +3,11 @@
     [clojure.test :refer [is deftest]]
     [sixsq.nuvla.db.es.common.es-mapping :as es-mapping]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
-    [sixsq.nuvla.server.resources.spec.ts-nuvlaedge :as ts-nuvlaedge]))
+    [sixsq.nuvla.server.resources.spec.ts-nuvlaedge-telemetry :as ts-nuvlaedge]))
 
 (deftest check-schema
   (let [timestamp "1964-08-25T10:00:00.00Z"]
-    (doseq [valid-entry [{:nuvlaedge-id  "nuvlabox/1"
-                          :metric        "online-status"
-                          :online-status {:online-seconds 120}
-                          :timestamp     timestamp}
-                         {:nuvlaedge-id "nuvlabox/1"
+    (doseq [valid-entry [{:nuvlaedge-id "nuvlabox/1"
                           :metric       "cpu"
                           :cpu          {:capacity            8
                                          :load                4.5
@@ -63,9 +59,6 @@
                        "metric"            {:type                  "keyword"
                                             :time_series_dimension true}
                        "@timestamp"        {:type "date", :format "strict_date_optional_time||epoch_millis"}
-                       "online-status"     {:properties {"online-seconds" {:time_series_metric "gauge"
-                                                                           :type               "long"}}
-                                            :type       "object"}
                        "cpu"               {:type "object", :properties {"capacity"            {:type               "long"
                                                                                                 :time_series_metric "gauge"}
                                                                          "load"                {:type               "double"

@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.ts-nuvlaedge-lifecycle-test
+(ns sixsq.nuvla.server.resources.ts-nuvlaedge-telemetry-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is testing use-fixtures]]
@@ -7,7 +7,7 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.ts-nuvlaedge :as t]
+    [sixsq.nuvla.server.resources.ts-nuvlaedge-telemetry :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.time :as time]))
 
@@ -23,11 +23,7 @@
         session-admin (header session-anon authn-info-header
                               "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
         timestamp     (time/now-str)
-        entries       [{:nuvlaedge-id  "nuvlabox/1"
-                        :metric        "online-status"
-                        :online-status {:online-seconds 120}
-                        :timestamp     timestamp}
-                       {:nuvlaedge-id "nuvlabox/1"
+        entries       [{:nuvlaedge-id "nuvlabox/1"
                         :metric       "cpu"
                         :cpu          {:capacity            8
                                        :load                4.5
@@ -111,57 +107,6 @@
                      :body (json/write-str conflicting-entries))
             (ltu/body->edn)
             (ltu/is-status 400))))))
-
-(deftest query-online-status
-  (let [session-anon  (-> (ltu/ring-app)
-                          session
-                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header
-                              "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        now           (time/truncated-to-minutes (time/now))
-        entries       [{:nuvlaedge-id  "nuvlabox/1"
-                        :metric        "online-status"
-                        :online-status {:online-seconds 30}
-                        :timestamp     (time/to-str (time/plus now (time/duration-unit 30 :seconds)))}
-                       {:nuvlaedge-id  "nuvlabox/1"
-                        :metric        "online-status"
-                        :online-status {:online-seconds 30}
-                        :timestamp     (time/to-str (time/plus now (time/duration-unit 120 :seconds)))}]]
-
-    (-> session-admin
-        (request (str base-uri "/bulk-insert")
-                 :headers {:bulk true}
-                 :request-method :patch
-                 :body (json/write-str entries))
-        (ltu/body->edn)
-        (ltu/is-status 200)
-        (ltu/is-key-value :errors false)
-        (ltu/is-key-value count :items (count entries)))
-
-    (ltu/refresh-es-indices)
-
-    (testing "Query online status metrics"
-      (-> session-admin
-          (content-type "application/x-www-form-urlencoded")
-          (request base-uri
-                   :request-method :put
-                   :body (rc/form-encode
-                           {:last 0
-                            :tsds-aggregation
-                            (json/write-str
-                              {:aggregations
-                               {:tsds-stats
-                                {:date_histogram
-                                 {:field          "@timestamp"
-                                  :fixed_interval "1d"}
-                                 :aggregations
-                                 {:sum-online {:sum {:field :online-status.online-seconds}}}}}})}))
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-key-value (comp :value :sum-online first :buckets :tsds-stats)
-                            :aggregations
-                            60.0)
-          (ltu/is-count 2)))))
 
 (deftest query-ram
   (let [session-anon  (-> (ltu/ring-app)
