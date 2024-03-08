@@ -850,7 +850,7 @@
                                   (ltu/is-status 200)
                                   (ltu/body->edn)
                                   (ltu/body))]
-              (is (ish? [{:dimensions {:nuvlaedge-count 3}
+              (is (ish? [{:dimensions {:nuvlaedge-count 2}
                           :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
                                         :doc-count    0
                                         :aggregations {:sum-avg-cpu-capacity    {:value 0.0}
@@ -872,7 +872,7 @@
                                                        :sum-software-interrupts {:value 0.0}
                                                        :sum-system-calls        {:value 0.0}}}]}]
                         (:cpu-stats metric-data)))
-              (is (ish? [{:dimensions {:nuvlaedge-count 3}
+              (is (ish? [{:dimensions {:nuvlaedge-count 2}
                           :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
                                         :doc-count    0
                                         :aggregations {:sum-avg-ram-capacity {:value 0.0}
@@ -882,7 +882,7 @@
                                         :aggregations {:sum-avg-ram-capacity {:value 8192.0}
                                                        :sum-avg-ram-used     {:value 4000.0}}}]}]
                         (:ram-stats metric-data)))
-              (is (ish? #{{:dimensions {:nuvlaedge-count 3}
+              (is (ish? #{{:dimensions {:nuvlaedge-count 2}
                            :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
                                          :aggregations {:sum-avg-disk-capacity {:value 0.0}
                                                         :sum-avg-disk-used     {:value 0.0}}
@@ -892,7 +892,7 @@
                                                         :sum-avg-disk-used     {:value 70000.0}}
                                          :doc-count    4}]}}
                         (set (:disk-stats metric-data))))
-              (is (ish? #{{:dimensions {:nuvlaedge-count 3}
+              (is (ish? #{{:dimensions {:nuvlaedge-count 2}
                            :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
                                          :aggregations {:sum-bytes-received    {:value 0.0}
                                                         :sum-bytes-transmitted {:value 0.0}}
@@ -902,7 +902,7 @@
                                                         :sum-bytes-transmitted {:value 88446.0}}
                                          :doc-count    4}]}}
                         (set (:network-stats metric-data))))
-              (is (ish? #{{:dimensions {:nuvlaedge-count               3
+              (is (ish? #{{:dimensions {:nuvlaedge-count               2
                                         :power-consumption.metric-name "IN_current"}
                            :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
                                          :doc-count    0
@@ -968,45 +968,45 @@
                                     (ltu/is-header "Content-disposition" "attachment;filename=export.csv")
                                     (ltu/body)))]
               (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-avg-cpu-capacity,sum-avg-cpu-load,sum-avg-cpu-load-1,sum-avg-cpu-load-5,sum-context-switches,sum-interrupts,sum-software-interrupts,sum-system-calls\n"
-                          (str/join "," [3
+                          (str/join "," [2
                                          (time/to-str midnight-yesterday)
                                          0, 0, 0, 0, 0, 0, 0, 0, 0]) "\n"
-                          (str/join "," [3
+                          (str/join "," [2
                                          (time/to-str midnight-today)
                                          2, 20, 11, 0, 0, 0, 0, 0, 0]) "\n")
                      (csv-request "cpu-stats")))
               (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-avg-ram-capacity,sum-avg-ram-used\n"
-                          (str/join "," [3
+                          (str/join "," [2
                                          (time/to-str midnight-yesterday)
                                          0, 0, 0]) "\n"
-                          (str/join "," [3
+                          (str/join "," [2
                                          (time/to-str midnight-today)
                                          2
                                          8192
                                          4000]) "\n")
                      (csv-request "ram-stats")))
               (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-avg-disk-capacity,sum-avg-disk-used\n"
-                          (str/join "," [3
+                          (str/join "," [2
                                          (time/to-str midnight-yesterday)
                                          0, 0, 0]) "\n"
-                          (str/join "," [3
+                          (str/join "," [2
                                          (time/to-str midnight-today)
                                          4, 80000, 70000]) "\n")
                      (csv-request "disk-stats")))
               (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-bytes-received,sum-bytes-transmitted\n"
-                          (str/join "," [3
+                          (str/join "," [2
                                          (time/to-str midnight-yesterday)
                                          0 0 0]) "\n"
-                          (str/join "," [3
+                          (str/join "," [2
                                          (time/to-str midnight-today)
                                          4 11165680 88446]) "\n")
                      (csv-request "network-stats")))
               (is (= (str "nuvlaedge-count,power-consumption.metric-name,timestamp,doc-count,sum-energy-consumption\n"
-                          (str/join "," [3
+                          (str/join "," [2
                                          "IN_current"
                                          (time/to-str midnight-yesterday)
                                          0 0]) "\n"
-                          (str/join "," [3
+                          (str/join "," [2
                                          "IN_current"
                                          (time/to-str midnight-today)
                                          2
