@@ -1241,8 +1241,8 @@ particular NuvlaBox release.
           (let [edge-bucket-update-fn
                 (fn [ts-data-point availability]
                   (let [idx (->> (get-in ts-data-point [:aggregations :by-edge :buckets])
-                                    (keep-indexed #(when (= (:key %2) (:id nuvlabox)) %1))
-                                    first)]
+                                 (keep-indexed #(when (= (:key %2) (:id nuvlabox)) %1))
+                                 first)]
                     (cond-> ts-data-point
                             idx (update-in [:aggregations :by-edge :buckets idx]
                                            (fn [aggs]
@@ -1292,9 +1292,7 @@ particular NuvlaBox release.
                 (assoc-in [:aggregations :virtual-edges-online]
                           {:value n-virt-online-edges})
                 (assoc-in [:aggregations :virtual-edges-offline]
-                          {:value n-virt-offline-edges})
-                #_(assoc-in [:aggregations :virtual-edges-unknown-state]
-                            {:value (max 0 (- n-active-edges edges-count-agg))}))))))))
+                          {:value n-virt-offline-edges}))))))))
 
 (defn update-resp-edge-buckets
   [resp f]
@@ -1428,6 +1426,19 @@ particular NuvlaBox release.
                                                 :sum-energy-consumption {:sum_bucket {:buckets_path :energy-consumption>by-edge}}}
                                 :response-aggs [:sum-energy-consumption]}}))
 
+(defn commissioned?
+  [nuvlabox]
+  (= utils/state-commissioned (:state nuvlabox)))
+
+(defn assoc-first-availability-status
+  [nuvlabox]
+  (assoc nuvlabox :first-availability-status
+                  (utils/first-availability-status (:id nuvlabox))))
+
+(defn available-before?
+  [{:keys [first-availability-status] :as _nuvlabox} timestamp]
+  (some-> first-availability-status :timestamp time/date-from-str (time/before? timestamp)))
+
 (defn query-data
   [{:keys [mode uuid dataset from to granularity accept-header] cimi-filter :filter} request]
   (let [datasets        (if (coll? dataset) dataset [dataset])
@@ -1455,12 +1466,11 @@ particular NuvlaBox release.
                                :body
                                :resources))
         nuvlaboxes      (->> nuvlaboxes
-                             (filter #(= utils/state-commissioned (:state %)))
-                             (map #(assoc % :first-availability-status (utils/first-availability-status (:id %)))))
+                             (filter commissioned?)
+                             (map assoc-first-availability-status)
+                             (filter #(available-before? % to)))
         base-query-opts {:mode          mode
-                         :nuvlaedge-ids (concat (map :id nuvlaboxes)
-                                                #_(map (fn [_n] (str "nuvlabox/" (u/random-uuid)))
-                                                       (range 1000)))
+                         :nuvlaedge-ids (concat (map :id nuvlaboxes))
                          :from          from
                          :to            to
                          :granularity   granularity

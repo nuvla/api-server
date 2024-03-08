@@ -1015,57 +1015,61 @@
 
 (deftest availability-data
   (binding [config-nuvla/*stripe-api-key* nil]
-    (let [now             (time/now)
-          now-5d          (time/minus now (time/duration-unit 5 :days))
-          now-2d          (time/minus now (time/duration-unit 2 :days))
-          now-1d          (time/minus now (time/duration-unit 1 :days))
-          now-12h         (time/minus now (time/duration-unit 12 :hours))
-          session         (-> (ltu/ring-app)
-                              session
-                              (content-type "application/json"))
-          session-admin   (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-          session-user    (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
-          create-nuvlabox (fn [body created]
-                            (with-redefs [time/now-str (constantly (time/to-str created))]
-                              (let [nuvlabox     (-> session-user
-                                                     (request nuvlabox-base-uri
-                                                              :request-method :post
-                                                              :body (json/write-str body))
-                                                     (ltu/body->edn)
-                                                     (ltu/is-status 201))
-                                    nuvlabox-id  (ltu/location nuvlabox)
-                                    nuvlabox-url (str p/service-context nuvlabox-id)
-                                    _            (-> session-user
-                                                     (request (-> session-user
-                                                                  (request nuvlabox-url)
-                                                                  (ltu/body->edn)
-                                                                  (ltu/is-status 200)
-                                                                  (ltu/get-op-url :activate)))
-                                                     (ltu/body->edn)
-                                                     (ltu/is-status 200))
-                                    _            (-> session-user
-                                                     (request (-> session-user
-                                                                  (request nuvlabox-url)
-                                                                  (ltu/body->edn)
-                                                                  (ltu/is-status 200)
-                                                                  (ltu/get-op-url :commission)))
-                                                     (ltu/body->edn)
-                                                     (ltu/is-status 200))]
-                                nuvlabox-id)))
-          nuvlabox-id     (create-nuvlabox valid-nuvlabox now-5d)
-          nuvlabox-url    (str p/service-context nuvlabox-id)
-          session-nb      (header session authn-info-header (str "user/jane user/jane group/nuvla-user group/nuvla-anon"))
+    (let [now                (time/now)
+          now-5d             (time/minus now (time/duration-unit 5 :days))
+          now-2d             (time/minus now (time/duration-unit 2 :days))
+          now-1d             (time/minus now (time/duration-unit 1 :days))
+          now-12h            (time/minus now (time/duration-unit 12 :hours))
+          midnight-today     (time/truncated-to-days now)
+          midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
+          yesterday-2am      (time/plus midnight-yesterday (time/duration-unit 2 :hours))
+          yesterday-10am     (time/plus midnight-yesterday (time/duration-unit 10 :hours))
+          session            (-> (ltu/ring-app)
+                                 session
+                                 (content-type "application/json"))
+          session-admin      (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-user       (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
+          create-nuvlabox    (fn [body created]
+                               (with-redefs [time/now-str (constantly (time/to-str created))]
+                                 (let [nuvlabox     (-> session-user
+                                                        (request nuvlabox-base-uri
+                                                                 :request-method :post
+                                                                 :body (json/write-str body))
+                                                        (ltu/body->edn)
+                                                        (ltu/is-status 201))
+                                       nuvlabox-id  (ltu/location nuvlabox)
+                                       nuvlabox-url (str p/service-context nuvlabox-id)
+                                       _            (-> session-user
+                                                        (request (-> session-user
+                                                                     (request nuvlabox-url)
+                                                                     (ltu/body->edn)
+                                                                     (ltu/is-status 200)
+                                                                     (ltu/get-op-url :activate)))
+                                                        (ltu/body->edn)
+                                                        (ltu/is-status 200))
+                                       _            (-> session-user
+                                                        (request (-> session-user
+                                                                     (request nuvlabox-url)
+                                                                     (ltu/body->edn)
+                                                                     (ltu/is-status 200)
+                                                                     (ltu/get-op-url :commission)))
+                                                        (ltu/body->edn)
+                                                        (ltu/is-status 200))]
+                                   nuvlabox-id)))
+          nuvlabox-id        (create-nuvlabox valid-nuvlabox now-5d)
+          nuvlabox-url       (str p/service-context nuvlabox-id)
+          session-nb         (header session authn-info-header (str "user/jane user/jane group/nuvla-user group/nuvla-anon"))
           ;; session-nb      (header session authn-info-header (str nuvlabox-id " " nuvlabox-id " group/nuvla-user group/nuvla-anon"))
-          heartbeat-op    (-> session-nb
-                              (request nuvlabox-url)
-                              (ltu/body->edn)
-                              (ltu/is-status 200)
-                              (ltu/get-op-url nb-utils/action-heartbeat))
-          set-offline-op  (-> session-admin
-                              (request nuvlabox-url)
-                              (ltu/body->edn)
-                              (ltu/is-status 200)
-                              (ltu/get-op-url nb-utils/action-set-offline))
+          heartbeat-op       (-> session-nb
+                                 (request nuvlabox-url)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/get-op-url nb-utils/action-heartbeat))
+          set-offline-op     (-> session-admin
+                                 (request nuvlabox-url)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/get-op-url nb-utils/action-set-offline))
           ]
 
       ;; first time online 2 days ago
@@ -1093,19 +1097,17 @@
         (compare-ulp 100.0 1e12)
 
         (testing "metrics data on a single nuvlabox"
-          (let [nuvlabox-data-url  (str nuvlabox-url "/data")
-                midnight-today     (time/truncated-to-days now)
-                midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
-                metrics-request    (fn [{:keys [datasets from from-str to to-str granularity accept-header] #_:or #_{accept-header "application/json"}}]
-                                     (-> session-nb
-                                         (content-type "application/x-www-form-urlencoded")
-                                         (cond-> accept-header (header "accept" accept-header))
-                                         (request nuvlabox-data-url
-                                                  :body (rc/form-encode
-                                                          {:dataset     datasets
-                                                           :from        (if from (time/to-str from) from-str)
-                                                           :to          (if to (time/to-str to) to-str)
-                                                           :granularity granularity}))))]
+          (let [nuvlabox-data-url (str nuvlabox-url "/data")
+                metrics-request   (fn [{:keys [datasets from from-str to to-str granularity accept-header] #_:or #_{accept-header "application/json"}}]
+                                    (-> session-nb
+                                        (content-type "application/x-www-form-urlencoded")
+                                        (cond-> accept-header (header "accept" accept-header))
+                                        (request nuvlabox-data-url
+                                                 :body (rc/form-encode
+                                                         {:dataset     datasets
+                                                          :from        (if from (time/to-str from) from-str)
+                                                          :to          (if to (time/to-str to) to-str)
+                                                          :granularity granularity}))))]
             (testing "new metrics data is added to ts-nuvlaedge time-serie"
               (ltu/refresh-es-indices)
               (let [from        midnight-yesterday
@@ -1141,7 +1143,7 @@
                           (:availability-stats metric-data)))))))
 
         (testing "metrics data on multiple nuvlaboxes"
-          (let [;; add another nuvlabox in state COMMISSIONED, first online 5 days ago
+          (let [;; add another nuvlabox in state COMMISSIONED, first online 5 days ago, and down for 8 hours yesterday from 2am until 10am
                 nuvlabox-id-2      (create-nuvlabox valid-nuvlabox2 now-5d)
                 nuvlabox-url-2     (str p/service-context nuvlabox-id-2)
                 heartbeat-op-2     (-> session-nb
@@ -1149,7 +1151,18 @@
                                        (ltu/body->edn)
                                        (ltu/is-status 200)
                                        (ltu/get-op-url nb-utils/action-heartbeat))
+                set-offline-op-2   (str nuvlabox-url-2 "/" nb-utils/action-set-offline)
                 _                  (with-redefs [time/now (constantly now-5d)]
+                                     (-> session-nb
+                                         (request heartbeat-op-2)
+                                         (ltu/body->edn)
+                                         (ltu/is-status 200)))
+                _                  (with-redefs [time/now (constantly yesterday-2am)]
+                                     (-> session-admin
+                                         (request set-offline-op-2)
+                                         (ltu/body->edn)
+                                         (ltu/is-status 200)))
+                _                  (with-redefs [time/now (constantly yesterday-10am)]
                                      (-> session-nb
                                          (request heartbeat-op-2)
                                          (ltu/body->edn)
@@ -1208,45 +1221,42 @@
                                     (ltu/is-status 200)
                                     (ltu/body->edn)
                                     (ltu/body))]
-                (is (ish? [{:dimensions {:nuvlaedge-count 3}
-                            :ts-data    [(let [global-avg-online (double (/ (+ (time/time-between midnight-yesterday midnight-today :seconds)
-                                                                               (time/time-between now-1d midnight-today :seconds))
-                                                                            (* 3 (time/time-between midnight-yesterday midnight-today :seconds))))
-                                               online-edges      (* 3 global-avg-online)]
+                (is (ish? [{:dimensions {:nuvlaedge-count 2}
+                            :ts-data    [;; yesterday:
+                                         ;; edge2 was down 8 hours => 2/3 available
+                                         ;; edge3 came up the first time in the middle of the day, but still it should be counted as 100% available
+                                         ;; edge4 and edge5 should not be counted (not sending data and not commissioned)
+                                         (let [global-avg-online (double (/ (+ 1 2/3) 2))
+                                               online-edges      (* 2 global-avg-online)]
                                            {:timestamp    (time/to-str midnight-yesterday)
-                                            :doc-count    1
-                                            :aggregations {:edges-count           {:value 3}
-                                                           :virtual-edges-offline {:value (- 3 online-edges)}
+                                            :doc-count    3
+                                            :aggregations {:edges-count           {:value 2}
+                                                           :virtual-edges-offline {:value (- 2 online-edges)}
                                                            :virtual-edges-online  {:value online-edges}}})
                                          (let [global-avg-online (double (/ 2 3))
                                                online-edges      (* 3 global-avg-online)]
                                            {:timestamp    (time/to-str midnight-today)
                                             :doc-count    0
-                                            :aggregations {:edges-count           {:value 3}
-                                                           :virtual-edges-offline {:value (- 3 online-edges)}
+                                            :aggregations {:edges-count           {:value 2}
+                                                           :virtual-edges-offline {:value (- 2 online-edges)}
                                                            :virtual-edges-online  {:value online-edges}}})]}]
                           (:availability-stats metric-data)))
-                (is (ish? [{:dimensions {:nuvlaedge-count 3}
+                (is (ish? [{:dimensions {:nuvlaedge-count 2}
                             :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
-                                          :doc-count    1
-                                          :aggregations (let [edge3-avg-online (double (/ (time/time-between now-1d midnight-today :seconds)
-                                                                                          (time/time-between midnight-yesterday midnight-today :seconds)))]
-                                                          {:global-avg-online {:value (/ (+ 1 edge3-avg-online) 3)}
-                                                           :by-edge
-                                                           {:buckets
-                                                            #{{:edge-avg-online {:value 1}
-                                                               :key             nuvlabox-id-2
-                                                               :name            nb-name2}
-                                                              {:edge-avg-online {:value edge3-avg-online}
-                                                               :key             nuvlabox-id-3
-                                                               :name            nb-name3}
-                                                              {:edge-avg-online {:value 0}
-                                                               :key             nuvlabox-id-4
-                                                               :name            nb-name4}}}
-                                                           :edges-count       {:value 3}})}
+                                          :doc-count    3
+                                          :aggregations {:global-avg-online {:value (double (/ (+ 1 2/3) 2))}
+                                                         :by-edge
+                                                         {:buckets
+                                                          #{{:edge-avg-online {:value (double 2/3)}
+                                                             :key             nuvlabox-id-2
+                                                             :name            nb-name2}
+                                                            {:edge-avg-online {:value 1.0}
+                                                             :key             nuvlabox-id-3
+                                                             :name            nb-name3}}}
+                                                         :edges-count       {:value 2}}}
                                          {:timestamp    (time/to-str midnight-today)
                                           :doc-count    0
-                                          :aggregations {:global-avg-online {:value (double (/ 2 3))}
+                                          :aggregations {:global-avg-online {:value 1}
                                                          :by-edge
                                                          {:buckets
                                                           #{{:edge-avg-online {:value 1}
@@ -1254,11 +1264,8 @@
                                                              :name            nb-name2}
                                                             {:edge-avg-online {:value 1}
                                                              :key             nuvlabox-id-3
-                                                             :name            nb-name3}
-                                                            {:edge-avg-online {:value 0}
-                                                             :key             nuvlabox-id-4
-                                                             :name            nb-name4}}}
-                                                         :edges-count       {:value 3}}}]}]
+                                                             :name            nb-name3}}}
+                                                         :edges-count       {:value 2}}}]}]
                           (-> (:availability-by-edge metric-data)
                               (update-in [0 :ts-data 0 :aggregations :by-edge :buckets] set)
                               (update-in [0 :ts-data 1 :aggregations :by-edge :buckets] set))))))
@@ -1276,16 +1283,14 @@
                                       (ltu/body)))
                     fmt         #(.format (DecimalFormat. "0.####" (DecimalFormatSymbols. Locale/US)) %)]
                 (is (= (str "nuvlaedge-count,timestamp,doc-count,edges-count,virtual-edges-online,virtual-edges-offline\n"
-                            (let [global-avg-online (double (/ (+ (time/time-between midnight-yesterday midnight-today :seconds)
-                                                                  (time/time-between now-1d midnight-today :seconds))
-                                                               (* 3 (time/time-between midnight-yesterday midnight-today :seconds))))
-                                  online-edges      (* 3 global-avg-online)]
-                              (str/join "," [3
+                            (let [global-avg-online (double (/ (+ 1 2/3) 2))
+                                  online-edges      (* 2 global-avg-online)]
+                              (str/join "," [2
                                              (time/to-str midnight-yesterday)
-                                             1, 3, (fmt online-edges), (fmt (- 3 online-edges))])) "\n"
-                            (str/join "," [3
+                                             3, 2, (fmt online-edges), (fmt (- 2 online-edges))])) "\n"
+                            (str/join "," [2
                                            (time/to-str midnight-today)
-                                           0, 3, 2, 1]) "\n")
+                                           0, 2, 2, 0]) "\n")
                        (csv-request "availability-stats")))))))))))
 
 
