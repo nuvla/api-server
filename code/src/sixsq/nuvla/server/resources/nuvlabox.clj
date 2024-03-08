@@ -1081,6 +1081,11 @@ particular NuvlaBox release.
                time/date-from-str
                (time/before? timestamp))))
 
+(defn bucket-end-time
+  [backet-start-time granularity]
+  (time/plus (time/date-from-str backet-start-time)
+             (status-utils/granularity->duration granularity)))
+
 (defn bucket-online-stats
   "Compute online stats for a bucket."
   [{nuvlaedge-id :id :as nuvlabox} {start-str :timestamp} granularity now hits latest-status]
@@ -1145,7 +1150,7 @@ particular NuvlaBox release.
                                      (utils/latest-availability-status first-bucket-ts)
                                      :online)
         update-ts-data-point (fn [[ts-data latest-status] {:keys [timestamp] :as ts-data-point}]
-                               (if (edge-at nuvlabox (time/date-from-str timestamp))
+                               (if (edge-at nuvlabox (bucket-end-time timestamp granularity))
                                  (let [seconds-in-bucket (compute-seconds-in-bucket ts-data-point granularity now)
                                        [sum-time-online latest-status] (bucket-online-stats nuvlabox ts-data-point granularity now hits latest-status)]
                                    [(conj ts-data
@@ -1206,11 +1211,6 @@ particular NuvlaBox release.
                               :group-by     :power-consumption.metric-name
                               :aggregations {:energy-consumption {:max {:field :power-consumption.energy-consumption}}
                                              #_:unit                   #_{:first {:field :power-consumption.unit}}}}})
-
-(defn bucket-end-time
-  [backet-start-time granularity]
-  (time/plus (time/date-from-str backet-start-time)
-             (status-utils/granularity->duration granularity)))
 
 (defn edges-at
   "Returns the edges which were created before the given timestamp"
