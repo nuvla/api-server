@@ -1293,6 +1293,147 @@
                                            0, 2, 2, 0]) "\n")
                        (csv-request "availability-stats")))))))))))
 
+(deftest raw-metric-data
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session         (-> (ltu/ring-app)
+                              session
+                              (content-type "application/json"))
+          session-admin   (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-user    (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
+          create-nuvlabox (fn [body]
+                            (let [nuvlabox     (-> session-user
+                                                   (request nuvlabox-base-uri
+                                                            :request-method :post
+                                                            :body (json/write-str body))
+                                                   (ltu/body->edn)
+                                                   (ltu/is-status 201))
+                                  nuvlabox-id  (ltu/location nuvlabox)
+                                  nuvlabox-url (str p/service-context nuvlabox-id)
+                                  _            (-> session-user
+                                                   (request (-> session-user
+                                                                (request nuvlabox-url)
+                                                                (ltu/body->edn)
+                                                                (ltu/is-status 200)
+                                                                (ltu/get-op-url :activate)))
+                                                   (ltu/body->edn)
+                                                   (ltu/is-status 200))
+                                  _            (-> session-user
+                                                   (request (-> session-user
+                                                                (request nuvlabox-url)
+                                                                (ltu/body->edn)
+                                                                (ltu/is-status 200)
+                                                                (ltu/get-op-url :commission)))
+                                                   (ltu/body->edn)
+                                                   (ltu/is-status 200))]
+                              nuvlabox-id))
+          nuvlabox-id     (create-nuvlabox valid-nuvlabox)
+          nuvlabox-url    (str p/service-context nuvlabox-id)
+
+          valid-acl       {:owners    ["group/nuvla-admin"]
+                           :edit-data [nuvlabox-id]}
+
+          session-nb      (header session authn-info-header (str nuvlabox-id " " nuvlabox-id " group/nuvla-user group/nuvla-anon"))
+          status-id       (-> session-admin
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str (assoc valid-state :parent nuvlabox-id
+                                                                                :acl valid-acl)))
+                              (ltu/body->edn)
+                              (ltu/is-status 201)
+                              (ltu/body-resource-id))
+          status-url      (str p/service-context
+                               status-id)]
+
+      ;; update the nuvlabox
+      (-> session-nb
+          (request status-url
+                   :request-method :put
+                   :body (json/write-str {:current-time (time/now-str)
+                                          :online       true
+                                          :resources    resources-updated}))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          ltu/body)
+
+      (testing "raw metrics data on a single nuvlabox"
+        (let [nuvlabox-data-url  (str nuvlabox-url "/data")
+              now                (time/now)
+              midnight-today     (time/truncated-to-days now)
+              midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
+              metrics-request    (fn [{:keys [datasets from from-str to to-str granularity accept-header] #_:or #_{accept-header "application/json"}}]
+                                   (-> session-nb
+                                       (content-type "application/x-www-form-urlencoded")
+                                       (cond-> accept-header (header "accept" accept-header))
+                                       (request nuvlabox-data-url
+                                                :body (rc/form-encode
+                                                        {:dataset     datasets
+                                                         :from        (if from (time/to-str from) from-str)
+                                                         :to          (if to (time/to-str to) to-str)
+                                                         :granularity granularity}))))]
+          (testing "new metrics data is added to ts-nuvlaedge time-serie"
+            (ltu/refresh-es-indices)
+            (let [from            (time/minus (time/now) (time/duration-unit 1 :days))
+                  to              now
+                  raw-metric-data (fn [metric]
+                                    (-> (metrics-request {:datasets    ["raw"]
+                                                          :metric      metric
+                                                          :from        from
+                                                          :to          to
+                                                          :granularity "1-days"})
+                                        (ltu/is-status 200)
+                                        (ltu/body->edn)
+                                        (ltu/body)))]
+              (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
+                       :raw        [{:timestamp (time/to-str midnight-yesterday)}]}]
+                     (raw-metric-data "cpu")))))
+
+          (testing "query request validation"
+            (let [invalid-request (fn [options]
+                                    (-> (metrics-request options)
+                                        (ltu/is-status 400)
+                                        (ltu/body->edn)
+                                        (ltu/body)
+                                        :message))]
+              (is (= "metric parameter must be specified with raw dataset"
+                     (invalid-request {:datasets ["raw"]
+                                       :from     (time/minus now (time/duration-unit 1 :days))
+                                       :to       now})))
+              (is (= "invalid metric parameter"
+                     (invalid-request {:datasets ["raw"]
+                                       :metric   "invalid"
+                                       :from     (time/minus now (time/duration-unit 1 :days))
+                                       :to       now})))
+              (is (= "cannot mix raw with other datasets in the same request"
+                     (invalid-request {:datasets ["raw" "cpu-stats"]
+                                       :from     (time/minus now (time/duration-unit 1 :days))
+                                       :to       now})))
+              (is (= "granularity should not be specified with raw dataset"
+                     (invalid-request {:datasets    ["raw"]
+                                       :from        (time/minus now (time/duration-unit 1 :days))
+                                       :to          now
+                                       :granularity "1-minutes"})))))
+
+          (testing "cvs export of raw metrics data"
+            (let [from            (time/minus now (time/duration-unit 1 :days))
+                  to              now
+                  raw-csv-request (fn [metric]
+                                    (-> (metrics-request {:accept-header "text/csv"
+                                                          :datasets      ["raw"]
+                                                          :metric        metric
+                                                          :from          from
+                                                          :to            to})
+                                        (ltu/is-status 200)
+                                        (ltu/is-header "Content-Type" "text/csv")
+                                        (ltu/is-header "Content-disposition" "attachment;filename=export.csv")
+                                        (ltu/body)))]
+              (is (= (str "nuvlaedge-id,timestamp,doc-count,avg-cpu-capacity,avg-cpu-load,avg-cpu-load-1,avg-cpu-load-5,context-switches,interrupts,software-interrupts,system-calls\n"
+                          (str/join "," [nuvlabox-id
+                                         (time/to-str midnight-yesterday)
+                                         0 nil nil nil nil nil nil nil nil]) "\n"
+                          (str/join "," [nuvlabox-id
+                                         (time/to-str midnight-today)
+                                         1 10 5.5 nil nil nil nil nil nil]) "\n")
+                     (raw-csv-request "cpu"))))))))))
 
 (deftest lifecycle-online-next-heartbeat
   (test-online-next-heartbeat))
