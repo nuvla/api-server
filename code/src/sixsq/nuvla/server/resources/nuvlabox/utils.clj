@@ -486,21 +486,23 @@
         first)))
 
 (defn build-aggregations-clause
-  [{:keys [from to ts-interval aggregations] group-by-field :group-by}]
-  (let [tsds-aggregations {:tsds-stats
-                           {:date_histogram
-                            {:field           "@timestamp"
-                             :fixed_interval  ts-interval
-                             :min_doc_count   0
-                             :extended_bounds {:min (time/to-str from)
-                                               :max (time/to-str to)}}
-                            :aggregations (or aggregations {})}}]
-    (if group-by-field
-      {:aggregations
-       {:by-field
-        {:terms        {:field group-by-field}
-         :aggregations tsds-aggregations}}}
-      {:aggregations tsds-aggregations})))
+  [{:keys [raw from to ts-interval aggregations] group-by-field :group-by}]
+  (if raw
+    {} ;; send an empty :tsds-aggregation to avoid acl checks. TODO: find a cleaner way
+    (let [tsds-aggregations {:tsds-stats
+                             {:date_histogram
+                              {:field           "@timestamp"
+                               :fixed_interval  ts-interval
+                               :min_doc_count   0
+                               :extended_bounds {:min (time/to-str from)
+                                                 :max (time/to-str to)}}
+                              :aggregations (or aggregations {})}}]
+      (if group-by-field
+        {:aggregations
+         {:by-field
+          {:terms        {:field group-by-field}
+           :aggregations tsds-aggregations}}}
+        {:aggregations tsds-aggregations}))))
 
 (defn build-ts-query [{:keys [last nuvlaedge-ids from to additional-filters] :as options}]
   (let [nuvlabox-id-filter (str "nuvlaedge-id=[" (str/join " " (map #(str "'" % "'")
@@ -524,14 +526,29 @@
       aggregation-clause
       (assoc :params {:tsds-aggregation (json/write-str aggregation-clause)}))))
 
-(defn build-metrics-query [{:keys [metric] :as options}]
-  (build-ts-query (assoc options :additional-filters [(str "metric='" metric "'")])))
+(def max-data-points 200)
+
+(defn build-metrics-query [{:keys [raw metric] :as options}]
+  (build-ts-query (-> options
+                      (assoc :additional-filters [(str "metric='" metric "'")])
+                      (cond-> raw (assoc :last max-data-points)))))
 
 (defn build-availability-query [options]
   ;; return up to 10000 availability state updates
   (build-ts-query (assoc options :last 10000)))
 
-(defn ->metrics-resp
+(defn ->raw-resp
+  [{:keys [mode nuvlaedge-ids]} resp]
+  (let [dimensions (case mode
+                     :single-edge-query
+                     {:nuvlaedge-id (first nuvlaedge-ids)}
+                     :multi-edge-query
+                     {:nuvlaedge-count (count nuvlaedge-ids)})
+        hits       (second resp)]
+    [{:dimensions dimensions
+      :ts-data    hits}]))
+
+(defn ->aggregations-resp
   [{:keys [mode nuvlaedge-ids aggregations] group-by-field :group-by} resp]
   (let [ts-data    (fn [tsds-stats]
                      (map
@@ -559,6 +576,12 @@
          {:dimensions dimensions
           :ts-data    (ts-data (get-in resp [0 :aggregations :tsds-stats]))}
          (seq hits) (assoc :hits hits))])))
+
+(defn ->metrics-resp
+  [{:keys [raw] :as options} resp]
+  (if raw
+    (->raw-resp options resp)
+    (->aggregations-resp options resp)))
 
 (defn query-metrics
   [options]
