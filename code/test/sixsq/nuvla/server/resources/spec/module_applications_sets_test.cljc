@@ -36,7 +36,14 @@
     (stu/is-valid ::t/schema (assoc-in root [:applications-sets 0 :applications 0 :registries-credentials]
                                        ["credential/ba2f41a3-c54c-fce8-32d2-0324e1c32ee2"]))
     (stu/is-invalid ::t/schema (assoc-in root [:applications-sets 0 :applications 0 :registries-credentials]
-                                       []))
+                                         []))
+    (stu/is-valid ::t/schema (assoc-in root [:applications-sets 0 :applications 0 :files]
+                                       [{:file-name    "my-config.conf"
+                                         :file-content "file content example"}
+                                        {:file-name    "file_1"
+                                         :file-content "file content example"}]))
+    (stu/is-invalid ::t/schema (assoc-in root [:applications-sets 0 :applications 0 :files]
+                                         []))
     (stu/is-invalid ::t/schema (assoc root :badKey "badValue"))
     (stu/is-invalid ::t/schema (assoc root :applications-sets []))
     (stu/is-valid ::t/schema (assoc-in root [:applications-sets 0 :applications] []))

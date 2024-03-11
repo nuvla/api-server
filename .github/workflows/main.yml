@@ -59,7 +59,7 @@ jobs:
 
       - name: Run Sonar Scanner
         env:
-          # provide GITHUB_TOKEN to get access to secrets.SONAR_TOKEN
+          # provide GITHUB_TOKEN to get access to secrets.SONARQUBE_TOKEN
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: code
         run: |
