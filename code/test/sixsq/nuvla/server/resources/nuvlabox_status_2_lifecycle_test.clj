@@ -469,7 +469,7 @@
               (ltu/is-status 200)
               (ltu/is-key-value :online true)))))))
 
-(deftest metric-data
+(deftest telemetry-data
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session         (-> (ltu/ring-app)
                               session
@@ -1069,8 +1069,7 @@
                                  (request nuvlabox-url)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
-                                 (ltu/get-op-url nb-utils/action-set-offline))
-          ]
+                                 (ltu/get-op-url nb-utils/action-set-offline))]
 
       ;; first time online 2 days ago
       (with-redefs [time/now (constantly now-2d)]
@@ -1293,7 +1292,7 @@
                                            0, 2, 2, 0]) "\n")
                        (csv-request "availability-stats")))))))))))
 
-(deftest raw-metric-data
+(deftest raw-data
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session         (-> (ltu/ring-app)
                               session
@@ -1342,13 +1341,14 @@
                               (ltu/is-status 201)
                               (ltu/body-resource-id))
           status-url      (str p/service-context
-                               status-id)]
+                               status-id)
+          update-time     (time/now)]
 
       ;; update the nuvlabox
       (-> session-nb
           (request status-url
                    :request-method :put
-                   :body (json/write-str {:current-time (time/now-str)
+                   :body (json/write-str {:current-time (time/to-str update-time)
                                           :online       true
                                           :resources    resources-updated}))
           (ltu/body->edn)
@@ -1374,66 +1374,21 @@
             (ltu/refresh-es-indices)
             (let [from            (time/minus (time/now) (time/duration-unit 1 :days))
                   to              now
-                  raw-metric-data (fn [metric]
-                                    (-> (metrics-request {:datasets    ["raw"]
-                                                          :metric      metric
+                  raw-metric-data (fn []
+                                    (-> (metrics-request {:datasets    ["cpu-stats"]
                                                           :from        from
                                                           :to          to
-                                                          :granularity "1-days"})
+                                                          :granularity "raw"})
                                         (ltu/is-status 200)
                                         (ltu/body->edn)
                                         (ltu/body)))]
               (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
-                       :raw        [{:timestamp (time/to-str midnight-yesterday)}]}]
-                     (raw-metric-data "cpu")))))
-
-          (testing "query request validation"
-            (let [invalid-request (fn [options]
-                                    (-> (metrics-request options)
-                                        (ltu/is-status 400)
-                                        (ltu/body->edn)
-                                        (ltu/body)
-                                        :message))]
-              (is (= "metric parameter must be specified with raw dataset"
-                     (invalid-request {:datasets ["raw"]
-                                       :from     (time/minus now (time/duration-unit 1 :days))
-                                       :to       now})))
-              (is (= "invalid metric parameter"
-                     (invalid-request {:datasets ["raw"]
-                                       :metric   "invalid"
-                                       :from     (time/minus now (time/duration-unit 1 :days))
-                                       :to       now})))
-              (is (= "cannot mix raw with other datasets in the same request"
-                     (invalid-request {:datasets ["raw" "cpu-stats"]
-                                       :from     (time/minus now (time/duration-unit 1 :days))
-                                       :to       now})))
-              (is (= "granularity should not be specified with raw dataset"
-                     (invalid-request {:datasets    ["raw"]
-                                       :from        (time/minus now (time/duration-unit 1 :days))
-                                       :to          now
-                                       :granularity "1-minutes"})))))
-
-          (testing "cvs export of raw metrics data"
-            (let [from            (time/minus now (time/duration-unit 1 :days))
-                  to              now
-                  raw-csv-request (fn [metric]
-                                    (-> (metrics-request {:accept-header "text/csv"
-                                                          :datasets      ["raw"]
-                                                          :metric        metric
-                                                          :from          from
-                                                          :to            to})
-                                        (ltu/is-status 200)
-                                        (ltu/is-header "Content-Type" "text/csv")
-                                        (ltu/is-header "Content-disposition" "attachment;filename=export.csv")
-                                        (ltu/body)))]
-              (is (= (str "nuvlaedge-id,timestamp,doc-count,avg-cpu-capacity,avg-cpu-load,avg-cpu-load-1,avg-cpu-load-5,context-switches,interrupts,software-interrupts,system-calls\n"
-                          (str/join "," [nuvlabox-id
-                                         (time/to-str midnight-yesterday)
-                                         0 nil nil nil nil nil nil nil nil]) "\n"
-                          (str/join "," [nuvlabox-id
-                                         (time/to-str midnight-today)
-                                         1 10 5.5 nil nil nil nil nil nil]) "\n")
-                     (raw-csv-request "cpu"))))))))))
+                       :ts-data    [{:cpu          {:capacity 10
+                                                    :load     5.5}
+                                     :metric       "cpu"
+                                     :nuvlaedge-id nuvlabox-id
+                                     :timestamp    (time/to-str update-time)}]}]
+                     (:cpu-stats (raw-metric-data)))))))))))
 
 (deftest lifecycle-online-next-heartbeat
   (test-online-next-heartbeat))

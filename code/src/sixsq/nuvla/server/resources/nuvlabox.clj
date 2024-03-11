@@ -1058,7 +1058,7 @@ particular NuvlaBox release.
 (defn compute-bucket-availability
   "Compute bucket availability based on sum online and seconds in bucket."
   [sum-time-online seconds-in-bucket]
-  (when sum-time-online
+  (when (and sum-time-online (some-> seconds-in-bucket pos?))
     (let [avg (/ sum-time-online seconds-in-bucket)]
       (if (> avg 1.0) 1.0 avg))))
 
@@ -1439,79 +1439,177 @@ particular NuvlaBox release.
   [{:keys [first-availability-status] :as _nuvlabox} timestamp]
   (some-> first-availability-status :timestamp time/date-from-str (time/before? timestamp)))
 
+(defn parse-params
+  [{:keys [uuid dataset from to granularity] :as params}]
+  (let [datasets (if (coll? dataset) dataset [dataset])
+        raw      (= "raw" granularity)]
+    (-> params
+        (assoc :datasets datasets)
+        (assoc :from (time/date-from-str from))
+        (assoc :to (time/date-from-str to))
+        (cond->
+          uuid (assoc :id (u/resource-id resource-type uuid))
+          raw (assoc :raw true)))))
+
+(defn throw-mandatory-dataset-parameter
+  [{:keys [datasets] :as params}]
+  (when-not (seq datasets) (logu/log-and-throw-400 "dataset parameter is mandatory"))
+  params)
+
+(defn throw-mandatory-from-to-parameters
+  [{:keys [from to] :as params}]
+  (when-not from
+    (logu/log-and-throw-400 (str "from parameter is mandatory, with format " time/iso8601-format)))
+  (when-not to
+    (logu/log-and-throw-400 (str "to parameter is mandatory, with format " time/iso8601-format)))
+  params)
+
+(defn throw-from-not-before-to
+  [{:keys [from to] :as params}]
+  (when-not (time/before? from to)
+    (logu/log-and-throw-400 "from must be before to"))
+  params)
+
+(defn throw-mandatory-granularity-parameter
+  [{:keys [raw granularity] :as params}]
+  (when (and (not raw) (empty? granularity))
+    (logu/log-and-throw-400 "granularity parameter is mandatory"))
+  params)
+
+(defn throw-mandatory-metric-parameter
+  [{:keys [raw metric] :as params}]
+  (when (and raw (empty? metric))
+    (logu/log-and-throw-400 "metric parameter is mandatory with raw dataset"))
+  params)
+
+(defn throw-raw-data-with-other-datasets
+  [{:keys [raw datasets] :as params}]
+  (when (and raw (> (count datasets) 1))
+    (logu/log-and-throw-400 "cannot mix raw with other datasets in the same request"))
+  params)
+
+(defn throw-too-many-data-points
+  [{:keys [from to granularity raw] :as params}]
+  (when-not raw
+    (let [max-n-buckets utils/max-data-points
+          n-buckets     (.dividedBy (time/duration from to)
+                                    (status-utils/granularity->duration granularity))]
+      (when (> n-buckets max-n-buckets)
+        (logu/log-and-throw-400 "too many data points requested. Please restrict the time interval or increase the time granularity."))))
+  params)
+
+(defn throw-response-format-not-supported
+  [{:keys [accept-header] :as params}]
+  (when (and (some? accept-header) (not (#{"application/json" "text/csv"} accept-header)))
+    (logu/log-and-throw-400 (str "format not supported: " accept-header)))
+  params)
+
+(defn assoc-nuvlaboxes
+  [{:keys [id to] cimi-filter :filter :as params} request]
+  (let [nuvlaboxes (if id
+                     [(crud/retrieve-by-id id request)]
+                     (->> (crud/query
+                            (cond-> request
+                                    cimi-filter (assoc :cimi-params
+                                                       {:filter (parser/parse-cimi-filter cimi-filter)
+                                                        :last   10000})))
+                          :body
+                          :resources))]
+    (assoc params
+      :nuvlaboxes
+      (->> nuvlaboxes
+           (filter commissioned?)
+           (map assoc-first-availability-status)
+           (filter #(available-before? % to))))))
+
+(defn assoc-base-query-opts
+  [{:keys [from to granularity raw mode nuvlaboxes] :as params}]
+  (assoc params
+    :base-query-opts
+    (cond->
+      {:mode          mode
+       :nuvlaedge-ids (concat (map :id nuvlaboxes))
+       :from          from
+       :to            to
+       :granularity   granularity
+       :raw           raw}
+      (not raw) (assoc :ts-interval (status-utils/granularity->ts-interval granularity)))))
+
+(defn assoc-datasets-opts
+  [{:keys [nuvlaboxes mode base-query-opts] :as params}]
+  (assoc params
+    :datasets-opts
+    (case mode
+      :single-edge-query (single-edge-datasets {:base-query-opts base-query-opts
+                                                :nuvlabox        (first nuvlaboxes)})
+      :multi-edge-query (multi-edge-datasets {:base-query-opts base-query-opts
+                                              :nuvlaboxes      nuvlaboxes}))))
+
+(defn throw-unknown-datasets
+  [{:keys [datasets datasets-opts] :as params}]
+  (when-not (every? (set (keys datasets-opts)) datasets)
+    (logu/log-and-throw-400 (str "unknown datasets: "
+                                 (str/join "," (sort (set/difference (set datasets)
+                                                                     (set (keys datasets-opts))))))))
+  params)
+
+(defn throw-csv-multi-dataset
+  [{:keys [datasets accept-header] :as params}]
+  (when (and (= "text/csv" accept-header) (not= 1 (count datasets)))
+    (logu/log-and-throw-400 (str "exactly one dataset must be specified with accept header 'text/csv'")))
+  params)
+
+(defn run-queries
+  [{:keys [datasets base-query-opts datasets-opts] :as params}]
+  (assoc params
+    :resps
+    (map (fn [dataset-key]
+           (let [{:keys [metric post-process-fn] :as dataset-opts} (get datasets-opts dataset-key)
+                 {:keys [raw] :as query-opts} (merge base-query-opts dataset-opts)
+                 query-fn   (case metric
+                              "availability" utils/query-availability
+                              utils/query-metrics)]
+             (cond->> (query-fn query-opts)
+                      post-process-fn (post-process-fn)
+                      (not raw) (keep-response-aggs-only query-opts))))
+         datasets)))
+
+(defn send-response
+  [{:keys [datasets datasets-opts mode resps accept-header]}]
+  (case accept-header
+    (nil "application/json")
+    ; by default return a json response
+    (r/json-response (zipmap datasets resps))
+    "text/csv"
+    (let [{:keys [aggregations response-aggs] group-by-field :group-by}
+          (get datasets-opts (first datasets))]
+      (r/csv-response "export.csv" (utils/metrics-data->csv
+                                     (cond-> (case mode
+                                               :single-edge-query
+                                               [:nuvlaedge-id]
+                                               :multi-edge-query
+                                               [:nuvlaedge-count])
+                                             group-by-field (conj group-by-field))
+                                     (or response-aggs (keys aggregations))
+                                     (first resps))))))
+
 (defn query-data
-  [{:keys [mode uuid dataset from to granularity accept-header] cimi-filter :filter} request]
-  (let [datasets        (if (coll? dataset) dataset [dataset])
-        _               (when-not (seq datasets) (logu/log-and-throw-400 "dataset parameter is mandatory"))
-        from            (time/date-from-str from)
-        to              (time/date-from-str to)
-        _               (when-not from (logu/log-and-throw-400 (str "from parameter is mandatory, with format " time/iso8601-format)))
-        _               (when-not to (logu/log-and-throw-400 (str "to parameter is mandatory, with format " time/iso8601-format)))
-        _               (when-not (time/before? from to)
-                          (logu/log-and-throw-400 "from must be before to"))
-        max-n-buckets   200
-        n-buckets       (.dividedBy (time/duration from to)
-                                    (status-utils/granularity->duration granularity))
-        _               (when (> n-buckets max-n-buckets)
-                          (logu/log-and-throw-400 "too many data points requested. Please restrict the time interval or increase the time granularity."))
-        ts-interval     (status-utils/granularity->ts-interval granularity)
-        _               (when (empty? ts-interval) (logu/log-and-throw-400 "granularity parameter is mandatory"))
-        id              (when uuid (u/resource-id resource-type uuid))
-        ;; fetch the relevant and allowed nuvlaboxes before retrieving any data
-        nuvlaboxes      (if id
-                          [(crud/retrieve-by-id id request)]
-                          (->> (crud/query (cond-> request
-                                                   cimi-filter (assoc :cimi-params {:filter (parser/parse-cimi-filter cimi-filter)
-                                                                                    :last   10000})))
-                               :body
-                               :resources))
-        nuvlaboxes      (->> nuvlaboxes
-                             (filter commissioned?)
-                             (map assoc-first-availability-status)
-                             (filter #(available-before? % to)))
-        base-query-opts {:mode          mode
-                         :nuvlaedge-ids (concat (map :id nuvlaboxes))
-                         :from          from
-                         :to            to
-                         :granularity   granularity
-                         :ts-interval   ts-interval}
-        datasets-opts   (case mode
-                          :single-edge-query (single-edge-datasets {:base-query-opts base-query-opts
-                                                                    :nuvlabox        (first nuvlaboxes)})
-                          :multi-edge-query (multi-edge-datasets {:base-query-opts base-query-opts
-                                                                  :nuvlaboxes      nuvlaboxes}))
-        _               (when-not (every? (set (keys datasets-opts)) datasets)
-                          (logu/log-and-throw-400 (str "unknown datasets: "
-                                                       (str/join "," (sort (set/difference (set datasets)
-                                                                                           (set (keys datasets-opts))))))))
-        _               (when (and (= "text/csv" accept-header) (not= 1 (count datasets)))
-                          (logu/log-and-throw-400 (str "exactly one dataset must be specified with accept header 'text/csv'")))
-        resps           (map (fn [dataset-key]
-                               (let [{:keys [metric post-process-fn] :as dataset-opts} (get datasets-opts dataset-key)
-                                     query-opts (merge base-query-opts dataset-opts)
-                                     query-fn   (case metric
-                                                  "availability" utils/query-availability
-                                                  utils/query-metrics)]
-                                 (cond->> (query-fn query-opts)
-                                          post-process-fn (post-process-fn)
-                                          true (keep-response-aggs-only query-opts))))
-                             datasets)]
-    (case accept-header
-      (nil "application/json")
-      ; by default return a json response
-      (r/json-response (zipmap datasets resps))
-      "text/csv"
-      (let [{:keys [aggregations response-aggs] group-by-field :group-by} (get datasets-opts (first datasets))]
-        (r/csv-response "export.csv" (utils/metrics-data->csv
-                                       (cond-> (case mode
-                                                 :single-edge-query
-                                                 [:nuvlaedge-id]
-                                                 :multi-edge-query
-                                                 [:nuvlaedge-count])
-                                               group-by-field (conj group-by-field))
-                                       (or response-aggs (keys aggregations))
-                                       (first resps))))
-      (logu/log-and-throw-400 (str "format not supported: " accept-header)))))
+  [params request]
+  (-> params
+      (parse-params)
+      (throw-mandatory-dataset-parameter)
+      (throw-mandatory-from-to-parameters)
+      (throw-from-not-before-to)
+      (throw-mandatory-granularity-parameter)
+      (throw-too-many-data-points)
+      (throw-response-format-not-supported)
+      (assoc-nuvlaboxes request)
+      (assoc-base-query-opts)
+      (assoc-datasets-opts)
+      (throw-unknown-datasets)
+      (throw-csv-multi-dataset)
+      (run-queries)
+      (send-response)))
 
 (defmethod crud/do-action [resource-type "data"]
   [{:keys [params] {accept-header "accept"} :headers :as request}]
