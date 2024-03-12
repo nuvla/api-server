@@ -518,13 +518,14 @@
                               (ltu/is-status 201)
                               (ltu/body-resource-id))
           status-url      (str p/service-context
-                               status-id)]
+                               status-id)
+          update-time     (time/now)]
 
       ;; update the nuvlabox
       (-> session-nb
           (request status-url
                    :request-method :put
-                   :body (json/write-str {:current-time (time/now-str)
+                   :body (json/write-str {:current-time (time/to-str update-time)
                                           :online       true
                                           :resources    resources-updated}))
           (ltu/body->edn)
@@ -646,6 +647,71 @@
                                       :aggregations {:energy-consumption {:value 2.4}
                                                      #_:unit                 #_"A"}}]}}
                      (set (:power-consumption-stats metric-data))))))
+
+          (testing "raw metric data query"
+            (let [from            (time/minus (time/now) (time/duration-unit 1 :days))
+                  to              now
+                  raw-metric-data (-> (metrics-request {:datasets    ["cpu"
+                                                                      "ram"
+                                                                      "disk"
+                                                                      "network"
+                                                                      "power-consumption"]
+                                                        :from        from
+                                                        :to          to
+                                                        :granularity "raw"})
+                                      (ltu/is-status 200)
+                                      (ltu/body->edn)
+                                      (ltu/body))]
+              (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
+                       :ts-data    [{:cpu          {:capacity 10
+                                                    :load     5.5}
+                                     :metric       "cpu"
+                                     :nuvlaedge-id nuvlabox-id
+                                     :timestamp    (time/to-str update-time)}]}]
+                     (:cpu raw-metric-data)))
+              (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
+                       :ts-data    [{:metric       "ram"
+                                     :nuvlaedge-id nuvlabox-id
+                                     :ram          {:capacity 4096
+                                                    :used     2000}
+                                     :timestamp    (time/to-str update-time)}]}]
+                     (:ram raw-metric-data)))
+              (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
+                       :ts-data    [{:disk         {:capacity 20000
+                                                    :device   "root"
+                                                    :used     20000}
+                                     :metric       "disk"
+                                     :nuvlaedge-id nuvlabox-id
+                                     :timestamp    (time/to-str update-time)}
+                                    {:disk         {:capacity 20000
+                                                    :device   "datastore"
+                                                    :used     15000}
+                                     :metric       "disk"
+                                     :nuvlaedge-id nuvlabox-id
+                                     :timestamp    (time/to-str update-time)}]}]
+                     (:disk raw-metric-data)))
+              (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
+                       :ts-data    [{:metric       "network"
+                                     :network      {:bytes-received    3019.0
+                                                    :bytes-transmitted 78.0
+                                                    :interface         "vpn"}
+                                     :nuvlaedge-id nuvlabox-id
+                                     :timestamp    (time/to-str update-time)}
+                                    {:metric       "network"
+                                     :network      {:bytes-received    5579821.0
+                                                    :bytes-transmitted 44145.0
+                                                    :interface         "eth0"}
+                                     :nuvlaedge-id nuvlabox-id
+                                     :timestamp    (time/to-str update-time)}]}]
+                     (:network raw-metric-data)))
+              (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
+                       :ts-data    [{:metric            "power-consumption"
+                                     :nuvlaedge-id      nuvlabox-id
+                                     :power-consumption {:energy-consumption 2.4
+                                                         :metric-name        "IN_current"
+                                                         :unit               "A"}
+                                     :timestamp         (time/to-str update-time)}]}]
+                     (:power-consumption raw-metric-data)))))
 
           (testing "query request validation"
             (let [invalid-request (fn [options]
@@ -797,10 +863,11 @@
                                      (ltu/body-resource-id))
               status-url-2       (str p/service-context status-id-2)
               ;; update the nuvlabox
+              update-time-2      (time/now)
               _                  (-> session-admin
                                      (request status-url-2
                                               :request-method :put
-                                              :body (json/write-str {:current-time (time/now-str)
+                                              :body (json/write-str {:current-time (time/to-str update-time-2)
                                                                      :online       true
                                                                      :resources    resources-updated}))
                                      (ltu/body->edn)
@@ -913,6 +980,111 @@
                                          :aggregations {:sum-energy-consumption {:value 4.8}
                                                         #_:unit                 #_"A"}}]}}
                         (set (:power-consumption-stats metric-data))))))
+          (testing "raw metrics data query"
+            (ltu/refresh-es-indices)
+            (let [from            (time/minus (time/now) (time/duration-unit 1 :days))
+                  to              now
+                  raw-metric-data (-> (metrics-request {:datasets    ["cpu"
+                                                                      "ram"
+                                                                      "disk"
+                                                                      "network"
+                                                                      "power-consumption"]
+                                                        :from        from
+                                                        :to          to
+                                                        :granularity "raw"})
+                                      (ltu/is-status 200)
+                                      (ltu/body->edn)
+                                      (ltu/body))]
+              (is (= [{:dimensions {:nuvlaedge-count 2}
+                       :ts-data    #{{:cpu          {:capacity 10
+                                                     :load     5.5}
+                                      :metric       "cpu"
+                                      :nuvlaedge-id nuvlabox-id
+                                      :timestamp    (time/to-str update-time)}
+                                     {:cpu          {:capacity 10
+                                                     :load     5.5}
+                                      :metric       "cpu"
+                                      :nuvlaedge-id nuvlabox-id-2
+                                      :timestamp    (time/to-str update-time-2)}}}]
+                     (update-in (:cpu raw-metric-data) [0 :ts-data] set)))
+              (is (= [{:dimensions {:nuvlaedge-count 2}
+                       :ts-data    #{{:metric       "ram"
+                                      :nuvlaedge-id nuvlabox-id
+                                      :ram          {:capacity 4096
+                                                     :used     2000}
+                                      :timestamp    (time/to-str update-time)}
+                                     {:metric       "ram"
+                                      :nuvlaedge-id nuvlabox-id-2
+                                      :ram          {:capacity 4096
+                                                     :used     2000}
+                                      :timestamp    (time/to-str update-time-2)}}}]
+                     (update-in (:ram raw-metric-data) [0 :ts-data] set)))
+              (is (= [{:dimensions {:nuvlaedge-count 2}
+                       :ts-data    #{{:disk         {:capacity 20000
+                                                     :device   "datastore"
+                                                     :used     15000}
+                                      :metric       "disk"
+                                      :nuvlaedge-id nuvlabox-id
+                                      :timestamp    (time/to-str update-time)}
+                                     {:disk         {:capacity 20000
+                                                     :device   "root"
+                                                     :used     20000}
+                                      :metric       "disk"
+                                      :nuvlaedge-id nuvlabox-id
+                                      :timestamp    (time/to-str update-time)}
+                                     {:disk         {:capacity 20000
+                                                     :device   "datastore"
+                                                     :used     15000}
+                                      :metric       "disk"
+                                      :nuvlaedge-id nuvlabox-id-2
+                                      :timestamp    (time/to-str update-time-2)}
+                                     {:disk         {:capacity 20000
+                                                     :device   "root"
+                                                     :used     20000}
+                                      :metric       "disk"
+                                      :nuvlaedge-id nuvlabox-id-2
+                                      :timestamp    (time/to-str update-time-2)}}}]
+                     (update-in (:disk raw-metric-data) [0 :ts-data] set)))
+              (is (= [{:dimensions {:nuvlaedge-count 2}
+                       :ts-data    #{{:metric       "network"
+                                      :network      {:bytes-received    3019.0
+                                                     :bytes-transmitted 78.0
+                                                     :interface         "vpn"}
+                                      :nuvlaedge-id nuvlabox-id
+                                      :timestamp    (time/to-str update-time)}
+                                     {:metric       "network"
+                                      :network      {:bytes-received    5579821.0
+                                                     :bytes-transmitted 44145.0
+                                                     :interface         "eth0"}
+                                      :nuvlaedge-id nuvlabox-id
+                                      :timestamp    (time/to-str update-time)}
+                                     {:metric       "network"
+                                      :network      {:bytes-received    3019.0
+                                                     :bytes-transmitted 78.0
+                                                     :interface         "vpn"}
+                                      :nuvlaedge-id nuvlabox-id-2
+                                      :timestamp    (time/to-str update-time-2)}
+                                     {:metric       "network"
+                                      :network      {:bytes-received    5579821.0
+                                                     :bytes-transmitted 44145.0
+                                                     :interface         "eth0"}
+                                      :nuvlaedge-id nuvlabox-id-2
+                                      :timestamp    (time/to-str update-time-2)}}}]
+                     (update-in (:network raw-metric-data) [0 :ts-data] set)))
+              (is (= [{:dimensions {:nuvlaedge-count 2}
+                       :ts-data    #{{:metric            "power-consumption"
+                                      :nuvlaedge-id      nuvlabox-id
+                                      :power-consumption {:energy-consumption 2.4
+                                                          :metric-name        "IN_current"
+                                                          :unit               "A"}
+                                      :timestamp         (time/to-str update-time)}
+                                     {:metric            "power-consumption"
+                                      :nuvlaedge-id      nuvlabox-id-2
+                                      :power-consumption {:energy-consumption 2.4
+                                                          :metric-name        "IN_current"
+                                                          :unit               "A"}
+                                      :timestamp         (time/to-str update-time-2)}}}]
+                     (update-in (:power-consumption raw-metric-data) [0 :ts-data] set)))))
 
           (testing "query request validation"
             (let [invalid-request (fn [options]
@@ -1291,104 +1463,6 @@
                                            (time/to-str midnight-today)
                                            0, 2, 2, 0]) "\n")
                        (csv-request "availability-stats")))))))))))
-
-(deftest raw-data
-  (binding [config-nuvla/*stripe-api-key* nil]
-    (let [session         (-> (ltu/ring-app)
-                              session
-                              (content-type "application/json"))
-          session-admin   (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-          session-user    (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
-          create-nuvlabox (fn [body]
-                            (let [nuvlabox     (-> session-user
-                                                   (request nuvlabox-base-uri
-                                                            :request-method :post
-                                                            :body (json/write-str body))
-                                                   (ltu/body->edn)
-                                                   (ltu/is-status 201))
-                                  nuvlabox-id  (ltu/location nuvlabox)
-                                  nuvlabox-url (str p/service-context nuvlabox-id)
-                                  _            (-> session-user
-                                                   (request (-> session-user
-                                                                (request nuvlabox-url)
-                                                                (ltu/body->edn)
-                                                                (ltu/is-status 200)
-                                                                (ltu/get-op-url :activate)))
-                                                   (ltu/body->edn)
-                                                   (ltu/is-status 200))
-                                  _            (-> session-user
-                                                   (request (-> session-user
-                                                                (request nuvlabox-url)
-                                                                (ltu/body->edn)
-                                                                (ltu/is-status 200)
-                                                                (ltu/get-op-url :commission)))
-                                                   (ltu/body->edn)
-                                                   (ltu/is-status 200))]
-                              nuvlabox-id))
-          nuvlabox-id     (create-nuvlabox valid-nuvlabox)
-          nuvlabox-url    (str p/service-context nuvlabox-id)
-
-          valid-acl       {:owners    ["group/nuvla-admin"]
-                           :edit-data [nuvlabox-id]}
-
-          session-nb      (header session authn-info-header (str nuvlabox-id " " nuvlabox-id " group/nuvla-user group/nuvla-anon"))
-          status-id       (-> session-admin
-                              (request base-uri
-                                       :request-method :post
-                                       :body (json/write-str (assoc valid-state :parent nuvlabox-id
-                                                                                :acl valid-acl)))
-                              (ltu/body->edn)
-                              (ltu/is-status 201)
-                              (ltu/body-resource-id))
-          status-url      (str p/service-context
-                               status-id)
-          update-time     (time/now)]
-
-      ;; update the nuvlabox
-      (-> session-nb
-          (request status-url
-                   :request-method :put
-                   :body (json/write-str {:current-time (time/to-str update-time)
-                                          :online       true
-                                          :resources    resources-updated}))
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          ltu/body)
-
-      (testing "raw metrics data on a single nuvlabox"
-        (let [nuvlabox-data-url  (str nuvlabox-url "/data")
-              now                (time/now)
-              midnight-today     (time/truncated-to-days now)
-              midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
-              metrics-request    (fn [{:keys [datasets from from-str to to-str granularity accept-header] #_:or #_{accept-header "application/json"}}]
-                                   (-> session-nb
-                                       (content-type "application/x-www-form-urlencoded")
-                                       (cond-> accept-header (header "accept" accept-header))
-                                       (request nuvlabox-data-url
-                                                :body (rc/form-encode
-                                                        {:dataset     datasets
-                                                         :from        (if from (time/to-str from) from-str)
-                                                         :to          (if to (time/to-str to) to-str)
-                                                         :granularity granularity}))))]
-          (testing "new metrics data is added to ts-nuvlaedge time-serie"
-            (ltu/refresh-es-indices)
-            (let [from            (time/minus (time/now) (time/duration-unit 1 :days))
-                  to              now
-                  raw-metric-data (fn []
-                                    (-> (metrics-request {:datasets    ["cpu-stats"]
-                                                          :from        from
-                                                          :to          to
-                                                          :granularity "raw"})
-                                        (ltu/is-status 200)
-                                        (ltu/body->edn)
-                                        (ltu/body)))]
-              (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
-                       :ts-data    [{:cpu          {:capacity 10
-                                                    :load     5.5}
-                                     :metric       "cpu"
-                                     :nuvlaedge-id nuvlabox-id
-                                     :timestamp    (time/to-str update-time)}]}]
-                     (:cpu-stats (raw-metric-data)))))))))))
 
 (deftest lifecycle-online-next-heartbeat
   (test-online-next-heartbeat))
