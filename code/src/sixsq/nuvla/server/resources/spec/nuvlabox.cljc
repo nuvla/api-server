@@ -102,7 +102,8 @@
 (s/def ::filter (st/spec ::core/nonblank-string))
 (s/def ::from (st/spec ::core/timestamp))
 (s/def ::to (st/spec ::core/timestamp))
-(s/def ::granularity (st/spec nb-status-utils/granularity->duration))
+(s/def ::granularity (st/spec (s/or :raw #{"raw"}
+                                    :granularity-duration nb-status-utils/granularity->duration)))
 (s/def ::bulk-data-body (su/only-keys-maps {:req-un [::dataset
                                                      ::from
                                                      ::to

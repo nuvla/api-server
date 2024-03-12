@@ -1183,7 +1183,15 @@ particular NuvlaBox release.
 
 (defn single-edge-datasets
   [{:keys [base-query-opts nuvlabox]}]
-  {"availability-stats"      {:metric          "availability"
+  {;; basic datasets - to be used to retrieve raw data
+   "availability"            {:metric "availability"}
+   "cpu"                     {:metric "cpu"}
+   "ram"                     {:metric "ram"}
+   "disk"                    {:metric "disk"}
+   "network"                 {:metric "network"}
+   "power-consumption"       {:metric "power-consumption"}
+   ;; pre-aggregated datasets - granularity for aggregation needs to be specified
+   "availability-stats"      {:metric          "availability"
                               :post-process-fn (comp dissoc-hits
                                                      (compute-nuvlabox-availability base-query-opts nuvlabox))
                               :response-aggs   [:avg-online]}
@@ -1350,7 +1358,15 @@ particular NuvlaBox release.
         group-by-edge      (fn [aggs] (group-by-field :nuvlaedge-id aggs))
         group-by-device    (fn [aggs] (group-by-field :disk.device aggs))
         group-by-interface (fn [aggs] (group-by-field :network.interface aggs))]
-    {"availability-stats"      {:metric          "availability"
+    {;; basic datasets - to be used to retrieve raw data
+     "availability"            {:metric "availability"}
+     "cpu"                     {:metric "cpu"}
+     "ram"                     {:metric "ram"}
+     "disk"                    {:metric "disk"}
+     "network"                 {:metric "network"}
+     "power-consumption"       {:metric "power-consumption"}
+     ;; pre-aggregated datasets - granularity for aggregation needs to be specified
+     "availability-stats"      {:metric          "availability"
                                 :post-process-fn (comp (add-virtual-edge-number-by-status-fn base-query-opts nuvlaboxes)
                                                        dissoc-hits
                                                        compute-global-availability
@@ -1566,9 +1582,9 @@ particular NuvlaBox release.
     (map (fn [dataset-key]
            (let [{:keys [metric post-process-fn] :as dataset-opts} (get datasets-opts dataset-key)
                  {:keys [raw] :as query-opts} (merge base-query-opts dataset-opts)
-                 query-fn   (case metric
-                              "availability" utils/query-availability
-                              utils/query-metrics)]
+                 query-fn (case metric
+                            "availability" utils/query-availability
+                            utils/query-metrics)]
              (cond->> (query-fn query-opts)
                       post-process-fn (post-process-fn)
                       (not raw) (keep-response-aggs-only query-opts))))
