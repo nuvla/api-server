@@ -1059,7 +1059,7 @@ particular NuvlaBox release.
   "Compute bucket availability based on sum online and seconds in bucket."
   [sum-time-online seconds-in-bucket]
   (when (and sum-time-online (some-> seconds-in-bucket pos?))
-    (let [avg (/ sum-time-online seconds-in-bucket)]
+    (let [avg (double (/ sum-time-online seconds-in-bucket))]
       (if (> avg 1.0) 1.0 avg))))
 
 (defn compute-seconds-in-bucket
@@ -1203,7 +1203,7 @@ particular NuvlaBox release.
     [query-opts resp]))
 
 (defn dissoc-hits
-  [[{:keys [raw] :as query-opts} resp]]
+  [[query-opts resp]]
   [query-opts (update-in resp [0] dissoc :hits)])
 
 (defn single-edge-datasets
@@ -1298,8 +1298,8 @@ particular NuvlaBox release.
            ;; weight then an edge that was there since the beginning of the bucket).
            (assoc aggs :global-avg-online
                        {:value (if (seq avgs-online)
-                                 (/ (apply + avgs-online)
-                                    avgs-count)
+                                 (double (/ (apply + avgs-online)
+                                            avgs-count))
                                  nil)})))))])
 
 (defn add-edges-count
@@ -1613,24 +1613,35 @@ particular NuvlaBox release.
                       predefined-aggregations (keep-response-aggs-only query-opts))))
          datasets)))
 
-(defn send-response
-  [{:keys [datasets datasets-opts mode resps accept-header]}]
+(defn json-data-response
+  [{:keys [datasets resps]}]
+  (r/json-response (zipmap datasets resps)))
+
+(defn csv-response
+  [{:keys [raw datasets datasets-opts mode resps]}]
+  (let [{:keys [aggregations response-aggs] group-by-field :group-by}
+        (get datasets-opts (first datasets))
+        dimension-keys (case mode
+                         :single-edge-query
+                         [:nuvlaedge-id]
+                         :multi-edge-query
+                         [:nuvlaedge-count])
+        csv-data       (if raw
+                         (utils/raw-data->csv dimension-keys (first resps))
+                         (utils/metrics-data->csv
+                           (cond-> dimension-keys
+                                   group-by-field (conj group-by-field))
+                           (or response-aggs (keys aggregations))
+                           (first resps)))]
+    (r/csv-response "export.csv" csv-data)))
+
+(defn send-data-response
+  [{:keys [accept-header] :as options}]
   (case accept-header
-    (nil "application/json")
-    ; by default return a json response
-    (r/json-response (zipmap datasets resps))
+    (nil "application/json")                                ; by default return a json response
+    (json-data-response options)
     "text/csv"
-    (let [{:keys [aggregations response-aggs] group-by-field :group-by}
-          (get datasets-opts (first datasets))]
-      (r/csv-response "export.csv" (utils/metrics-data->csv
-                                     (cond-> (case mode
-                                               :single-edge-query
-                                               [:nuvlaedge-id]
-                                               :multi-edge-query
-                                               [:nuvlaedge-count])
-                                             group-by-field (conj group-by-field))
-                                     (or response-aggs (keys aggregations))
-                                     (first resps))))))
+    (csv-response options)))
 
 (defn query-data
   [params request]
@@ -1649,7 +1660,7 @@ particular NuvlaBox release.
       (throw-unknown-datasets)
       (throw-csv-multi-dataset)
       (run-queries)
-      (send-response)))
+      (send-data-response)))
 
 (defmethod crud/do-action [resource-type "data"]
   [{:keys [params] {accept-header "accept"} :headers :as request}]
