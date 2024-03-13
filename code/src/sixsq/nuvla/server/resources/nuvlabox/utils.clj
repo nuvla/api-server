@@ -458,10 +458,10 @@
 (defn first-availability-status
   [nuvlaedge-id]
   (->> {:cimi-params {:filter  (cimi-params-impl/cimi-filter
-                                 {:filter (str "nuvlaedge-id='" nuvlaedge-id "'")
-                                  :last   1})
+                                 {:filter (str "nuvlaedge-id='" nuvlaedge-id "'")})
                       :select  ["@timestamp" "online"]
-                      :orderby [["@timestamp" :asc]]}
+                      :orderby [["@timestamp" :asc]]
+                      :last    1}
         ;; sending an empty :tsds-aggregation to avoid acl checks. TODO: find a cleaner way
         :params      {:tsds-aggregation "{}"}}
        (crud/query-as-admin ts-nuvlaedge-availability/resource-type)
@@ -475,10 +475,10 @@
    (->> {:cimi-params {:filter  (cimi-params-impl/cimi-filter
                                   {:filter (cond-> (str "nuvlaedge-id='" nuvlaedge-id "'")
                                                    before-timestamp
-                                                   (str " and @timestamp<'" (time/to-str before-timestamp) "'"))
-                                   :last   1})
+                                                   (str " and @timestamp<'" (time/to-str before-timestamp) "'"))})
                        :select  ["@timestamp" "online"]
-                       :orderby [["@timestamp" :desc]]}
+                       :orderby [["@timestamp" :desc]]
+                       :last    1}
          ;; sending an empty :tsds-aggregation to avoid acl checks. TODO: find a cleaner way
          :params      {:tsds-aggregation "{}"}}
         (crud/query-as-admin ts-nuvlaedge-availability/resource-type)
@@ -486,9 +486,12 @@
         first)))
 
 (defn build-aggregations-clause
-  [{:keys [raw from to ts-interval aggregations] group-by-field :group-by}]
-  (if raw
-    {} ;; send an empty :tsds-aggregation to avoid acl checks. TODO: find a cleaner way
+  [{:keys [predefined-aggregations raw custom-es-aggregations from to ts-interval aggregations] group-by-field :group-by}]
+  (cond
+    raw
+    {}                                                      ;; send an empty :tsds-aggregation to avoid acl checks. TODO: find a cleaner way
+
+    predefined-aggregations
     (let [tsds-aggregations {:tsds-stats
                              {:date_histogram
                               {:field           "@timestamp"
@@ -497,12 +500,16 @@
                                :extended_bounds {:min (time/to-str from)
                                                  :max (time/to-str to)}}
                               :aggregations (or aggregations {})}}]
+
       (if group-by-field
         {:aggregations
          {:by-field
           {:terms        {:field group-by-field}
            :aggregations tsds-aggregations}}}
-        {:aggregations tsds-aggregations}))))
+        {:aggregations tsds-aggregations}))
+
+    custom-es-aggregations
+    {:aggregations custom-es-aggregations}))
 
 (defn build-ts-query [{:keys [last nuvlaedge-ids from to additional-filters] :as options}]
   (let [nuvlabox-id-filter (str "nuvlaedge-id=[" (str/join " " (map #(str "'" % "'")
@@ -528,7 +535,7 @@
 
 (def max-data-points 200)
 
-(defn build-metrics-query [{:keys [raw metric] :as options}]
+(defn build-telemetry-query [{:keys [raw metric] :as options}]
   (build-ts-query (-> options
                       (assoc :additional-filters [(str "metric='" metric "'")])
                       (cond-> raw (assoc :last max-data-points)))))
@@ -548,8 +555,8 @@
     [{:dimensions dimensions
       :ts-data    hits}]))
 
-(defn ->aggregations-resp
-  [{:keys [mode nuvlaedge-ids aggregations] group-by-field :group-by} resp]
+(defn ->predefined-aggregations-resp
+  [{:keys [mode nuvlaedge-ids aggregations] group-by-field :group-by :as o} resp]
   (let [ts-data    (fn [tsds-stats]
                      (map
                        (fn [{:keys [key_as_string doc_count] :as bucket}]
@@ -577,15 +584,38 @@
           :ts-data    (ts-data (get-in resp [0 :aggregations :tsds-stats]))}
          (seq hits) (assoc :hits hits))])))
 
+(defn ->custom-es-aggregations-resp
+  [{:keys [mode nuvlaedge-ids]} resp]
+  (let [ts-data    (fn [tsds-stats]
+                     (map
+                       (fn [{:keys [key_as_string doc_count] :as bucket}]
+                         {:timestamp    key_as_string
+                          :doc-count    doc_count
+                          :aggregations (dissoc bucket :key_as_string :key :doc_count)})
+                       (:buckets tsds-stats)))
+        dimensions (case mode
+                     :single-edge-query
+                     {:nuvlaedge-id (first nuvlaedge-ids)}
+                     :multi-edge-query
+                     {:nuvlaedge-count (count nuvlaedge-ids)})]
+    [(merge {:dimensions dimensions}
+            (->> (for [agg-key (keys (get-in resp [0 :aggregations]))]
+                   [agg-key (ts-data (get-in resp [0 :aggregations agg-key]))])
+                 (into {})))]))
+
 (defn ->metrics-resp
-  [{:keys [raw] :as options} resp]
-  (if raw
+  [{:keys [predefined-aggregations custom-es-aggregations raw] :as options} resp]
+  (cond
+    predefined-aggregations
+    (->predefined-aggregations-resp options resp)
+    raw
     (->raw-resp options resp)
-    (->aggregations-resp options resp)))
+    custom-es-aggregations
+    (->custom-es-aggregations-resp options resp)))
 
 (defn query-metrics
   [options]
-  (->> (build-metrics-query options)
+  (->> (build-telemetry-query options)
        (crud/query-as-admin ts-nuvlaedge-telemetry/resource-type)
        (->metrics-resp options)))
 
