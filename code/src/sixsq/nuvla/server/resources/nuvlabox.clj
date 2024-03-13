@@ -1190,18 +1190,20 @@ particular NuvlaBox release.
                        ts-data))))))
 
 (defn compute-nuvlabox-availability
-  [[{:keys [granularity nuvlaboxes] :as query-opts} resp]]
-  (let [nuvlabox     (first nuvlaboxes)
-        now          (time/now)
-        update-av-fn (fn [ts-data-point availability]
-                       (update ts-data-point
-                               :aggregations
-                               (fn [aggs]
-                                 (assoc-in aggs [:avg-online :value] availability))))]
-    [query-opts (compute-nuvlabox-availability* resp now granularity nuvlabox update-av-fn)]))
+  [[{:keys [predefined-aggregations granularity nuvlaboxes] :as query-opts} resp]]
+  (if predefined-aggregations
+    (let [nuvlabox     (first nuvlaboxes)
+          now          (time/now)
+          update-av-fn (fn [ts-data-point availability]
+                         (update ts-data-point
+                                 :aggregations
+                                 (fn [aggs]
+                                   (assoc-in aggs [:avg-online :value] availability))))]
+      [query-opts (compute-nuvlabox-availability* resp now granularity nuvlabox update-av-fn)])
+    [query-opts resp]))
 
 (defn dissoc-hits
-  [[query-opts resp]]
+  [[{:keys [raw] :as query-opts} resp]]
   [query-opts (update-in resp [0] dissoc :hits)])
 
 (defn single-edge-datasets
@@ -1257,70 +1259,78 @@ particular NuvlaBox release.
                       (expected-bucket-edge-ids nuvlaboxes granularity ts-data-point))))))
 
 (defn compute-nuvlaboxes-availabilities
-  [[{:keys [granularity nuvlaboxes] :as query-opts} resp]]
-  (let [now (time/now)]
-    [query-opts
-     (reduce
-       (fn [resp nuvlabox]
-         (let [edge-bucket-update-fn
-               (fn [ts-data-point availability]
-                 (let [idx (->> (get-in ts-data-point [:aggregations :by-edge :buckets])
-                                (keep-indexed #(when (= (:key %2) (:id nuvlabox)) %1))
-                                first)]
-                   (cond-> ts-data-point
-                           idx (update-in [:aggregations :by-edge :buckets idx]
-                                          (fn [aggs]
-                                            (assoc-in aggs [:edge-avg-online :value]
-                                                      availability))))))]
-           (-> resp
-               (compute-nuvlabox-availability* now granularity nuvlabox
-                                               edge-bucket-update-fn))))
-       (init-edge-buckets resp nuvlaboxes granularity)
-       nuvlaboxes)]))
+  [[{:keys [predefined-aggregations granularity nuvlaboxes] :as query-opts} resp]]
+  (if predefined-aggregations
+    (let [now (time/now)]
+      [query-opts
+       (reduce
+         (fn [resp nuvlabox]
+           (let [edge-bucket-update-fn
+                 (fn [ts-data-point availability]
+                   (let [idx (->> (get-in ts-data-point [:aggregations :by-edge :buckets])
+                                  (keep-indexed #(when (= (:key %2) (:id nuvlabox)) %1))
+                                  first)]
+                     (cond-> ts-data-point
+                             idx (update-in [:aggregations :by-edge :buckets idx]
+                                            (fn [aggs]
+                                              (assoc-in aggs [:edge-avg-online :value]
+                                                        availability))))))]
+             (-> resp
+                 (compute-nuvlabox-availability* now granularity nuvlabox
+                                                 edge-bucket-update-fn))))
+         (init-edge-buckets resp nuvlaboxes granularity)
+         nuvlaboxes)])
+    [query-opts resp]))
 
 (defn compute-global-availability
-  [[query-opts resp]]
+  [[{:keys [predefined-aggregations] :as query-opts} resp]]
   [query-opts
-   (update-resp-ts-data-point-aggs
+   (cond->
      resp
-     (fn [_ts-data-point {:keys [by-edge] :as aggs}]
-       (let [avgs-count  (count (:buckets by-edge))
-             avgs-online (keep #(-> % :edge-avg-online :value)
-                               (:buckets by-edge))]
-         ;; here we can compute the average of the averages, because we give the same weight
-         ;; to each edge (caveat: an edge created in the middle of a bucket will have the same
-         ;; weight then an edge that was there since the beginning of the bucket).
-         (assoc aggs :global-avg-online
-                     {:value (if (seq avgs-online)
-                               (/ (apply + avgs-online)
-                                  avgs-count)
-                               nil)}))))])
+     predefined-aggregations
+     (update-resp-ts-data-point-aggs
+       (fn [_ts-data-point {:keys [by-edge] :as aggs}]
+         (let [avgs-count  (count (:buckets by-edge))
+               avgs-online (keep #(-> % :edge-avg-online :value)
+                                 (:buckets by-edge))]
+           ;; here we can compute the average of the averages, because we give the same weight
+           ;; to each edge (caveat: an edge created in the middle of a bucket will have the same
+           ;; weight then an edge that was there since the beginning of the bucket).
+           (assoc aggs :global-avg-online
+                       {:value (if (seq avgs-online)
+                                 (/ (apply + avgs-online)
+                                    avgs-count)
+                                 nil)})))))])
 
 (defn add-edges-count
-  [[query-opts resp]]
+  [[{:keys [predefined-aggregations] :as query-opts} resp]]
   [query-opts
-   (update-resp-ts-data-point-aggs
+   (cond->
      resp
-     (fn [_ts-data-point {:keys [by-edge] :as aggs}]
-       (assoc aggs :edges-count {:value (count (:buckets by-edge))})))])
+     predefined-aggregations
+     (update-resp-ts-data-point-aggs
+       (fn [_ts-data-point {:keys [by-edge] :as aggs}]
+         (assoc aggs :edges-count {:value (count (:buckets by-edge))}))))])
 
 (defn add-virtual-edge-number-by-status-fn
-  [[{:keys [granularity nuvlaboxes] :as query-opts} resp]]
-  (let [edges-count (fn [timestamp] (count (edges-at nuvlaboxes (bucket-end-time timestamp granularity))))]
-    [query-opts
-     (update-resp-ts-data-points
-       resp
-       (fn [{:keys [timestamp aggregations] :as ts-data-point}]
-         (let [global-avg-online    (get-in aggregations [:global-avg-online :value])
-               edges-count-agg      (get-in aggregations [:edges-count :value])
-               n-virt-online-edges  (double (or (some->> global-avg-online (* edges-count-agg)) 0))
-               n-edges              (edges-count timestamp)
-               n-virt-offline-edges (- n-edges n-virt-online-edges)]
-           (-> ts-data-point
-               (assoc-in [:aggregations :virtual-edges-online]
-                         {:value n-virt-online-edges})
-               (assoc-in [:aggregations :virtual-edges-offline]
-                         {:value n-virt-offline-edges})))))]))
+  [[{:keys [predefined-aggregations granularity nuvlaboxes] :as query-opts} resp]]
+  (if predefined-aggregations
+    (let [edges-count (fn [timestamp] (count (edges-at nuvlaboxes (bucket-end-time timestamp granularity))))]
+      [query-opts
+       (update-resp-ts-data-points
+         resp
+         (fn [{:keys [timestamp aggregations] :as ts-data-point}]
+           (let [global-avg-online    (get-in aggregations [:global-avg-online :value])
+                 edges-count-agg      (get-in aggregations [:edges-count :value])
+                 n-virt-online-edges  (double (or (some->> global-avg-online (* edges-count-agg)) 0))
+                 n-edges              (edges-count timestamp)
+                 n-virt-offline-edges (- n-edges n-virt-online-edges)]
+             (-> ts-data-point
+                 (assoc-in [:aggregations :virtual-edges-online]
+                           {:value n-virt-online-edges})
+                 (assoc-in [:aggregations :virtual-edges-offline]
+                           {:value n-virt-offline-edges})))))])
+    [query-opts resp]))
 
 (defn update-resp-edge-buckets
   [resp f]
@@ -1331,35 +1341,39 @@ particular NuvlaBox release.
                  (partial map (partial f ts-data-point))))))
 
 (defn add-edge-names-fn
-  [[{:keys [nuvlaboxes] :as query-opts} resp]]
-  (let [edge-names-by-id (->> nuvlaboxes
-                              (map (fn [{:keys [id name]}]
-                                     [id name]))
-                              (into {}))]
-    [query-opts
-     (update-resp-edge-buckets
-       resp
-       (fn [_ts-data-point {edge-id :key :as bucket}]
-         (assoc bucket :name (get edge-names-by-id edge-id))))]))
+  [[{:keys [predefined-aggregations nuvlaboxes] :as query-opts} resp]]
+  (if predefined-aggregations
+    (let [edge-names-by-id (->> nuvlaboxes
+                                (map (fn [{:keys [id name]}]
+                                       [id name]))
+                                (into {}))]
+      [query-opts
+       (update-resp-edge-buckets
+         resp
+         (fn [_ts-data-point {edge-id :key :as bucket}]
+           (assoc bucket :name (get edge-names-by-id edge-id))))])
+    [query-opts resp]))
 
 (defn add-missing-edges-fn
-  [[{:keys [granularity nuvlaboxes] :as query-opts} resp]]
-  (letfn [(update-buckets
-            [ts-data-point buckets]
-            (let [bucket-edge-ids  (set (map :key buckets))
-                  missing-edge-ids (set/difference (set (expected-bucket-edge-ids nuvlaboxes granularity ts-data-point))
-                                                   bucket-edge-ids)]
-              (concat buckets
-                      (map (fn [missing-edge-id]
-                             {:key       missing-edge-id
-                              :doc_count 0})
-                           missing-edge-ids))))]
-    [query-opts
-     (update-resp-ts-data-points
-       resp
-       (fn [ts-data-point]
-         (update-in ts-data-point [:aggregations :by-edge :buckets]
-                    (partial update-buckets ts-data-point))))]))
+  [[{:keys [predefined-aggregations granularity nuvlaboxes] :as query-opts} resp]]
+  (if predefined-aggregations
+    (letfn [(update-buckets
+              [ts-data-point buckets]
+              (let [bucket-edge-ids  (set (map :key buckets))
+                    missing-edge-ids (set/difference (set (expected-bucket-edge-ids nuvlaboxes granularity ts-data-point))
+                                                     bucket-edge-ids)]
+                (concat buckets
+                        (map (fn [missing-edge-id]
+                               {:key       missing-edge-id
+                                :doc_count 0})
+                             missing-edge-ids))))]
+      [query-opts
+       (update-resp-ts-data-points
+         resp
+         (fn [ts-data-point]
+           (update-in ts-data-point [:aggregations :by-edge :buckets]
+                      (partial update-buckets ts-data-point))))])
+    [query-opts resp]))
 
 (defn keep-response-aggs-only
   [{:keys [predefined-aggregations response-aggs] :as _query-opts} resp]
@@ -1515,8 +1529,8 @@ particular NuvlaBox release.
   params)
 
 (defn throw-too-many-data-points
-  [{:keys [from to granularity raw custom-es-aggregations] :as params}]
-  (when-not (or raw custom-es-aggregations)
+  [{:keys [from to granularity predefined-aggregations] :as params}]
+  (when predefined-aggregations
     (let [max-n-buckets utils/max-data-points
           n-buckets     (.dividedBy (time/duration from to)
                                     (status-utils/granularity->duration granularity))]
@@ -1589,14 +1603,14 @@ particular NuvlaBox release.
     :resps
     (map (fn [dataset-key]
            (let [{:keys [metric pre-process-fn post-process-fn] :as dataset-opts} (get datasets-opts dataset-key)
-                 {:keys [raw custom-es-aggregations] :as query-opts} (merge base-query-opts dataset-opts)
+                 {:keys [predefined-aggregations] :as query-opts} (merge base-query-opts dataset-opts)
                  query-fn   (case metric
                               "availability" utils/query-availability
                               utils/query-metrics)
                  query-opts (if pre-process-fn (pre-process-fn query-opts) query-opts)]
              (cond->> (query-fn query-opts)
                       post-process-fn ((fn [resp] (second (post-process-fn [query-opts resp]))))
-                      (not (or raw custom-es-aggregations)) (keep-response-aggs-only query-opts))))
+                      predefined-aggregations (keep-response-aggs-only query-opts))))
          datasets)))
 
 (defn send-response
