@@ -2,10 +2,8 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
-    [sixsq.nuvla.server.resources.ts-nuvlaedge :as ts-nuvlaedge]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.time :as time]))
 
@@ -70,68 +68,6 @@
     (when-let [resource-id (nb-utils/get-service "swarm" infrastructure-service-group)]
       (let [response (db/scripted-edit resource-id {:refresh false :body {:doc attributes}})]
         (log/debugf "detect-swarm - parent: %s - resource-id: %s - scripted-edit: %s" parent resource-id response)))))
-
-(defmulti nuvlabox-status->metric-data (fn [_ metric] metric))
-
-(defmethod nuvlabox-status->metric-data :default
-  [{:keys [resources]} metric]
-  (when-let [metric-data (get resources metric)]
-    [metric-data]))
-
-(defmethod nuvlabox-status->metric-data :cpu
-  [{{:keys [cpu]} :resources} _]
-  (when cpu
-    [(select-keys cpu
-                  [:capacity
-                   :load
-                   :load-1
-                   :load-5
-                   :context-switches
-                   :interrupts
-                   :software-interrupts
-                   :system-calls])]))
-
-(defmethod nuvlabox-status->metric-data :ram
-  [{{:keys [ram]} :resources} _]
-  (when ram
-    [(select-keys ram [:capacity :used])]))
-
-(defmethod nuvlabox-status->metric-data :disk
-  [{{:keys [disks]} :resources} _]
-  (when (seq disks)
-    (mapv #(select-keys % [:device :capacity :used]) disks)))
-
-(defmethod nuvlabox-status->metric-data :network
-  [{{:keys [net-stats] :as resources} :resources} _]
-  (when (seq net-stats)
-    (mapv #(select-keys % [:interface :bytes-transmitted :bytes-received]) net-stats)))
-
-(defmethod nuvlabox-status->metric-data :power-consumption
-  [{{:keys [power-consumption]} :resources} _]
-  (when (seq power-consumption)
-    (mapv #(select-keys % [:metric-name :energy-consumption :unit]) power-consumption)))
-
-(defn nuvlabox-status->ts-bulk-insert-request-body
-  [{:keys [parent current-time] :as nuvlabox-status}]
-  (when current-time
-    (->> [:cpu :ram :disk :network :power-consumption]
-         (map (fn [metric]
-                (->> (nuvlabox-status->metric-data nuvlabox-status metric)
-                     (map #(assoc {:nuvlaedge-id parent
-                                   :metric       (name metric)
-                                   :timestamp    current-time}
-                             metric %)))))
-         (apply concat))))
-
-(defn nuvlabox-status->ts-bulk-insert-request
-  [response]
-  (let [body (nuvlabox-status->ts-bulk-insert-request-body (:body response))]
-    (when (seq body)
-      {:headers     {"bulk" true}
-       :params      {:resource-name ts-nuvlaedge/resource-type
-                     :action        "bulk-insert"}
-       :body        body
-       :nuvla/authn auth/internal-identity})))
 
 (defn granularity->duration
   "Converts from a string of the form <n>-<units> to java.time duration"

@@ -3,7 +3,7 @@
     [clojure.test :refer [is deftest]]
     [sixsq.nuvla.db.es.common.es-mapping :as es-mapping]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
-    [sixsq.nuvla.server.resources.spec.ts-nuvlaedge :as ts-nuvlaedge]))
+    [sixsq.nuvla.server.resources.spec.ts-nuvlaedge-telemetry :as ts-nuvlaedge]))
 
 (deftest check-schema
   (let [timestamp "1964-08-25T10:00:00.00Z"]
@@ -77,23 +77,23 @@
                                                                                                 :time_series_metric "counter"}}}
                        "ram"               {:type "object", :properties {"capacity" {:type               "long"
                                                                                      :time_series_metric "gauge"}
-                                                                         "used"     {:type "long"
+                                                                         "used"     {:type               "long"
                                                                                      :time_series_metric "gauge"}}}
                        "disk"              {:type "object", :properties {"device"   {:type                  "keyword"
                                                                                      :time_series_dimension true}
                                                                          "capacity" {:type               "long"
                                                                                      :time_series_metric "gauge"}
-                                                                         "used"     {:type "long"
+                                                                         "used"     {:type               "long"
                                                                                      :time_series_metric "gauge"}}}
                        "network"           {:type "object", :properties {"interface"         {:type                  "keyword"
                                                                                               :time_series_dimension true}
-                                                                         "bytes-received"    {:type "double"
+                                                                         "bytes-received"    {:type               "double"
                                                                                               :time_series_metric "counter"}
-                                                                         "bytes-transmitted" {:type "double"
+                                                                         "bytes-transmitted" {:type               "double"
                                                                                               :time_series_metric "counter"}}}
                        "power-consumption" {:type "object", :properties {"metric-name"        {:type                  "keyword"
                                                                                                :time_series_dimension true}
-                                                                         "energy-consumption" {:type "double"
+                                                                         "energy-consumption" {:type               "double"
                                                                                                :time_series_metric "gauge"}
                                                                          "unit"               {:type "keyword"}}}}})))
 

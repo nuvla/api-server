@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.ts-nuvlaedge-lifecycle-test
+(ns sixsq.nuvla.server.resources.ts-nuvlaedge-telemetry-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is testing use-fixtures]]
@@ -7,7 +7,7 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.ts-nuvlaedge :as t]
+    [sixsq.nuvla.server.resources.ts-nuvlaedge-telemetry :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.time :as time]))
 

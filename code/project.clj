@@ -49,7 +49,7 @@
    [metosin/spec-tools]
    [org.bouncycastle/bcpkix-jdk15on "1.70"]
    [selmer "1.12.50"]
-   [org.clojure/data.csv "1.0.1"]
+   [org.clojure/data.csv "1.1.0"]
    [org.clojure/data.json]
    [org.clojure/java.classpath]
    [org.clojure/tools.namespace]
@@ -87,7 +87,8 @@
                                [org.slf4j/slf4j-log4j12]
                                [com.cemerick/url]
                                [org.apache.curator/curator-test]
-                               [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]
+                               [org.clojars.konstan/kinsky-test-jar ~kinsky-version]
+                               [same/ish "0.1.6"]]
               :resource-paths ["test-resources"]
               :env            {:nuvla-session-key           "test-resources/session.key"
                                :nuvla-session-crt           "test-resources/session.crt"

@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.ts-nuvlaedge
+(ns sixsq.nuvla.server.resources.spec.ts-nuvlaedge-telemetry
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.core :as core]
@@ -35,16 +35,14 @@
     :name "capacity"
     :json-schema/field-type :metric-gauge
     :json-schema/type "integer"
-    :json-schema/description "total capacity of the resource"
-    :json-schema/order 11))
+    :json-schema/description "total capacity of the resource"))
 
 (s/def ::load
   (assoc (st/spec (s/and number? #(not (neg? %))))
     :name "load"
     :json-schema/field-type :metric-gauge
     :json-schema/type "double"
-    :json-schema/description "CPU load"
-    :json-schema/order 12))
+    :json-schema/description "CPU load"))
 
 (s/def ::load-1
   (assoc (st/spec (s/and number? #(not (neg? %))))
@@ -196,7 +194,6 @@
                                       ::disk
                                       ::network
                                       ::power-consumption]})
-
 
 (s/def ::schema
   (assoc (st/spec (su/only-keys-maps ts-nuvlaedge-keys-spec))

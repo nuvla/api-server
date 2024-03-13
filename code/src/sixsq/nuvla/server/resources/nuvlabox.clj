@@ -12,6 +12,7 @@ particular NuvlaBox release.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.auth.utils.acl :as acl-utils]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -26,7 +27,6 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.common-body :as common-body]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
-    [sixsq.nuvla.server.resources.ts-nuvlaedge :as ts-nuvlaedge]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
@@ -1055,74 +1055,637 @@ particular NuvlaBox release.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
+(defn compute-bucket-availability
+  "Compute bucket availability based on sum online and seconds in bucket."
+  [sum-time-online seconds-in-bucket]
+  (when (and sum-time-online (some-> seconds-in-bucket pos?))
+    (let [avg (double (/ sum-time-online seconds-in-bucket))]
+      (if (> avg 1.0) 1.0 avg))))
+
+(defn compute-seconds-in-bucket
+  [{start-str :timestamp} granularity now]
+  (let [start (time/date-from-str start-str)
+        end   (time/plus start (status-utils/granularity->duration granularity))
+        end   (if (time/after? end now) now end)]
+    (time/time-between start end :seconds)))
+
+(defn edge-at
+  "Returns the edge if it was created before the given timestamp, and if sent
+   a metric datapoint before the given timestamp, nil otherwise"
+  [{:keys [created first-availability-status] :as _nuvlabox} timestamp]
+  (and (some-> created
+               (time/date-from-str)
+               (time/before? timestamp))
+       (some-> first-availability-status
+               :timestamp
+               time/date-from-str
+               (time/before? timestamp))))
+
+(defn bucket-end-time
+  [backet-start-time granularity]
+  (time/plus (time/date-from-str backet-start-time)
+             (status-utils/granularity->duration granularity)))
+
+(defn bucket-online-stats
+  "Compute online stats for a bucket."
+  [{nuvlaedge-id :id :as nuvlabox} {start-str :timestamp} granularity now hits latest-status]
+  (let [start           (time/date-from-str start-str)
+        end             (time/plus start (status-utils/granularity->duration granularity))
+        end             (if (time/after? end now) now end)
+        relevant-hits   (filter #(and (= nuvlaedge-id (:nuvlaedge-id %))
+                                      (not (time/before? (:timestamp %) start))
+                                      (time/before? (:timestamp %) end))
+                                hits)
+        sum-time-online (reduce
+                          (fn [online-secs [{from :timestamp :keys [online]}
+                                            {to :timestamp}]]
+                            (when (some? online)
+                              (cond
+                                (edge-at nuvlabox from)
+                                (+ (or online-secs 0)
+                                   (* online (time/time-between from to :seconds)))
+                                (edge-at nuvlabox to)
+                                (+ (or online-secs 0)
+                                   (* online (time/time-between (time/date-from-str (:created nuvlabox)) to :seconds)))
+                                :else
+                                nil)))
+                          nil
+                          (map vector
+                               (cons {:timestamp start
+                                      :online    latest-status}
+                                     relevant-hits)
+                               (conj (vec relevant-hits)
+                                     {:timestamp end})))]
+    [sum-time-online (:online (or (last relevant-hits)
+                                  {:online latest-status}))]))
+
+(defn update-resp-ts-data
+  [resp f]
+  (-> resp
+      vec
+      (update-in [0 :ts-data] f)))
+
+(defn update-resp-ts-data-points
+  [resp f]
+  (update-resp-ts-data
+    resp
+    (fn [ts-data]
+      (map f ts-data))))
+
+(defn update-resp-ts-data-point-aggs
+  [resp f]
+  (update-resp-ts-data-points
+    resp
+    (fn [ts-data-point]
+      (update ts-data-point :aggregations (partial f ts-data-point)))))
+
+(defn commissioned?
+  [nuvlabox]
+  (= utils/state-commissioned (:state nuvlabox)))
+
+(defn assoc-first-availability-status
+  [nuvlabox]
+  (assoc nuvlabox :first-availability-status
+                  (utils/first-availability-status (:id nuvlabox))))
+
+(defn available-before?
+  [{:keys [first-availability-status] :as _nuvlabox} timestamp]
+  (some-> first-availability-status :timestamp time/date-from-str (time/before? timestamp)))
+
+(defn filter-commissioned-nuvlaboxes
+  [{:keys [to nuvlaboxes] :as base-query-opts}]
+  (let [nuvlaboxes (->> nuvlaboxes
+                        (filter commissioned?)
+                        (map assoc-first-availability-status)
+                        (filter #(available-before? % to)))]
+    (assoc base-query-opts
+      :nuvlaboxes nuvlaboxes
+      :nuvlaedge-ids (map :id nuvlaboxes))))
+
+(defn compute-nuvlabox-availability*
+  "Compute availability for a single nuvlabox."
+  [resp now granularity {nuvlaedge-id :id :as nuvlabox} update-fn]
+  (let [hits                 (->> (get-in resp [0 :hits])
+                                  (map #(update % :timestamp time/date-from-str))
+                                  reverse)
+        first-bucket-ts      (some-> resp first :ts-data first :timestamp time/date-from-str)
+        prev-status          (some-> nuvlaedge-id
+                                     (utils/latest-availability-status first-bucket-ts)
+                                     :online)
+        update-ts-data-point (fn [[ts-data latest-status] {:keys [timestamp] :as ts-data-point}]
+                               (if (edge-at nuvlabox (bucket-end-time timestamp granularity))
+                                 (let [seconds-in-bucket (compute-seconds-in-bucket ts-data-point granularity now)
+                                       [sum-time-online latest-status] (bucket-online-stats nuvlabox ts-data-point granularity now hits latest-status)]
+                                   [(conj ts-data
+                                          (update-fn
+                                            ts-data-point
+                                            (compute-bucket-availability sum-time-online seconds-in-bucket)))
+                                    latest-status])
+                                 [(conj ts-data ts-data-point) latest-status]))]
+    (update-resp-ts-data
+      resp
+      (fn [ts-data]
+        (first (reduce update-ts-data-point
+                       [[] prev-status]
+                       ts-data))))))
+
+(defn compute-nuvlabox-availability
+  [[{:keys [predefined-aggregations granularity nuvlaboxes] :as query-opts} resp]]
+  (if predefined-aggregations
+    (let [nuvlabox     (first nuvlaboxes)
+          now          (time/now)
+          update-av-fn (fn [ts-data-point availability]
+                         (update ts-data-point
+                                 :aggregations
+                                 (fn [aggs]
+                                   (assoc-in aggs [:avg-online :value] availability))))]
+      [query-opts (compute-nuvlabox-availability* resp now granularity nuvlabox update-av-fn)])
+    [query-opts resp]))
+
+(defn dissoc-hits
+  [[query-opts resp]]
+  [query-opts (update-in resp [0] dissoc :hits)])
+
+(defn single-edge-datasets
+  []
+  {"availability-stats"      {:metric          "availability"
+                              :pre-process-fn  filter-commissioned-nuvlaboxes
+                              :post-process-fn (comp dissoc-hits
+                                                     compute-nuvlabox-availability)
+                              :response-aggs   [:avg-online]}
+   "cpu-stats"               {:metric       "cpu"
+                              :aggregations {:avg-cpu-capacity    {:avg {:field :cpu.capacity}}
+                                             :avg-cpu-load        {:avg {:field :cpu.load}}
+                                             :avg-cpu-load-1      {:avg {:field :cpu.load-1}}
+                                             :avg-cpu-load-5      {:avg {:field :cpu.load-5}}
+                                             :context-switches    {:max {:field :cpu.context-switches}}
+                                             :interrupts          {:max {:field :cpu.interrupts}}
+                                             :software-interrupts {:max {:field :cpu.software-interrupts}}
+                                             :system-calls        {:max {:field :cpu.system-calls}}}}
+   "ram-stats"               {:metric       "ram"
+                              :aggregations {:avg-ram-capacity {:avg {:field :ram.capacity}}
+                                             :avg-ram-used     {:avg {:field :ram.used}}}}
+   "disk-stats"              {:metric       "disk"
+                              :group-by     :disk.device
+                              :aggregations {:avg-disk-capacity {:avg {:field :disk.capacity}}
+                                             :avg-disk-used     {:avg {:field :disk.used}}}}
+   "network-stats"           {:metric       "network"
+                              :group-by     :network.interface
+                              :aggregations {:bytes-received    {:max {:field :network.bytes-received}}
+                                             :bytes-transmitted {:max {:field :network.bytes-transmitted}}}}
+   "power-consumption-stats" {:metric       "power-consumption"
+                              :group-by     :power-consumption.metric-name
+                              :aggregations {:energy-consumption {:max {:field :power-consumption.energy-consumption}}
+                                             #_:unit                   #_{:first {:field :power-consumption.unit}}}}})
+
+(defn edges-at
+  "Returns the edges which were created before the given timestamp"
+  [nuvlaboxes timestamp]
+  (filter #(edge-at % timestamp) nuvlaboxes))
+
+(defn expected-bucket-edge-ids
+  [nuvlaboxes granularity {:keys [timestamp] :as _ts-data-point}]
+  (->> (bucket-end-time timestamp granularity)
+       (edges-at nuvlaboxes)
+       (map :id)))
+
+(defn init-edge-buckets
+  [resp nuvlaboxes granularity]
+  (update-resp-ts-data-points
+    resp
+    (fn [ts-data-point]
+      (assoc-in ts-data-point [:aggregations :by-edge :buckets]
+                (mapv (fn [ne-id] {:key ne-id})
+                      (expected-bucket-edge-ids nuvlaboxes granularity ts-data-point))))))
+
+(defn compute-nuvlaboxes-availabilities
+  [[{:keys [predefined-aggregations granularity nuvlaboxes] :as query-opts} resp]]
+  (if predefined-aggregations
+    (let [now (time/now)]
+      [query-opts
+       (reduce
+         (fn [resp nuvlabox]
+           (let [edge-bucket-update-fn
+                 (fn [ts-data-point availability]
+                   (let [idx (->> (get-in ts-data-point [:aggregations :by-edge :buckets])
+                                  (keep-indexed #(when (= (:key %2) (:id nuvlabox)) %1))
+                                  first)]
+                     (cond-> ts-data-point
+                             idx (update-in [:aggregations :by-edge :buckets idx]
+                                            (fn [aggs]
+                                              (assoc-in aggs [:edge-avg-online :value]
+                                                        availability))))))]
+             (-> resp
+                 (compute-nuvlabox-availability* now granularity nuvlabox
+                                                 edge-bucket-update-fn))))
+         (init-edge-buckets resp nuvlaboxes granularity)
+         nuvlaboxes)])
+    [query-opts resp]))
+
+(defn compute-global-availability
+  [[{:keys [predefined-aggregations] :as query-opts} resp]]
+  [query-opts
+   (cond->
+     resp
+     predefined-aggregations
+     (update-resp-ts-data-point-aggs
+       (fn [_ts-data-point {:keys [by-edge] :as aggs}]
+         (let [avgs-count  (count (:buckets by-edge))
+               avgs-online (keep #(-> % :edge-avg-online :value)
+                                 (:buckets by-edge))]
+           ;; here we can compute the average of the averages, because we give the same weight
+           ;; to each edge (caveat: an edge created in the middle of a bucket will have the same
+           ;; weight then an edge that was there since the beginning of the bucket).
+           (assoc aggs :global-avg-online
+                       {:value (if (seq avgs-online)
+                                 (double (/ (apply + avgs-online)
+                                            avgs-count))
+                                 nil)})))))])
+
+(defn add-edges-count
+  [[{:keys [predefined-aggregations] :as query-opts} resp]]
+  [query-opts
+   (cond->
+     resp
+     predefined-aggregations
+     (update-resp-ts-data-point-aggs
+       (fn [_ts-data-point {:keys [by-edge] :as aggs}]
+         (assoc aggs :edges-count {:value (count (:buckets by-edge))}))))])
+
+(defn add-virtual-edge-number-by-status-fn
+  [[{:keys [predefined-aggregations granularity nuvlaboxes] :as query-opts} resp]]
+  (if predefined-aggregations
+    (let [edges-count (fn [timestamp] (count (edges-at nuvlaboxes (bucket-end-time timestamp granularity))))]
+      [query-opts
+       (update-resp-ts-data-points
+         resp
+         (fn [{:keys [timestamp aggregations] :as ts-data-point}]
+           (let [global-avg-online    (get-in aggregations [:global-avg-online :value])
+                 edges-count-agg      (get-in aggregations [:edges-count :value])
+                 n-virt-online-edges  (double (or (some->> global-avg-online (* edges-count-agg)) 0))
+                 n-edges              (edges-count timestamp)
+                 n-virt-offline-edges (- n-edges n-virt-online-edges)]
+             (-> ts-data-point
+                 (assoc-in [:aggregations :virtual-edges-online]
+                           {:value n-virt-online-edges})
+                 (assoc-in [:aggregations :virtual-edges-offline]
+                           {:value n-virt-offline-edges})))))])
+    [query-opts resp]))
+
+(defn update-resp-edge-buckets
+  [resp f]
+  (update-resp-ts-data-point-aggs
+    resp
+    (fn [ts-data-point aggs]
+      (update-in aggs [:by-edge :buckets]
+                 (partial map (partial f ts-data-point))))))
+
+(defn add-edge-names-fn
+  [[{:keys [predefined-aggregations nuvlaboxes] :as query-opts} resp]]
+  (if predefined-aggregations
+    (let [edge-names-by-id (->> nuvlaboxes
+                                (map (fn [{:keys [id name]}]
+                                       [id name]))
+                                (into {}))]
+      [query-opts
+       (update-resp-edge-buckets
+         resp
+         (fn [_ts-data-point {edge-id :key :as bucket}]
+           (assoc bucket :name (get edge-names-by-id edge-id))))])
+    [query-opts resp]))
+
+(defn add-missing-edges-fn
+  [[{:keys [predefined-aggregations granularity nuvlaboxes] :as query-opts} resp]]
+  (if predefined-aggregations
+    (letfn [(update-buckets
+              [ts-data-point buckets]
+              (let [bucket-edge-ids  (set (map :key buckets))
+                    missing-edge-ids (set/difference (set (expected-bucket-edge-ids nuvlaboxes granularity ts-data-point))
+                                                     bucket-edge-ids)]
+                (concat buckets
+                        (map (fn [missing-edge-id]
+                               {:key       missing-edge-id
+                                :doc_count 0})
+                             missing-edge-ids))))]
+      [query-opts
+       (update-resp-ts-data-points
+         resp
+         (fn [ts-data-point]
+           (update-in ts-data-point [:aggregations :by-edge :buckets]
+                      (partial update-buckets ts-data-point))))])
+    [query-opts resp]))
+
+(defn keep-response-aggs-only
+  [{:keys [predefined-aggregations response-aggs] :as _query-opts} resp]
+  (cond->
+    resp
+    predefined-aggregations
+    (update-resp-ts-data-point-aggs
+      (fn [_ts-data-point aggs]
+        (if response-aggs
+          (select-keys aggs response-aggs)
+          aggs)))))
+
+(defn multi-edge-datasets
+  []
+  (let [group-by-field     (fn [field aggs]
+                             {:terms        {:field field}
+                              :aggregations aggs})
+        group-by-edge      (fn [aggs] (group-by-field :nuvlaedge-id aggs))
+        group-by-device    (fn [aggs] (group-by-field :disk.device aggs))
+        group-by-interface (fn [aggs] (group-by-field :network.interface aggs))]
+    {"availability-stats"      {:metric          "availability"
+                                :pre-process-fn  filter-commissioned-nuvlaboxes
+                                :post-process-fn (comp add-virtual-edge-number-by-status-fn
+                                                       dissoc-hits
+                                                       compute-global-availability
+                                                       add-edges-count
+                                                       add-missing-edges-fn
+                                                       compute-nuvlaboxes-availabilities)
+                                :response-aggs   [:edges-count
+                                                  :virtual-edges-online
+                                                  :virtual-edges-offline]}
+     "availability-by-edge"    {:metric          "availability"
+                                :pre-process-fn  filter-commissioned-nuvlaboxes
+                                :post-process-fn (comp dissoc-hits
+                                                       compute-global-availability
+                                                       add-edges-count
+                                                       add-edge-names-fn
+                                                       add-missing-edges-fn
+                                                       compute-nuvlaboxes-availabilities)
+                                :response-aggs   [:edges-count
+                                                  :by-edge
+                                                  :global-avg-online]}
+     "cpu-stats"               {:metric        "cpu"
+                                :aggregations  {:avg-cpu-capacity        (group-by-edge {:by-edge {:avg {:field :cpu.capacity}}})
+                                                :avg-cpu-load            (group-by-edge {:by-edge {:avg {:field :cpu.load}}})
+                                                :avg-cpu-load-1          (group-by-edge {:by-edge {:avg {:field :cpu.load-1}}})
+                                                :avg-cpu-load-5          (group-by-edge {:by-edge {:avg {:field :cpu.load-5}}})
+                                                :context-switches        (group-by-edge {:by-edge {:max {:field :cpu.context-switches}}})
+                                                :interrupts              (group-by-edge {:by-edge {:max {:field :cpu.interrupts}}})
+                                                :software-interrupts     (group-by-edge {:by-edge {:max {:field :cpu.software-interrupts}}})
+                                                :system-calls            (group-by-edge {:by-edge {:max {:field :cpu.system-calls}}})
+                                                :sum-avg-cpu-capacity    {:sum_bucket {:buckets_path :avg-cpu-capacity>by-edge}}
+                                                :sum-avg-cpu-load        {:sum_bucket {:buckets_path :avg-cpu-load>by-edge}}
+                                                :sum-avg-cpu-load-1      {:sum_bucket {:buckets_path :avg-cpu-load-1>by-edge}}
+                                                :sum-avg-cpu-load-5      {:sum_bucket {:buckets_path :avg-cpu-load-5>by-edge}}
+                                                :sum-context-switches    {:sum_bucket {:buckets_path :context-switches>by-edge}}
+                                                :sum-interrupts          {:sum_bucket {:buckets_path :interrupts>by-edge}}
+                                                :sum-software-interrupts {:sum_bucket {:buckets_path :software-interrupts>by-edge}}
+                                                :sum-system-calls        {:sum_bucket {:buckets_path :system-calls>by-edge}}}
+                                :response-aggs [:sum-avg-cpu-capacity :sum-avg-cpu-load :sum-avg-cpu-load-1 :sum-avg-cpu-load-5
+                                                :sum-context-switches :sum-interrupts :sum-software-interrupts :sum-system-calls]}
+     "ram-stats"               {:metric        "ram"
+                                :aggregations  {:avg-ram-capacity     (group-by-edge {:by-edge {:avg {:field :ram.capacity}}})
+                                                :avg-ram-used         (group-by-edge {:by-edge {:avg {:field :ram.used}}})
+                                                :sum-avg-ram-capacity {:sum_bucket {:buckets_path :avg-ram-capacity>by-edge}}
+                                                :sum-avg-ram-used     {:sum_bucket {:buckets_path :avg-ram-used>by-edge}}}
+                                :response-aggs [:sum-avg-ram-capacity :sum-avg-ram-used]}
+     "disk-stats"              {:metric        "disk"
+                                :aggregations  {:avg-disk-capacity     (group-by-edge
+                                                                         {:by-edge                 (group-by-device
+                                                                                                     {:by-device {:avg {:field :disk.capacity}}})
+                                                                          :total-avg-edge-capacity {:sum_bucket {:buckets_path :by-edge>by-device}}})
+                                                :avg-disk-used         (group-by-edge
+                                                                         {:by-edge                      (group-by-device
+                                                                                                          {:by-device {:avg {:field :disk.used}}})
+                                                                          :total-avg-edge-used-capacity {:sum_bucket {:buckets_path :by-edge>by-device}}})
+                                                :sum-avg-disk-capacity {:sum_bucket {:buckets_path :avg-disk-capacity>total-avg-edge-capacity}}
+                                                :sum-avg-disk-used     {:sum_bucket {:buckets_path :avg-disk-used>total-avg-edge-used-capacity}}}
+                                :response-aggs [:sum-avg-disk-capacity :sum-avg-disk-used]}
+     "network-stats"           {:metric        "network"
+                                :aggregations  {:bytes-received        (group-by-edge
+                                                                         {:by-edge                   (group-by-interface
+                                                                                                       {:by-interface {:max {:field :network.bytes-received}}})
+                                                                          :total-edge-bytes-received {:sum_bucket {:buckets_path :by-edge>by-interface}}})
+                                                :bytes-transmitted     (group-by-edge
+                                                                         {:by-edge                      (group-by-interface
+                                                                                                          {:by-interface {:max {:field :network.bytes-transmitted}}})
+                                                                          :total-edge-bytes-transmitted {:sum_bucket {:buckets_path :by-edge>by-interface}}})
+                                                :sum-bytes-received    {:sum_bucket {:buckets_path :bytes-received>total-edge-bytes-received}}
+                                                :sum-bytes-transmitted {:sum_bucket {:buckets_path :bytes-transmitted>total-edge-bytes-transmitted}}}
+                                :response-aggs [:sum-bytes-received :sum-bytes-transmitted]}
+     "power-consumption-stats" {:metric        "power-consumption"
+                                :group-by      :power-consumption.metric-name
+                                :aggregations  {:energy-consumption     (group-by-edge {:by-edge {:max {:field :power-consumption.energy-consumption}}})
+                                                #_:unit                   #_{:first {:field :power-consumption.unit}}
+                                                :sum-energy-consumption {:sum_bucket {:buckets_path :energy-consumption>by-edge}}}
+                                :response-aggs [:sum-energy-consumption]}}))
+
+(defn parse-params
+  [{:keys [uuid dataset from to granularity custom-es-aggregations] :as params}]
+  (let [datasets                (if (coll? dataset) dataset [dataset])
+        raw                     (= "raw" granularity)
+        predefined-aggregations (not (or raw custom-es-aggregations))
+        custom-es-aggregations  (cond-> custom-es-aggregations
+                                        (string? custom-es-aggregations)
+                                        json/read-str)]
+    (-> params
+        (assoc :datasets datasets)
+        (assoc :from (time/date-from-str from))
+        (assoc :to (time/date-from-str to))
+        (cond->
+          uuid (assoc :id (u/resource-id resource-type uuid))
+          raw (assoc :raw true)
+          predefined-aggregations (assoc :predefined-aggregations true)
+          custom-es-aggregations (assoc :custom-es-aggregations custom-es-aggregations)))))
+
+(defn throw-mandatory-dataset-parameter
+  [{:keys [datasets] :as params}]
+  (when-not (seq datasets) (logu/log-and-throw-400 "dataset parameter is mandatory"))
+  params)
+
+(defn throw-mandatory-from-to-parameters
+  [{:keys [from to] :as params}]
+  (when-not from
+    (logu/log-and-throw-400 (str "from parameter is mandatory, with format " time/iso8601-format)))
+  (when-not to
+    (logu/log-and-throw-400 (str "to parameter is mandatory, with format " time/iso8601-format)))
+  params)
+
+(defn throw-from-not-before-to
+  [{:keys [from to] :as params}]
+  (when-not (time/before? from to)
+    (logu/log-and-throw-400 "from must be before to"))
+  params)
+
+(defn throw-mandatory-granularity-parameter
+  [{:keys [raw granularity custom-es-aggregations] :as params}]
+  (when (and (not raw) (not custom-es-aggregations) (empty? granularity))
+    (logu/log-and-throw-400 "granularity parameter is mandatory"))
+  params)
+
+(defn throw-custom-es-aggregations-checks
+  [{:keys [custom-es-aggregations granularity] :as params}]
+  (when custom-es-aggregations
+    (when granularity
+      (logu/log-and-throw-400 "when custom-es-aggregations is specified, granularity parameter must be omitted")))
+  params)
+
+(defn throw-raw-data-with-other-datasets
+  [{:keys [raw datasets] :as params}]
+  (when (and raw (> (count datasets) 1))
+    (logu/log-and-throw-400 "cannot mix raw with other datasets in the same request"))
+  params)
+
+(defn throw-too-many-data-points
+  [{:keys [from to granularity predefined-aggregations] :as params}]
+  (when predefined-aggregations
+    (let [max-n-buckets utils/max-data-points
+          n-buckets     (.dividedBy (time/duration from to)
+                                    (status-utils/granularity->duration granularity))]
+      (when (> n-buckets max-n-buckets)
+        (logu/log-and-throw-400 "too many data points requested. Please restrict the time interval or increase the time granularity."))))
+  params)
+
+(defn throw-response-format-not-supported
+  [{:keys [accept-header] :as params}]
+  (when (and (some? accept-header) (not (#{"application/json" "text/csv"} accept-header)))
+    (logu/log-and-throw-400 (str "format not supported: " accept-header)))
+  params)
+
+(defn assoc-nuvlaboxes
+  [{:keys [id] cimi-filter :filter :as params} request]
+  (assoc params
+    :nuvlaboxes
+    (if id
+      [(crud/retrieve-by-id id request)]
+      (->> (crud/query
+             (cond-> request
+                     cimi-filter (assoc :cimi-params
+                                        {:filter (parser/parse-cimi-filter cimi-filter)
+                                         :last   10000})))
+           :body
+           :resources))))
+
+(defn assoc-base-query-opts
+  [{:keys [from to granularity raw custom-es-aggregations predefined-aggregations mode nuvlaboxes] :as params}]
+  (assoc params
+    :base-query-opts
+    (cond->
+      {:mode                    mode
+       :nuvlaboxes              nuvlaboxes
+       :nuvlaedge-ids           (concat (map :id nuvlaboxes))
+       :from                    from
+       :to                      to
+       :granularity             granularity
+       :raw                     raw
+       :custom-es-aggregations  custom-es-aggregations
+       :predefined-aggregations predefined-aggregations}
+      predefined-aggregations
+      (assoc :ts-interval (status-utils/granularity->ts-interval granularity)))))
+
+(defn assoc-datasets-opts
+  [{:keys [mode] :as params}]
+  (assoc params
+    :datasets-opts
+    (case mode
+      :single-edge-query (single-edge-datasets)
+      :multi-edge-query (multi-edge-datasets))))
+
+(defn throw-unknown-datasets
+  [{:keys [datasets datasets-opts] :as params}]
+  (when-not (every? (set (keys datasets-opts)) datasets)
+    (logu/log-and-throw-400 (str "unknown datasets: "
+                                 (str/join "," (sort (set/difference (set datasets)
+                                                                     (set (keys datasets-opts))))))))
+  params)
+
+(defn throw-csv-multi-dataset
+  [{:keys [datasets accept-header] :as params}]
+  (when (and (= "text/csv" accept-header) (not= 1 (count datasets)))
+    (logu/log-and-throw-400 (str "exactly one dataset must be specified with accept header 'text/csv'")))
+  params)
+
+(defn run-queries
+  [{:keys [datasets base-query-opts datasets-opts] :as params}]
+  (assoc params
+    :resps
+    (map (fn [dataset-key]
+           (let [{:keys [metric pre-process-fn post-process-fn] :as dataset-opts} (get datasets-opts dataset-key)
+                 {:keys [predefined-aggregations] :as query-opts} (merge base-query-opts dataset-opts)
+                 query-fn   (case metric
+                              "availability" utils/query-availability
+                              utils/query-metrics)
+                 query-opts (if pre-process-fn (pre-process-fn query-opts) query-opts)]
+             (cond->> (query-fn query-opts)
+                      post-process-fn ((fn [resp] (second (post-process-fn [query-opts resp]))))
+                      predefined-aggregations (keep-response-aggs-only query-opts))))
+         datasets)))
+
+(defn json-data-response
+  [{:keys [datasets resps]}]
+  (r/json-response (zipmap datasets resps)))
+
+(defn csv-response
+  [{:keys [raw datasets datasets-opts mode resps]}]
+  (let [{:keys [aggregations response-aggs] group-by-field :group-by}
+        (get datasets-opts (first datasets))
+        dimension-keys (case mode
+                         :single-edge-query
+                         [:nuvlaedge-id]
+                         :multi-edge-query
+                         [:nuvlaedge-count])
+        csv-data       (if raw
+                         (utils/raw-data->csv dimension-keys (first resps))
+                         (utils/metrics-data->csv
+                           (cond-> dimension-keys
+                                   group-by-field (conj group-by-field))
+                           (or response-aggs (keys aggregations))
+                           (first resps)))]
+    (r/csv-response "export.csv" csv-data)))
+
+(defn send-data-response
+  [{:keys [accept-header] :as options}]
+  (case accept-header
+    (nil "application/json")                                ; by default return a json response
+    (json-data-response options)
+    "text/csv"
+    (csv-response options)))
+
+(defn query-data
+  [params request]
+  (-> params
+      (parse-params)
+      (throw-mandatory-dataset-parameter)
+      (throw-mandatory-from-to-parameters)
+      (throw-from-not-before-to)
+      (throw-mandatory-granularity-parameter)
+      (throw-too-many-data-points)
+      (throw-custom-es-aggregations-checks)
+      (throw-response-format-not-supported)
+      (assoc-nuvlaboxes request)
+      (assoc-base-query-opts)
+      (assoc-datasets-opts)
+      (throw-unknown-datasets)
+      (throw-csv-multi-dataset)
+      (run-queries)
+      (send-data-response)))
 
 (defmethod crud/do-action [resource-type "data"]
-  [{{:keys [uuid dataset from to granularity]} :params {accept-header "accept"} :headers :as request}]
-  (let [datasets      (if (coll? dataset) dataset [dataset])
-        _             (when-not (seq datasets) (logu/log-and-throw-400 "dataset parameter is mandatory"))
-        from          (time/date-from-str from)
-        to            (time/date-from-str to)
-        _             (when-not from (logu/log-and-throw-400 (str "from parameter is mandatory, with format " time/iso8601-format)))
-        _             (when-not to (logu/log-and-throw-400 (str "to parameter is mandatory, with format " time/iso8601-format)))
-        _             (when-not (time/before? from to)
-                        (logu/log-and-throw-400 "from must be before to"))
-        max-n-buckets 200
-        n-buckets     (.dividedBy (time/duration from to)
-                                  (status-utils/granularity->duration granularity))
-        _             (when (> n-buckets max-n-buckets)
-                        (logu/log-and-throw-400 "too many data points requested. Please restrict the time interval or increase the time granularity."))
-        granularity   (status-utils/granularity->ts-interval granularity)
-        _             (when (empty? granularity) (logu/log-and-throw-400 "granularity parameter is mandatory"))
-        id            (u/resource-id resource-type uuid)
-        ;; make sure the nuvlabox resource can be retrieved before retrieving any data
-        _nuvlabox     (crud/retrieve-by-id id request)
-        dataset-opts  {"cpu-stats"               {:metric       "cpu"
-                                                  :aggregations {:avg-cpu-capacity    {:avg {:field :cpu.capacity}}
-                                                                 :avg-cpu-load        {:avg {:field :cpu.load}}
-                                                                 :avg-cpu-load-1      {:avg {:field :cpu.load-1}}
-                                                                 :avg-cpu-load-5      {:avg {:field :cpu.load-5}}
-                                                                 :context-switches    {:max {:field :cpu.context-switches}}
-                                                                 :interrupts          {:max {:field :cpu.interrupts}}
-                                                                 :software-interrupts {:max {:field :cpu.software-interrupts}}
-                                                                 :system-calls        {:max {:field :cpu.system-calls}}}}
-                       "ram-stats"               {:metric       "ram"
-                                                  :aggregations {:avg-ram-capacity {:avg {:field :ram.capacity}}
-                                                                 :avg-ram-used     {:avg {:field :ram.used}}}}
-                       "disk-stats"              {:metric       "disk"
-                                                  :group-by     :disk.device
-                                                  :aggregations {:avg-disk-capacity {:avg {:field :disk.capacity}}
-                                                                 :avg-disk-used     {:avg {:field :disk.used}}}}
-                       "network-stats"           {:metric       "network"
-                                                  :group-by     :network.interface
-                                                  :aggregations {:bytes-received    {:max {:field :network.bytes-received}}
-                                                                 :bytes-transmitted {:max {:field :network.bytes-transmitted}}}}
-                       "power-consumption-stats" {:metric       "power-consumption"
-                                                  :group-by     :power-consumption.metric-name
-                                                  :aggregations {:energy-consumption {:max {:field :power-consumption.energy-consumption}}
-                                                                 #_:unit                   #_{:first {:field :power-consumption.unit}}}}}
-        _             (when-not (every? (set (keys dataset-opts)) datasets)
-                        (logu/log-and-throw-400 (str "unknown datasets: "
-                                                     (str/join "," (sort (set/difference (set datasets)
-                                                                                         (set (keys dataset-opts))))))))
-        _             (when (and (= "text/csv" accept-header) (not= 1 (count datasets)))
-                        (logu/log-and-throw-400 (str "exactly one dataset must be specified with accept header 'text/csv'")))
-        resps         (map #(utils/query-metrics (merge {:nuvlaedge-id id
-                                                         :from         from
-                                                         :to           to
-                                                         :granularity  granularity}
-                                                        (get dataset-opts %)))
-                           datasets)]
-    (case accept-header
-      (nil "application/json")
-      ; by default return a json response
-      (r/json-response (zipmap datasets resps))
-      "text/csv"
-      (let [{:keys [aggregations] group-by-field :group-by} (get dataset-opts (first datasets))]
-        (r/csv-response "export.csv" (utils/metrics-data->csv (cond-> [:nuvlaedge-id]
-                                                                      group-by-field (conj group-by-field))
-                                                              (keys aggregations)
-                                                              (first resps))))
-      (logu/log-and-throw-400 (str "format not supported: " accept-header)))))
+  [{:keys [params] {accept-header "accept"} :headers :as request}]
+  (query-data (assoc params :mode :single-edge-query
+                            :accept-header accept-header) request))
+
+(defn bulk-query-data
+  [_ {:keys [body] {accept-header "accept"} :headers :as request}]
+  (query-data (assoc body :mode :multi-edge-query
+                          :accept-header accept-header) request))
+
+(def validate-bulk-data-body (u/create-spec-validation-request-body-fn
+                               ::nuvlabox/bulk-data-body))
+
+(defn bulk-data
+  [request bulk-impl]
+  (-> request
+      validate-bulk-data-body
+      bulk-impl))
+
+(def bulk-data-impl (std-crud/generic-bulk-operation-fn resource-type collection-acl bulk-query-data))
+
+(defmethod crud/bulk-action [resource-type "data"]
+  [request]
+  (bulk-data request bulk-data-impl))
 
 
 ;;

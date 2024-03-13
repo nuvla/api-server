@@ -1,9 +1,13 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.status-utils-test
   (:require
     [clojure.test :refer [are deftest is testing]]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.nuvlabox.status-utils :as t]))
+    [sixsq.nuvla.server.resources.nuvlabox.status-utils :as t]
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
+    [sixsq.nuvla.server.resources.ts-nuvlaedge-availability :as ts-nuvlaedge-availability]
+    [sixsq.nuvla.server.util.time :as time]))
 
 (deftest status-fields-to-denormalize
   (are [expected nuvlabox-status]
@@ -48,6 +52,7 @@
                                            :current-time  sampling-time,
                                            :updated       "2023-05-10T08:18:17.636Z",
                                            :created       "2022-01-10T15:56:39.017Z",
+                                           :online        true
                                            :resources     {:cpu               {:load                0.45,
                                                                                :system-calls        0,
                                                                                :capacity            4,
@@ -150,8 +155,37 @@
                                            {:nuvlaedge-id      nuvlaedge-id
                                             :metric            "power-consumption"
                                             :timestamp         sampling-time
-                                            :power-consumption {:metric-name "CPU_power", :energy-consumption 2161, :unit "mW"}}]
-        bulk-insert-request-body          (t/nuvlabox-status->ts-bulk-insert-request-body nuvlabox-status)]
-    (testing "nuvlabox status -> metric time-serie conversion"
-      (is (= expected-bulk-insert-request-body (vec bulk-insert-request-body))))))
-
+                                            :power-consumption {:metric-name "CPU_power", :energy-consumption 2161, :unit "mW"}}]]
+    (testing "nuvlabox status -> metric time-serie conversion for nuvlabox without hearthbeat support"
+      (let [now (time/now)]
+        (with-redefs [time/now (constantly now)]
+          (is (= {:body        {:nuvlaedge-id "nuvlabox/1"
+                                :online       1
+                                :timestamp    (time/to-str now)}
+                  :nuvla/authn auth/internal-identity
+                  :params      {:resource-name ts-nuvlaedge-availability/resource-type}}
+                 (with-redefs [crud/retrieve-by-id-as-admin (constantly {:refresh-interval 60})]
+                   (nb-utils/nuvlabox-status->insert-availability-request nuvlabox-status false))))
+          (is (= {:body        {:nuvlaedge-id "nuvlabox/1"
+                                :online       1
+                                :timestamp    (time/to-str now)}
+                  :nuvla/authn auth/internal-identity
+                  :params      {:resource-name ts-nuvlaedge-availability/resource-type}}
+                 (with-redefs [crud/retrieve-by-id-as-admin (constantly {:refresh-interval 60})
+                               time/now-str                 (constantly "now")]
+                   (nb-utils/nuvlabox-status->insert-availability-request nuvlabox-status true)))))))
+    (testing "nuvlabox status -> metric time-serie conversion for nuvlabox with hearthbeat support"
+      (let [now (time/now)]
+        (with-redefs [time/now (constantly now)]
+          (is (= {:body        {:nuvlaedge-id "nuvlabox/1"
+                                :online       1
+                                :timestamp    (time/to-str now)}
+                  :nuvla/authn auth/internal-identity
+                  :params      {:resource-name ts-nuvlaedge-availability/resource-type}}
+                 (with-redefs [crud/retrieve-by-id-as-admin (constantly {:capabilities       [nb-utils/capability-heartbeat]
+                                                                         :heartbeat-interval 20})]
+                   (nb-utils/nuvlabox-status->insert-availability-request nuvlabox-status false))))))
+      (is (nil?
+            (with-redefs [crud/retrieve-by-id-as-admin (constantly {:capabilities       [nb-utils/capability-heartbeat]
+                                                                    :heartbeat-interval 20})]
+              (nb-utils/nuvlabox-status->insert-availability-request nuvlabox-status true)))))))
