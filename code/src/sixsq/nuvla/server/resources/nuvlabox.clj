@@ -1462,7 +1462,10 @@ particular NuvlaBox release.
   [{:keys [uuid dataset from to granularity custom-es-aggregations] :as params}]
   (let [datasets                (if (coll? dataset) dataset [dataset])
         raw                     (= "raw" granularity)
-        predefined-aggregations (not (or raw custom-es-aggregations))]
+        predefined-aggregations (not (or raw custom-es-aggregations))
+        custom-es-aggregations  (cond-> custom-es-aggregations
+                                        (string? custom-es-aggregations)
+                                        json/read-str)]
     (-> params
         (assoc :datasets datasets)
         (assoc :from (time/date-from-str from))
@@ -1471,7 +1474,7 @@ particular NuvlaBox release.
           uuid (assoc :id (u/resource-id resource-type uuid))
           raw (assoc :raw true)
           predefined-aggregations (assoc :predefined-aggregations true)
-          custom-es-aggregations (assoc :custom-es-aggregations (json/read-str custom-es-aggregations))))))
+          custom-es-aggregations (assoc :custom-es-aggregations custom-es-aggregations)))))
 
 (defn throw-mandatory-dataset-parameter
   [{:keys [datasets] :as params}]

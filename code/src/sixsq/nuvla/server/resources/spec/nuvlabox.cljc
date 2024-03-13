@@ -104,8 +104,10 @@
 (s/def ::to (st/spec ::core/timestamp))
 (s/def ::granularity (st/spec (s/or :raw #{"raw"}
                                     :granularity-duration nb-status-utils/granularity->duration)))
+(s/def ::custom-es-aggregations any?)
 (s/def ::bulk-data-body (su/only-keys-maps {:req-un [::dataset
                                                      ::from
-                                                     ::to
-                                                     ::granularity]
-                                            :opt-un [::filter]}))
+                                                     ::to]
+                                            :opt-un [::filter
+                                                     ::granularity
+                                                     ::custom-es-aggregations]}))
