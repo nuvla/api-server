@@ -1425,7 +1425,62 @@
                          :ts-data    [{:nuvlaedge-id nuvlabox-id
                                        :timestamp    (time/to-str now-12h)
                                        :online       1}]}]
-                       (:availability-stats raw-availability-data)))))))
+                       (:availability-stats raw-availability-data)))))
+
+            (testing "cvs export of availability data"
+              (let [from        midnight-yesterday
+                    to          now
+                    csv-request (fn [dataset granularity]
+                                  (-> (metrics-request {:accept-header "text/csv"
+                                                        :datasets      [dataset]
+                                                        :from          from
+                                                        :to            to
+                                                        :granularity   granularity})
+                                      (ltu/is-status 200)
+                                      (ltu/is-header "Content-Type" "text/csv")
+                                      (ltu/is-header "Content-disposition" "attachment;filename=export.csv")
+                                      (ltu/body)))]
+                (testing "export with predefined aggregations"
+                  (is (= (str "nuvlaedge-id,timestamp,doc-count,avg-online")
+                         (-> (csv-request "availability-stats" "1-days")
+                             str/split-lines
+                             first)))
+                  (is (ish? (if (time/after? now-12h midnight-today)
+                           [[nuvlabox-id
+                             (time/to-str midnight-yesterday)
+                             1 (double (/ (time/time-between midnight-yesterday now-1d :seconds)
+                                          (time/time-between midnight-yesterday midnight-today :seconds)))]
+                            [nuvlabox-id
+                             (time/to-str midnight-today)
+                             1 (double (/ (* 3600 12)
+                                          (time/time-between midnight-today to :seconds)))]]
+                           [[nuvlabox-id
+                             (time/to-str midnight-yesterday)
+                             2 (double (/ (+ (time/time-between midnight-yesterday now-1d :seconds)
+                                             (time/time-between now-12h midnight-today :seconds))
+                                          (time/time-between midnight-yesterday midnight-today :seconds)))]
+                            [nuvlabox-id
+                             (time/to-str midnight-today)
+                             0 (double (/ (if (time/after? now-12h midnight-today)
+                                            (* 3600 12)
+                                            (time/time-between midnight-today to :seconds))
+                                          (time/time-between midnight-today to :seconds)))]])
+                         (->> (csv-request "availability-stats" "1-days")
+                              str/split-lines
+                              rest
+                              (map #(str/split % #","))
+                              (map (fn [v] (-> v
+                                               (update 2 #(Integer/parseInt %))
+                                               (update 3 #(Double/parseDouble %)))))))))
+                (testing "export raw availability data"
+                  (is (= (str "nuvlaedge-id,timestamp,nuvlaedge-id,online\n"
+                              (str/join "," [nuvlabox-id
+                                             (time/to-str now-1d)
+                                             nuvlabox-id, 0]) "\n"
+                              (str/join "," [nuvlabox-id
+                                             (time/to-str now-12h)
+                                             nuvlabox-id, 1]) "\n")
+                         (csv-request "availability-stats" "raw"))))))))
 
         (testing "availability data across multiple nuvlaboxes"
           (let [;; add another nuvlabox in state COMMISSIONED, first online 5 days ago, and down for 8 hours yesterday from 2am until 10am
@@ -1541,13 +1596,13 @@
                                                          :edges-count       {:value 2}}}
                                          {:timestamp    (time/to-str midnight-today)
                                           :doc-count    0
-                                          :aggregations {:global-avg-online {:value 1}
+                                          :aggregations {:global-avg-online {:value 1.0}
                                                          :by-edge
                                                          {:buckets
-                                                          #{{:edge-avg-online {:value 1}
+                                                          #{{:edge-avg-online {:value 1.0}
                                                              :key             nuvlabox-id-2
                                                              :name            nb-name2}
-                                                            {:edge-avg-online {:value 1}
+                                                            {:edge-avg-online {:value 1.0}
                                                              :key             nuvlabox-id-3
                                                              :name            nb-name3}}}
                                                          :edges-count       {:value 2}}}]}]
@@ -1580,27 +1635,40 @@
                        (:availability-stats raw-availability-data)))))
 
             (testing "cvs export of availability data"
-              (let [csv-request (fn [dataset]
+              (let [csv-request (fn [dataset granularity]
                                   (-> (metrics-request {:accept-header "text/csv"
                                                         :datasets      [dataset]
                                                         :from          midnight-yesterday
                                                         :to            now
-                                                        :granularity   "1-days"})
+                                                        :granularity   granularity})
                                       (ltu/is-status 200)
                                       (ltu/is-header "Content-Type" "text/csv")
                                       (ltu/is-header "Content-disposition" "attachment;filename=export.csv")
                                       (ltu/body)))
                     fmt         #(.format (DecimalFormat. "0.####" (DecimalFormatSymbols. Locale/US)) %)]
-                (is (= (str "nuvlaedge-count,timestamp,doc-count,edges-count,virtual-edges-online,virtual-edges-offline\n"
-                            (let [global-avg-online (double (/ (+ 1 2/3) 2))
-                                  online-edges      (* 2 global-avg-online)]
+                (testing "export with predefined aggregations"
+                  (is (= (str "nuvlaedge-count,timestamp,doc-count,edges-count,virtual-edges-online,virtual-edges-offline\n"
+                              (let [global-avg-online (double (/ (+ 1 2/3) 2))
+                                    online-edges      (* 2 global-avg-online)]
+                                (str/join "," [2
+                                               (time/to-str midnight-yesterday)
+                                               3, 2, (fmt online-edges), (fmt (- 2 online-edges))])) "\n"
                               (str/join "," [2
-                                             (time/to-str midnight-yesterday)
-                                             3, 2, (fmt online-edges), (fmt (- 2 online-edges))])) "\n"
-                            (str/join "," [2
-                                           (time/to-str midnight-today)
-                                           0, 2, 2, 0]) "\n")
-                       (csv-request "availability-stats")))))))))))
+                                             (time/to-str midnight-today)
+                                             0, 2, 2, 0]) "\n")
+                         (csv-request "availability-stats" "1-days"))))
+                (testing "export raw availability data"
+                  (is (= (str "nuvlaedge-count,timestamp,nuvlaedge-id,online\n"
+                              (str/join "," [2
+                                             (time/to-str yesterday-2am)
+                                             nuvlabox-id-2, 0]) "\n"
+                              (str/join "," [2
+                                             (time/to-str yesterday-10am)
+                                             nuvlabox-id-2, 1]) "\n"
+                              (str/join "," [2
+                                             (time/to-str now-1d)
+                                             nuvlabox-id-3, 1]) "\n")
+                         (csv-request "availability-stats" "raw"))))))))))))
 
 (deftest lifecycle-online-next-heartbeat
   (test-online-next-heartbeat))

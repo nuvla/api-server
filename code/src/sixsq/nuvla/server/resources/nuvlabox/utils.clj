@@ -649,6 +649,33 @@
                                     aggregation-keys)))))
     (.toString writer)))
 
+(defn raw-data->csv [dimension-keys response]
+  (let [;; infer the metric keys from the first data point
+        metric-keys (-> (get-in response [0 :ts-data])
+                        first
+                        (dissoc :timestamp)
+                        keys)]
+    (with-open [writer (StringWriter.)]
+      ;; write csv header
+      (csv/write-csv writer [(concat (map name dimension-keys)
+                                     ["timestamp"]
+                                     (map name metric-keys))])
+      ;; write csv data
+      (let [df (DecimalFormat. "0.####" (DecimalFormatSymbols. Locale/US))]
+        (csv/write-csv writer
+                       (for [{:keys [dimensions ts-data]} response
+                             {:keys [timestamp] :as data-point} ts-data]
+                         (concat (map dimensions dimension-keys)
+                                 [timestamp]
+                                 (map (fn [metric-key]
+                                        (let [v (get data-point metric-key)]
+                                          (if (float? v)
+                                            ;; format floats with 4 decimal and dot separator
+                                            (.format df v)
+                                            v)))
+                                      metric-keys)))))
+      (.toString writer))))
+
 (defmulti nuvlabox-status->metric-data (fn [_ _nb metric _] metric))
 
 (defmethod nuvlabox-status->metric-data :default
