@@ -553,7 +553,7 @@
                      {:nuvlaedge-count (count nuvlaedge-ids)})
         hits       (second resp)]
     [{:dimensions dimensions
-      :ts-data    hits}]))
+      :ts-data    (sort-by :timestamp hits)}]))
 
 (defn ->predefined-aggregations-resp
   [{:keys [mode nuvlaedge-ids aggregations] group-by-field :group-by} resp]
@@ -608,8 +608,10 @@
   (cond
     predefined-aggregations
     (->predefined-aggregations-resp options resp)
+
     raw
     (->raw-resp options resp)
+
     custom-es-aggregations
     (->custom-es-aggregations-resp options resp)))
 
@@ -627,7 +629,7 @@
 
 (defn metrics-data->csv [dimension-keys aggregation-keys response]
   (with-open [writer (StringWriter.)]
-    ;; write cav header
+    ;; write csv header
     (csv/write-csv writer [(concat (map name dimension-keys)
                                    ["timestamp" "doc-count"]
                                    (map name aggregation-keys))])

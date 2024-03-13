@@ -716,8 +716,8 @@
                      (:power-consumption-stats raw-metric-data)))))
 
           (testing "custom es aggregations metric data query"
-            (let [from           (time/minus (time/now) (time/duration-unit 1 :days))
-                  to             now]
+            (let [from (time/minus (time/now) (time/duration-unit 1 :days))
+                  to   now]
               (testing "custom aggregation on cpu-stats"
                 (let [custom-cpu-agg (-> (metrics-request
                                            {:datasets               ["cpu-stats"]
@@ -752,13 +752,13 @@
                                                                                :fixed_interval "1d"
                                                                                :min_doc_count  0}
                                                                               :aggregations {:total-disk-capacity {:sum {:field :disk.capacity}}
-                                                                                             :total-disk-used {:sum {:field :disk.used}}}}})})
+                                                                                             :total-disk-used     {:sum {:field :disk.used}}}}})})
                                          (ltu/is-status 200)
                                          (ltu/body->edn)
                                          (ltu/body))]
                   (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
                            :agg1       [{:aggregations {:total-disk-capacity {:value 40000.0}
-                                                        :total-disk-used {:value 35000.0}}
+                                                        :total-disk-used     {:value 35000.0}}
                                          :doc-count    2
                                          :timestamp    (time/to-str midnight-today)}]}]
                          (:disk-stats custom-cpu-agg)))))))
@@ -1139,8 +1139,8 @@
                      (update-in (:power-consumption-stats raw-metric-data) [0 :ts-data] set)))))
 
           (testing "custom es aggregations metric data query"
-            (let [from           (time/minus (time/now) (time/duration-unit 1 :days))
-                  to             now]
+            (let [from (time/minus (time/now) (time/duration-unit 1 :days))
+                  to   now]
               (testing "custom aggregation on cpu-stats"
                 (let [custom-cpu-agg (-> (metrics-request
                                            {:datasets               ["cpu-stats"]
@@ -1165,21 +1165,21 @@
                          (:cpu-stats custom-cpu-agg)))))
               (testing "custom aggregation on disk-stats"
                 (let [custom-disk-agg (-> (metrics-request
-                                           {:datasets               ["disk-stats"]
-                                            :from                   from
-                                            :to                     to
-                                            :custom-es-aggregations {:agg1 {:date_histogram
-                                                                            {:field          "@timestamp"
-                                                                             :fixed_interval "1d"
-                                                                             :min_doc_count  0}
-                                                                            :aggregations {:total-disk-capacity {:sum {:field :disk.capacity}}
-                                                                                           :total-disk-used     {:sum {:field :disk.used}}}}}})
+                                            {:datasets               ["disk-stats"]
+                                             :from                   from
+                                             :to                     to
+                                             :custom-es-aggregations {:agg1 {:date_histogram
+                                                                             {:field          "@timestamp"
+                                                                              :fixed_interval "1d"
+                                                                              :min_doc_count  0}
+                                                                             :aggregations {:total-disk-capacity {:sum {:field :disk.capacity}}
+                                                                                            :total-disk-used     {:sum {:field :disk.used}}}}}})
                                           (ltu/is-status 200)
                                           (ltu/body->edn)
                                           (ltu/body))]
                   (is (= [{:dimensions {:nuvlaedge-count 4}
                            :agg1       [{:aggregations {:total-disk-capacity {:value 80000.0}
-                                                        :total-disk-used {:value 70000.0}}
+                                                        :total-disk-used     {:value 70000.0}}
                                          :doc-count    4
                                          :timestamp    (time/to-str midnight-today)}]}]
                          (:disk-stats custom-disk-agg)))))))
@@ -1409,7 +1409,23 @@
                                                                                             (* 3600 12)
                                                                                             (time/time-between midnight-today to :seconds))
                                                                                           (time/time-between midnight-today to :seconds)))}}}])}]
-                          (:availability-stats metric-data)))))))
+                          (:availability-stats metric-data)))))
+
+            (testing "raw availability data query"
+              (let [from                  (time/minus (time/now) (time/duration-unit 1 :days))
+                    to                    now
+                    raw-availability-data (-> (metrics-request {:datasets    ["availability-stats"]
+                                                                :from        from
+                                                                :to          to
+                                                                :granularity "raw"})
+                                              (ltu/is-status 200)
+                                              (ltu/body->edn)
+                                              (ltu/body))]
+                (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
+                         :ts-data    [{:nuvlaedge-id nuvlabox-id
+                                       :timestamp    (time/to-str now-12h)
+                                       :online       1}]}]
+                       (:availability-stats raw-availability-data)))))))
 
         (testing "availability data across multiple nuvlaboxes"
           (let [;; add another nuvlabox in state COMMISSIONED, first online 5 days ago, and down for 8 hours yesterday from 2am until 10am
@@ -1538,6 +1554,30 @@
                           (-> (:availability-by-edge metric-data)
                               (update-in [0 :ts-data 0 :aggregations :by-edge :buckets] set)
                               (update-in [0 :ts-data 1 :aggregations :by-edge :buckets] set))))))
+
+            (testing "raw availability data query"
+              (let [from                  midnight-yesterday
+                    to                    now
+                    raw-availability-data (-> (metrics-request {:datasets    ["availability-stats"]
+                                                                :from        from
+                                                                :to          to
+                                                                :granularity "raw"})
+                                              (ltu/is-status 200)
+                                              (ltu/body->edn)
+                                              (ltu/body))]
+                (is (= [{:dimensions {:nuvlaedge-count 2}
+                         :ts-data    (->> [{:nuvlaedge-id nuvlabox-id-2
+                                            :online       0
+                                            :timestamp    (time/to-str yesterday-2am)}
+                                           {:nuvlaedge-id nuvlabox-id-2
+                                            :online       1
+                                            :timestamp    (time/to-str yesterday-10am)}
+                                           {:nuvlaedge-id nuvlabox-id-3
+                                            :online       1
+                                            :timestamp    (time/to-str now-1d)}]
+                                          (sort-by :timestamp)
+                                          vec)}]
+                       (:availability-stats raw-availability-data)))))
 
             (testing "cvs export of availability data"
               (let [csv-request (fn [dataset]
