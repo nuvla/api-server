@@ -41,8 +41,7 @@ The `ts-nuvlaedge` resources create a timeseries related to nuvlaedge availabili
 
 (def add-impl (std-crud/add-metric-fn resource-type collection-acl resource-type
                                       :validate-fn validate
-                                      :options {:refresh false
-                                                :ts      true}))
+                                      :options {:refresh false}))
 
 
 (defmethod crud/add resource-type
@@ -90,7 +89,5 @@ The `ts-nuvlaedge` resources create a timeseries related to nuvlaedge availabili
 (defn initialize
   []
   (std-crud/initialize-as-timeseries resource-type ::ts-nuvlaedge-availability/schema
-                                     {:ilm-policy es-binding/hot-delete-policy})
-  ;(md/register resource-metadata)
-  )
+                                     {:ilm-policy es-binding/hot-delete-policy}))
 

@@ -1,9 +1,7 @@
 (ns sixsq.nuvla.db.es.binding
   "Binding protocol implemented for an Elasticsearch database that makes use
    of the Elasticsearch REST API."
-  (:require [clojure.data.json :as json]
-            [clojure.string :as str]
-            [clojure.tools.logging :as log]
+  (:require [clojure.tools.logging :as log]
             [qbits.spandex :as spandex]
             [sixsq.nuvla.auth.utils.acl :as acl-utils]
             [sixsq.nuvla.db.binding :refer [Binding]]
@@ -76,7 +74,7 @@
   (empty? (get-in response [:body :failures])))
 
 (defn add-data
-  [client {:keys [id] :as data} {:keys [refresh ts]
+  [client {:keys [id] :as data} {:keys [refresh]
                                  :or   {refresh true}
                                  :as   _options}]
   (try
@@ -85,11 +83,9 @@
           updated-doc (-> data
                           (acl-utils/force-admin-role-right-all)
                           (acl-utils/normalize-acl-for-resource))
-          response    (spandex/request client {:url          (if ts
-                                                               [index :_doc]
-                                                               [index :_create uuid])
+          response    (spandex/request client {:url          [index :_create uuid]
                                                :query-string {:refresh refresh}
-                                               :method       (if ts :post :put)
+                                               :method       :put
                                                :body         updated-doc})
           success?    (shards-successful? response)]
       (if success?

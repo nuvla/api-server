@@ -1275,9 +1275,8 @@ particular NuvlaBox release.
                                             (fn [aggs]
                                               (assoc-in aggs [:edge-avg-online :value]
                                                         availability))))))]
-             (-> resp
-                 (compute-nuvlabox-availability* now granularity nuvlabox
-                                                 edge-bucket-update-fn))))
+             (compute-nuvlabox-availability* resp now granularity nuvlabox
+                                             edge-bucket-update-fn)))
          (init-edge-buckets resp nuvlaboxes granularity)
          nuvlaboxes)])
     [query-opts resp]))

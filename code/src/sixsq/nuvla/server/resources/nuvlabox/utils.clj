@@ -20,7 +20,6 @@
     [sixsq.nuvla.server.resources.ts-nuvlaedge-availability :as ts-nuvlaedge-availability]
     [sixsq.nuvla.server.util.kafka-crud :as kafka-crud]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.time :as t]
     [sixsq.nuvla.server.util.time :as time])
   (:import (java.io StringWriter)
            (java.text DecimalFormat DecimalFormatSymbols)
@@ -599,9 +598,8 @@
                      :multi-edge-query
                      {:nuvlaedge-count (count nuvlaedge-ids)})]
     [(merge {:dimensions dimensions}
-            (->> (for [agg-key (keys (get-in resp [0 :aggregations]))]
-                   [agg-key (ts-data (get-in resp [0 :aggregations agg-key]))])
-                 (into {})))]))
+            (into {} (for [agg-key (keys (get-in resp [0 :aggregations]))]
+                       [agg-key (ts-data (get-in resp [0 :aggregations agg-key]))])))]))
 
 (defn ->metrics-resp
   [{:keys [predefined-aggregations custom-es-aggregations raw] :as options} resp]
@@ -761,7 +759,7 @@
           ;; when availability status has changed, or no availability data was recorded for the day yet
           (when (or (not= (:online latest)
                           (if online 1 0))
-                    (not= (some-> (:timestamp latest) t/date-from-str (.toLocalDate))
+                    (not= (some-> (:timestamp latest) time/date-from-str (.toLocalDate))
                           (.toLocalDate now)))
             {:nuvlaedge-id parent
              :timestamp    (time/to-str now)
