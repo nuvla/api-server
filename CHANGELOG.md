@@ -4,6 +4,16 @@
 
 ## Released
 
+## [6.4.4] - 2024-02-21
+
+- SERVER: Start nrepl when nrepl-port env is set
+- Deployment set - The Updated timestamp of a deployment group gets updated even when nothing actually changes bug fix
+- Notification Method - Add test operation that produce a test event
+- Deployment - Version update of an existing deployment bugfix. Add lifecycle test
+- Deployment-parameter can be created by anyone with any parent (deployment)
+- Nuvlabox status - Swarm enabled flag bugfix and add lifecycle test
+- general utils - encoding uri component utility fitting best web browser world
+
 ## [6.4.3] - 2024-01-18
 
 - Test release. No changes.

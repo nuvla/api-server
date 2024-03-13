@@ -2,8 +2,8 @@
   "Utilities for creating ring responses and exceptions with embedded ring
    responses."
   (:require
-    [ring.util.codec :as codec]
-    [ring.util.response :as r]))
+    [ring.util.response :as r]
+    [sixsq.nuvla.server.util.general :as gen-util]))
 
 
 (defn response-created
@@ -169,7 +169,7 @@
    setting the Location header. The message is added as an 'error' query
    parameter to the redirect-url."
   [msg id redirect-url]
-  (let [query (str "?error=" (codec/url-encode msg))]
+  (let [query (str "?error=" (gen-util/encode-uri-component msg))]
     (ex-response msg 303 id (str redirect-url query))))
 
 (defn rethrow-response

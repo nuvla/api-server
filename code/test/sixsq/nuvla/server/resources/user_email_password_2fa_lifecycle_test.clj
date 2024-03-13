@@ -17,6 +17,7 @@
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
     [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
+    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -148,7 +149,7 @@
 
           (is (re-matches #"http.*\/api\/callback\/.*\/execute" location))
           (let [callback-url      (->> location
-                                       codec/url-decode
+                                       gen-util/decode-uri-component
                                        (re-matches #"http.*(\/api.*)\/execute")
                                        second)
                 callback-exec-url (str callback-url "/execute")
@@ -218,7 +219,7 @@
           (is (re-matches #"http.*\/api\/callback\/.*\/execute" location))
 
           (let [callback-url      (->> location
-                                       codec/url-decode
+                                       gen-util/decode-uri-component
                                        (re-matches #"http.*(\/api.*)\/execute")
                                        second)
                 callback-exec-url (str callback-url "/execute")
@@ -291,7 +292,7 @@
           (is (re-matches #"http.*\/api\/callback\/.*\/execute" location))
 
           (let [callback-url      (->> location
-                                       codec/url-decode
+                                       gen-util/decode-uri-component
                                        (re-matches #"http.*(\/api.*)\/execute")
                                        second)
                 callback-exec-url (str callback-url "/execute")
@@ -360,7 +361,7 @@
 
           (is (re-matches #"http.*\/api\/callback\/.*\/execute" location))
           (let [callback-url      (->> location
-                                       codec/url-decode
+                                       gen-util/decode-uri-component
                                        (re-matches #"http.*(\/api.*)\/execute")
                                        second)
                 callback-exec-url (str callback-url "/execute")
@@ -530,7 +531,7 @@
 
           (is (re-matches #"http.*\/api\/callback\/.*\/execute" location))
           (let [callback-url      (->> location
-                                       codec/url-decode
+                                       gen-util/decode-uri-component
                                        (re-matches #"http.*(\/api.*)\/execute")
                                        second)
                 callback-exec-url (str callback-url "/execute")]
@@ -602,7 +603,7 @@
           (is (re-matches #"http.*\/api\/callback\/.*\/execute" location))
 
           (let [callback-url      (->> location
-                                       codec/url-decode
+                                       gen-util/decode-uri-component
                                        (re-matches #"http.*(\/api.*)\/execute")
                                        second)
                 callback-exec-url (str callback-url "/execute")
@@ -673,7 +674,7 @@
           (is (re-matches #"http.*\/api\/callback\/.*\/execute" location))
 
           (let [callback-url      (->> location
-                                       codec/url-decode
+                                       gen-util/decode-uri-component
                                        (re-matches #"http.*(\/api.*)\/execute")
                                        second)
                 callback-exec-url (str callback-url "/execute")]
@@ -739,7 +740,7 @@
 
           (is (re-matches #"http.*\/api\/callback\/.*\/execute" location))
           (let [callback-url      (->> location
-                                       codec/url-decode
+                                       gen-util/decode-uri-component
                                        (re-matches #"http.*(\/api.*)\/execute")
                                        second)
                 callback-exec-url (str callback-url "/execute")]

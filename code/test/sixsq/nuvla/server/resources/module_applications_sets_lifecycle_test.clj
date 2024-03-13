@@ -10,7 +10,7 @@
     [sixsq.nuvla.server.resources.module-applications-sets :as t]))
 
 
-(use-fixtures :once ltu/with-test-server-fixture)
+(use-fixtures :each ltu/with-test-server-fixture)
 
 
 (def base-uri (str p/service-context t/resource-type))
@@ -110,6 +110,51 @@
           (ltu/body->edn)
           (ltu/is-status 404)))))
 
+(deftest app-set-files
+  (let [session-anon  (-> (session (ltu/ring-app))
+                          (content-type "application/json"))
+        session-admin (header session-anon authn-info-header
+                              "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        files         [{:file-name "file1.yaml", :file-content "file1 content"}
+                       {:file-name "file2.yaml", :file-content "file2 content"}]
+        files-updated [{:file-name "file1.yaml", :file-content "file1 content updated"}
+                       {:file-name "file2.yaml", :file-content "file2 content updated"}]
+        valid-entry   (assoc-in valid-entry [:applications-sets 0 :applications 0 :files] files)
+        updated-entry (assoc-in valid-entry [:applications-sets 0 :applications 0 :files] files-updated)
+        uri           (-> session-admin
+                          (request base-uri
+                                   :request-method :post
+                                   :body (json/write-str valid-entry))
+                          (ltu/body->edn)
+                          (ltu/is-status 201)
+                          (ltu/location))
+        abs-uri       (str p/service-context uri)]
+
+    (-> session-admin
+        (request abs-uri)
+        (ltu/body->edn)
+        (ltu/is-status 200)
+        (ltu/is-key-value (comp :files first :applications first) :applications-sets files))
+
+    (-> session-admin
+        (request abs-uri
+                 :request-method :put
+                 :body (json/write-str updated-entry))
+        (ltu/body->edn)
+        (ltu/is-status 200)
+        (ltu/is-key-value (comp :files first :applications first) :applications-sets files-updated))
+
+    (-> session-admin
+        (request abs-uri
+                 :request-method :delete)
+        (ltu/body->edn)
+        (ltu/is-status 200))
+
+    ;; verify that the resource was deleted.
+    (-> session-admin
+        (request abs-uri)
+        (ltu/body->edn)
+        (ltu/is-status 404))))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]

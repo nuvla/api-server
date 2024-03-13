@@ -3,12 +3,12 @@
 Reset password hook.
 "
   (:require
-    [ring.util.codec :as codec]
     [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.server.resources.callback-user-password-set :as callback-pass-set]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
+    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.response :as r]))
 
 (def ^:const action "reset-password")
@@ -30,9 +30,9 @@ Reset password hook.
     (let [callback-url        (callback-pass-set/create-callback
                                 base-uri user-id :expires (u/ttl->timestamp 86400)) ;; 1 day
 
-          ui-set-password-url (str redirect-url "?callback=" (codec/url-encode callback-url)
-                                   "&type=" (codec/url-encode "reset-password")
-                                   "&username=" (codec/url-encode username))]
+          ui-set-password-url (str redirect-url "?callback=" (gen-util/encode-uri-component callback-url)
+                                   "&type=" (gen-util/encode-uri-component "reset-password")
+                                   "&username=" (gen-util/encode-uri-component username))]
 
 
       (email-utils/send-password-set-email ui-set-password-url email-address)

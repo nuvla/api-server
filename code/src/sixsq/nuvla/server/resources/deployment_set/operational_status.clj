@@ -1,5 +1,20 @@
 (ns sixsq.nuvla.server.resources.deployment-set.operational-status)
 
+(def deployments-to-add-k :deployments-to-add)
+(def deployments-to-update-k :deployments-to-update)
+(def deployments-to-remove-k :deployments-to-remove)
+
+(defn operational-status-values-set
+  [deployment-set]
+  (update deployment-set :operational-status
+          (fn [operational-status]
+            (->> operational-status
+                 (map (fn [[k v]]
+                        (if (#{deployments-to-add-k deployments-to-update-k deployments-to-remove-k} k)
+                          [k (set v)]
+                          [k v])))
+                 (into {})))))
+
 (defn deployments-to-add
   [expected current]
   (set (keep (fn [[k [d]]] (when (not (contains? current k)) d)) expected)))
@@ -16,12 +31,15 @@
       current)))
 
 (defn update-app?
-  [{{v1 :version env1 :environmental-variables} :application :as _expected-deployment}
-   {{v2 :version env2 :environmental-variables} :application :keys [state] :as _current-deployment}]
-  (let [relevant-keys (set (map :name env1))
-        env2          (filter #(relevant-keys (:name %)) env2)]
+  [{{v1 :version env1 :environmental-variables files1 :files} :application :as _expected-deployment}
+   {{v2 :version env2 :environmental-variables files2 :files} :application :keys [state] :as _current-deployment}]
+  (let [relevant-env-keys   (set (map :name env1))
+        env2                (filter #(relevant-env-keys (:name %)) env2)
+        relevant-file-names (set (map :file-name files1))
+        files2              (filter #(relevant-file-names (:file-name %)) files2)]
     (or (not= v1 v2)
         (not= (seq env1) (seq env2))
+        (not= (seq files1) (seq files2))
         (and (not= "STARTED" state)
              (not= "UPDATED" state)))))
 
@@ -58,6 +76,8 @@
                   :version 1,
                   :environmental-variables [{:name \"var_1\", :value \"val1\"}
                                             {:name \"var_2\", :value \"val2\"}]},
+                  :files [{:file-name \"file1\", :file-content \"file1 content\"}
+                          {:file-name \"file2\", :file-content \"file2 content\"}]
     :target \"credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316\"
    }
    ```
@@ -73,6 +93,8 @@
    {:deployments-to-add #{{:app-set     \"set-1\"
                            :application {:environmental-variables [{:name  \"var_1\" :value \"val1\"}
                                                                    {:name  \"var_2\" :value \"val2\"}]
+                                         :files [{:file-name \"file1\", :file-content \"file1 content\"}
+                                                 {:file-name \"file2\", :file-content \"file2 content\"}]
                                          :id                      \"module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8\"
                                          :version                 1}
                            :target      \"credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316\"}}
@@ -82,12 +104,16 @@
                                :app-set     \"set-1\"
                                :application {:environmental-variables [{:name  \"var_1\" :value \"val1\"}
                                                                        {:name  \"var_2\" :value \"val2\"}]
+                                             :files [{:file-name \"file1\", :file-content \"file1 content\"}
+                                                     {:file-name \"file2\", :file-content \"file2 content\"}]
                                              :id                      \"module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8\"
                                              :version                 1}
                                :target      \"credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316\"}}
                               {:app-set     \"set-1\"
                                :application {:environmental-variables [{:name  \"var_1\" :value \"val1\"}
                                                                        {:name  \"var_2\" :value \"val2\"}]
+                                             :files [{:file-name \"file1\", :file-content \"file1 content\"}
+                                                     {:file-name \"file2\", :file-content \"file2 content\"}]
                                              :id                      \"module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8\"
                                              :version                 1}
                               :target      \"credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316\"}}
@@ -100,6 +126,6 @@
   (let [expected1 (group-by deployment-unique-key-fn expected)
         current1  (group-by deployment-unique-key-fn current)]
     (remove-empty-entries
-      {:deployments-to-add    (deployments-to-add expected1 current1)
-       :deployments-to-remove (deployments-to-remove expected1 current1)
-       :deployments-to-update (deployments-to-update expected1 current1)})))
+      {deployments-to-add-k    (deployments-to-add expected1 current1)
+       deployments-to-remove-k (deployments-to-remove expected1 current1)
+       deployments-to-update-k (deployments-to-update expected1 current1)})))

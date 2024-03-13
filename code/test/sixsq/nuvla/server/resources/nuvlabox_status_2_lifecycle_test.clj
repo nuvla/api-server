@@ -189,6 +189,7 @@
             (let [resources-prev (-> session-nb
                                      (request status-url)
                                      (ltu/body->edn)
+                                     (ltu/is-key-value :swarm-enabled nil)
                                      (ltu/body)
                                      :resources)]
               (testing "when an update is done by a nuvlabox, the body contains only jobs"
@@ -634,6 +635,104 @@
 
 (deftest lifecycle-online-next-heartbeat
   (test-online-next-heartbeat))
+
+(deftest lifecycle-swarm-enabled
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session       (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-user  (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
+
+          nuvlabox-id   (-> session-user
+                            (request nuvlabox-base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-nuvlabox))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
+
+          nuvlabox-url  (str p/service-context nuvlabox-id)
+
+          session-nb    (header session authn-info-header (str nuvlabox-id " " nuvlabox-id " group/nuvla-user group/nuvla-anon"))]
+
+      (-> session-nb
+          (request (-> session-nb
+                       (request nuvlabox-url)
+                       (ltu/body->edn)
+                       (ltu/is-status 200)
+                       (ltu/get-op-url :activate)))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      (-> session-nb
+          (request (-> session-nb
+                       (request nuvlabox-url)
+                       (ltu/body->edn)
+                       (ltu/is-status 200)
+                       (ltu/get-op-url :commission))
+                   :request-method :put
+                   :body (json/write-str {:swarm-endpoint "https://swarm.example.com"}))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      (let [nuvlabox    (-> session-nb
+                            (request nuvlabox-url)
+                            (ltu/body->edn)
+                            (ltu/is-status 200)
+                            (ltu/is-key-value some? :nuvlabox-status true)
+                            (ltu/is-key-value some? :infrastructure-service-group true)
+                            ltu/body)
+            status-url  (str p/service-context (:nuvlabox-status nuvlabox))
+            srv-grp-id  (:infrastructure-service-group nuvlabox)
+            service-url (str p/service-context (nb-utils/get-service "swarm" srv-grp-id))]
+        (-> session-nb
+            (request service-url)
+            (ltu/body->edn)
+            (ltu/is-key-value :swarm-enabled false)
+            (ltu/is-key-value :swarm-manager nil))
+
+        (-> session-nb
+            (request status-url
+                     :request-method :put
+                     :body (json/write-str {:orchestrator "swarm"}))
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (ltu/refresh-es-indices)
+        (-> session-nb
+            (request service-url)
+            (ltu/body->edn)
+            (ltu/is-key-value :swarm-enabled true)
+            (ltu/is-key-value :swarm-manager false))
+
+        (-> session-nb
+            (request status-url
+                     :request-method :put
+                     :body (json/write-str {}))
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (ltu/refresh-es-indices)
+        (-> session-nb
+            (request service-url)
+            (ltu/body->edn)
+            (ltu/is-key-value :swarm-enabled true)
+            (ltu/is-key-value :swarm-manager false))
+
+        (-> session-nb
+            (request status-url
+                     :request-method :put
+                     :body (json/write-str {:cluster-node-role "manager"}))
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (ltu/refresh-es-indices)
+        (-> session-nb
+            (request service-url)
+            (ltu/body->edn)
+            (ltu/is-key-value :swarm-enabled true)
+            (ltu/is-key-value :swarm-manager true))))))
 
 
 (deftest bad-methods

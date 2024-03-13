@@ -14,6 +14,7 @@
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
     [sixsq.nuvla.server.resources.user-template-email-invitation :as email-invitation]
+    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -144,7 +145,7 @@
                                               (ltu/body))
 
                callback-url         (->> @invitation-link
-                                         codec/url-decode
+                                         gen-util/decode-uri-component
                                          (re-matches #".*callback=(.*?)&.*")
                                          second)]
 
