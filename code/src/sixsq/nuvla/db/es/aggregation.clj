@@ -37,12 +37,4 @@
   "Given the tsds aggregation information in the :cimi-params parameter, add all of the
    aggregation clauses to the aggs map."
   [{:keys [tsds-aggregation] :as _params}]
-  (some-> tsds-aggregation json/read-str)
-  #_(let [entries (mapv agg-entry aggregation)]
-    (when (seq entries)
-      {:aggregations
-       {:tsds-stats
-        {:date_histogram
-         {:field          "@timestamp"
-          :fixed_interval agg_interval}
-         :aggregations (into {} entries)}}})))
+  (some-> tsds-aggregation json/read-str))
