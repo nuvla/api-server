@@ -653,11 +653,11 @@
           (testing "raw metric data query"
             (let [from            (time/minus (time/now) (time/duration-unit 1 :days))
                   to              now
-                  raw-metric-data (-> (metrics-request {:datasets    ["cpu"
-                                                                      "ram"
-                                                                      "disk"
-                                                                      "network"
-                                                                      "power-consumption"]
+                  raw-metric-data (-> (metrics-request {:datasets    ["cpu-stats"
+                                                                      "ram-stats"
+                                                                      "disk-stats"
+                                                                      "network-stats"
+                                                                      "power-consumption-stats"]
                                                         :from        from
                                                         :to          to
                                                         :granularity "raw"})
@@ -670,14 +670,14 @@
                                      :metric       "cpu"
                                      :nuvlaedge-id nuvlabox-id
                                      :timestamp    (time/to-str update-time)}]}]
-                     (:cpu raw-metric-data)))
+                     (:cpu-stats raw-metric-data)))
               (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
                        :ts-data    [{:metric       "ram"
                                      :nuvlaedge-id nuvlabox-id
                                      :ram          {:capacity 4096
                                                     :used     2000}
                                      :timestamp    (time/to-str update-time)}]}]
-                     (:ram raw-metric-data)))
+                     (:ram-stats raw-metric-data)))
               (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
                        :ts-data    [{:disk         {:capacity 20000
                                                     :device   "root"
@@ -691,7 +691,7 @@
                                      :metric       "disk"
                                      :nuvlaedge-id nuvlabox-id
                                      :timestamp    (time/to-str update-time)}]}]
-                     (:disk raw-metric-data)))
+                     (:disk-stats raw-metric-data)))
               (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
                        :ts-data    [{:metric       "network"
                                      :network      {:bytes-received    3019.0
@@ -705,7 +705,7 @@
                                                     :interface         "eth0"}
                                      :nuvlaedge-id nuvlabox-id
                                      :timestamp    (time/to-str update-time)}]}]
-                     (:network raw-metric-data)))
+                     (:network-stats raw-metric-data)))
               (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
                        :ts-data    [{:metric            "power-consumption"
                                      :nuvlaedge-id      nuvlabox-id
@@ -713,13 +713,13 @@
                                                          :metric-name        "IN_current"
                                                          :unit               "A"}
                                      :timestamp         (time/to-str update-time)}]}]
-                     (:power-consumption raw-metric-data)))))
+                     (:power-consumption-stats raw-metric-data)))))
 
           (testing "custom es aggregations metric data query"
             (let [from               (time/minus (time/now) (time/duration-unit 1 :days))
                   to                 now
                   custom-metric-data (-> (metrics-request
-                                           {:datasets               ["cpu"]
+                                           {:datasets               ["cpu-stats"]
                                             :from                   from
                                             :to                     to
                                             :custom-es-aggregations (json/write-str
@@ -739,7 +739,7 @@
                                                     :min-cpu-load {:value 5.5}}
                                      :doc-count    1
                                      :timestamp    (time/to-str midnight-today)}]}]
-                     (:cpu custom-metric-data)))))
+                     (:cpu-stats custom-metric-data)))))
 
           (testing "query request validation"
             (let [invalid-request (fn [options]
@@ -1012,11 +1012,11 @@
             (ltu/refresh-es-indices)
             (let [from            (time/minus (time/now) (time/duration-unit 1 :days))
                   to              now
-                  raw-metric-data (-> (metrics-request {:datasets    ["cpu"
-                                                                      "ram"
-                                                                      "disk"
-                                                                      "network"
-                                                                      "power-consumption"]
+                  raw-metric-data (-> (metrics-request {:datasets    ["cpu-stats"
+                                                                      "ram-stats"
+                                                                      "disk-stats"
+                                                                      "network-stats"
+                                                                      "power-consumption-stats"]
                                                         :from        from
                                                         :to          to
                                                         :granularity "raw"})
@@ -1034,7 +1034,7 @@
                                       :metric       "cpu"
                                       :nuvlaedge-id nuvlabox-id-2
                                       :timestamp    (time/to-str update-time-2)}}}]
-                     (update-in (:cpu raw-metric-data) [0 :ts-data] set)))
+                     (update-in (:cpu-stats raw-metric-data) [0 :ts-data] set)))
               (is (= [{:dimensions {:nuvlaedge-count 4}
                        :ts-data    #{{:metric       "ram"
                                       :nuvlaedge-id nuvlabox-id
@@ -1046,7 +1046,7 @@
                                       :ram          {:capacity 4096
                                                      :used     2000}
                                       :timestamp    (time/to-str update-time-2)}}}]
-                     (update-in (:ram raw-metric-data) [0 :ts-data] set)))
+                     (update-in (:ram-stats raw-metric-data) [0 :ts-data] set)))
               (is (= [{:dimensions {:nuvlaedge-count 4}
                        :ts-data    #{{:disk         {:capacity 20000
                                                      :device   "datastore"
@@ -1072,7 +1072,7 @@
                                       :metric       "disk"
                                       :nuvlaedge-id nuvlabox-id-2
                                       :timestamp    (time/to-str update-time-2)}}}]
-                     (update-in (:disk raw-metric-data) [0 :ts-data] set)))
+                     (update-in (:disk-stats raw-metric-data) [0 :ts-data] set)))
               (is (= [{:dimensions {:nuvlaedge-count 4}
                        :ts-data    #{{:metric       "network"
                                       :network      {:bytes-received    3019.0
@@ -1098,7 +1098,7 @@
                                                      :interface         "eth0"}
                                       :nuvlaedge-id nuvlabox-id-2
                                       :timestamp    (time/to-str update-time-2)}}}]
-                     (update-in (:network raw-metric-data) [0 :ts-data] set)))
+                     (update-in (:network-stats raw-metric-data) [0 :ts-data] set)))
               (is (= [{:dimensions {:nuvlaedge-count 4}
                        :ts-data    #{{:metric            "power-consumption"
                                       :nuvlaedge-id      nuvlabox-id
@@ -1112,7 +1112,7 @@
                                                           :metric-name        "IN_current"
                                                           :unit               "A"}
                                       :timestamp         (time/to-str update-time-2)}}}]
-                     (update-in (:power-consumption raw-metric-data) [0 :ts-data] set)))))
+                     (update-in (:power-consumption-stats raw-metric-data) [0 :ts-data] set)))))
 
           (testing "query request validation"
             (let [invalid-request (fn [options]
@@ -1295,7 +1295,7 @@
       (same.core/with-comparator
         (compare-ulp 100.0 1e12)
 
-        (testing "metrics data on a single nuvlabox"
+        (testing "availability data on a single nuvlabox"
           (let [nuvlabox-data-url (str nuvlabox-url "/data")
                 metrics-request   (fn [{:keys [datasets from from-str to to-str granularity accept-header] #_:or #_{accept-header "application/json"}}]
                                     (-> session-nb
@@ -1341,7 +1341,7 @@
                                                                                           (time/time-between midnight-today to :seconds)))}}}])}]
                           (:availability-stats metric-data)))))))
 
-        (testing "metrics data on multiple nuvlaboxes"
+        (testing "availability data across multiple nuvlaboxes"
             (let [;; add another nuvlabox in state COMMISSIONED, first online 5 days ago, and down for 8 hours yesterday from 2am until 10am
                   nuvlabox-id-2      (create-nuvlabox valid-nuvlabox2 now-5d)
                   nuvlabox-url-2     (str p/service-context nuvlabox-id-2)
