@@ -1206,15 +1206,7 @@ particular NuvlaBox release.
 
 (defn single-edge-datasets
   []
-  {;; basic datasets - to be used to retrieve raw data
-   "availability"            {:metric "availability"}
-   "cpu"                     {:metric "cpu"}
-   "ram"                     {:metric "ram"}
-   "disk"                    {:metric "disk"}
-   "network"                 {:metric "network"}
-   "power-consumption"       {:metric "power-consumption"}
-   ;; pre-aggregated datasets - granularity for aggregation needs to be specified
-   "availability-stats"      {:metric          "availability"
+  {"availability-stats"      {:metric          "availability"
                               :pre-process-fn  filter-commissioned-nuvlaboxes
                               :post-process-fn (comp dissoc-hits
                                                      compute-nuvlabox-availability)
@@ -1388,15 +1380,7 @@ particular NuvlaBox release.
         group-by-edge      (fn [aggs] (group-by-field :nuvlaedge-id aggs))
         group-by-device    (fn [aggs] (group-by-field :disk.device aggs))
         group-by-interface (fn [aggs] (group-by-field :network.interface aggs))]
-    {;; basic datasets - to be used to retrieve raw data
-     "availability"            {:metric "availability"}
-     "cpu"                     {:metric "cpu"}
-     "ram"                     {:metric "ram"}
-     "disk"                    {:metric "disk"}
-     "network"                 {:metric "network"}
-     "power-consumption"       {:metric "power-consumption"}
-     ;; pre-aggregated datasets - granularity for aggregation needs to be specified
-     "availability-stats"      {:metric          "availability"
+    {"availability-stats"      {:metric          "availability"
                                 :pre-process-fn  filter-commissioned-nuvlaboxes
                                 :post-process-fn (comp add-virtual-edge-number-by-status-fn
                                                        dissoc-hits

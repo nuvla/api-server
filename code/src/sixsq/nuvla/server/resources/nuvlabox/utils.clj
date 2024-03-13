@@ -556,7 +556,7 @@
       :ts-data    hits}]))
 
 (defn ->predefined-aggregations-resp
-  [{:keys [mode nuvlaedge-ids aggregations] group-by-field :group-by :as o} resp]
+  [{:keys [mode nuvlaedge-ids aggregations] group-by-field :group-by} resp]
   (let [ts-data    (fn [tsds-stats]
                      (map
                        (fn [{:keys [key_as_string doc_count] :as bucket}]
