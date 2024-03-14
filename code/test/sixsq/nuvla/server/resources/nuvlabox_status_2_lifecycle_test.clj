@@ -1446,32 +1446,32 @@
                              str/split-lines
                              first)))
                   (is (ish? (if (time/after? now-12h midnight-today)
-                           [[nuvlabox-id
-                             (time/to-str midnight-yesterday)
-                             1 (double (/ (time/time-between midnight-yesterday now-1d :seconds)
-                                          (time/time-between midnight-yesterday midnight-today :seconds)))]
-                            [nuvlabox-id
-                             (time/to-str midnight-today)
-                             1 (double (/ (* 3600 12)
-                                          (time/time-between midnight-today to :seconds)))]]
-                           [[nuvlabox-id
-                             (time/to-str midnight-yesterday)
-                             2 (double (/ (+ (time/time-between midnight-yesterday now-1d :seconds)
-                                             (time/time-between now-12h midnight-today :seconds))
-                                          (time/time-between midnight-yesterday midnight-today :seconds)))]
-                            [nuvlabox-id
-                             (time/to-str midnight-today)
-                             0 (double (/ (if (time/after? now-12h midnight-today)
-                                            (* 3600 12)
-                                            (time/time-between midnight-today to :seconds))
-                                          (time/time-between midnight-today to :seconds)))]])
-                         (->> (csv-request "availability-stats" "1-days")
-                              str/split-lines
-                              rest
-                              (map #(str/split % #","))
-                              (map (fn [v] (-> v
-                                               (update 2 #(Integer/parseInt %))
-                                               (update 3 #(Double/parseDouble %)))))))))
+                              [[nuvlabox-id
+                                (time/to-str midnight-yesterday)
+                                1 (double (/ (time/time-between midnight-yesterday now-1d :seconds)
+                                             (time/time-between midnight-yesterday midnight-today :seconds)))]
+                               [nuvlabox-id
+                                (time/to-str midnight-today)
+                                1 (double (/ (* 3600 12)
+                                             (time/time-between midnight-today to :seconds)))]]
+                              [[nuvlabox-id
+                                (time/to-str midnight-yesterday)
+                                2 (double (/ (+ (time/time-between midnight-yesterday now-1d :seconds)
+                                                (time/time-between now-12h midnight-today :seconds))
+                                             (time/time-between midnight-yesterday midnight-today :seconds)))]
+                               [nuvlabox-id
+                                (time/to-str midnight-today)
+                                0 (double (/ (if (time/after? now-12h midnight-today)
+                                               (* 3600 12)
+                                               (time/time-between midnight-today to :seconds))
+                                             (time/time-between midnight-today to :seconds)))]])
+                            (->> (csv-request "availability-stats" "1-days")
+                                 str/split-lines
+                                 rest
+                                 (map #(str/split % #","))
+                                 (map (fn [v] (-> v
+                                                  (update 2 #(Integer/parseInt %))
+                                                  (update 3 #(Double/parseDouble %)))))))))
                 (testing "export raw availability data"
                   (is (= (str "nuvlaedge-id,timestamp,nuvlaedge-id,online\n"
                               (str/join "," [nuvlabox-id
@@ -1659,15 +1659,18 @@
                          (csv-request "availability-stats" "1-days"))))
                 (testing "export raw availability data"
                   (is (= (str "nuvlaedge-count,timestamp,nuvlaedge-id,online\n"
-                              (str/join "," [2
-                                             (time/to-str yesterday-2am)
-                                             nuvlabox-id-2, 0]) "\n"
-                              (str/join "," [2
-                                             (time/to-str yesterday-10am)
-                                             nuvlabox-id-2, 1]) "\n"
-                              (str/join "," [2
-                                             (time/to-str now-1d)
-                                             nuvlabox-id-3, 1]) "\n")
+                              (str/join "\n" (sort [(str/join "," [2
+                                                                   (time/to-str now-1d)
+                                                                   nuvlabox-id-3, 1])
+                                                    (str/join "," [2
+                                                                   (time/to-str yesterday-2am)
+                                                                   nuvlabox-id-2, 0])
+                                                    (str/join "," [2
+                                                                   (time/to-str yesterday-10am)
+                                                                   nuvlabox-id-2, 1])
+
+                                                    ]))
+                              "\n")
                          (csv-request "availability-stats" "raw"))))))))))))
 
 (deftest lifecycle-online-next-heartbeat
