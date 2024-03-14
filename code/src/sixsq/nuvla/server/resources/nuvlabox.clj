@@ -1729,21 +1729,8 @@ particular NuvlaBox release.
   (r/json-response (zipmap datasets resps)))
 
 (defn csv-response
-  [{:keys [raw datasets datasets-opts mode resps] :as options}]
-  (let [{:keys [csv-export-fn aggregations response-aggs] group-by-field :group-by}
-        (get datasets-opts (first datasets))
-        dimension-keys (case mode
-                         :single-edge-query
-                         [:nuvlaedge-id]
-                         :multi-edge-query
-                         [:nuvlaedge-count])
-        #_csv-data       #_(if raw
-                             (utils/raw-data->csv dimension-keys (first resps))
-                             (utils/metrics-data->csv
-                               (cond-> dimension-keys
-                                       group-by-field (conj group-by-field))
-                               (or response-aggs (keys aggregations))
-                               (first resps)))]
+  [{:keys [datasets datasets-opts] :as options}]
+  (let [{:keys [csv-export-fn]} (get datasets-opts (first datasets))]
     (when-not csv-export-fn
       (logu/log-and-throw-400 (str "csv export not supported for dataset " (first datasets))))
     (r/csv-response "export.csv" (csv-export-fn options))))
