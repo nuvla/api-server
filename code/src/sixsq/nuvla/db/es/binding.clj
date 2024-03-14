@@ -65,6 +65,10 @@
   [response]
   (= (get-in response [:body :result]) "noop"))
 
+(defn errors?
+  [response]
+  (get-in response [:body :errors]))
+
 (defn no-body-failures?
   [response]
   (empty? (get-in response [:body :failures])))
@@ -171,15 +175,18 @@
       (r/response-error (str "could not delete document " id)))))
 
 (defn query-data
-  [client collection-id {:keys [cimi-params] :as options}]
+  [client collection-id {:keys [cimi-params params] :as options}]
   (try
     (let [index                   (escu/collection-id->index collection-id)
           paging                  (paging/paging cimi-params)
           orderby                 (order/sorters cimi-params)
           aggregation             (aggregation/aggregators cimi-params)
+          ts-aggregation          (aggregation/tsds-aggregators params)
           selected                (select/select cimi-params)
-          query                   {:query (acl/and-acl-query (filter/filter cimi-params) options)}
-          body                    (merge paging orderby selected query aggregation)
+          query                   {:query (if ts-aggregation
+                                            (filter/filter cimi-params)
+                                            (acl/and-acl-query (filter/filter cimi-params) options))}
+          body                    (merge paging orderby selected query aggregation ts-aggregation)
           response                (spandex/request client {:url    [index :_search]
                                                            :method :post
                                                            :body   body})
@@ -187,7 +194,11 @@
           aggregations            (-> response :body :aggregations)
           meta                    (cond-> {:count count-before-pagination}
                                           aggregations (assoc :aggregations aggregations))
-          hits                    (->> response :body :hits :hits (map :_source))]
+          hits                    (cond->> (->> response :body :hits :hits (map :_source))
+                                           ts-aggregation
+                                           (map (fn [hit] (-> hit
+                                                              (assoc :timestamp (get hit (keyword "@timestamp")))
+                                                              (dissoc (keyword "@timestamp"))))))]
       (if (shards-successful? response)
         [meta hits]
         (let [msg (str "error when querying: " (:body response))]
@@ -197,6 +208,58 @@
             error (:error body)
             msg   (str "unexpected exception querying: " (or error e))]
         (throw (r/ex-response msg 500))))))
+
+(defn add-metric-data
+  [client collection-id data {:keys [refresh]
+                              :or   {refresh true}
+                              :as   _options}]
+  (try
+    (let [index        (escu/collection-id->index collection-id)
+          updated-data (-> data
+                           (dissoc :timestamp)
+                           (assoc "@timestamp" (:timestamp data)))
+          response     (spandex/request client {:url          [index :_doc]
+                                                :query-string {:refresh refresh}
+                                                :method       :post
+                                                :body         updated-data})
+          success?     (shards-successful? response)]
+      (if success?
+        {:status 201
+         :body   {:status  201
+                  :message (str collection-id " metric added")}}
+        (r/response-conflict collection-id)))
+    (catch Exception e
+      (let [{:keys [status body] :as _response} (ex-data e)
+            error (:error body)]
+        (if (= 409 status)
+          (r/response-conflict collection-id)
+          (r/response-error (str "unexpected exception: " (or error e))))))))
+
+(defn bulk-insert-metrics
+  [client collection-id data _options]
+  (try
+    (let [index          (escu/collection-id->index collection-id)
+          data-transform (fn [{:keys [timestamp] :as doc}]
+                           (-> doc
+                               (dissoc :timestamp)
+                               (assoc "@timestamp" timestamp)))
+          body           (spandex/chunks->body (interleave (repeat {:create {}})
+                                                           (map data-transform data)))
+          response       (spandex/request client {:url     [index :_bulk]
+                                                  :method  :put
+                                                  :headers {"Content-Type" "application/x-ndjson"}
+                                                  :body    body})
+          body-response  (:body response)
+          success?       (not (errors? response))]
+      (if success?
+        body-response
+        (let [msg (str "error when bulk inserting metrics: " body-response)]
+          (throw (r/ex-response msg 400)))))
+    (catch Exception e
+      (let [{:keys [body status] :as _response} (ex-data e)
+            error (:error body)
+            msg   (str "unexpected exception bulk inserting metrics: " _response (or error e))]
+        (throw (r/ex-response msg (or status 500)))))))
 
 (defn bulk-edit-data
   [client collection-id
@@ -245,15 +308,132 @@
             msg   (str "unexpected exception delete by query: " (or error e))]
         (throw (r/ex-response msg 500))))))
 
+(def hot-warm-cold-delete-policy
+  {:hot    {:min_age "0ms"
+            :actions {:set_priority {:priority 100}
+                      :rollover     {:max_primary_shard_size "10gb"
+                                     :max_age                "1d"}}}
+   :warm   {:min_age "7d"
+            :actions {:set_priority {:priority 50}
+                      :downsample   {:fixed_interval "1h"}}}
+   :cold   {:min_age "30d"
+            :actions {:set_priority {:priority 0}
+                      :downsample   {:fixed_interval "1d"}}}
+   :delete {:min_age "365d"
+            :actions {:delete {:delete_searchable_snapshot true}}}})
+
+(def hot-delete-policy
+  {:hot    {:min_age "0ms"
+            :actions {:set_priority {:priority 100}}}
+   :delete {:min_age "365d"
+            :actions {:delete {:delete_searchable_snapshot true}}}})
+
+(defn create-or-update-lifecycle-policy
+  [client index ilm-policy]
+  (let [policy-name (str index "-ilm-policy")]
+    (try
+      (let [{:keys [status]}
+            (spandex/request
+              client
+              {:url    [:_ilm :policy policy-name]
+               :method :put
+               :body   {:policy
+                        {:_meta  {:description (str "ILM policy for " index)}
+                         :phases ilm-policy}}})]
+        (if (= 200 status)
+          (do (log/debug policy-name "ILM policy created/updated")
+              policy-name)
+          (log/error "unexpected status code when creating/updating" policy-name "ILM policy (" status ")")))
+      (catch Exception e
+        (let [{:keys [status body] :as _response} (ex-data e)
+              error (:error body)]
+          (log/error "unexpected status code when creating/updating" policy-name "ILM policy (" status "). " (or error e)))))))
+
+(defn create-timeseries-template
+  [client index mapping {:keys [routing-path look-back-time look-ahead-time start-time lifecycle-name]}]
+  (let [template-name (str index "-template")]
+    (try
+      (let [{:keys [status]} (spandex/request client
+                                              {:url    [:_index_template template-name],
+                                               :method :put
+                                               :body   {:index_patterns [(str index "*")],
+                                                        :data_stream    {},
+                                                        :template
+                                                        {:settings
+                                                         (cond->
+                                                           {:index.mode "time_series",
+                                                            ;:index.look_back_time         "7d",
+                                                            ;:index.look_ahead_time        "2h",
+                                                            ;:index.time_series.start_time "2023-01-01T00:00:00.000Z"
+                                                            ;:index.lifecycle.name  "nuvlabox-status-ts-1d-hf-ilm-policy"
+                                                            }
+                                                           routing-path (assoc :index.routing_path routing-path)
+                                                           look-ahead-time (assoc :index.look_ahead_time look-ahead-time)
+                                                           look-back-time (assoc :index.look_back_time look-back-time)
+                                                           start-time (assoc :index.time_series.start_time start-time)
+                                                           lifecycle-name (assoc :index.lifecycle.name lifecycle-name))
+                                                         :mappings mapping}}})]
+        (if (= 200 status)
+          (do (log/debug template-name "index template created/updated")
+              template-name)
+          (log/error "unexpected status code when creating/updating" template-name "index template (" status ")")))
+      (catch Exception e
+        (let [{:keys [status body] :as _response} (ex-data e)
+              error (:error body)]
+          (log/error "unexpected status code when creating/updating" template-name "index template (" status "). " (or error e)))))))
+
+(defn create-datastream
+  [client datastream-index-name]
+  (try
+    (let [{:keys [status]} (spandex/request client {:url [:_data_stream datastream-index-name], :method :get})]
+      (if (= 200 status)
+        (log/debug datastream-index-name "datastream already exists")
+        (log/error "unexpected status code when checking" datastream-index-name "datastream (" status ")")))
+    (catch Exception e
+      (let [{:keys [status body]} (ex-data e)]
+        (try
+          (if (= 404 status)
+            (let [{{:keys [acknowledged]} :body}
+                  (spandex/request client {:url [:_data_stream datastream-index-name], :method :put})]
+              (if acknowledged
+                (log/info datastream-index-name "datastream created")
+                (log/warn datastream-index-name "datastream may or may not have been created")))
+            (log/error "unexpected status code when checking" datastream-index-name "datastream (" status "). " body))
+          (catch Exception e
+            (let [{:keys [status body] :as _response} (ex-data e)
+                  error (:error body)]
+              (log/error "unexpected status code when creating" datastream-index-name "datastream (" status "). " (or error e)))))))))
+
+(defn initialize-timeserie-datastream
+  [client collection-id {:keys [spec ilm-policy look-back-time look-ahead-time start-time]
+                         :or   {ilm-policy     hot-warm-cold-delete-policy
+                                look-back-time "7d"}
+                         :as   _options}]
+  (let [index           (escu/collection-id->index collection-id)
+        mapping         (mapping/mapping spec {:dynamic-templates false, :fulltext false})
+        routing-path    (mapping/time-series-routing-path spec)
+        ilm-policy-name (create-or-update-lifecycle-policy client index ilm-policy)]
+    (create-timeseries-template client index mapping {:routing-path    routing-path
+                                                      :lifecycle-name  ilm-policy-name
+                                                      :look-ahead-time look-ahead-time
+                                                      :look-back-time  look-back-time
+                                                      :start-time      start-time})
+    (create-datastream client index)))
+
+(defn initialize-db
+  [client collection-id {:keys [spec timeseries] :as options}]
+  (let [index (escu/collection-id->index collection-id)]
+    (if timeseries
+      (initialize-timeserie-datastream client collection-id options)
+      (let [mapping (mapping/mapping spec)]
+        (create-index client index)
+        (set-index-mapping client index mapping)))))
 
 (deftype ElasticsearchRestBinding [client sniffer]
   Binding
 
-  (initialize [_ collection-id {:keys [spec] :as _options}]
-    (let [index   (escu/collection-id->index collection-id)
-          mapping (mapping/mapping spec)]
-      (create-index client index)
-      (set-index-mapping client index mapping)))
+  (initialize [_ collection-id options]
+    (initialize-db client collection-id options))
 
 
   (add [_ data options]
@@ -276,6 +456,12 @@
 
   (query [_ collection-id options]
     (query-data client collection-id options))
+
+  (add-metric [_ collection-id data options]
+    (add-metric-data client collection-id data options))
+
+  (bulk-insert-metrics [_ collection-id data options]
+    (bulk-insert-metrics client collection-id data options))
 
   (bulk-delete [_ collection-id options]
     (bulk-delete-data client collection-id options))

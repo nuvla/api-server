@@ -109,6 +109,8 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
   (utils/denormalize-changes-nuvlabox (r/response-body response))
   (utils/detect-swarm response)
   (kafka-crud/publish-on-edit resource-type response)
+  (nb-utils/bulk-insert-metrics (:body response) true)
+  (nb-utils/track-availability (:body response) true)
   (utils/special-body-nuvlabox response request))
 
 (defn pre-validate-hook

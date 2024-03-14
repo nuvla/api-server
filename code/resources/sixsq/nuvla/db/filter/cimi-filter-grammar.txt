@@ -25,7 +25,7 @@ GeoOp               = 'intersects' | 'disjoint' | 'within' | 'contains'
 Attribute           = WS NamespaceTerm ('/' NamespaceTerm)* WS
 
 <NamespaceTerm>     = (Term ':' Term) | Term
-<Term>              = #'([a-zA-Z][\w-]*[\w]+)|[a-zA-Z]'
+<Term>              = #'([a-zA-Z@][\w-]*[\w]+)|[a-zA-Z]'
 <OrdinalValue>      = IntValue | DateValue | StringValue
 <NominalValue>      = BoolValue | NullValue
 <Value>             = OrdinalValue | NominalValue

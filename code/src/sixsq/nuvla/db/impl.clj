@@ -42,6 +42,11 @@
 (defn query [collection-id & [options]]
   (p/query *impl* collection-id options))
 
+(defn add-metric [collection-id data & [options]]
+  (p/add-metric *impl* collection-id data options))
+
+(defn bulk-insert-metrics [collection-id data & [options]]
+  (p/bulk-insert-metrics *impl* collection-id data options))
 
 (defn bulk-delete [collection-id & [options]]
   (p/bulk-delete *impl* collection-id options))

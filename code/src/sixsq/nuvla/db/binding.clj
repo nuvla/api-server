@@ -93,6 +93,31 @@
      then a 400 (bad-request) response must be returned.  Other appropriate
      error codes can also be thrown.")
 
+  (add-metric
+    [this collection-id data options]
+    "This function adds the given metric to the database.  The metric
+     must not already exist in the database.
+
+     On success, the function must return a 201 ring response with the
+     relative URL of the new metric as the Location.
+
+     On failure, the function must throw an ex-info containing the error
+     ring response.  The error must be 409 (conflict) if the metric
+     exists already.  Other appropriate error codes can also be thrown.")
+
+  (bulk-insert-metrics
+    [this collection-id data options]
+    "This function insert the given metrics in the database where the
+    collection-id corresponds to the name of a metrics Collection.
+
+     On success, the function must return the summary map of what was done
+     on the db.
+
+     On failure, the function must throw an ex-info containing the error
+     ring response.  If the resource-id does not correspond to a Collection,
+     then a 400 (bad-request) response must be returned.  Other appropriate
+     error codes can also be thrown.")
+
   (bulk-delete
     [this collection-id options]
     "This function removes the given resources in the database where the

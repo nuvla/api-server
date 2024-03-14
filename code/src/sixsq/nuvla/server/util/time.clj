@@ -5,7 +5,9 @@
 
 (def rfc822-formatter (t/formatter :rfc-1123-date-time))
 
-(def iso8601-formatter (t/formatter "uuuu-MM-dd'T'HH:mm:ss[.SSS]XXXXX"
+(def iso8601-format "uuuu-MM-dd'T'HH:mm:ss[.SSS]XXXXX")
+
+(def iso8601-formatter (t/formatter iso8601-format
                                     {:resolver-style :strict}))
 
 (def utc-clock (t/system-clock "UTC"))
@@ -22,6 +24,8 @@
 
 (def after? t/after?)
 
+(def duration t/duration)
+
 (defn now
   []
   (t/with-clock utc-clock
@@ -30,12 +34,14 @@
 (defn duration-unit
   [n unit]
   (case unit
+    :millis (t/millis n)
     :seconds (t/seconds n)
     :minutes (t/minutes n)
     :hours (t/hours n)
     :days (t/days n)
     :weeks (t/weeks n)
-    :months (t/months n)))
+    :months (t/months n)
+    :years (t/years n)))
 
 (defn time-between
   [start end unit]
@@ -85,6 +91,10 @@
   (-> timestamp
       date-from-unix-timestamp
       to-str))
+
+(defn truncated-to-minutes
+  [^OffsetDateTime date]
+  (.truncatedTo date ChronoUnit/MINUTES))
 
 (defn truncated-to-days
   [^OffsetDateTime date]

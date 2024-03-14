@@ -213,6 +213,32 @@
                           (str "_" resource-name))]
       (create-bulk-job action-name resource-name authn-info acl body))))
 
+(defn add-metric-fn
+  [resource-name collection-acl _resource-uri & {:keys [validate-fn options]}]
+  (validate-collection-acl collection-acl)
+  (fn [{:keys [body] :as request}]
+    (a/throw-cannot-add collection-acl request)
+    (validate-fn body)
+    (db/add-metric resource-name body options)))
+
+(defn bulk-insert-metrics-fn
+  [resource-name collection-acl _collection-uri]
+  (validate-collection-acl collection-acl)
+  (fn [{:keys [body] :as request}]
+    (throw-bulk-header-missing request)
+    (a/throw-cannot-add collection-acl request)
+    (a/throw-cannot-bulk-action collection-acl request)
+    (let [options    (select-keys request [:nuvla/authn :body])
+          response   (db/bulk-insert-metrics resource-name body options)]
+      (r/json-response response))))
+
+(defn generic-bulk-operation-fn
+  [resource-name collection-acl bulk-op-fn]
+  (validate-collection-acl collection-acl)
+  (fn [request]
+    (throw-bulk-header-missing request)
+    (a/throw-cannot-bulk-action collection-acl request)
+    (bulk-op-fn resource-name request)))
 
 (def ^:const href-not-found-msg "requested href not found")
 
@@ -275,6 +301,18 @@
     (catch Exception e
       (log/errorf "exception when initializing database for %s: %s"
                   resource-url (.getMessage e)))))
+
+(defn initialize-as-timeseries
+  "Perform the initialization of the database for a given resource type stored as a time-series. If an
+   exception is thrown, it will be logged but then ignored."
+  ([resource-url spec]
+   (initialize-as-timeseries resource-url spec {}))
+  ([resource-url spec opts]
+   (try
+     (db/initialize resource-url (merge {:spec spec, :timeseries true} opts))
+     (catch Exception e
+       (log/errorf e "exception when initializing database for %s: %s"
+                   resource-url (.getMessage e))))))
 
 
 (defn add-if-absent

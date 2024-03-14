@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.db.es.aggregation
-  (:require [clojure.string :as str]))
+  (:require [clojure.data.json :as json]
+            [clojure.string :as str]))
 
 
 (def supported-aggregator {:min           "min"
@@ -31,3 +32,9 @@
   (let [entries (mapv agg-entry aggregation)]
     (when (seq entries)
       {:aggs (into {} entries)})))
+
+(defn tsds-aggregators
+  "Given the tsds aggregation information in the :cimi-params parameter, add all of the
+   aggregation clauses to the aggs map."
+  [{:keys [tsds-aggregation] :as _params}]
+  (some-> tsds-aggregation json/read-str))
