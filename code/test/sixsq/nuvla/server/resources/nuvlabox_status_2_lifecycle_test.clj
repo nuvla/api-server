@@ -906,7 +906,26 @@
                 (is (= (str "timestamp,energy-consumption,metric-name,unit\n"
                             (str/join "," [(time/to-str update-time)
                                            2.4 "IN_current" "A"]) "\n")
-                       (csv-request "power-consumption-stats" "raw"))))))))
+                       (csv-request "power-consumption-stats" "raw"))))
+              (testing "Export with custom es aggregations not allowed"
+                (let [csv-custom-cpu-agg (-> (metrics-request
+                                               {:accept-header          "text/csv"
+                                                :datasets               ["cpu-stats"]
+                                                :from                   from
+                                                :to                     to
+                                                :custom-es-aggregations (json/write-str
+                                                                          {:agg1 {:date_histogram
+                                                                                  {:field          "@timestamp"
+                                                                                   :fixed_interval "1d"
+                                                                                   :min_doc_count  0}
+                                                                                  :aggregations {:avg-cpu-load {:avg {:field :cpu.load}}
+                                                                                                 :min-cpu-load {:min {:field :cpu.load}}
+                                                                                                 :max-cpu-load {:max {:field :cpu.load}}}}})})
+                                             (ltu/is-status 400)
+                                             (ltu/body->edn)
+                                             (ltu/body))]
+                  (is (= "Custom aggregations cannot be exported to csv format"
+                         (:message csv-custom-cpu-agg)))))))))
 
       (testing "metrics data on multiple nuvlaboxes"
         (let [;; add another nuvlabox
@@ -1302,7 +1321,7 @@
                                            10 5.5]) "\n"
                             (str/join "," [(time/to-str update-time-2)
                                            nuvlabox-id-2
-                                           10 5.5])"\n")
+                                           10 5.5]) "\n")
                        (csv-request "cpu-stats" "raw")))
                 (is (= (str "timestamp,nuvlaedge-id,capacity,used\n"
                             (str/join "," [(time/to-str update-time)

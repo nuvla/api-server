@@ -1206,9 +1206,15 @@ particular NuvlaBox release.
   [[query-opts resp]]
   [query-opts (update-in resp [0] dissoc :hits)])
 
+(defn throw-custom-aggregations-not-exportable
+  [{:keys [custom-es-aggregations]}]
+  (when custom-es-aggregations
+    (logu/log-and-throw-400 "Custom aggregations cannot be exported to csv format")))
+
 (defn csv-export-fn
   [dimension-keys-fn meta-keys-fn metric-keys-fn data-fn]
   (fn [{:keys [resps] :as options}]
+    (throw-custom-aggregations-not-exportable options)
     (utils/metrics-data->csv
       options
       (dimension-keys-fn options)
@@ -1220,8 +1226,11 @@ particular NuvlaBox release.
 (defn csv-dimension-keys-fn
   []
   (fn [{:keys [raw predefined-aggregations datasets datasets-opts mode]}]
-    (if raw
+    (cond
+      raw
       []
+
+      predefined-aggregations
       (let [{group-by-field :group-by} (get datasets-opts (first datasets))
             dimension-keys (case mode
                              :single-edge-query
@@ -1233,29 +1242,31 @@ particular NuvlaBox release.
 
 (defn csv-meta-keys-fn
   []
-  (fn [{:keys [mode raw]}]
-    (if raw
-      (case mode
-        :single-edge-query
-        [:timestamp]
-        :multi-edge-query
-        [:timestamp :nuvlaedge-id])
-      [:timestamp :doc-count])))
+  (fn [{:keys [mode predefined-aggregations raw]}]
+    (cond
+      raw (case mode
+            :single-edge-query
+            [:timestamp]
+            :multi-edge-query
+            [:timestamp :nuvlaedge-id])
+      predefined-aggregations [:timestamp :doc-count])))
 
 (defn availability-csv-metric-keys-fn
   []
-  (fn [{:keys [mode raw datasets datasets-opts]}]
-    (let [{:keys [response-aggs]}
-          (get datasets-opts (first datasets))]
-      (if raw
-        [:online]
-        response-aggs))))
+  (fn [{:keys [predefined-aggregations raw datasets datasets-opts]}]
+    (let [{:keys [response-aggs]} (get datasets-opts (first datasets))]
+      (cond
+        raw [:online]
+        predefined-aggregations response-aggs))))
 
 (defn availability-csv-data-fn
   []
-  (fn [{:keys [raw]} {:keys [aggregations] :as data-point} metric-key]
-    (if raw
+  (fn [{:keys [predefined-aggregations raw]} {:keys [aggregations] :as data-point} metric-key]
+    (cond
+      raw
       (get data-point metric-key)
+
+      predefined-aggregations
       (get-in aggregations [metric-key :value]))))
 
 (defn availability-csv-export-fn
@@ -1267,18 +1278,25 @@ particular NuvlaBox release.
 
 (defn telemetry-csv-metric-keys-fn
   [metric]
-  (fn [{:keys [raw datasets datasets-opts resps]}]
+  (fn [{:keys [predefined-aggregations raw datasets datasets-opts resps]}]
     (let [{:keys [aggregations response-aggs]}
           (get datasets-opts (first datasets))]
-      (if raw
+      (cond
+        raw
         (sort (keys (-> resps ffirst :ts-data first (get metric))))
+
+        predefined-aggregations
         (or response-aggs (keys aggregations))))))
 
 (defn telemetry-csv-data-fn
   [metric]
-  (fn [{:keys [raw]} {:keys [aggregations] :as data-point} metric-key]
-    (if raw
+  (fn [{:keys [predefined-aggregations raw]}
+       {:keys [aggregations] :as data-point} metric-key]
+    (cond
+      raw
       (get-in data-point [metric metric-key])
+
+      predefined-aggregations
       (get-in aggregations [metric-key :value]))))
 
 (defn telemetry-csv-export-fn
