@@ -819,82 +819,113 @@
                                        :to          now
                                        :granularity "1-minutes"})))))
 
-          (testing "cvs export of metrics data"
+          (testing "csv export of metrics data"
             (let [from        (time/minus now (time/duration-unit 1 :days))
                   to          now
-                  csv-request (fn [dataset]
+                  csv-request (fn [dataset granularity]
                                 (-> (metrics-request {:accept-header "text/csv"
                                                       :datasets      [dataset]
                                                       :from          from
                                                       :to            to
-                                                      :granularity   "1-days"})
+                                                      :granularity   granularity})
                                     (ltu/is-status 200)
                                     (ltu/is-header "Content-Type" "text/csv")
                                     (ltu/is-header "Content-disposition" "attachment;filename=export.csv")
                                     (ltu/body)))]
-              (is (= (str "nuvlaedge-id,timestamp,doc-count,avg-cpu-capacity,avg-cpu-load,avg-cpu-load-1,avg-cpu-load-5,context-switches,interrupts,software-interrupts,system-calls\n"
-                          (str/join "," [nuvlabox-id
-                                         (time/to-str midnight-yesterday)
-                                         0 nil nil nil nil nil nil nil nil]) "\n"
-                          (str/join "," [nuvlabox-id
-                                         (time/to-str midnight-today)
-                                         1 10 5.5 nil nil nil nil nil nil]) "\n")
-                     (csv-request "cpu-stats")))
-              (is (= (str "nuvlaedge-id,timestamp,doc-count,avg-ram-capacity,avg-ram-used\n"
-                          (str/join "," [nuvlabox-id
-                                         (time/to-str midnight-yesterday)
-                                         0 nil nil]) "\n"
-                          (str/join "," [nuvlabox-id
-                                         (time/to-str midnight-today)
-                                         1 4096 2000]) "\n")
-                     (csv-request "ram-stats")))
-              (is (= #{"nuvlaedge-id,disk.device,timestamp,doc-count,avg-disk-capacity,avg-disk-used"
-                       (str/join "," [nuvlabox-id
-                                      "root"
-                                      (time/to-str midnight-yesterday)
-                                      0, nil, nil])
-                       (str/join "," [nuvlabox-id
-                                      "root"
-                                      (time/to-str midnight-today)
-                                      1, 20000, 20000])
-                       (str/join "," [nuvlabox-id
-                                      "datastore"
-                                      (time/to-str midnight-yesterday)
-                                      0, nil, nil])
-                       (str/join "," [nuvlabox-id
-                                      "datastore"
-                                      (time/to-str midnight-today)
-                                      1 20000 15000])}
-                     (set (str/split-lines (csv-request "disk-stats")))))
-              (is (= #{"nuvlaedge-id,network.interface,timestamp,doc-count,bytes-received,bytes-transmitted"
-                       (str/join "," [nuvlabox-id
-                                      "eth0"
-                                      (time/to-str midnight-yesterday)
-                                      0 nil nil])
-                       (str/join "," [nuvlabox-id
-                                      "eth0"
-                                      (time/to-str midnight-today)
-                                      1 5579821 44145])
-                       (str/join "," [nuvlabox-id
-                                      "vpn"
-                                      (time/to-str midnight-yesterday)
-                                      0 nil nil])
-                       (str/join "," [nuvlabox-id
-                                      "vpn"
-                                      (time/to-str midnight-today)
-                                      1 3019 78])}
-                     (set (str/split-lines (csv-request "network-stats")))))
-              (is (= #{"nuvlaedge-id,power-consumption.metric-name,timestamp,doc-count,energy-consumption"
-                       (str/join "," [nuvlabox-id
-                                      "IN_current"
-                                      (time/to-str midnight-yesterday)
-                                      0 nil])
-                       (str/join "," [nuvlabox-id
-                                      "IN_current"
-                                      (time/to-str midnight-today)
-                                      1
-                                      2.4])}
-                     (set (str/split-lines (csv-request "power-consumption-stats")))))))))
+              (testing "Export with predefined aggregations"
+                (is (= (str "timestamp,doc-count,avg-cpu-capacity,avg-cpu-load,avg-cpu-load-1,avg-cpu-load-5,context-switches,interrupts,software-interrupts,system-calls\n"
+                            (str/join "," [(time/to-str midnight-yesterday)
+                                           0 nil nil nil nil nil nil nil nil]) "\n"
+                            (str/join "," [(time/to-str midnight-today)
+                                           1 10 5.5 nil nil nil nil nil nil]) "\n")
+                       (csv-request "cpu-stats" "1-days")))
+                (is (= (str "timestamp,doc-count,avg-ram-capacity,avg-ram-used\n"
+                            (str/join "," [(time/to-str midnight-yesterday)
+                                           0 nil nil]) "\n"
+                            (str/join "," [(time/to-str midnight-today)
+                                           1 4096 2000]) "\n")
+                       (csv-request "ram-stats" "1-days")))
+                (is (= #{"disk.device,timestamp,doc-count,avg-disk-capacity,avg-disk-used"
+                         (str/join "," ["root"
+                                        (time/to-str midnight-yesterday)
+                                        0, nil, nil])
+                         (str/join "," ["root"
+                                        (time/to-str midnight-today)
+                                        1, 20000, 20000])
+                         (str/join "," ["datastore"
+                                        (time/to-str midnight-yesterday)
+                                        0, nil, nil])
+                         (str/join "," ["datastore"
+                                        (time/to-str midnight-today)
+                                        1 20000 15000])}
+                       (set (str/split-lines (csv-request "disk-stats" "1-days")))))
+                (is (= #{"network.interface,timestamp,doc-count,bytes-received,bytes-transmitted"
+                         (str/join "," ["eth0"
+                                        (time/to-str midnight-yesterday)
+                                        0 nil nil])
+                         (str/join "," ["eth0"
+                                        (time/to-str midnight-today)
+                                        1 5579821 44145])
+                         (str/join "," ["vpn"
+                                        (time/to-str midnight-yesterday)
+                                        0 nil nil])
+                         (str/join "," ["vpn"
+                                        (time/to-str midnight-today)
+                                        1 3019 78])}
+                       (set (str/split-lines (csv-request "network-stats" "1-days")))))
+                (is (= #{"power-consumption.metric-name,timestamp,doc-count,energy-consumption"
+                         (str/join "," ["IN_current"
+                                        (time/to-str midnight-yesterday)
+                                        0 nil])
+                         (str/join "," ["IN_current"
+                                        (time/to-str midnight-today)
+                                        1
+                                        2.4])}
+                       (set (str/split-lines (csv-request "power-consumption-stats" "1-days"))))))
+              (testing "Export raw telemetry data"
+                (is (= (str "timestamp,capacity,load\n"
+                            (str/join "," [(time/to-str update-time)
+                                           10 5.5]) "\n")
+                       (csv-request "cpu-stats" "raw")))
+                (is (= (str "timestamp,capacity,used\n"
+                            (str/join "," [(time/to-str update-time)
+                                           4096 2000]) "\n")
+                       (csv-request "ram-stats" "raw")))
+                (is (= (str "timestamp,capacity,device,used\n"
+                            (str/join "," [(time/to-str update-time)
+                                           20000 "root" 20000]) "\n"
+                            (str/join "," [(time/to-str update-time)
+                                           20000 "datastore" 15000]) "\n")
+                       (csv-request "disk-stats" "raw")))
+                (is (= (str "timestamp,bytes-received,bytes-transmitted,interface\n"
+                            (str/join "," [(time/to-str update-time)
+                                           3019 78 "vpn"]) "\n"
+                            (str/join "," [(time/to-str update-time)
+                                           5579821 44145 "eth0"]) "\n")
+                       (csv-request "network-stats" "raw")))
+                (is (= (str "timestamp,energy-consumption,metric-name,unit\n"
+                            (str/join "," [(time/to-str update-time)
+                                           2.4 "IN_current" "A"]) "\n")
+                       (csv-request "power-consumption-stats" "raw"))))
+              (testing "Export with custom es aggregations not allowed"
+                (let [csv-custom-cpu-agg (-> (metrics-request
+                                               {:accept-header          "text/csv"
+                                                :datasets               ["cpu-stats"]
+                                                :from                   from
+                                                :to                     to
+                                                :custom-es-aggregations (json/write-str
+                                                                          {:agg1 {:date_histogram
+                                                                                  {:field          "@timestamp"
+                                                                                   :fixed_interval "1d"
+                                                                                   :min_doc_count  0}
+                                                                                  :aggregations {:avg-cpu-load {:avg {:field :cpu.load}}
+                                                                                                 :min-cpu-load {:min {:field :cpu.load}}
+                                                                                                 :max-cpu-load {:max {:field :cpu.load}}}}})})
+                                             (ltu/is-status 400)
+                                             (ltu/body->edn)
+                                             (ltu/body))]
+                  (is (= "Custom aggregations cannot be exported to csv format"
+                         (:message csv-custom-cpu-agg)))))))))
 
       (testing "metrics data on multiple nuvlaboxes"
         (let [;; add another nuvlabox
@@ -1224,64 +1255,118 @@
                                        :to          now
                                        :granularity "1-minutes"})))))
 
-          (testing "cvs export of metrics data"
+          (testing "csv export of metrics data"
             (let [from        (time/minus now (time/duration-unit 1 :days))
                   to          now
-                  csv-request (fn [dataset]
+                  csv-request (fn [dataset granularity]
                                 (-> (metrics-request {:accept-header "text/csv"
                                                       :datasets      [dataset]
                                                       :from          from
                                                       :to            to
-                                                      :granularity   "1-days"})
+                                                      :granularity   granularity})
                                     (ltu/is-status 200)
                                     (ltu/is-header "Content-Type" "text/csv")
                                     (ltu/is-header "Content-disposition" "attachment;filename=export.csv")
                                     (ltu/body)))]
-              (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-avg-cpu-capacity,sum-avg-cpu-load,sum-avg-cpu-load-1,sum-avg-cpu-load-5,sum-context-switches,sum-interrupts,sum-software-interrupts,sum-system-calls\n"
-                          (str/join "," [4
-                                         (time/to-str midnight-yesterday)
-                                         0, 0, 0, 0, 0, 0, 0, 0, 0]) "\n"
-                          (str/join "," [4
-                                         (time/to-str midnight-today)
-                                         2, 20, 11, 0, 0, 0, 0, 0, 0]) "\n")
-                     (csv-request "cpu-stats")))
-              (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-avg-ram-capacity,sum-avg-ram-used\n"
-                          (str/join "," [4
-                                         (time/to-str midnight-yesterday)
-                                         0, 0, 0]) "\n"
-                          (str/join "," [4
-                                         (time/to-str midnight-today)
-                                         2
-                                         8192
-                                         4000]) "\n")
-                     (csv-request "ram-stats")))
-              (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-avg-disk-capacity,sum-avg-disk-used\n"
-                          (str/join "," [4
-                                         (time/to-str midnight-yesterday)
-                                         0, 0, 0]) "\n"
-                          (str/join "," [4
-                                         (time/to-str midnight-today)
-                                         4, 80000, 70000]) "\n")
-                     (csv-request "disk-stats")))
-              (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-bytes-received,sum-bytes-transmitted\n"
-                          (str/join "," [4
-                                         (time/to-str midnight-yesterday)
-                                         0 0 0]) "\n"
-                          (str/join "," [4
-                                         (time/to-str midnight-today)
-                                         4 11165680 88446]) "\n")
-                     (csv-request "network-stats")))
-              (is (= (str "nuvlaedge-count,power-consumption.metric-name,timestamp,doc-count,sum-energy-consumption\n"
-                          (str/join "," [4
-                                         "IN_current"
-                                         (time/to-str midnight-yesterday)
-                                         0 0]) "\n"
-                          (str/join "," [4
-                                         "IN_current"
-                                         (time/to-str midnight-today)
-                                         2
-                                         4.8]) "\n")
-                     (csv-request "power-consumption-stats"))))))))))
+              (testing "Export with predefined aggregations"
+                (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-avg-cpu-capacity,sum-avg-cpu-load,sum-avg-cpu-load-1,sum-avg-cpu-load-5,sum-context-switches,sum-interrupts,sum-software-interrupts,sum-system-calls\n"
+                            (str/join "," [4
+                                           (time/to-str midnight-yesterday)
+                                           0, 0, 0, 0, 0, 0, 0, 0, 0]) "\n"
+                            (str/join "," [4
+                                           (time/to-str midnight-today)
+                                           2, 20, 11, 0, 0, 0, 0, 0, 0]) "\n")
+                       (csv-request "cpu-stats" "1-days")))
+                (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-avg-ram-capacity,sum-avg-ram-used\n"
+                            (str/join "," [4
+                                           (time/to-str midnight-yesterday)
+                                           0, 0, 0]) "\n"
+                            (str/join "," [4
+                                           (time/to-str midnight-today)
+                                           2
+                                           8192
+                                           4000]) "\n")
+                       (csv-request "ram-stats" "1-days")))
+                (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-avg-disk-capacity,sum-avg-disk-used\n"
+                            (str/join "," [4
+                                           (time/to-str midnight-yesterday)
+                                           0, 0, 0]) "\n"
+                            (str/join "," [4
+                                           (time/to-str midnight-today)
+                                           4, 80000, 70000]) "\n")
+                       (csv-request "disk-stats" "1-days")))
+                (is (= (str "nuvlaedge-count,timestamp,doc-count,sum-bytes-received,sum-bytes-transmitted\n"
+                            (str/join "," [4
+                                           (time/to-str midnight-yesterday)
+                                           0 0 0]) "\n"
+                            (str/join "," [4
+                                           (time/to-str midnight-today)
+                                           4 11165680 88446]) "\n")
+                       (csv-request "network-stats" "1-days")))
+                (is (= (str "nuvlaedge-count,power-consumption.metric-name,timestamp,doc-count,sum-energy-consumption\n"
+                            (str/join "," [4
+                                           "IN_current"
+                                           (time/to-str midnight-yesterday)
+                                           0 0]) "\n"
+                            (str/join "," [4
+                                           "IN_current"
+                                           (time/to-str midnight-today)
+                                           2
+                                           4.8]) "\n")
+                       (csv-request "power-consumption-stats" "1-days"))))
+              (testing "Export raw telemetry data"
+                (is (= (str "timestamp,nuvlaedge-id,capacity,load\n"
+                            (str/join "," [(time/to-str update-time)
+                                           nuvlabox-id
+                                           10 5.5]) "\n"
+                            (str/join "," [(time/to-str update-time-2)
+                                           nuvlabox-id-2
+                                           10 5.5]) "\n")
+                       (csv-request "cpu-stats" "raw")))
+                (is (= (str "timestamp,nuvlaedge-id,capacity,used\n"
+                            (str/join "," [(time/to-str update-time)
+                                           nuvlabox-id
+                                           4096 2000]) "\n"
+                            (str/join "," [(time/to-str update-time-2)
+                                           nuvlabox-id-2
+                                           4096 2000]) "\n")
+                       (csv-request "ram-stats" "raw")))
+                (is (= (str "timestamp,nuvlaedge-id,capacity,device,used\n"
+                            (str/join "," [(time/to-str update-time)
+                                           nuvlabox-id
+                                           20000 "root" 20000]) "\n"
+                            (str/join "," [(time/to-str update-time)
+                                           nuvlabox-id
+                                           20000 "datastore" 15000]) "\n"
+                            (str/join "," [(time/to-str update-time-2)
+                                           nuvlabox-id-2
+                                           20000 "root" 20000]) "\n"
+                            (str/join "," [(time/to-str update-time-2)
+                                           nuvlabox-id-2
+                                           20000 "datastore" 15000]) "\n")
+                       (csv-request "disk-stats" "raw")))
+                (is (= (str "timestamp,nuvlaedge-id,bytes-received,bytes-transmitted,interface\n"
+                            (str/join "," [(time/to-str update-time)
+                                           nuvlabox-id
+                                           3019 78 "vpn"]) "\n"
+                            (str/join "," [(time/to-str update-time)
+                                           nuvlabox-id
+                                           5579821 44145 "eth0"]) "\n"
+                            (str/join "," [(time/to-str update-time-2)
+                                           nuvlabox-id-2
+                                           3019 78 "vpn"]) "\n"
+                            (str/join "," [(time/to-str update-time-2)
+                                           nuvlabox-id-2
+                                           5579821 44145 "eth0"]) "\n")
+                       (csv-request "network-stats" "raw")))
+                (is (= (str "timestamp,nuvlaedge-id,energy-consumption,metric-name,unit\n"
+                            (str/join "," [(time/to-str update-time)
+                                           nuvlabox-id
+                                           2.4 "IN_current" "A"]) "\n"
+                            (str/join "," [(time/to-str update-time-2)
+                                           nuvlabox-id-2
+                                           2.4 "IN_current" "A"]) "\n")
+                       (csv-request "power-consumption-stats" "raw")))))))))))
 
 (deftest availability-data
   (binding [config-nuvla/*stripe-api-key* nil]
@@ -1427,7 +1512,7 @@
                                        :online       1}]}]
                        (:availability-stats raw-availability-data)))))
 
-            (testing "cvs export of availability data"
+            (testing "csv export of availability data"
               (let [from        midnight-yesterday
                     to          now
                     csv-request (fn [dataset granularity]
@@ -1441,26 +1526,22 @@
                                       (ltu/is-header "Content-disposition" "attachment;filename=export.csv")
                                       (ltu/body)))]
                 (testing "export with predefined aggregations"
-                  (is (= (str "nuvlaedge-id,timestamp,doc-count,avg-online")
+                  (is (= (str "timestamp,doc-count,avg-online")
                          (-> (csv-request "availability-stats" "1-days")
                              str/split-lines
                              first)))
                   (is (ish? (if (time/after? now-12h midnight-today)
-                              [[nuvlabox-id
-                                (time/to-str midnight-yesterday)
+                              [[(time/to-str midnight-yesterday)
                                 1 (double (/ (time/time-between midnight-yesterday now-1d :seconds)
                                              (time/time-between midnight-yesterday midnight-today :seconds)))]
-                               [nuvlabox-id
-                                (time/to-str midnight-today)
+                               [(time/to-str midnight-today)
                                 1 (double (/ (* 3600 12)
                                              (time/time-between midnight-today to :seconds)))]]
-                              [[nuvlabox-id
-                                (time/to-str midnight-yesterday)
+                              [[(time/to-str midnight-yesterday)
                                 2 (double (/ (+ (time/time-between midnight-yesterday now-1d :seconds)
                                                 (time/time-between now-12h midnight-today :seconds))
                                              (time/time-between midnight-yesterday midnight-today :seconds)))]
-                               [nuvlabox-id
-                                (time/to-str midnight-today)
+                               [(time/to-str midnight-today)
                                 0 (double (/ (if (time/after? now-12h midnight-today)
                                                (* 3600 12)
                                                (time/time-between midnight-today to :seconds))
@@ -1470,16 +1551,14 @@
                                  rest
                                  (map #(str/split % #","))
                                  (map (fn [v] (-> v
-                                                  (update 2 #(Integer/parseInt %))
-                                                  (update 3 #(Double/parseDouble %)))))))))
+                                                  (update 1 #(some-> % Integer/parseInt))
+                                                  (update 2 #(some-> % Double/parseDouble)))))))))
                 (testing "export raw availability data"
-                  (is (= (str "nuvlaedge-id,timestamp,nuvlaedge-id,online\n"
-                              (str/join "," [nuvlabox-id
-                                             (time/to-str now-1d)
-                                             nuvlabox-id, 0]) "\n"
-                              (str/join "," [nuvlabox-id
-                                             (time/to-str now-12h)
-                                             nuvlabox-id, 1]) "\n")
+                  (is (= (str "timestamp,online\n"
+                              (str/join "," [(time/to-str now-1d)
+                                             0]) "\n"
+                              (str/join "," [(time/to-str now-12h)
+                                             1]) "\n")
                          (csv-request "availability-stats" "raw"))))))))
 
         (testing "availability data across multiple nuvlaboxes"
@@ -1634,7 +1713,7 @@
                                           vec)}]
                        (:availability-stats raw-availability-data)))))
 
-            (testing "cvs export of availability data"
+            (testing "csv export of availability data"
               (let [csv-request (fn [dataset granularity]
                                   (-> (metrics-request {:accept-header "text/csv"
                                                         :datasets      [dataset]
@@ -1658,18 +1737,13 @@
                                              0, 2, 2, 0]) "\n")
                          (csv-request "availability-stats" "1-days"))))
                 (testing "export raw availability data"
-                  (is (= (str "nuvlaedge-count,timestamp,nuvlaedge-id,online\n"
-                              (str/join "\n" (sort [(str/join "," [2
-                                                                   (time/to-str now-1d)
-                                                                   nuvlabox-id-3, 1])
-                                                    (str/join "," [2
-                                                                   (time/to-str yesterday-2am)
+                  (is (= (str "timestamp,nuvlaedge-id,online\n"
+                              (str/join "\n" (sort [(str/join "," [(time/to-str yesterday-2am)
                                                                    nuvlabox-id-2, 0])
-                                                    (str/join "," [2
-                                                                   (time/to-str yesterday-10am)
+                                                    (str/join "," [(time/to-str yesterday-10am)
                                                                    nuvlabox-id-2, 1])
-
-                                                    ]))
+                                                    (str/join "," [(time/to-str now-1d)
+                                                                   nuvlabox-id-3, 1])]))
                               "\n")
                          (csv-request "availability-stats" "raw"))))))))))))
 

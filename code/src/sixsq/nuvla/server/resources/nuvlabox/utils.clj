@@ -625,33 +625,33 @@
        (crud/query-as-admin ts-nuvlaedge-availability/resource-type)
        (->metrics-resp options)))
 
-(defn metrics-data->csv [dimension-keys aggregation-keys response]
+(defn metrics-data->csv [options dimension-keys meta-keys metric-keys data-fn response]
   (with-open [writer (StringWriter.)]
     ;; write csv header
     (csv/write-csv writer [(concat (map name dimension-keys)
-                                   ["timestamp" "doc-count"]
-                                   (map name aggregation-keys))])
+                                   (map name meta-keys)
+                                   (map name metric-keys))])
     ;; write csv data
     (let [df (DecimalFormat. "0.####" (DecimalFormatSymbols. Locale/US))]
       (csv/write-csv writer
                      (for [{:keys [dimensions ts-data]} response
-                           {:keys [timestamp doc-count aggregations]} ts-data]
+                           data-point ts-data]
                        (concat (map dimensions dimension-keys)
-                               [timestamp doc-count]
-                               (map (fn [agg-key]
-                                      (let [v (get-in aggregations [agg-key :value])]
+                               (map data-point meta-keys)
+                               (map (fn [metric-key]
+                                      (let [v (data-fn options data-point metric-key) #_(get-in aggregations [agg-key :value])]
                                         (if (float? v)
                                           ;; format floats with 4 decimal and dot separator
                                           (.format df v)
                                           v)))
-                                    aggregation-keys)))))
+                                    metric-keys)))))
     (.toString writer)))
 
 (defn raw-data->csv [dimension-keys response]
   (let [;; infer the metric keys from the first data point
         metric-keys (-> (get-in response [0 :ts-data])
                         first
-                        (dissoc :timestamp)
+                        (dissoc :timestamp :metric)
                         keys)]
     (with-open [writer (StringWriter.)]
       ;; write csv header
