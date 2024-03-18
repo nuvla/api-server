@@ -542,7 +542,9 @@
 
 (defn query-with-timeout
   [resource-type timeout query]
-  (exec-with-timeout!
+  ;; just send the timeout to ES for now, and run the query in the current thread
+  (crud/query-as-admin resource-type (assoc query :timeout timeout))
+  #_(exec-with-timeout!
     #(doall (crud/query-as-admin resource-type (assoc query :timeout timeout)))
     timeout
     "Query timed out"))

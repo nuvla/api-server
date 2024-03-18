@@ -1436,7 +1436,7 @@ particular NuvlaBox release.
 (def availability-computation-timeout
   (env/env :availability-computation-timeout 5000))
 
-(defn parallel-availabilities
+(defn availabilities-parallel
   [{:keys [granularity-duration nuvlaboxes] :as _query-opts} resp now hits edge-bucket-update-fn]
   (let [tasks (doall
                 (for [{nuvlaedge-id :id :as nuvlabox} nuvlaboxes]
@@ -1477,6 +1477,32 @@ particular NuvlaBox release.
       resp
       tasks)))
 
+(defn availabilities-sequential
+  [{:keys [granularity-duration nuvlaboxes] :as _query-opts} resp now hits edge-bucket-update-fn]
+  (let [nb-resps (mapv
+                   (fn [{nuvlaedge-id :id :as nuvlabox}]
+                     (compute-nuvlabox-availability*
+                       resp
+                       hits
+                       now granularity-duration nuvlabox
+                       (partial edge-bucket-update-fn nuvlaedge-id)))
+                   nuvlaboxes)]
+    (reduce
+      (fn [resp nb-resp]
+        (update-resp-ts-data-points
+          resp
+          (fn [{:keys [timestamp] :as ts-data-point}]
+            (let [nb-bucket (-> (get-in nb-resp [0 :ts-data])
+                                (->> (filter #(= timestamp (:timestamp %))))
+                                first
+                                (get-in [:aggregations :by-edge :buckets 0]))]
+              (update-in ts-data-point
+                         [:aggregations :by-edge :buckets]
+                         conj
+                         nb-bucket)))))
+      resp
+      nb-resps)))
+
 (defn compute-nuvlaboxes-availabilities
   [[{:keys [predefined-aggregations] :as query-opts} resp]]
   (if predefined-aggregations
@@ -1488,7 +1514,7 @@ particular NuvlaBox release.
                                   (assoc-in ts-data-point [:aggregations :by-edge :buckets]
                                             [{:key             nuvlaedge-id
                                               :edge-avg-online {:value availability}}]))]
-      [query-opts (parallel-availabilities query-opts resp now hits edge-bucket-update-fn)])
+      [query-opts (availabilities-sequential query-opts resp now hits edge-bucket-update-fn)])
     [query-opts resp]))
 
 (defn compute-global-availability
@@ -1775,10 +1801,7 @@ particular NuvlaBox release.
                                         {:filter (parser/parse-cimi-filter cimi-filter)
                                          :last   10000})))
            :body
-           :resources
-           ;(repeat 100)
-           ;(apply concat)
-           ))))
+           :resources))))
 
 (defn update-nuvlaboxes-dates
   [{:keys [nuvlaboxes] :as params}]
@@ -1887,14 +1910,42 @@ particular NuvlaBox release.
 (utils/add-executor-service-shutdown-hook
   query-data-executor "query data executor")
 
+(def running-query-data (atom 0))
+
+(def requesting-query-data (atom 0))
+
 (defn gated-query-data
+  "Only allow one call to query-data at a time.
+   Allow max 4 additional requests to wait at most 5 seconds to get
+   access to computation."
   [params request]
-  (utils/exec-with-timeout!
-    query-data-executor
-    (fn [] (query-data params request))
-    ;; allow 8 seconds max
-    8000
-    "data query timed out"))
+  (if (> @requesting-query-data 4)
+    (logu/log-and-throw 503 "Server too busy")
+    ;; retry for up to 5 seconds
+    (try
+      (swap! requesting-query-data inc)
+      (loop [remaining-attempts 50]
+        (if (zero? remaining-attempts)
+          (logu/log-and-throw 504 "Timed out waiting for query slot")
+          (if (= @running-query-data 0)
+            (do
+              (swap! running-query-data inc)
+              (utils/exec-with-timeout!
+                query-data-executor
+                (fn []
+                  (try
+                    (query-data params request)
+                    (finally
+                      (swap! running-query-data dec))))
+                ;; allow 25 seconds max
+                25000
+                "data query timed out"))
+            (do
+              ;; wait 100ms and retry
+              @(p/delay 100)
+              (recur (dec remaining-attempts))))))
+      (finally
+        (swap! requesting-query-data dec)))))
 
 (defmethod crud/do-action [resource-type "data"]
   [{:keys [params] {accept-header "accept"} :headers :as request}]
