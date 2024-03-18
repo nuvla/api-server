@@ -35,7 +35,8 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time])
-  (:import (java.util.concurrent CancellationException)))
+  (:import (java.util.concurrent CancellationException)
+           (java.util.concurrent.locks LockSupport)))
 
 (def ^:const resource-type (u/ns->type *ns*))
 
@@ -1225,7 +1226,8 @@ particular NuvlaBox release.
 (defn compute-nuvlabox-availability*
   "Compute availability for a single nuvlabox."
   [resp hits now granularity-duration {nuvlaedge-id :id :as nuvlabox} update-fn]
-  (let [relevant-hits        (->> hits
+  (let [start                (. System (nanoTime))
+        relevant-hits        (->> hits
                                   (filter #(= nuvlaedge-id (:nuvlaedge-id %)))
                                   (simplify-hits))
         prev-status          (-> nuvlabox :latest-availability :online)
@@ -1239,13 +1241,18 @@ particular NuvlaBox release.
                                             ts-data-point
                                             (compute-bucket-availability sum-time-online seconds-in-bucket)))
                                     latest-status])
-                                 [(conj ts-data ts-data-point) latest-status]))]
-    (update-resp-ts-data
-      resp
-      (fn [ts-data]
-        (first (reduce update-ts-data-point
-                       [[] prev-status]
-                       ts-data))))))
+                                 [(conj ts-data ts-data-point) latest-status]))
+        resp                 (update-resp-ts-data
+                               resp
+                               (fn [ts-data]
+                                 (first (reduce update-ts-data-point
+                                                [[] prev-status]
+                                                ts-data))))
+        elapsed-nanos        (- (. System (nanoTime)) start)]
+    ;; we do not want to max out the cpu: to stop at 20% usage lets sleep for the same amount of time that it took to do the computation
+    (log/error "Elapsed 2: " (/ (double elapsed-nanos) 1000000.0))
+    (LockSupport/parkNanos (* 4 elapsed-nanos))
+    resp))
 
 (defn compute-nuvlabox-availability
   [[{:keys [predefined-aggregations granularity-duration nuvlaboxes] :as query-opts} resp]]
@@ -1422,7 +1429,7 @@ particular NuvlaBox release.
        (map :id)))
 
 (def availability-executor (px/fixed-executor :parallelism
-                                              (env/env :availability-executor-parallelism 4)))
+                                              (env/env :availability-executor-parallelism 1)))
 (utils/add-executor-service-shutdown-hook
   availability-executor "availability computation executor")
 
@@ -1768,7 +1775,10 @@ particular NuvlaBox release.
                                         {:filter (parser/parse-cimi-filter cimi-filter)
                                          :last   10000})))
            :body
-           :resources))))
+           :resources
+           ;(repeat 100)
+           ;(apply concat)
+           ))))
 
 (defn update-nuvlaboxes-dates
   [{:keys [nuvlaboxes] :as params}]
@@ -1815,21 +1825,23 @@ particular NuvlaBox release.
     (logu/log-and-throw-400 (str "exactly one dataset must be specified with accept header 'text/csv'")))
   params)
 
+(defn run-query
+  [base-query-opts datasets-opts dataset-key]
+  (let [{:keys [metric pre-process-fn post-process-fn] :as dataset-opts} (get datasets-opts dataset-key)
+        {:keys [predefined-aggregations] :as query-opts} (merge base-query-opts dataset-opts)
+        query-fn   (case metric
+                     "availability" utils/query-availability
+                     utils/query-metrics)
+        query-opts (if pre-process-fn (doall (pre-process-fn query-opts)) query-opts)]
+    (cond->> (doall @(future (query-fn query-opts)))
+             post-process-fn ((fn [resp] (doall (second (post-process-fn [query-opts resp])))))
+             predefined-aggregations (keep-response-aggs-only query-opts))))
+
 (defn run-queries
   [{:keys [datasets base-query-opts datasets-opts] :as params}]
   (assoc params
     :resps
-    (map (fn [dataset-key]
-           (let [{:keys [metric pre-process-fn post-process-fn] :as dataset-opts} (get datasets-opts dataset-key)
-                 {:keys [predefined-aggregations] :as query-opts} (merge base-query-opts dataset-opts)
-                 query-fn   (case metric
-                              "availability" utils/query-availability
-                              utils/query-metrics)
-                 query-opts (if pre-process-fn (doall (pre-process-fn query-opts)) query-opts)]
-             (cond->> (doall @(future (query-fn query-opts)))
-                      post-process-fn ((fn [resp] (doall (second (post-process-fn [query-opts resp])))))
-                      predefined-aggregations (keep-response-aggs-only query-opts))))
-         datasets)))
+    (map (partial run-query base-query-opts datasets-opts) datasets)))
 
 (defn json-data-response
   [{:keys [datasets resps]}]
@@ -1853,7 +1865,7 @@ particular NuvlaBox release.
 (defn query-data
   [params request]
   (-> params
-      (parse-params)
+      (utils/->logf :parse-params parse-params)
       (throw-mandatory-dataset-parameter)
       (throw-mandatory-from-to-parameters)
       (throw-from-not-before-to)
@@ -1861,24 +1873,38 @@ particular NuvlaBox release.
       (throw-too-many-data-points)
       (throw-custom-es-aggregations-checks)
       (throw-response-format-not-supported)
-      (assoc-nuvlaboxes request)
-      (update-nuvlaboxes-dates)
-      (assoc-base-query-opts)
-      (assoc-datasets-opts)
+      (utils/->logf :assoc-nuvlaboxes assoc-nuvlaboxes request)
+      (utils/->logf :update-nuvlaboxes-dates update-nuvlaboxes-dates)
+      (utils/->logf :assoc-base-query-opts assoc-base-query-opts)
+      (utils/->logf :assoc-datasets-opts assoc-datasets-opts)
       (throw-unknown-datasets)
       (throw-csv-multi-dataset)
-      (run-queries)
-      (send-data-response)))
+      (utils/->logf :run-queries run-queries)
+      (utils/->logf :send-data-response send-data-response)))
+
+(def query-data-executor (px/fixed-executor :parallelism
+                                            (env/env :query-data-executor-parallelism 1)))
+(utils/add-executor-service-shutdown-hook
+  availability-executor "query data executor")
+
+(defn gated-query-data
+  [params request]
+  (utils/exec-with-timeout!
+    query-data-executor
+    (fn [] (query-data params request))
+    ;; allow 8 seconds max
+    8000
+    "data query timed out"))
 
 (defmethod crud/do-action [resource-type "data"]
   [{:keys [params] {accept-header "accept"} :headers :as request}]
-  (query-data (assoc params :mode :single-edge-query
-                            :accept-header accept-header) request))
+  (gated-query-data (assoc params :mode :single-edge-query
+                                  :accept-header accept-header) request))
 
 (defn bulk-query-data
   [_ {:keys [body] {accept-header "accept"} :headers :as request}]
-  (query-data (assoc body :mode :multi-edge-query
-                          :accept-header accept-header) request))
+  (gated-query-data (assoc body :mode :multi-edge-query
+                                :accept-header accept-header) request))
 
 (def validate-bulk-data-body (u/create-spec-validation-request-body-fn
                                ::nuvlabox/bulk-data-body))

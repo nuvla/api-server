@@ -65,12 +65,12 @@
            (throw t#))))))
 
 (defn ->logf
-  [p0 f & args]
-  (logtime f (apply f (cons p0 args))))
+  [p0 msg f & args]
+  (logtime msg (apply f (cons p0 args))))
 
 (defn ->>logf
-  [f & args]
-  (logtime f (apply f args)))
+  [msg f & args]
+  (logtime msg (apply f args)))
 
 
 (defn is-version-before-2?
@@ -520,20 +520,24 @@
          (log/info "Executor " executor-name " shutdown completed"))))))
 
 (def timeout-executor (px/scheduled-executor :parallelism
-                                             (env/env :timeout-executor-parallelism 4)))
+                                             (env/env :timeout-executor-parallelism 1)))
 (add-executor-service-shutdown-hook timeout-executor "timeout executor")
 
 (defn exec-with-timeout!
   ([f timeout]
    (exec-with-timeout! f timeout "Operation timed out"))
   ([f timeout timeout-msg]
-   (let [promise (-> (px/submit! f)
-                     (p/timeout timeout ::p/default timeout-executor))]
-     (try @promise
+   (exec-with-timeout! nil f timeout timeout-msg))
+  ([executor f timeout timeout-msg]
+   (let [task (-> (px/submit! executor f)
+                  (p/timeout timeout ::p/default timeout-executor))]
+     (try @task
           (catch ExecutionException ee
             (let [ec (.getCause ee)]
               (if (= (type ec) TimeoutException)
-                (logu/log-and-throw 504 timeout-msg)
+                (do
+                  (p/cancel! task)
+                  (logu/log-and-throw 504 timeout-msg))
                 (throw ec))))))))
 
 (defn query-with-timeout
