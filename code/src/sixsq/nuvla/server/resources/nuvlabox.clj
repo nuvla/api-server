@@ -1250,8 +1250,7 @@ particular NuvlaBox release.
                                                 ts-data))))
         elapsed-nanos        (- (. System (nanoTime)) start)]
     ;; we do not want to max out the cpu: to stop at 20% usage lets sleep for the same amount of time that it took to do the computation
-    (log/error "Elapsed 2: " (/ (double elapsed-nanos) 1000000.0))
-    (LockSupport/parkNanos (* 4 elapsed-nanos))
+    ;; (LockSupport/parkNanos (* 4 elapsed-nanos))
     resp))
 
 (defn compute-nuvlabox-availability
@@ -1888,7 +1887,7 @@ particular NuvlaBox release.
 (defn query-data
   [params request]
   (-> params
-      (utils/->logf :parse-params parse-params)
+      (parse-params)
       (throw-mandatory-dataset-parameter)
       (throw-mandatory-from-to-parameters)
       (throw-from-not-before-to)
@@ -1896,14 +1895,14 @@ particular NuvlaBox release.
       (throw-too-many-data-points)
       (throw-custom-es-aggregations-checks)
       (throw-response-format-not-supported)
-      (utils/->logf :assoc-nuvlaboxes assoc-nuvlaboxes request)
-      (utils/->logf :update-nuvlaboxes-dates update-nuvlaboxes-dates)
-      (utils/->logf :assoc-base-query-opts assoc-base-query-opts)
-      (utils/->logf :assoc-datasets-opts assoc-datasets-opts)
+      (assoc-nuvlaboxes request)
+      (update-nuvlaboxes-dates)
+      (assoc-base-query-opts)
+      (assoc-datasets-opts)
       (throw-unknown-datasets)
       (throw-csv-multi-dataset)
-      (utils/->logf :run-queries run-queries)
-      (utils/->logf :send-data-response send-data-response)))
+      (run-queries)
+      (send-data-response)))
 
 (def query-data-executor (px/fixed-executor :parallelism
                                             (env/env :query-data-executor-parallelism 1)))
