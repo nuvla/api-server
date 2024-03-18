@@ -68,6 +68,7 @@
    ;; upgrading jts2geojson dependency to 0.16 or 0.17 creates conflicts for now
    [org.wololo/jts2geojson "0.15.0"]
    [one-time "0.7.0"]
+   [funcool/promesa "11.0.678"]
    [nrepl "1.1.0"]]
 
   :profiles

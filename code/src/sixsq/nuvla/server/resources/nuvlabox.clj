@@ -9,6 +9,9 @@ particular NuvlaBox release.
     [clojure.set :as set]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
+    [environ.core :as env]
+    [promesa.core :as p]
+    [promesa.exec :as px]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.auth.utils.acl :as acl-utils]
@@ -31,8 +34,8 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.time :as time]))
-
+    [sixsq.nuvla.server.util.time :as time])
+  (:import (java.util.concurrent CancellationException)))
 
 (def ^:const resource-type (u/ns->type *ns*))
 
@@ -1063,74 +1066,84 @@ particular NuvlaBox release.
       (if (> avg 1.0) 1.0 avg))))
 
 (defn compute-seconds-in-bucket
-  [{start-str :timestamp} granularity now]
-  (let [start (time/date-from-str start-str)
-        end   (time/plus start (status-utils/granularity->duration granularity))
-        end   (if (time/after? end now) now end)]
+  [{start :timestamp} granularity-duration now]
+  (let [end (time/plus start granularity-duration)
+        end (if (time/after? end now) now end)]
     (time/time-between start end :seconds)))
 
 (defn edge-at
   "Returns the edge if it was created before the given timestamp, and if sent
    a metric datapoint before the given timestamp, nil otherwise"
-  [{:keys [created first-availability-status] :as _nuvlabox} timestamp]
+  [{:keys [created first-availability] :as _nuvlabox} timestamp]
   (and (some-> created
-               (time/date-from-str)
                (time/before? timestamp))
-       (some-> first-availability-status
+       (some-> first-availability
                :timestamp
-               time/date-from-str
                (time/before? timestamp))))
 
 (defn bucket-end-time
-  [backet-start-time granularity]
-  (time/plus (time/date-from-str backet-start-time)
-             (status-utils/granularity->duration granularity)))
+  [bucket-start-time granularity-duration]
+  (time/plus bucket-start-time
+             granularity-duration))
 
 (defn bucket-online-stats
-  "Compute online stats for a bucket."
-  [{nuvlaedge-id :id :as nuvlabox} {start-str :timestamp} granularity now hits latest-status]
-  (let [start           (time/date-from-str start-str)
-        end             (time/plus start (status-utils/granularity->duration granularity))
+  "Compute the amount of online seconds for a bucket, on a single nuvlabox."
+  [{:keys [created] :as nuvlabox} {start :timestamp} granularity-duration now hits latest-online]
+  (let [end             (time/plus start granularity-duration)
         end             (if (time/after? end now) now end)
-        relevant-hits   (filter #(and (= nuvlaedge-id (:nuvlaedge-id %))
-                                      (not (time/before? (:timestamp %) start))
-                                      (time/before? (:timestamp %) end))
-                                hits)
-        sum-time-online (reduce
-                          (fn [online-secs [{from :timestamp :keys [online]}
-                                            {to :timestamp}]]
-                            (when (some? online)
-                              (cond
-                                (edge-at nuvlabox from)
-                                (+ (or online-secs 0)
-                                   (* online (time/time-between from to :seconds)))
-                                (edge-at nuvlabox to)
-                                (+ (or online-secs 0)
-                                   (* online (time/time-between (time/date-from-str (:created nuvlabox)) to :seconds)))
-                                :else
-                                nil)))
-                          nil
-                          (map vector
-                               (cons {:timestamp start
-                                      :online    latest-status}
-                                     relevant-hits)
-                               (conj (vec relevant-hits)
-                                     {:timestamp end})))]
+        relevant-hits   (->> hits                           ;; hits are already filtered by nuvlaedge-id
+                             (filter #(and (not (time/before? (:timestamp %) start))
+                                           (time/before? (:timestamp %) end))))
+        sum-time-online (cond
+                          (empty? relevant-hits)
+                          ;; perf opt - common case: no hits in the current bucket, just apply prev-online
+                          (when (some? latest-online)
+                            (if (= 1 latest-online)
+                              (time/time-between start end :seconds)
+                              0))
+
+                          :else
+                          (reduce
+                            (fn [online-secs [{from :timestamp :keys [online]}
+                                              {to :timestamp}]]
+                              (when (some? online)
+                                (cond
+                                  (edge-at nuvlabox from)
+                                  (+
+                                    (or online-secs 0)
+                                    (if (= 1 online)
+                                      (time/time-between from to :seconds)
+                                      0))
+                                  (edge-at nuvlabox to)
+                                  (+
+                                    (or online-secs 0)
+                                    (if (= 1 online)
+                                      (time/time-between created to :seconds)
+                                      0))
+                                  :else
+                                  nil)))
+                            nil
+                            (mapv vector
+                                  (cons {:timestamp start
+                                         :online    latest-online}
+                                        relevant-hits)
+                                  (conj (vec relevant-hits)
+                                        {:timestamp end}))))]
     [sum-time-online (:online (or (last relevant-hits)
-                                  {:online latest-status}))]))
+                                  {:online latest-online}))]))
 
 (defn update-resp-ts-data
   [resp f]
   (-> resp
       vec
-      (update-in [0 :ts-data] f)))
+      (update-in [0 :ts-data] (comp vec f))))
 
 (defn update-resp-ts-data-points
   [resp f]
   (update-resp-ts-data
     resp
     (fn [ts-data]
-      (map f ts-data))))
+      (mapv f ts-data))))
 
 (defn update-resp-ts-data-point-aggs
   [resp f]
@@ -1143,39 +1156,84 @@ particular NuvlaBox release.
   [nuvlabox]
   (= utils/state-commissioned (:state nuvlabox)))
 
-(defn assoc-first-availability-status
-  [nuvlabox]
-  (assoc nuvlabox :first-availability-status
-                  (utils/first-availability-status (:id nuvlabox))))
+(defn precompute-query-params
+  [{:keys [predefined-aggregations granularity] :as query-opts}]
+  (cond-> query-opts
+          predefined-aggregations (assoc :granularity-duration (status-utils/granularity->duration granularity))))
+
+(defn assoc-first-availability
+  [{:keys [nuvlaboxes nuvlaedge-ids] :as query-opts}]
+  (let [first-av   (doall (->> (utils/all-first-availability-status nuvlaedge-ids)
+                               (group-by :nuvlaedge-id)))
+        nuvlaboxes (->> nuvlaboxes
+                        (mapv (fn [{:keys [id] :as nb}]
+                                (assoc nb :first-availability
+                                          (-> (first (get first-av id))
+                                              (select-keys [:online :timestamp]))))))]
+    (assoc query-opts :nuvlaboxes nuvlaboxes)))
 
 (defn available-before?
-  [{:keys [first-availability-status] :as _nuvlabox} timestamp]
-  (some-> first-availability-status :timestamp time/date-from-str (time/before? timestamp)))
+  [{:keys [first-availability] :as _nuvlabox} timestamp]
+  (some-> first-availability :timestamp (time/before? timestamp)))
 
 (defn filter-commissioned-nuvlaboxes
   [{:keys [to nuvlaboxes] :as base-query-opts}]
   (let [nuvlaboxes (->> nuvlaboxes
                         (filter commissioned?)
-                        (map assoc-first-availability-status)
                         (filter #(available-before? % to)))]
     (assoc base-query-opts
       :nuvlaboxes nuvlaboxes
-      :nuvlaedge-ids (map :id nuvlaboxes))))
+      :nuvlaedge-ids (mapv :id nuvlaboxes))))
+
+(defn timestamps->date
+  [[query-opts resp]]
+  [query-opts (update-resp-ts-data-points
+                resp
+                (fn [ts-data-point]
+                  (update ts-data-point :timestamp time/date-from-str)))])
+
+(defn timestamps->str
+  [[query-opts resp]]
+  [query-opts (update-resp-ts-data-points
+                resp
+                (fn [ts-data-point]
+                  (update ts-data-point :timestamp time/to-str)))])
+
+(defn assoc-latest-availability
+  [[{:keys [nuvlaboxes nuvlaedge-ids] :as query-opts} resp]]
+  (let [first-bucket-ts (some-> resp first :ts-data first :timestamp time/date-from-str)
+        latest-av       (->> (utils/all-latest-availability-status nuvlaedge-ids first-bucket-ts)
+                             (group-by :nuvlaedge-id))
+        nuvlaboxes      (->> nuvlaboxes
+                             (map (fn [{:keys [id] :as nb}]
+                                    (assoc nb :latest-availability (select-keys (first (get latest-av id))
+                                                                                [:online :timestamp])))))]
+    [(assoc query-opts :nuvlaboxes nuvlaboxes) resp]))
+
+(defn simplify-hits
+  "Merge adjacent hits with same value for online."
+  [hits]
+  (reduce
+    (fn [hits {:keys [online] :as hit}]
+      (let [{prev-timestamp :timestamp prev-online :online} (peek hits)]
+        (if (= prev-online online)
+          (conj (pop hits) {:timestamp prev-timestamp :online online})
+          (conj hits hit))))
+    []
+    hits))
 
 (defn compute-nuvlabox-availability*
   "Compute availability for a single nuvlabox."
-  [resp now granularity {nuvlaedge-id :id :as nuvlabox} update-fn]
-  (let [hits                 (->> (get-in resp [0 :hits])
-                                  (map #(update % :timestamp time/date-from-str))
-                                  reverse)
-        first-bucket-ts      (some-> resp first :ts-data first :timestamp time/date-from-str)
-        prev-status          (some-> nuvlaedge-id
-                                     (utils/latest-availability-status first-bucket-ts)
-                                     :online)
+  [resp hits now granularity-duration {nuvlaedge-id :id :as nuvlabox} update-fn]
+  (let [relevant-hits        (->> hits
+                                  (filter #(= nuvlaedge-id (:nuvlaedge-id %)))
+                                  (simplify-hits))
+        prev-status          (-> nuvlabox :latest-availability :online)
         update-ts-data-point (fn [[ts-data latest-status] {:keys [timestamp] :as ts-data-point}]
-                               (if (edge-at nuvlabox (bucket-end-time timestamp granularity))
-                                 (let [seconds-in-bucket (compute-seconds-in-bucket ts-data-point granularity now)
-                                       [sum-time-online latest-status] (bucket-online-stats nuvlabox ts-data-point granularity now hits latest-status)]
+                               (if (edge-at nuvlabox (bucket-end-time timestamp granularity-duration))
+                                 (let [seconds-in-bucket (compute-seconds-in-bucket ts-data-point granularity-duration now)
+                                       [sum-time-online latest-status]
+                                       (bucket-online-stats nuvlabox ts-data-point granularity-duration now relevant-hits latest-status)]
                                    [(conj ts-data
                                           (update-fn
                                             ts-data-point
@@ -1190,16 +1248,19 @@ particular NuvlaBox release.
                        ts-data))))))
 
 (defn compute-nuvlabox-availability
-  [[{:keys [predefined-aggregations granularity nuvlaboxes] :as query-opts} resp]]
+  [[{:keys [predefined-aggregations granularity-duration nuvlaboxes] :as query-opts} resp]]
   (if predefined-aggregations
     (let [nuvlabox     (first nuvlaboxes)
           now          (time/now)
+          hits         (->> (get-in resp [0 :hits])
+                            (map #(update % :timestamp time/date-from-str))
+                            reverse)
           update-av-fn (fn [ts-data-point availability]
                          (update ts-data-point
                                  :aggregations
                                  (fn [aggs]
                                    (assoc-in aggs [:avg-online :value] availability))))]
-      [query-opts (compute-nuvlabox-availability* resp now granularity nuvlabox update-av-fn)])
+      [query-opts (compute-nuvlabox-availability* resp hits now granularity-duration nuvlabox update-av-fn)])
     [query-opts resp]))
 
 (defn dissoc-hits
@@ -1309,9 +1370,14 @@ particular NuvlaBox release.
 (defn single-edge-datasets
   []
   {"availability-stats"      {:metric          "availability"
-                              :pre-process-fn  filter-commissioned-nuvlaboxes
-                              :post-process-fn (comp dissoc-hits
-                                                     compute-nuvlabox-availability)
+                              :pre-process-fn  (comp filter-commissioned-nuvlaboxes
+                                                     assoc-first-availability
+                                                     precompute-query-params)
+                              :post-process-fn (comp timestamps->str
+                                                     dissoc-hits
+                                                     compute-nuvlabox-availability
+                                                     assoc-latest-availability
+                                                     timestamps->date)
                               :response-aggs   [:avg-online]
                               :csv-export-fn   (availability-csv-export-fn)}
    "cpu-stats"               {:metric        "cpu"
@@ -1350,41 +1416,72 @@ particular NuvlaBox release.
   (filter #(edge-at % timestamp) nuvlaboxes))
 
 (defn expected-bucket-edge-ids
-  [nuvlaboxes granularity {:keys [timestamp] :as _ts-data-point}]
-  (->> (bucket-end-time timestamp granularity)
+  [nuvlaboxes granularity-duration {:keys [timestamp] :as _ts-data-point}]
+  (->> (bucket-end-time timestamp granularity-duration)
        (edges-at nuvlaboxes)
        (map :id)))
 
-(defn init-edge-buckets
-  [resp nuvlaboxes granularity]
-  (update-resp-ts-data-points
-    resp
-    (fn [ts-data-point]
-      (assoc-in ts-data-point [:aggregations :by-edge :buckets]
-                (mapv (fn [ne-id] {:key ne-id})
-                      (expected-bucket-edge-ids nuvlaboxes granularity ts-data-point))))))
+(def availability-executor (px/fixed-executor :parallelism
+                                              (env/env :availability-executor-parallelism 4)))
+(utils/add-executor-service-shutdown-hook
+  availability-executor "availability computation executor")
+
+(def availability-computation-timeout
+  (env/env :availability-computation-timeout 5000))
+
+(defn parallel-availabilities
+  [{:keys [granularity-duration nuvlaboxes] :as _query-opts} resp now hits edge-bucket-update-fn]
+  (let [tasks (doall
+                (for [{nuvlaedge-id :id :as nuvlabox} nuvlaboxes]
+                  (px/submit!
+                    availability-executor
+                    (fn []
+                      (compute-nuvlabox-availability*
+                        resp
+                        hits
+                        now granularity-duration nuvlabox
+                        (partial edge-bucket-update-fn nuvlaedge-id))))))]
+    (-> (p/all tasks)
+        (p/timeout availability-computation-timeout ::p/default utils/timeout-executor)
+        (p/catch (fn []
+                   (when-not (every? p/done? tasks)
+                     (log/warn "Availability computation timed out. Canceling execution.")
+                     (doseq [task tasks]
+                       (p/cancel! task))))))
+    (reduce
+      (fn [resp task]
+        (try
+          (let [;; if the task was canceled/rejected, an exception will be thrown when deref-ing the result.
+                nb-resp @task]
+            (update-resp-ts-data-points
+              resp
+              (fn [{:keys [timestamp] :as ts-data-point}]
+                (let [nb-bucket (-> (get-in nb-resp [0 :ts-data])
+                                    (->> (filter #(= timestamp (:timestamp %))))
+                                    first
+                                    (get-in [:aggregations :by-edge :buckets 0]))]
+                  (update-in ts-data-point
+                             [:aggregations :by-edge :buckets]
+                             conj
+                             nb-bucket)))))
+          (catch CancellationException _e
+            (log/warn "Execution canceled. Sending 504 error to the client")
+            (logu/log-and-throw 504 "Computation timed out"))))
+      resp
+      tasks)))
 
 (defn compute-nuvlaboxes-availabilities
-  [[{:keys [predefined-aggregations granularity nuvlaboxes] :as query-opts} resp]]
+  [[{:keys [predefined-aggregations] :as query-opts} resp]]
   (if predefined-aggregations
-    (let [now (time/now)]
-      [query-opts
-       (reduce
-         (fn [resp nuvlabox]
-           (let [edge-bucket-update-fn
-                 (fn [ts-data-point availability]
-                   (let [idx (->> (get-in ts-data-point [:aggregations :by-edge :buckets])
-                                  (keep-indexed #(when (= (:key %2) (:id nuvlabox)) %1))
-                                  first)]
-                     (cond-> ts-data-point
-                             idx (update-in [:aggregations :by-edge :buckets idx]
-                                            (fn [aggs]
-                                              (assoc-in aggs [:edge-avg-online :value]
-                                                        availability))))))]
-             (compute-nuvlabox-availability* resp now granularity nuvlabox
-                                             edge-bucket-update-fn)))
-         (init-edge-buckets resp nuvlaboxes granularity)
-         nuvlaboxes)])
+    (let [now                   (time/now)
+          hits                  (->> (get-in resp [0 :hits])
+                                     (map #(update % :timestamp time/date-from-str))
+                                     reverse)
+          edge-bucket-update-fn (fn [nuvlaedge-id ts-data-point availability]
+                                  (assoc-in ts-data-point [:aggregations :by-edge :buckets]
+                                            [{:key             nuvlaedge-id
+                                              :edge-avg-online {:value availability}}]))]
+      [query-opts (parallel-availabilities query-opts resp now hits edge-bucket-update-fn)])
     [query-opts resp]))
 
 (defn compute-global-availability
@@ -1418,9 +1515,9 @@ particular NuvlaBox release.
          (assoc aggs :edges-count {:value (count (:buckets by-edge))}))))])
 
 (defn add-virtual-edge-number-by-status-fn
-  [[{:keys [predefined-aggregations granularity nuvlaboxes] :as query-opts} resp]]
+  [[{:keys [predefined-aggregations granularity-duration nuvlaboxes] :as query-opts} resp]]
   (if predefined-aggregations
-    (let [edges-count (fn [timestamp] (count (edges-at nuvlaboxes (bucket-end-time timestamp granularity))))]
+    (let [edges-count (fn [timestamp] (count (edges-at nuvlaboxes (bucket-end-time timestamp granularity-duration))))]
       [query-opts
        (update-resp-ts-data-points
          resp
@@ -1460,12 +1557,12 @@ particular NuvlaBox release.
     [query-opts resp]))
 
 (defn add-missing-edges-fn
-  [[{:keys [predefined-aggregations granularity nuvlaboxes] :as query-opts} resp]]
+  [[{:keys [predefined-aggregations granularity-duration nuvlaboxes] :as query-opts} resp]]
   (if predefined-aggregations
     (letfn [(update-buckets
               [ts-data-point buckets]
               (let [bucket-edge-ids  (set (map :key buckets))
-                    missing-edge-ids (set/difference (set (expected-bucket-edge-ids nuvlaboxes granularity ts-data-point))
+                    missing-edge-ids (set/difference (set (expected-bucket-edge-ids nuvlaboxes granularity-duration ts-data-point))
                                                      bucket-edge-ids)]
                 (concat buckets
                         (map (fn [missing-edge-id]
@@ -1500,25 +1597,35 @@ particular NuvlaBox release.
         group-by-device    (fn [aggs] (group-by-field :disk.device aggs))
         group-by-interface (fn [aggs] (group-by-field :network.interface aggs))]
     {"availability-stats"      {:metric          "availability"
-                                :pre-process-fn  filter-commissioned-nuvlaboxes
-                                :post-process-fn (comp add-virtual-edge-number-by-status-fn
+                                :pre-process-fn  (comp filter-commissioned-nuvlaboxes
+                                                       assoc-first-availability
+                                                       precompute-query-params)
+                                :post-process-fn (comp timestamps->str
+                                                       add-virtual-edge-number-by-status-fn
                                                        dissoc-hits
                                                        compute-global-availability
                                                        add-edges-count
                                                        add-missing-edges-fn
-                                                       compute-nuvlaboxes-availabilities)
+                                                       compute-nuvlaboxes-availabilities
+                                                       assoc-latest-availability
+                                                       timestamps->date)
                                 :response-aggs   [:edges-count
                                                   :virtual-edges-online
                                                   :virtual-edges-offline]
                                 :csv-export-fn   (availability-csv-export-fn)}
      "availability-by-edge"    {:metric          "availability"
-                                :pre-process-fn  filter-commissioned-nuvlaboxes
-                                :post-process-fn (comp dissoc-hits
+                                :pre-process-fn  (comp filter-commissioned-nuvlaboxes
+                                                       assoc-first-availability
+                                                       precompute-query-params)
+                                :post-process-fn (comp timestamps->str
+                                                       dissoc-hits
                                                        compute-global-availability
                                                        add-edges-count
                                                        add-edge-names-fn
                                                        add-missing-edges-fn
-                                                       compute-nuvlaboxes-availabilities)
+                                                       compute-nuvlaboxes-availabilities
+                                                       assoc-latest-availability
+                                                       timestamps->date)
                                 :response-aggs   [:edges-count
                                                   :by-edge
                                                   :global-avg-online]}
@@ -1633,12 +1740,6 @@ particular NuvlaBox release.
       (logu/log-and-throw-400 "when custom-es-aggregations is specified, granularity parameter must be omitted")))
   params)
 
-(defn throw-raw-data-with-other-datasets
-  [{:keys [raw datasets] :as params}]
-  (when (and raw (> (count datasets) 1))
-    (logu/log-and-throw-400 "cannot mix raw with other datasets in the same request"))
-  params)
-
 (defn throw-too-many-data-points
   [{:keys [from to granularity predefined-aggregations] :as params}]
   (when predefined-aggregations
@@ -1668,6 +1769,12 @@ particular NuvlaBox release.
                                          :last   10000})))
            :body
            :resources))))
+
+(defn update-nuvlaboxes-dates
+  [{:keys [nuvlaboxes] :as params}]
+  (assoc params
+    :nuvlaboxes
+    (map #(update % :created time/date-from-str) nuvlaboxes)))
 
 (defn assoc-base-query-opts
   [{:keys [from to granularity raw custom-es-aggregations predefined-aggregations mode nuvlaboxes] :as params}]
@@ -1718,9 +1825,9 @@ particular NuvlaBox release.
                  query-fn   (case metric
                               "availability" utils/query-availability
                               utils/query-metrics)
-                 query-opts (if pre-process-fn (pre-process-fn query-opts) query-opts)]
-             (cond->> (query-fn query-opts)
-                      post-process-fn ((fn [resp] (second (post-process-fn [query-opts resp]))))
+                 query-opts (if pre-process-fn (doall (pre-process-fn query-opts)) query-opts)]
+             (cond->> (doall @(future (query-fn query-opts)))
+                      post-process-fn ((fn [resp] (doall (second (post-process-fn [query-opts resp])))))
                       predefined-aggregations (keep-response-aggs-only query-opts))))
          datasets)))
 
@@ -1755,6 +1862,7 @@ particular NuvlaBox release.
       (throw-custom-es-aggregations-checks)
       (throw-response-format-not-supported)
       (assoc-nuvlaboxes request)
+      (update-nuvlaboxes-dates)
       (assoc-base-query-opts)
       (assoc-datasets-opts)
       (throw-unknown-datasets)

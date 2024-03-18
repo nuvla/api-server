@@ -174,6 +174,11 @@
       (r/response-deleted id)
       (r/response-error (str "could not delete document " id)))))
 
+(defn timeout
+  [{:keys [timeout]}]
+  (when timeout
+    {:timeout (str timeout "ms")}))
+
 (defn query-data
   [client collection-id {:keys [cimi-params params] :as options}]
   (try
@@ -182,11 +187,13 @@
           orderby                 (order/sorters cimi-params)
           aggregation             (aggregation/aggregators cimi-params)
           ts-aggregation          (aggregation/tsds-aggregators params)
+          collapse                (aggregation/collapse params)
           selected                (select/select cimi-params)
           query                   {:query (if ts-aggregation
                                             (filter/filter cimi-params)
                                             (acl/and-acl-query (filter/filter cimi-params) options))}
-          body                    (merge paging orderby selected query aggregation ts-aggregation)
+          timeout                 (timeout params)
+          body                    (merge paging orderby selected query timeout aggregation ts-aggregation collapse)
           response                (spandex/request client {:url    [index :_search]
                                                            :method :post
                                                            :body   body})
@@ -198,7 +205,9 @@
                                            ts-aggregation
                                            (map (fn [hit] (-> hit
                                                               (assoc :timestamp (get hit (keyword "@timestamp")))
-                                                              (dissoc (keyword "@timestamp"))))))]
+                                                              (dissoc (keyword "@timestamp")))))
+                                           collapse
+                                           (map merge (->> response :body :hits :hits (map #(select-keys % [:inner_hits])))))]
       (if (shards-successful? response)
         [meta hits]
         (let [msg (str "error when querying: " (:body response))]
@@ -325,7 +334,7 @@
 (def hot-delete-policy
   {:hot    {:min_age "0ms"
             :actions {:set_priority {:priority 100}}}
-   :delete {:min_age "365d"
+   :delete {:min_age "375d"                                 ;; 1 year + 10 days margin
             :actions {:delete {:delete_searchable_snapshot true}}}})
 
 (defn create-or-update-lifecycle-policy
