@@ -1885,7 +1885,7 @@ particular NuvlaBox release.
 (def query-data-executor (px/fixed-executor :parallelism
                                             (env/env :query-data-executor-parallelism 1)))
 (utils/add-executor-service-shutdown-hook
-  availability-executor "query data executor")
+  query-data-executor "query data executor")
 
 (defn gated-query-data
   [params request]
