@@ -1153,6 +1153,42 @@ particular NuvlaBox release.
     (fn [ts-data-point]
       (update ts-data-point :aggregations (partial f ts-data-point)))))
 
+(defn fetch-nuvlaboxes
+  [{:keys [id cimi-filter additional-filter select request]}]
+  (if id
+    [(crud/retrieve-by-id id request)]
+    (->> (crud/query
+           (cond-> request
+                   (or cimi-filter additional-filter)
+                   (assoc :cimi-params
+                          {:filter (parser/parse-cimi-filter
+                                     (str/join " and " (remove nil? [cimi-filter additional-filter])))
+                           :last   10000})
+                   select
+                   (assoc-in [:cimi-params :select] select)))
+         :body
+         :resources)))
+
+(defn assoc-nuvlaedge-ids
+  [params]
+  (assoc params
+    :nuvlaedge-ids (mapv :id (fetch-nuvlaboxes (assoc params :select ["id"])))))
+
+(defn assoc-commissioned-nuvlaboxes
+  [select params]
+  (let [nuvlaboxes (fetch-nuvlaboxes (assoc params
+                                       :additional-filter (str "state='" utils/state-commissioned "'")
+                                       :select select))]
+    (assoc params
+      :nuvlaboxes nuvlaboxes
+      :nuvlaedge-ids (mapv :id nuvlaboxes))))
+
+(defn update-nuvlaboxes-dates
+  [{:keys [nuvlaboxes] :as params}]
+  (assoc params
+    :nuvlaboxes
+    (map #(update % :created time/date-from-str) nuvlaboxes)))
+
 (defn commissioned?
   [nuvlabox]
   (= utils/state-commissioned (:state nuvlabox)))
@@ -1162,8 +1198,19 @@ particular NuvlaBox release.
   (cond-> query-opts
           predefined-aggregations (assoc :granularity-duration (status-utils/granularity->duration granularity))))
 
+(defn available-before?
+  [{:keys [first-availability] :as _nuvlabox} timestamp]
+  (some-> first-availability :timestamp (time/before? timestamp)))
+
+(defn filter-available-before-period-end
+  [{:keys [to nuvlaboxes] :as params}]
+  (let [nuvlaboxes (filter #(available-before? % to) nuvlaboxes)]
+    (assoc params
+      :nuvlaboxes nuvlaboxes
+      :nuvlaedge-ids (mapv :id nuvlaboxes))))
+
 (defn assoc-first-availability
-  [{:keys [nuvlaboxes nuvlaedge-ids] :as query-opts}]
+  [{:keys [nuvlaboxes nuvlaedge-ids] :as params}]
   (let [first-av   (doall (->> (utils/all-first-availability-status nuvlaedge-ids)
                                (group-by :nuvlaedge-id)))
         nuvlaboxes (->> nuvlaboxes
@@ -1171,28 +1218,15 @@ particular NuvlaBox release.
                                 (assoc nb :first-availability
                                           (-> (first (get first-av id))
                                               (select-keys [:online :timestamp]))))))]
-    (assoc query-opts :nuvlaboxes nuvlaboxes)))
-
-(defn available-before?
-  [{:keys [first-availability] :as _nuvlabox} timestamp]
-  (some-> first-availability :timestamp (time/before? timestamp)))
+    (assoc params :nuvlaboxes nuvlaboxes)))
 
 (def max-nuvlaboxes-count (env/env :max-nuvlaboxes-count 500))
 
 (defn throw-too-many-nuvlaboxes
-  [{:keys [nuvlaboxes] :as base-query-opts}]
+  [{:keys [nuvlaboxes] :as params}]
   (when (> (count nuvlaboxes) max-nuvlaboxes-count)
     (logu/log-and-throw-400 "Too many nuvlaedges"))
-  base-query-opts)
-
-(defn filter-commissioned-nuvlaboxes
-  [{:keys [to nuvlaboxes] :as base-query-opts}]
-  (let [nuvlaboxes (->> nuvlaboxes
-                        (filter commissioned?)
-                        (filter #(available-before? % to)))]
-    (assoc base-query-opts
-      :nuvlaboxes nuvlaboxes
-      :nuvlaedge-ids (mapv :id nuvlaboxes))))
+  params)
 
 (defn timestamps->date
   [[query-opts resp]]
@@ -1384,9 +1418,11 @@ particular NuvlaBox release.
 (defn single-edge-datasets
   []
   {"availability-stats"      {:metric          "availability"
-                              :pre-process-fn  (comp filter-commissioned-nuvlaboxes
+                              :pre-process-fn  (comp filter-available-before-period-end
                                                      assoc-first-availability
-                                                     precompute-query-params)
+                                                     precompute-query-params
+                                                     update-nuvlaboxes-dates
+                                                     (partial assoc-commissioned-nuvlaboxes ["id" "created"]))
                               :post-process-fn (comp timestamps->str
                                                      dissoc-hits
                                                      compute-nuvlabox-availability
@@ -1394,35 +1430,40 @@ particular NuvlaBox release.
                                                      timestamps->date)
                               :response-aggs   [:avg-online]
                               :csv-export-fn   (availability-csv-export-fn)}
-   "cpu-stats"               {:metric        "cpu"
-                              :aggregations  {:avg-cpu-capacity    {:avg {:field :cpu.capacity}}
-                                              :avg-cpu-load        {:avg {:field :cpu.load}}
-                                              :avg-cpu-load-1      {:avg {:field :cpu.load-1}}
-                                              :avg-cpu-load-5      {:avg {:field :cpu.load-5}}
-                                              :context-switches    {:max {:field :cpu.context-switches}}
-                                              :interrupts          {:max {:field :cpu.interrupts}}
-                                              :software-interrupts {:max {:field :cpu.software-interrupts}}
-                                              :system-calls        {:max {:field :cpu.system-calls}}}
-                              :csv-export-fn (telemetry-csv-export-fn :cpu)}
-   "ram-stats"               {:metric        "ram"
-                              :aggregations  {:avg-ram-capacity {:avg {:field :ram.capacity}}
-                                              :avg-ram-used     {:avg {:field :ram.used}}}
-                              :csv-export-fn (telemetry-csv-export-fn :ram)}
-   "disk-stats"              {:metric        "disk"
-                              :group-by      :disk.device
-                              :aggregations  {:avg-disk-capacity {:avg {:field :disk.capacity}}
-                                              :avg-disk-used     {:avg {:field :disk.used}}}
-                              :csv-export-fn (telemetry-csv-export-fn :disk)}
-   "network-stats"           {:metric        "network"
-                              :group-by      :network.interface
-                              :aggregations  {:bytes-received    {:max {:field :network.bytes-received}}
-                                              :bytes-transmitted {:max {:field :network.bytes-transmitted}}}
-                              :csv-export-fn (telemetry-csv-export-fn :network)}
-   "power-consumption-stats" {:metric        "power-consumption"
-                              :group-by      :power-consumption.metric-name
-                              :aggregations  {:energy-consumption {:max {:field :power-consumption.energy-consumption}}
-                                              #_:unit                   #_{:first {:field :power-consumption.unit}}}
-                              :csv-export-fn (telemetry-csv-export-fn :power-consumption)}})
+   "cpu-stats"               {:metric         "cpu"
+                              :pre-process-fn assoc-nuvlaedge-ids
+                              :aggregations   {:avg-cpu-capacity    {:avg {:field :cpu.capacity}}
+                                               :avg-cpu-load        {:avg {:field :cpu.load}}
+                                               :avg-cpu-load-1      {:avg {:field :cpu.load-1}}
+                                               :avg-cpu-load-5      {:avg {:field :cpu.load-5}}
+                                               :context-switches    {:max {:field :cpu.context-switches}}
+                                               :interrupts          {:max {:field :cpu.interrupts}}
+                                               :software-interrupts {:max {:field :cpu.software-interrupts}}
+                                               :system-calls        {:max {:field :cpu.system-calls}}}
+                              :csv-export-fn  (telemetry-csv-export-fn :cpu)}
+   "ram-stats"               {:metric         "ram"
+                              :pre-process-fn assoc-nuvlaedge-ids
+                              :aggregations   {:avg-ram-capacity {:avg {:field :ram.capacity}}
+                                               :avg-ram-used     {:avg {:field :ram.used}}}
+                              :csv-export-fn  (telemetry-csv-export-fn :ram)}
+   "disk-stats"              {:metric         "disk"
+                              :pre-process-fn assoc-nuvlaedge-ids
+                              :group-by       :disk.device
+                              :aggregations   {:avg-disk-capacity {:avg {:field :disk.capacity}}
+                                               :avg-disk-used     {:avg {:field :disk.used}}}
+                              :csv-export-fn  (telemetry-csv-export-fn :disk)}
+   "network-stats"           {:metric         "network"
+                              :pre-process-fn assoc-nuvlaedge-ids
+                              :group-by       :network.interface
+                              :aggregations   {:bytes-received    {:max {:field :network.bytes-received}}
+                                               :bytes-transmitted {:max {:field :network.bytes-transmitted}}}
+                              :csv-export-fn  (telemetry-csv-export-fn :network)}
+   "power-consumption-stats" {:metric         "power-consumption"
+                              :pre-process-fn assoc-nuvlaedge-ids
+                              :group-by       :power-consumption.metric-name
+                              :aggregations   {:energy-consumption {:max {:field :power-consumption.energy-consumption}}
+                                               #_:unit                   #_{:first {:field :power-consumption.unit}}}
+                              :csv-export-fn  (telemetry-csv-export-fn :power-consumption)}})
 
 (defn edges-at
   "Returns the edges which were created before the given timestamp"
@@ -1636,10 +1677,13 @@ particular NuvlaBox release.
         group-by-device    (fn [aggs] (group-by-field :disk.device aggs))
         group-by-interface (fn [aggs] (group-by-field :network.interface aggs))]
     {"availability-stats"      {:metric          "availability"
-                                :pre-process-fn  (comp throw-too-many-nuvlaboxes
-                                                       filter-commissioned-nuvlaboxes
+                                :nuvlabox-filter "state='COMMISSIONED'"
+                                :pre-process-fn  (comp filter-available-before-period-end
                                                        assoc-first-availability
-                                                       precompute-query-params)
+                                                       precompute-query-params
+                                                       update-nuvlaboxes-dates
+                                                       throw-too-many-nuvlaboxes
+                                                       (partial assoc-commissioned-nuvlaboxes ["id" "created"]))
                                 :post-process-fn (comp timestamps->str
                                                        add-virtual-edge-number-by-status-fn
                                                        dissoc-hits
@@ -1654,10 +1698,12 @@ particular NuvlaBox release.
                                                   :virtual-edges-offline]
                                 :csv-export-fn   (availability-csv-export-fn)}
      "availability-by-edge"    {:metric          "availability"
-                                :pre-process-fn  (comp throw-too-many-nuvlaboxes
-                                                       filter-commissioned-nuvlaboxes
+                                :pre-process-fn  (comp filter-available-before-period-end
                                                        assoc-first-availability
-                                                       precompute-query-params)
+                                                       precompute-query-params
+                                                       update-nuvlaboxes-dates
+                                                       throw-too-many-nuvlaboxes
+                                                       (partial assoc-commissioned-nuvlaboxes ["id" "name" "created"]))
                                 :post-process-fn (comp timestamps->str
                                                        dissoc-hits
                                                        compute-global-availability
@@ -1670,66 +1716,71 @@ particular NuvlaBox release.
                                 :response-aggs   [:edges-count
                                                   :by-edge
                                                   :global-avg-online]}
-     "cpu-stats"               {:metric        "cpu"
-                                :aggregations  {:avg-cpu-capacity        (group-by-edge {:by-edge {:avg {:field :cpu.capacity}}})
-                                                :avg-cpu-load            (group-by-edge {:by-edge {:avg {:field :cpu.load}}})
-                                                :avg-cpu-load-1          (group-by-edge {:by-edge {:avg {:field :cpu.load-1}}})
-                                                :avg-cpu-load-5          (group-by-edge {:by-edge {:avg {:field :cpu.load-5}}})
-                                                :context-switches        (group-by-edge {:by-edge {:max {:field :cpu.context-switches}}})
-                                                :interrupts              (group-by-edge {:by-edge {:max {:field :cpu.interrupts}}})
-                                                :software-interrupts     (group-by-edge {:by-edge {:max {:field :cpu.software-interrupts}}})
-                                                :system-calls            (group-by-edge {:by-edge {:max {:field :cpu.system-calls}}})
-                                                :sum-avg-cpu-capacity    {:sum_bucket {:buckets_path :avg-cpu-capacity>by-edge}}
-                                                :sum-avg-cpu-load        {:sum_bucket {:buckets_path :avg-cpu-load>by-edge}}
-                                                :sum-avg-cpu-load-1      {:sum_bucket {:buckets_path :avg-cpu-load-1>by-edge}}
-                                                :sum-avg-cpu-load-5      {:sum_bucket {:buckets_path :avg-cpu-load-5>by-edge}}
-                                                :sum-context-switches    {:sum_bucket {:buckets_path :context-switches>by-edge}}
-                                                :sum-interrupts          {:sum_bucket {:buckets_path :interrupts>by-edge}}
-                                                :sum-software-interrupts {:sum_bucket {:buckets_path :software-interrupts>by-edge}}
-                                                :sum-system-calls        {:sum_bucket {:buckets_path :system-calls>by-edge}}}
-                                :response-aggs [:sum-avg-cpu-capacity :sum-avg-cpu-load :sum-avg-cpu-load-1 :sum-avg-cpu-load-5
-                                                :sum-context-switches :sum-interrupts :sum-software-interrupts :sum-system-calls]
-                                :csv-export-fn (telemetry-csv-export-fn :cpu)}
-     "ram-stats"               {:metric        "ram"
-                                :aggregations  {:avg-ram-capacity     (group-by-edge {:by-edge {:avg {:field :ram.capacity}}})
-                                                :avg-ram-used         (group-by-edge {:by-edge {:avg {:field :ram.used}}})
-                                                :sum-avg-ram-capacity {:sum_bucket {:buckets_path :avg-ram-capacity>by-edge}}
-                                                :sum-avg-ram-used     {:sum_bucket {:buckets_path :avg-ram-used>by-edge}}}
-                                :response-aggs [:sum-avg-ram-capacity :sum-avg-ram-used]
-                                :csv-export-fn (telemetry-csv-export-fn :ram)}
-     "disk-stats"              {:metric        "disk"
-                                :aggregations  {:avg-disk-capacity     (group-by-edge
-                                                                         {:by-edge                 (group-by-device
-                                                                                                     {:by-device {:avg {:field :disk.capacity}}})
-                                                                          :total-avg-edge-capacity {:sum_bucket {:buckets_path :by-edge>by-device}}})
-                                                :avg-disk-used         (group-by-edge
-                                                                         {:by-edge                      (group-by-device
-                                                                                                          {:by-device {:avg {:field :disk.used}}})
-                                                                          :total-avg-edge-used-capacity {:sum_bucket {:buckets_path :by-edge>by-device}}})
-                                                :sum-avg-disk-capacity {:sum_bucket {:buckets_path :avg-disk-capacity>total-avg-edge-capacity}}
-                                                :sum-avg-disk-used     {:sum_bucket {:buckets_path :avg-disk-used>total-avg-edge-used-capacity}}}
-                                :response-aggs [:sum-avg-disk-capacity :sum-avg-disk-used]
-                                :csv-export-fn (telemetry-csv-export-fn :disk)}
-     "network-stats"           {:metric        "network"
-                                :aggregations  {:bytes-received        (group-by-edge
-                                                                         {:by-edge                   (group-by-interface
-                                                                                                       {:by-interface {:max {:field :network.bytes-received}}})
-                                                                          :total-edge-bytes-received {:sum_bucket {:buckets_path :by-edge>by-interface}}})
-                                                :bytes-transmitted     (group-by-edge
-                                                                         {:by-edge                      (group-by-interface
-                                                                                                          {:by-interface {:max {:field :network.bytes-transmitted}}})
-                                                                          :total-edge-bytes-transmitted {:sum_bucket {:buckets_path :by-edge>by-interface}}})
-                                                :sum-bytes-received    {:sum_bucket {:buckets_path :bytes-received>total-edge-bytes-received}}
-                                                :sum-bytes-transmitted {:sum_bucket {:buckets_path :bytes-transmitted>total-edge-bytes-transmitted}}}
-                                :response-aggs [:sum-bytes-received :sum-bytes-transmitted]
-                                :csv-export-fn (telemetry-csv-export-fn :network)}
-     "power-consumption-stats" {:metric        "power-consumption"
-                                :group-by      :power-consumption.metric-name
-                                :aggregations  {:energy-consumption     (group-by-edge {:by-edge {:max {:field :power-consumption.energy-consumption}}})
-                                                #_:unit                   #_{:first {:field :power-consumption.unit}}
-                                                :sum-energy-consumption {:sum_bucket {:buckets_path :energy-consumption>by-edge}}}
-                                :response-aggs [:sum-energy-consumption]
-                                :csv-export-fn (telemetry-csv-export-fn :power-consumption)}}))
+     "cpu-stats"               {:metric         "cpu"
+                                :pre-process-fn assoc-nuvlaedge-ids
+                                :aggregations   {:avg-cpu-capacity        (group-by-edge {:by-edge {:avg {:field :cpu.capacity}}})
+                                                 :avg-cpu-load            (group-by-edge {:by-edge {:avg {:field :cpu.load}}})
+                                                 :avg-cpu-load-1          (group-by-edge {:by-edge {:avg {:field :cpu.load-1}}})
+                                                 :avg-cpu-load-5          (group-by-edge {:by-edge {:avg {:field :cpu.load-5}}})
+                                                 :context-switches        (group-by-edge {:by-edge {:max {:field :cpu.context-switches}}})
+                                                 :interrupts              (group-by-edge {:by-edge {:max {:field :cpu.interrupts}}})
+                                                 :software-interrupts     (group-by-edge {:by-edge {:max {:field :cpu.software-interrupts}}})
+                                                 :system-calls            (group-by-edge {:by-edge {:max {:field :cpu.system-calls}}})
+                                                 :sum-avg-cpu-capacity    {:sum_bucket {:buckets_path :avg-cpu-capacity>by-edge}}
+                                                 :sum-avg-cpu-load        {:sum_bucket {:buckets_path :avg-cpu-load>by-edge}}
+                                                 :sum-avg-cpu-load-1      {:sum_bucket {:buckets_path :avg-cpu-load-1>by-edge}}
+                                                 :sum-avg-cpu-load-5      {:sum_bucket {:buckets_path :avg-cpu-load-5>by-edge}}
+                                                 :sum-context-switches    {:sum_bucket {:buckets_path :context-switches>by-edge}}
+                                                 :sum-interrupts          {:sum_bucket {:buckets_path :interrupts>by-edge}}
+                                                 :sum-software-interrupts {:sum_bucket {:buckets_path :software-interrupts>by-edge}}
+                                                 :sum-system-calls        {:sum_bucket {:buckets_path :system-calls>by-edge}}}
+                                :response-aggs  [:sum-avg-cpu-capacity :sum-avg-cpu-load :sum-avg-cpu-load-1 :sum-avg-cpu-load-5
+                                                 :sum-context-switches :sum-interrupts :sum-software-interrupts :sum-system-calls]
+                                :csv-export-fn  (telemetry-csv-export-fn :cpu)}
+     "ram-stats"               {:metric         "ram"
+                                :pre-process-fn assoc-nuvlaedge-ids
+                                :aggregations   {:avg-ram-capacity     (group-by-edge {:by-edge {:avg {:field :ram.capacity}}})
+                                                 :avg-ram-used         (group-by-edge {:by-edge {:avg {:field :ram.used}}})
+                                                 :sum-avg-ram-capacity {:sum_bucket {:buckets_path :avg-ram-capacity>by-edge}}
+                                                 :sum-avg-ram-used     {:sum_bucket {:buckets_path :avg-ram-used>by-edge}}}
+                                :response-aggs  [:sum-avg-ram-capacity :sum-avg-ram-used]
+                                :csv-export-fn  (telemetry-csv-export-fn :ram)}
+     "disk-stats"              {:metric         "disk"
+                                :pre-process-fn assoc-nuvlaedge-ids
+                                :aggregations   {:avg-disk-capacity     (group-by-edge
+                                                                          {:by-edge                 (group-by-device
+                                                                                                      {:by-device {:avg {:field :disk.capacity}}})
+                                                                           :total-avg-edge-capacity {:sum_bucket {:buckets_path :by-edge>by-device}}})
+                                                 :avg-disk-used         (group-by-edge
+                                                                          {:by-edge                      (group-by-device
+                                                                                                           {:by-device {:avg {:field :disk.used}}})
+                                                                           :total-avg-edge-used-capacity {:sum_bucket {:buckets_path :by-edge>by-device}}})
+                                                 :sum-avg-disk-capacity {:sum_bucket {:buckets_path :avg-disk-capacity>total-avg-edge-capacity}}
+                                                 :sum-avg-disk-used     {:sum_bucket {:buckets_path :avg-disk-used>total-avg-edge-used-capacity}}}
+                                :response-aggs  [:sum-avg-disk-capacity :sum-avg-disk-used]
+                                :csv-export-fn  (telemetry-csv-export-fn :disk)}
+     "network-stats"           {:metric         "network"
+                                :pre-process-fn assoc-nuvlaedge-ids
+                                :aggregations   {:bytes-received        (group-by-edge
+                                                                          {:by-edge                   (group-by-interface
+                                                                                                        {:by-interface {:max {:field :network.bytes-received}}})
+                                                                           :total-edge-bytes-received {:sum_bucket {:buckets_path :by-edge>by-interface}}})
+                                                 :bytes-transmitted     (group-by-edge
+                                                                          {:by-edge                      (group-by-interface
+                                                                                                           {:by-interface {:max {:field :network.bytes-transmitted}}})
+                                                                           :total-edge-bytes-transmitted {:sum_bucket {:buckets_path :by-edge>by-interface}}})
+                                                 :sum-bytes-received    {:sum_bucket {:buckets_path :bytes-received>total-edge-bytes-received}}
+                                                 :sum-bytes-transmitted {:sum_bucket {:buckets_path :bytes-transmitted>total-edge-bytes-transmitted}}}
+                                :response-aggs  [:sum-bytes-received :sum-bytes-transmitted]
+                                :csv-export-fn  (telemetry-csv-export-fn :network)}
+     "power-consumption-stats" {:metric         "power-consumption"
+                                :pre-process-fn assoc-nuvlaedge-ids
+                                :group-by       :power-consumption.metric-name
+                                :aggregations   {:energy-consumption     (group-by-edge {:by-edge {:max {:field :power-consumption.energy-consumption}}})
+                                                 #_:unit                   #_{:first {:field :power-consumption.unit}}
+                                                 :sum-energy-consumption {:sum_bucket {:buckets_path :energy-consumption>by-edge}}}
+                                :response-aggs  [:sum-energy-consumption]
+                                :csv-export-fn  (telemetry-csv-export-fn :power-consumption)}}))
 
 (defn parse-params
   [{:keys [uuid dataset from to granularity custom-es-aggregations] :as params}]
@@ -1797,42 +1848,19 @@ particular NuvlaBox release.
     (logu/log-and-throw-400 (str "format not supported: " accept-header)))
   params)
 
-(defn assoc-nuvlaboxes
-  [{:keys [id] cimi-filter :filter :as params} request]
-  (assoc params
-    :nuvlaboxes
-    (if id
-      [(crud/retrieve-by-id id request)]
-      (->> (crud/query
-             (cond-> request
-                     cimi-filter (assoc :cimi-params
-                                        {:filter (parser/parse-cimi-filter cimi-filter)
-                                         :last   10000})))
-           :body
-           :resources))))
-
-(defn update-nuvlaboxes-dates
-  [{:keys [nuvlaboxes] :as params}]
-  (assoc params
-    :nuvlaboxes
-    (map #(update % :created time/date-from-str) nuvlaboxes)))
-
 (defn assoc-base-query-opts
-  [{:keys [from to granularity raw custom-es-aggregations predefined-aggregations mode nuvlaboxes] :as params}]
+  [{:keys [predefined-aggregations granularity filter] :as params} request]
   (assoc params
     :base-query-opts
-    (cond->
-      {:mode                    mode
-       :nuvlaboxes              nuvlaboxes
-       :nuvlaedge-ids           (concat (map :id nuvlaboxes))
-       :from                    from
-       :to                      to
-       :granularity             granularity
-       :raw                     raw
-       :custom-es-aggregations  custom-es-aggregations
-       :predefined-aggregations predefined-aggregations}
-      predefined-aggregations
-      (assoc :ts-interval (status-utils/granularity->ts-interval granularity)))))
+    (-> (select-keys params [:from :to :granularity
+                             :raw :custom-es-aggregations :predefined-aggregations
+                             :mode])
+        (assoc :request request)
+        (cond->
+          filter
+          (assoc :cimi-filter filter)
+          predefined-aggregations
+          (assoc :ts-interval (status-utils/granularity->ts-interval granularity))))))
 
 (defn assoc-datasets-opts
   [{:keys [mode] :as params}]
@@ -1904,9 +1932,7 @@ particular NuvlaBox release.
       (throw-too-many-data-points)
       (throw-custom-es-aggregations-checks)
       (throw-response-format-not-supported)
-      (assoc-nuvlaboxes request)
-      (update-nuvlaboxes-dates)
-      (assoc-base-query-opts)
+      (assoc-base-query-opts request)
       (assoc-datasets-opts)
       (throw-unknown-datasets)
       (throw-csv-multi-dataset)
