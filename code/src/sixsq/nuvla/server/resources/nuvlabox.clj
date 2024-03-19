@@ -1478,7 +1478,7 @@ particular NuvlaBox release.
 
 (defn availabilities-sequential
   [{:keys [granularity-duration nuvlaboxes] :as _query-opts} resp now hits edge-bucket-update-fn]
-  (let [nb-resps (mapv
+  (let [nb-resps (map
                    (fn [{nuvlaedge-id :id :as nuvlabox}]
                      (compute-nuvlabox-availability*
                        resp
@@ -1497,8 +1497,7 @@ particular NuvlaBox release.
                                 (get-in [:aggregations :by-edge :buckets 0]))]
               (update-in ts-data-point
                          [:aggregations :by-edge :buckets]
-                         conj
-                         nb-bucket)))))
+                         (fn [buckets] (conj (or buckets []) nb-bucket)))))))
       resp
       nb-resps)))
 
@@ -1910,8 +1909,10 @@ particular NuvlaBox release.
   query-data-executor "query data executor")
 
 (def running-query-data (atom 0))
-
 (def requesting-query-data (atom 0))
+
+(def query-data-max-attempts (env/env :query-data-max-attempts 50))
+(def query-data-max-time (env/env :query-data-max-time 25000))
 
 (defn gated-query-data
   "Only allow one call to query-data at a time.
@@ -1920,10 +1921,10 @@ particular NuvlaBox release.
   [params request]
   (if (> @requesting-query-data 4)
     (logu/log-and-throw 503 "Server too busy")
-    ;; retry for up to 5 seconds
+    ;; retry for up to 5 seconds (or QUERY_DATA_MAX_ATTEMPTS * 100ms)
     (try
       (swap! requesting-query-data inc)
-      (loop [remaining-attempts 50]
+      (loop [remaining-attempts query-data-max-attempts]
         (if (zero? remaining-attempts)
           (logu/log-and-throw 504 "Timed out waiting for query slot")
           (if (= @running-query-data 0)
@@ -1936,8 +1937,8 @@ particular NuvlaBox release.
                     (query-data params request)
                     (finally
                       (swap! running-query-data dec))))
-                ;; allow 25 seconds max
-                25000
+                ;; allow 25 seconds max (or QUERY_DATA_MAX_TIME)
+                query-data-max-time
                 "data query timed out"))
             (do
               ;; wait 100ms and retry
