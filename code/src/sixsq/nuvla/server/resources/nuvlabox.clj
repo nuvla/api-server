@@ -1177,6 +1177,14 @@ particular NuvlaBox release.
   [{:keys [first-availability] :as _nuvlabox} timestamp]
   (some-> first-availability :timestamp (time/before? timestamp)))
 
+(def max-nuvlaboxes-count (env/env :max-nuvlaboxes-count 500))
+
+(defn throw-too-many-nuvlaboxes
+  [{:keys [nuvlaboxes] :as base-query-opts}]
+  (when (> (count nuvlaboxes) max-nuvlaboxes-count)
+    (logu/log-and-throw-400 "Too many nuvlaedges"))
+  base-query-opts)
+
 (defn filter-commissioned-nuvlaboxes
   [{:keys [to nuvlaboxes] :as base-query-opts}]
   (let [nuvlaboxes (->> nuvlaboxes
@@ -1628,7 +1636,8 @@ particular NuvlaBox release.
         group-by-device    (fn [aggs] (group-by-field :disk.device aggs))
         group-by-interface (fn [aggs] (group-by-field :network.interface aggs))]
     {"availability-stats"      {:metric          "availability"
-                                :pre-process-fn  (comp filter-commissioned-nuvlaboxes
+                                :pre-process-fn  (comp throw-too-many-nuvlaboxes
+                                                       filter-commissioned-nuvlaboxes
                                                        assoc-first-availability
                                                        precompute-query-params)
                                 :post-process-fn (comp timestamps->str
@@ -1645,7 +1654,8 @@ particular NuvlaBox release.
                                                   :virtual-edges-offline]
                                 :csv-export-fn   (availability-csv-export-fn)}
      "availability-by-edge"    {:metric          "availability"
-                                :pre-process-fn  (comp filter-commissioned-nuvlaboxes
+                                :pre-process-fn  (comp throw-too-many-nuvlaboxes
+                                                       filter-commissioned-nuvlaboxes
                                                        assoc-first-availability
                                                        precompute-query-params)
                                 :post-process-fn (comp timestamps->str
