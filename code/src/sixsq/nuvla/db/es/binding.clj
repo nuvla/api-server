@@ -333,7 +333,8 @@
 
 (def hot-delete-policy
   {:hot    {:min_age "0ms"
-            :actions {:set_priority {:priority 100}}}
+            :actions {:set_priority {:priority 100}
+                      :rollover     {:max_age "30d"}}}
    :delete {:min_age "375d"                                 ;; 1 year + 10 days margin
             :actions {:delete {:delete_searchable_snapshot true}}}})
 
@@ -370,7 +371,8 @@
                                                         :template
                                                         {:settings
                                                          (cond->
-                                                           {:index.mode "time_series",
+                                                           {:index.mode       "time_series",
+                                                            :number_of_shards 3
                                                             ;:index.look_back_time         "7d",
                                                             ;:index.look_ahead_time        "2h",
                                                             ;:index.time_series.start_time "2023-01-01T00:00:00.000Z"
