@@ -1951,37 +1951,42 @@ particular NuvlaBox release.
 (def query-data-max-time (env/env :query-data-max-time 25000))
 
 (defn gated-query-data
-  "Only allow one call to query-data at a time.
+  "Only allow one call to query-data on availability of multiple edges at a time.
    Allow max 4 additional requests to wait at most 5 seconds to get
    access to computation."
-  [params request]
-  (if (> @requesting-query-data 4)
-    (logu/log-and-throw 503 "Server too busy")
-    ;; retry for up to 5 seconds (or QUERY_DATA_MAX_ATTEMPTS * 100ms)
-    (try
-      (swap! requesting-query-data inc)
-      (loop [remaining-attempts query-data-max-attempts]
-        (if (zero? remaining-attempts)
-          (logu/log-and-throw 504 "Timed out waiting for query slot")
-          (if (= @running-query-data 0)
-            (do
-              (swap! running-query-data inc)
-              (utils/exec-with-timeout!
-                query-data-executor
-                (fn []
-                  (try
-                    (query-data params request)
-                    (finally
-                      (swap! running-query-data dec))))
-                ;; allow 25 seconds max (or QUERY_DATA_MAX_TIME)
-                query-data-max-time
-                "data query timed out"))
-            (do
-              ;; wait 100ms and retry
-              @(p/delay 100)
-              (recur (dec remaining-attempts))))))
-      (finally
-        (swap! requesting-query-data dec)))))
+  [{:keys [mode dataset] :as params} request]
+  (let [datasets (if (coll? dataset) dataset [dataset])]
+    (if (and (= :multi-edge-query mode)
+             (some #{"availability-stats" "availability-by-edge"} datasets))
+      (if (> @requesting-query-data 4)
+        (logu/log-and-throw 503 "Server too busy")
+        ;; retry for up to 5 seconds (or QUERY_DATA_MAX_ATTEMPTS * 100ms)
+        (try
+          (swap! requesting-query-data inc)
+          (loop [remaining-attempts query-data-max-attempts]
+            (if (zero? remaining-attempts)
+              (logu/log-and-throw 504 "Timed out waiting for query slot")
+              (if (= @running-query-data 0)
+                (do
+                  (swap! running-query-data inc)
+                  (utils/exec-with-timeout!
+                    query-data-executor
+                    (fn []
+                      (try
+                        (query-data params request)
+                        (finally
+                          (swap! running-query-data dec))))
+                    ;; allow 25 seconds max (or QUERY_DATA_MAX_TIME)
+                    query-data-max-time
+                    "data query timed out"))
+                (do
+                  ;; wait 100ms and retry
+                  @(p/delay 100)
+                  (recur (dec remaining-attempts))))))
+          (finally
+            (swap! requesting-query-data dec))))
+      ;; let non-availability queries go through
+      (query-data params request))))
 
 (defmethod crud/do-action [resource-type "data"]
   [{:keys [params] {accept-header "accept"} :headers :as request}]
