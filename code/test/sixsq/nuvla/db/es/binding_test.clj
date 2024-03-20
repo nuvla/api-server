@@ -61,12 +61,13 @@
                   :composed_of    []
                   :data_stream    {:hidden false, :allow_custom_routing false}}
                  (dissoc (:index_template response) :template)))
-          (is (= {:index {:mode         "time_series"
-                          :routing_path ["nuvlaedge-id"
-                                         "metric"
-                                         "disk.device"
-                                         "network.interface"
-                                         "power-consumption.metric-name"]}}
+          (is (= {:index {:mode             "time_series"
+                          :number_of_shards "3"
+                          :routing_path     ["nuvlaedge-id"
+                                             "metric"
+                                             "disk.device"
+                                             "network.interface"
+                                             "power-consumption.metric-name"]}}
                  (get-in response [:index_template :template :settings])))))
 
       (testing "Create timeseries datastream"
@@ -118,10 +119,10 @@
                                           (range 100))]
               (t/bulk-insert-metrics client collection-id test-data-last-sec {}))
             (spandex/request client {:url [:_refresh], :method :post})
-            (let [_response          (-> (spandex/request client {:url (str "_data_stream/" index-name)})
-                                         (get-in [:body :data_streams]))
-                  response (-> (spandex/request client {:url (str index-name "/_search")})
-                               :body)]
+            (let [_response (-> (spandex/request client {:url (str "_data_stream/" index-name)})
+                                (get-in [:body :data_streams]))
+                  response  (-> (spandex/request client {:url (str index-name "/_search")})
+                                :body)]
               (spandex/request client {:url [:_refresh], :method :post})
               (is (= 100 (get-in response [:hits :total :value])))))
 

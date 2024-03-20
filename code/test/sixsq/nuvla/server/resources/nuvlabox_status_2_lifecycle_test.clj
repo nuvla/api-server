@@ -693,19 +693,19 @@
                                      :timestamp    (time/to-str update-time)}]}]
                      (:disk-stats raw-metric-data)))
               (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
-                       :ts-data    [{:metric       "network"
-                                     :network      {:bytes-received    3019.0
-                                                    :bytes-transmitted 78.0
-                                                    :interface         "vpn"}
-                                     :nuvlaedge-id nuvlabox-id
-                                     :timestamp    (time/to-str update-time)}
-                                    {:metric       "network"
-                                     :network      {:bytes-received    5579821.0
-                                                    :bytes-transmitted 44145.0
-                                                    :interface         "eth0"}
-                                     :nuvlaedge-id nuvlabox-id
-                                     :timestamp    (time/to-str update-time)}]}]
-                     (:network-stats raw-metric-data)))
+                       :ts-data    #{{:metric       "network"
+                                      :network      {:bytes-received    3019.0
+                                                     :bytes-transmitted 78.0
+                                                     :interface         "vpn"}
+                                      :nuvlaedge-id nuvlabox-id
+                                      :timestamp    (time/to-str update-time)}
+                                     {:metric       "network"
+                                      :network      {:bytes-received    5579821.0
+                                                     :bytes-transmitted 44145.0
+                                                     :interface         "eth0"}
+                                      :nuvlaedge-id nuvlabox-id
+                                      :timestamp    (time/to-str update-time)}}}]
+                     (update-in (:network-stats raw-metric-data) [0 :ts-data] set)))
               (is (= [{:dimensions {:nuvlaedge-id nuvlabox-id}
                        :ts-data    [{:metric            "power-consumption"
                                      :nuvlaedge-id      nuvlabox-id
@@ -881,7 +881,9 @@
                                         (time/to-str midnight-today)
                                         1
                                         2.4])}
-                       (set (str/split-lines (csv-request "power-consumption-stats" "1-days"))))))
+                       (-> (csv-request "power-consumption-stats" "1-days")
+                           str/split-lines
+                           set))))
               (testing "Export raw telemetry data"
                 (is (= (str "timestamp,capacity,load\n"
                             (str/join "," [(time/to-str update-time)
@@ -891,18 +893,22 @@
                             (str/join "," [(time/to-str update-time)
                                            4096 2000]) "\n")
                        (csv-request "ram-stats" "raw")))
-                (is (= (str "timestamp,capacity,device,used\n"
-                            (str/join "," [(time/to-str update-time)
-                                           20000 "root" 20000]) "\n"
-                            (str/join "," [(time/to-str update-time)
-                                           20000 "datastore" 15000]) "\n")
-                       (csv-request "disk-stats" "raw")))
-                (is (= (str "timestamp,bytes-received,bytes-transmitted,interface\n"
-                            (str/join "," [(time/to-str update-time)
-                                           3019 78 "vpn"]) "\n"
-                            (str/join "," [(time/to-str update-time)
-                                           5579821 44145 "eth0"]) "\n")
-                       (csv-request "network-stats" "raw")))
+                (is (= #{"timestamp,capacity,device,used"
+                         (str/join "," [(time/to-str update-time)
+                                        20000 "root" 20000])
+                         (str/join "," [(time/to-str update-time)
+                                        20000 "datastore" 15000])}
+                       (-> (csv-request "disk-stats" "raw")
+                           str/split-lines
+                           set)))
+                (is (= #{"timestamp,bytes-received,bytes-transmitted,interface"
+                         (str/join "," [(time/to-str update-time)
+                                        3019 78 "vpn"])
+                         (str/join "," [(time/to-str update-time)
+                                        5579821 44145 "eth0"])}
+                       (-> (csv-request "network-stats" "raw")
+                           str/split-lines
+                           set)))
                 (is (= (str "timestamp,energy-consumption,metric-name,unit\n"
                             (str/join "," [(time/to-str update-time)
                                            2.4 "IN_current" "A"]) "\n")
@@ -1331,34 +1337,38 @@
                                            nuvlabox-id-2
                                            4096 2000]) "\n")
                        (csv-request "ram-stats" "raw")))
-                (is (= (str "timestamp,nuvlaedge-id,capacity,device,used\n"
-                            (str/join "," [(time/to-str update-time)
-                                           nuvlabox-id
-                                           20000 "root" 20000]) "\n"
-                            (str/join "," [(time/to-str update-time)
-                                           nuvlabox-id
-                                           20000 "datastore" 15000]) "\n"
-                            (str/join "," [(time/to-str update-time-2)
-                                           nuvlabox-id-2
-                                           20000 "root" 20000]) "\n"
-                            (str/join "," [(time/to-str update-time-2)
-                                           nuvlabox-id-2
-                                           20000 "datastore" 15000]) "\n")
-                       (csv-request "disk-stats" "raw")))
-                (is (= (str "timestamp,nuvlaedge-id,bytes-received,bytes-transmitted,interface\n"
-                            (str/join "," [(time/to-str update-time)
-                                           nuvlabox-id
-                                           3019 78 "vpn"]) "\n"
-                            (str/join "," [(time/to-str update-time)
-                                           nuvlabox-id
-                                           5579821 44145 "eth0"]) "\n"
-                            (str/join "," [(time/to-str update-time-2)
-                                           nuvlabox-id-2
-                                           3019 78 "vpn"]) "\n"
-                            (str/join "," [(time/to-str update-time-2)
-                                           nuvlabox-id-2
-                                           5579821 44145 "eth0"]) "\n")
-                       (csv-request "network-stats" "raw")))
+                (is (= #{"timestamp,nuvlaedge-id,capacity,device,used"
+                         (str/join "," [(time/to-str update-time)
+                                        nuvlabox-id
+                                        20000 "root" 20000])
+                         (str/join "," [(time/to-str update-time)
+                                        nuvlabox-id
+                                        20000 "datastore" 15000])
+                         (str/join "," [(time/to-str update-time-2)
+                                        nuvlabox-id-2
+                                        20000 "root" 20000])
+                         (str/join "," [(time/to-str update-time-2)
+                                        nuvlabox-id-2
+                                        20000 "datastore" 15000])}
+                       (-> (csv-request "disk-stats" "raw")
+                           str/split-lines
+                           set)))
+                (is (= #{"timestamp,nuvlaedge-id,bytes-received,bytes-transmitted,interface"
+                         (str/join "," [(time/to-str update-time)
+                                        nuvlabox-id
+                                        3019 78 "vpn"])
+                         (str/join "," [(time/to-str update-time)
+                                        nuvlabox-id
+                                        5579821 44145 "eth0"])
+                         (str/join "," [(time/to-str update-time-2)
+                                        nuvlabox-id-2
+                                        3019 78 "vpn"])
+                         (str/join "," [(time/to-str update-time-2)
+                                        nuvlabox-id-2
+                                        5579821 44145 "eth0"])}
+                       (-> (csv-request "network-stats" "raw")
+                           str/split-lines
+                           set)))
                 (is (= (str "timestamp,nuvlaedge-id,energy-consumption,metric-name,unit\n"
                             (str/join "," [(time/to-str update-time)
                                            nuvlabox-id
