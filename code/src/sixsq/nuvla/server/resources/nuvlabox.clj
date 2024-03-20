@@ -1852,7 +1852,7 @@ particular NuvlaBox release.
   [{:keys [predefined-aggregations granularity filter] :as params} request]
   (assoc params
     :base-query-opts
-    (-> (select-keys params [:from :to :granularity
+    (-> (select-keys params [:id :from :to :granularity
                              :raw :custom-es-aggregations :predefined-aggregations
                              :mode])
         (assoc :request request)
