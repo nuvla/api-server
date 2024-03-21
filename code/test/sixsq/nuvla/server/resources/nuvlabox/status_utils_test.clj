@@ -4,6 +4,7 @@
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.nuvlabox.data-utils :as data-utils]
     [sixsq.nuvla.server.resources.nuvlabox.status-utils :as t]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [sixsq.nuvla.server.resources.ts-nuvlaedge-availability :as ts-nuvlaedge-availability]
@@ -165,7 +166,7 @@
                   :nuvla/authn auth/internal-identity
                   :params      {:resource-name ts-nuvlaedge-availability/resource-type}}
                  (with-redefs [crud/retrieve-by-id-as-admin (constantly {:refresh-interval 60})]
-                   (nb-utils/nuvlabox-status->insert-availability-request nuvlabox-status false))))
+                   (data-utils/nuvlabox-status->insert-availability-request nuvlabox-status false))))
           (is (= {:body        {:nuvlaedge-id "nuvlabox/1"
                                 :online       1
                                 :timestamp    (time/to-str now)}
@@ -173,8 +174,8 @@
                   :params      {:resource-name ts-nuvlaedge-availability/resource-type}}
                  (with-redefs [crud/retrieve-by-id-as-admin (constantly {:refresh-interval 60})
                                time/now-str                 (constantly "now")]
-                   (nb-utils/nuvlabox-status->insert-availability-request nuvlabox-status true)))))))
-    (testing "nuvlabox status -> metric time-serie conversion for nuvlabox with hearthbeat support"
+                   (data-utils/nuvlabox-status->insert-availability-request nuvlabox-status true)))))))
+    (testing "nuvlabox status -> metric time-serie conversion for nuvlabox with heartbeat support"
       (let [now (time/now)]
         (with-redefs [time/now (constantly now)]
           (is (= {:body        {:nuvlaedge-id "nuvlabox/1"
@@ -184,8 +185,8 @@
                   :params      {:resource-name ts-nuvlaedge-availability/resource-type}}
                  (with-redefs [crud/retrieve-by-id-as-admin (constantly {:capabilities       [nb-utils/capability-heartbeat]
                                                                          :heartbeat-interval 20})]
-                   (nb-utils/nuvlabox-status->insert-availability-request nuvlabox-status false))))))
+                   (data-utils/nuvlabox-status->insert-availability-request nuvlabox-status false))))))
       (is (nil?
             (with-redefs [crud/retrieve-by-id-as-admin (constantly {:capabilities       [nb-utils/capability-heartbeat]
                                                                     :heartbeat-interval 20})]
-              (nb-utils/nuvlabox-status->insert-availability-request nuvlabox-status true)))))))
+              (data-utils/nuvlabox-status->insert-availability-request nuvlabox-status true)))))))

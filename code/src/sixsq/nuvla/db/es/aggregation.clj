@@ -34,7 +34,13 @@
       {:aggs (into {} entries)})))
 
 (defn tsds-aggregators
-  "Given the tsds aggregation information in the :cimi-params parameter, add all of the
-   aggregation clauses to the aggs map."
+  "Deserialize the tsds aggregation information in the :params parameter."
   [{:keys [tsds-aggregation] :as _params}]
   (some-> tsds-aggregation json/read-str))
+
+(defn collapse
+  "Deserialize the collapse information in the :params parameter."
+  [{:keys [collapse] :as _params}]
+  (when collapse
+    {:collapse (json/read-str collapse)}))
+

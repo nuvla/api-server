@@ -107,3 +107,5 @@
       (.atZone ZoneOffset/UTC)
       (.with LocalTime/MAX)
       (.toOffsetDateTime)))
+
+(def year t/year)

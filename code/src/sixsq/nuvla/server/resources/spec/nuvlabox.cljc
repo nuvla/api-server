@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.spec.nuvlabox
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.nuvlabox.status-utils :as nb-status-utils]
+    [sixsq.nuvla.server.resources.nuvlabox.data-utils :as data-utils]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
@@ -102,7 +102,7 @@
 (s/def ::from (st/spec ::core/timestamp))
 (s/def ::to (st/spec ::core/timestamp))
 (s/def ::granularity (st/spec (s/or :raw #{"raw"}
-                                    :granularity-duration nb-status-utils/granularity->duration)))
+                                    :granularity-duration data-utils/granularity->duration)))
 (s/def ::custom-es-aggregations any?)
 (s/def ::bulk-data-body (su/only-keys-maps {:req-un [::dataset
                                                      ::from
