@@ -518,11 +518,7 @@
 (defn query-with-timeout
   [resource-type timeout query]
   ;; just send the timeout to ES for now, and run the query in the current thread
-  (crud/query-as-admin resource-type (assoc query :timeout timeout))
-  #_(exec-with-timeout!
-    #(doall (crud/query-as-admin resource-type (assoc query :timeout timeout)))
-    timeout
-    "Query timed out"))
+  (crud/query-as-admin resource-type (assoc query :timeout timeout)))
 
 (def first-availability-query-timeout
   (env/env first-availability-query-timeout 10000))
