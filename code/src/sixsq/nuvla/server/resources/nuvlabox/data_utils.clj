@@ -32,7 +32,7 @@
 (def query-data-max-time (env/env :query-data-max-time 25000))
 
 (def first-availability-query-timeout (env/env :first-availability-query-timeout 10000))
-(def latest-availability-query-timeout (env/env first-availability-query-timeout 10000))
+(def latest-availability-query-timeout (env/env :latest-availability-query-timeout 10000))
 (def max-nuvlaboxes-count (env/env :max-nuvlaboxes-count 500))
 
 (defn add-jvm-shutdown-hook
