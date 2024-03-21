@@ -48,31 +48,6 @@
 (def ^:const default-refresh-interval 60)
 (def ^:const default-heartbeat-interval 20)
 
-(defmacro logtime
-  "Evaluates expr and prints the time it took.  Returns the value of
- expr."
-  {:added "1.0"}
-  [msg expr]
-  `(let [start# (. System (nanoTime))]
-     (try
-       (let [ret#     ~expr
-             elapsed# (/ (double (- (. System (nanoTime)) start#)) 1000000.0)]
-         (log/error (str ~msg " -> Elapsed time: " elapsed# " msecs"))
-         ret#)
-       (catch Throwable t#
-         (let [elapsed# (/ (double (- (. System (nanoTime)) start#)) 1000000.0)]
-           (log/error (str ~msg " Exception!! -> Elapsed time: " elapsed# " msecs"))
-           (throw t#))))))
-
-(defn ->logf
-  [p0 msg f & args]
-  (logtime msg (apply f (cons p0 args))))
-
-(defn ->>logf
-  [msg f & args]
-  (logtime msg (apply f args)))
-
-
 (defn is-version-before-2?
   [nuvlabox]
   (< (:version nuvlabox) 2))
