@@ -536,6 +536,27 @@ particular NuvlaBox release.
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
+(defn set-online!
+  [{:keys [id nuvlabox-status heartbeat-interval online]
+    :or   {heartbeat-interval utils/default-heartbeat-interval}
+    :as   nuvlabox} online-new]
+  (let [nb-status (utils/status-online-attributes
+                    online online-new heartbeat-interval)]
+    (r/throw-response-not-200
+      (db/scripted-edit id {:refresh false
+                            :body    {:doc {:online             online-new
+                                            :heartbeat-interval heartbeat-interval}}}))
+    (r/throw-response-not-200
+      (db/scripted-edit nuvlabox-status {:refresh false
+                                         :body    {:doc nb-status}}))
+    (ka-crud/publish-on-edit
+      "nuvlabox-status"
+      (r/json-response (assoc nb-status :id nuvlabox-status
+                                        :parent id
+                                        :acl (:acl nuvlabox))))
+    (data-utils/track-availability (assoc nb-status :parent id) false)
+    nuvlabox))
+
 (defmethod crud/do-action [resource-type utils/action-heartbeat]
   [{{uuid :uuid} :params :as request}]
   (try
@@ -543,7 +564,7 @@ particular NuvlaBox release.
         crud/retrieve-by-id-as-admin
         (a/throw-cannot-manage request)
         (u/throw-can-not-do-action utils/can-heartbeat? utils/action-heartbeat)
-        (utils/set-online! true)
+        (set-online! true)
         (utils/build-response)
         r/json-response)
     (catch Exception e
@@ -557,7 +578,7 @@ particular NuvlaBox release.
         (a/throw-not-admin-request request)
         (u/throw-can-not-do-action
           utils/can-set-offline? utils/action-set-offline)
-        (utils/set-online! false))
+        (set-online! false))
     (r/map-response "offline" 200)
     (catch Exception e
       (or (ex-data e) (throw e)))))

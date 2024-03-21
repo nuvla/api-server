@@ -4,7 +4,6 @@
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
-    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.pricing.payment :as payment]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -13,7 +12,6 @@
     [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.job.utils :as job-utils]
-    [sixsq.nuvla.server.util.kafka-crud :as kafka-crud]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time]))
 
@@ -372,30 +370,6 @@
                                               #(-> % (* 2) (+ 10))))
           (some? online)
           (assoc :online-prev online)))
-
-(declare bulk-insert-metrics)
-(declare track-availability)
-
-(defn set-online!
-  [{:keys [id nuvlabox-status heartbeat-interval online]
-    :or   {heartbeat-interval default-heartbeat-interval}
-    :as   nuvlabox} online-new]
-  (let [nb-status (status-online-attributes
-                    online online-new heartbeat-interval)]
-    (r/throw-response-not-200
-      (db/scripted-edit id {:refresh false
-                            :body    {:doc {:online             online-new
-                                            :heartbeat-interval heartbeat-interval}}}))
-    (r/throw-response-not-200
-      (db/scripted-edit nuvlabox-status {:refresh false
-                                         :body    {:doc nb-status}}))
-    (kafka-crud/publish-on-edit
-      "nuvlabox-status"
-      (r/json-response (assoc nb-status :id nuvlabox-status
-                                        :parent id
-                                        :acl (:acl nuvlabox))))
-    (track-availability (assoc nb-status :parent id) false)
-    nuvlabox))
 
 (defn get-jobs
   [nb-id]
