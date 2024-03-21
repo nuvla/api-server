@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.db.es.binding-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest is use-fixtures testing]]
+    [clojure.test :refer [deftest is testing use-fixtures]]
     [qbits.spandex :as spandex]
     [sixsq.nuvla.db.binding-lifecycle :as lifecycle]
     [sixsq.nuvla.db.binding-queries :as queries]

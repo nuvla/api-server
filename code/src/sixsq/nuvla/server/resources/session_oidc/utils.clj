@@ -3,8 +3,8 @@
     [clj-http.client :as http]
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.log :as logu]))
 
 

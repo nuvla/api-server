@@ -4,6 +4,15 @@
 
 ## Released
 
+## [6.5.0] - 2024-03-21
+
+- Nuvlabox data resource to query availability and telemetry
+- Nuvlabox insert telemetry and availability into timeseries
+- Building and displaying time series in Nuvla
+- Deployment group - Add support for file overriding
+- CI: use SONARQUBE_TOKEN
+- kafka: improve log strings
+
 ## [6.4.4] - 2024-02-21
 
 - SERVER: Start nrepl when nrepl-port env is set

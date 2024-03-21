@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.data-utils
   (:require
+    [clojure.data.csv :as csv]
     [clojure.data.json :as json]
     [clojure.set :as set]
     [clojure.string :as str]
@@ -7,7 +8,6 @@
     [environ.core :as env]
     [promesa.core :as p]
     [promesa.exec :as px]
-    [clojure.data.csv :as csv]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
@@ -21,9 +21,9 @@
     [sixsq.nuvla.server.util.time :as time])
   (:import
     (java.io StringWriter)
-    (java.util.concurrent ExecutionException TimeoutException)
     (java.text DecimalFormat DecimalFormatSymbols)
-    (java.util Locale)))
+    (java.util Locale)
+    (java.util.concurrent ExecutionException TimeoutException)))
 
 (def max-data-points 200)
 (def running-query-data (atom 0))

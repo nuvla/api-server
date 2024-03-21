@@ -6,9 +6,9 @@
             [sixsq.nuvla.server.resources.common.crud :as crud]
             [sixsq.nuvla.server.resources.common.state-machine :as sm]
             [sixsq.nuvla.server.resources.common.utils :as u]
+            [sixsq.nuvla.server.resources.deployment-set.operational-status :as op-status]
             [sixsq.nuvla.server.resources.module.utils :as module-utils]
             [sixsq.nuvla.server.resources.nuvlabox :as nuvlabox]
-            [sixsq.nuvla.server.resources.deployment-set.operational-status :as op-status]
             [tilakone.core :as tk]))
 
 (def action-start "start")

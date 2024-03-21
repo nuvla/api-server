@@ -16,8 +16,7 @@ Collection for holding notification method configurations.
     [sixsq.nuvla.server.resources.spec.notification-method :as notif-method-schema]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.response :as ru]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -123,7 +122,7 @@ Collection for holding notification method configurations.
                          :body
                          :count)]
       (when (pos? count)
-        (throw (ru/ex-conflict (format "References to %s exist in %s." resource-id collection)))))))
+        (throw (r/ex-conflict (format "References to %s exist in %s." resource-id collection)))))))
 
 (defn integrity-check
   [resource-id collections request]
@@ -175,7 +174,7 @@ Collection for holding notification method configurations.
 (def ^:const test-response-message "notification method test submitted")
 
 (defmethod crud/do-action [resource-type "test"]
-  [{{uuid :uuid} :params :as request}]
+  [{{uuid :uuid} :params :as _request}]
   (try
     (let [resource (crud/retrieve-by-id-as-admin (str resource-type "/" uuid))]
       (set-event-context resource)

@@ -5,8 +5,8 @@ The `ts-nuvlaedge` resources create a timeseries related to nuvlaedge.
   (:require
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
-    [sixsq.nuvla.server.resources.spec.ts-nuvlaedge-telemetry :as ts-nuvlaedge-telemetry]
-    [sixsq.nuvla.server.resources.common.utils :as u]))
+    [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.spec.ts-nuvlaedge-telemetry :as ts-nuvlaedge-telemetry]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.ts-nuvlaedge-test
   (:require
-    [clojure.test :refer [is deftest]]
+    [clojure.test :refer [deftest is]]
     [sixsq.nuvla.db.es.common.es-mapping :as es-mapping]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
     [sixsq.nuvla.server.resources.spec.ts-nuvlaedge-telemetry :as ts-nuvlaedge]))

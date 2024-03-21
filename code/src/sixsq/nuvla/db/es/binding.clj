@@ -12,9 +12,9 @@
             [sixsq.nuvla.db.es.filter :as filter]
             [sixsq.nuvla.db.es.order :as order]
             [sixsq.nuvla.db.es.pagination :as paging]
-            [sixsq.nuvla.db.es.utils :as esu]
             [sixsq.nuvla.db.es.script-utils :refer [get-update-script]]
             [sixsq.nuvla.db.es.select :as select]
+            [sixsq.nuvla.db.es.utils :as esu]
             [sixsq.nuvla.db.utils.common :as cu]
             [sixsq.nuvla.server.util.response :as r])
   (:import (java.io Closeable)))

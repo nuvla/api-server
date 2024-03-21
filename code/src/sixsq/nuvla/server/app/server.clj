@@ -3,6 +3,7 @@
     [clojure.tools.logging :as log]
     [compojure.core :as compojure]
     [environ.core :as env]
+    [nrepl.server :as nrepl]
     [nrepl.transport :as transport]
     [ring.middleware.cookies :refer [wrap-cookies]]
     [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
@@ -23,8 +24,7 @@
     [sixsq.nuvla.server.middleware.redirect-cep :refer [redirect-cep]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as resources]
     [sixsq.nuvla.server.util.kafka :as kafka]
-    [sixsq.nuvla.server.util.zookeeper :as zku]
-    [nrepl.server :as nrepl]))
+    [sixsq.nuvla.server.util.zookeeper :as zku]))
 
 
 (def default-db-binding-ns "sixsq.nuvla.db.es.loader")

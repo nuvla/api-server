@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.util.general
   (:require [clojure.string :as str])
   (:import
-    (java.net URLEncoder, URLDecoder)
+    (java.net URLDecoder, URLEncoder)
     (java.nio.charset StandardCharsets)))
 
 (defn filter-map-nil-value

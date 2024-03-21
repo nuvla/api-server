@@ -3,11 +3,11 @@
 The `ts-nuvlaedge` resources create a timeseries related to nuvlaedge availability.
 "
   (:require
+    [sixsq.nuvla.db.es.binding :as es-binding]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
-    [sixsq.nuvla.db.es.binding :as es-binding]
-    [sixsq.nuvla.server.resources.spec.ts-nuvlaedge-availability :as ts-nuvlaedge-availability]
-    [sixsq.nuvla.server.resources.common.utils :as u]))
+    [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.spec.ts-nuvlaedge-availability :as ts-nuvlaedge-availability]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
