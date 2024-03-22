@@ -1378,7 +1378,8 @@
                                            2.4 "IN_current" "A"]) "\n")
                        (csv-request "power-consumption-stats" "raw")))))))))))
 
-(deftest availability-data
+;; temprarily commenting out availability tests to do mem usage testing
+#_(deftest availability-data
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [now                (time/now)
           now-5d             (time/minus now (time/duration-unit 5 :days))

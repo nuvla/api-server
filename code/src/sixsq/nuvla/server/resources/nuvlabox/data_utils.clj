@@ -1145,7 +1145,6 @@
         group-by-device    (fn [aggs] (group-by-field :disk.device aggs))
         group-by-interface (fn [aggs] (group-by-field :network.interface aggs))]
     {"availability-stats"      {:metric          "availability"
-                                :nuvlabox-filter "state='COMMISSIONED'"
                                 :pre-process-fn  (comp filter-available-before-period-end
                                                        assoc-first-availability
                                                        precompute-query-params
@@ -1156,7 +1155,6 @@
                                 :post-process-fn post-process-availabilities
                                 :csv-export-fn   (availability-csv-export-fn)}
      "availability-stats2"     {:metric          "availability"
-                                :nuvlabox-filter "state='COMMISSIONED'"
                                 :pre-process-fn  (comp filter-available-before-period-end
                                                        assoc-first-availability
                                                        precompute-query-params
