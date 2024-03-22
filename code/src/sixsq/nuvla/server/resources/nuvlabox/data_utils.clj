@@ -288,6 +288,21 @@
        (crud/query-as-admin ts-nuvlaedge-availability/resource-type)
        (->metrics-resp options)))
 
+(defn query-availability-raw
+  ([options]
+   (query-availability-raw options 0))
+  ([options skip]
+   (let [[{total-hits :count} hits]
+         (->> (-> (build-availability-query (-> options
+                                                (dissoc :predefined-aggregations :custom-es-aggregations)
+                                                (assoc :raw true
+                                                       :last 10000
+                                                       :orderby [["@timestamp" :asc]])
+                                                (cond-> (pos? skip) (assoc :first skip))))
+                  (assoc :skip-hits-processing true))
+              (crud/query-as-admin ts-nuvlaedge-availability/resource-type))]
+     [total-hits hits])))
+
 (defn build-telemetry-query [{:keys [raw metric] :as options}]
   (build-ts-query (-> options
                       (assoc :additional-filters [(str "metric='" metric "'")])
@@ -983,19 +998,6 @@
            (update-in ts-data-point [:aggregations :by-edge :buckets]
                       (partial update-buckets ts-data-point))))])
     [query-opts resp]))
-
-(defn query-availability-raw
-  ([options]
-   (query-availability-raw options 0))
-  ([options skip]
-   (let [[{total-hits :count} hits]
-         (utils/query-availability-raw
-           (cond->
-             (assoc options
-               :last 10000
-               :orderby [["@timestamp" :asc]])
-             (pos? skip) (assoc :first skip)))]
-     [total-hits hits])))
 
 (defn compute-bucket
   "For the given period compute:
