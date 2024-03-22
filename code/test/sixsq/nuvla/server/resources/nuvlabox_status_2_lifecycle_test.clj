@@ -1650,7 +1650,7 @@
                                     (ltu/is-status 200)
                                     (ltu/body->edn)
                                     (ltu/body))]
-                (is (ish? [{:dimensions {:nuvlaedge-count 2}
+                (is (= [{:dimensions {:nuvlaedge-count 2}
                             :ts-data    [;; yesterday:
                                          ;; edge2 was down 8 hours => 2/3 available
                                          ;; edge3 came up the first time in the middle of the day, but still it should be counted as 100% available
