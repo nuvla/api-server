@@ -72,14 +72,16 @@
   ([f timeout timeout-msg]
    (exec-with-timeout! nil f timeout timeout-msg))
   ([executor f timeout timeout-msg]
-   (let [task (-> (px/submit! executor f)
-                  (p/timeout timeout ::p/default timeout-executor))]
+   (let [int-atom (atom false)
+         task     (-> (px/submit! executor (fn [] (f int-atom)))
+                      (p/timeout timeout ::p/default timeout-executor))]
      (try @task
           (catch ExecutionException ee
             (let [ec (.getCause ee)]
               (if (= (type ec) TimeoutException)
                 (do
                   (p/cancel! task)
+                  (reset! int-atom true)
                   (logu/log-and-throw 504 timeout-msg))
                 (throw ec))))))))
 
@@ -1089,13 +1091,13 @@
     (- (.totalMemory runtime) (.freeMemory runtime))))
 
 (defn query-and-process-availabilities*
-  [{:keys [nuvlaedge-ids from to granularity-duration] :as options}]
+  [{:keys [nuvlaedge-ids from to granularity-duration int-atom] :as options}]
   (let [now              (time/now)
         latests          (all-latest-availability-transient-hashmap
                            nuvlaedge-ids from)
         [total-hits hits] (query-availability-raw options)
         initial-used-mem (used-memory)
-        gc-limit         (* 100 1024 1024) ;; do a gc every 100mb of used mem
+        gc-limit         (* 100 1024 1024)                  ;; do a gc every 100mb of used mem
         ]
     (loop [start      from
            end        (time/plus start granularity-duration)
@@ -1110,11 +1112,13 @@
         (persistent! buckets)
         (let [[latests hits idx total-hits first bucket]
               (compute-bucket options now start end latests hits idx total-hits skipped)]
+          (when @int-atom
+            (throw (InterruptedException.)))
           (when (> (- used-mem initial-used-mem) gc-limit)
             #_(let [runtime (Runtime/getRuntime)
-                  free    (.freeMemory runtime)
-                  total   (.totalMemory runtime)]
-              (log/error "used/free/total memory: " (- total free) " / " free " / " total))
+                    free    (.freeMemory runtime)
+                    total   (.totalMemory runtime)]
+                (log/error "used/free/total memory: " (- total free) " / " free " / " total))
             (System/gc))
           (recur end
                  (time/plus end granularity-duration)
@@ -1371,7 +1375,7 @@
     :base-query-opts
     (-> (select-keys params [:id :from :to :granularity
                              :raw :custom-es-aggregations :predefined-aggregations
-                             :mode])
+                             :mode :int-atom])
         (assoc :request request)
         (cond->
           filter
@@ -1474,9 +1478,12 @@
                   (swap! running-query-data inc)
                   (exec-with-timeout!
                     query-data-executor
-                    (fn []
+                    (fn [int-atom]
                       (try
-                        (query-data params request)
+                        (query-data (assoc params :int-atom int-atom) request)
+                        (catch InterruptedException e
+                          (log/error "Query execution was interrupted")
+                          (throw e))
                         (finally
                           (swap! running-query-data dec))))
                     ;; allow 25 seconds max (or QUERY_DATA_MAX_TIME)

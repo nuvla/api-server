@@ -16,6 +16,7 @@
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.resources.nuvlabox-status-2 :as nb-status-2]
+    [sixsq.nuvla.server.resources.nuvlabox.data-utils :as data-utils]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [sixsq.nuvla.server.resources.ts-nuvlaedge-availability :as ts-ne-availability]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
@@ -1780,7 +1781,7 @@
 (deftest availability-perf-test
   ;; Perf tests are commented out because it takes long time to insert 10k nuvlaedges.
   ;; Uncomment locally and run them as needed.
-  #_(binding [config-nuvla/*stripe-api-key* nil]
+  (binding [config-nuvla/*stripe-api-key* nil]
     (let [now           (time/now)
           now-1d        (time/minus now (time/duration-unit 1 :days))
           session       (-> (ltu/ring-app)
@@ -1790,11 +1791,12 @@
           session-user  (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
           session-nb    (header session authn-info-header (str "user/jane user/jane group/nuvla-user group/nuvla-anon"))]
       (testing "performance test querying multiple muvlaboxes"
-        (let [n 2500] ; n 2500 => 10k nuvlaboxes
+        (let [n 10]                                         ; n 2500 => 10k nuvlaboxes
           (dotimes [_i n]
             (create-availability-test-nuvlaboxes
               session-user session-nb session-admin now))
           (ltu/refresh-es-indices)
+
           (let [nuvlabox-data-url  (str p/service-context nb/resource-type "/data")
                 midnight-today     (time/truncated-to-days now)
                 midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
@@ -1810,39 +1812,53 @@
                                                            :to          (if to (time/to-str to) to-str)
                                                            :granularity granularity}))))
                 from               midnight-yesterday
-                to                 now
-                [elapsed-time metric-data]
-                (logt/logtime1
+                to                 now]
+
+            (testing "make sure long running availability computations are interrupted after timeout"
+              (let [from now-1d
+                    to   now]
+                (with-redefs [data-utils/query-data-max-time 10]
                   (-> (metrics-request {:datasets    ["availability-stats"]
                                         :from        from
                                         :to          to
                                         :granularity "1-days"})
-                      (ltu/is-status 200)
+                      (ltu/is-status 504)
                       (ltu/body->edn)
-                      (ltu/body)))
-                n-av-edges         (* 2 n)]
-            (is (< elapsed-time 25000))
-            (is (ish? [{:dimensions {:nuvlaedge-count n-av-edges}
-                        :ts-data    [;; yesterday:
-                                     ;; edge2 was down 8 hours => 2/3 available
-                                     ;; edge3 came up the first time in the middle of the day, but still it should be counted as 100% available
-                                     ;; edge4 and edge5 should not be counted (not sending data and not commissioned)
-                                     (let [seconds-in-day          (* 3600 24)
-                                           seconds-edge3-yesterday (time/time-between now-1d midnight-today :seconds)
-                                           global-avg-online       (double (/ (+ (* 2/3 seconds-in-day) seconds-edge3-yesterday)
-                                                                              (+ seconds-in-day seconds-edge3-yesterday)))
-                                           online-edges            (* n-av-edges global-avg-online)]
-                                       {:timestamp    (time/to-str midnight-yesterday)
-                                        :doc-count    (* 3 n)
-                                        :aggregations {:edges-count           {:value n-av-edges}
-                                                       :virtual-edges-offline {:value (- n-av-edges online-edges)}
-                                                       :virtual-edges-online  {:value online-edges}}})
-                                     {:timestamp    (time/to-str midnight-today)
-                                      :doc-count    0
-                                      :aggregations {:edges-count           {:value n-av-edges}
-                                                     :virtual-edges-offline {:value 0}
-                                                     :virtual-edges-online  {:value n-av-edges}}}]}]
-                      (:availability-stats metric-data)))))))))
+                      (ltu/body)))))
+
+            (testing "availability query performance"
+              (let [[elapsed-time metric-data]
+                    (logt/logtime1
+                      (-> (metrics-request {:datasets    ["availability-stats"]
+                                            :from        from
+                                            :to          to
+                                            :granularity "1-days"})
+                          (ltu/is-status 200)
+                          (ltu/body->edn)
+                          (ltu/body)))
+                    n-av-edges (* 2 n)]
+                (is (< elapsed-time 25000))
+                (is (ish? [{:dimensions {:nuvlaedge-count n-av-edges}
+                            :ts-data    [;; yesterday:
+                                         ;; edge2 was down 8 hours => 2/3 available
+                                         ;; edge3 came up the first time in the middle of the day, but still it should be counted as 100% available
+                                         ;; edge4 and edge5 should not be counted (not sending data and not commissioned)
+                                         (let [seconds-in-day          (* 3600 24)
+                                               seconds-edge3-yesterday (time/time-between now-1d midnight-today :seconds)
+                                               global-avg-online       (double (/ (+ (* 2/3 seconds-in-day) seconds-edge3-yesterday)
+                                                                                  (+ seconds-in-day seconds-edge3-yesterday)))
+                                               online-edges            (* n-av-edges global-avg-online)]
+                                           {:timestamp    (time/to-str midnight-yesterday)
+                                            :doc-count    (* 3 n)
+                                            :aggregations {:edges-count           {:value n-av-edges}
+                                                           :virtual-edges-offline {:value (- n-av-edges online-edges)}
+                                                           :virtual-edges-online  {:value online-edges}}})
+                                         {:timestamp    (time/to-str midnight-today)
+                                          :doc-count    0
+                                          :aggregations {:edges-count           {:value n-av-edges}
+                                                         :virtual-edges-offline {:value 0}
+                                                         :virtual-edges-online  {:value n-av-edges}}}]}]
+                          (:availability-stats metric-data)))))))))))
 
 (deftest lifecycle-online-next-heartbeat
   (test-online-next-heartbeat))
