@@ -201,13 +201,15 @@
           aggregations            (-> response :body :aggregations)
           meta                    (cond-> {:count count-before-pagination}
                                           aggregations (assoc :aggregations aggregations))
-          hits                    (cond->> (->> response :body :hits :hits (map :_source))
-                                           ts-aggregation
-                                           (map (fn [hit] (-> hit
-                                                              (assoc :timestamp (get hit (keyword "@timestamp")))
-                                                              (dissoc (keyword "@timestamp")))))
-                                           collapse
-                                           (map merge (->> response :body :hits :hits (map #(select-keys % [:inner_hits])))))]
+          hits                    (if (:skip-hits-processing options)
+                                    (get-in response [:body :hits :hits])
+                                    (cond->> (->> response :body :hits :hits (map :_source))
+                                             ts-aggregation
+                                             (map (fn [hit] (-> hit
+                                                                (assoc :timestamp (get hit (keyword "@timestamp")))
+                                                                (dissoc (keyword "@timestamp")))))
+                                             collapse
+                                             (map merge (->> response :body :hits :hits (map #(select-keys % [:inner_hits]))))))]
       (if (shards-successful? response)
         [meta hits]
         (let [msg (str "error when querying: " (:body response))]

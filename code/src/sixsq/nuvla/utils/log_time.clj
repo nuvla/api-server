@@ -22,3 +22,15 @@
 (defn ->>logf
   [msg f & args]
   (logtime msg (apply f args)))
+
+(defmacro logtime1
+  "Like logtime but also returns the elapsed time in msecs and does not log."
+  [expr]
+  `(let [start# (. System (nanoTime))]
+     (try
+       (let [ret#     ~expr
+             elapsed# (/ (double (- (. System (nanoTime)) start#)) 1000000.0)]
+         [elapsed# ret#])
+       (catch Throwable t#
+         (throw t#)))))
+

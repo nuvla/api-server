@@ -109,3 +109,6 @@
       (.toOffsetDateTime)))
 
 (def year t/year)
+
+(def min-time t/min)
+(def max-time t/max)
