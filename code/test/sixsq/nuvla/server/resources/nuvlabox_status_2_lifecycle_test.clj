@@ -1781,7 +1781,7 @@
 (deftest availability-perf-test
   ;; Perf tests are commented out because it takes long time to insert 10k nuvlaedges.
   ;; Uncomment locally and run them as needed.
-  (binding [config-nuvla/*stripe-api-key* nil]
+  #_(binding [config-nuvla/*stripe-api-key* nil]
     (let [now           (time/now)
           now-1d        (time/minus now (time/duration-unit 1 :days))
           session       (-> (ltu/ring-app)
@@ -1791,7 +1791,7 @@
           session-user  (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
           session-nb    (header session authn-info-header (str "user/jane user/jane group/nuvla-user group/nuvla-anon"))]
       (testing "performance test querying multiple muvlaboxes"
-        (let [n 10]                                         ; n 2500 => 10k nuvlaboxes
+        (let [n 2500]                                         ; n 2500 => 10k nuvlaboxes
           (dotimes [_i n]
             (create-availability-test-nuvlaboxes
               session-user session-nb session-admin now))
@@ -1817,7 +1817,7 @@
             (testing "make sure long running availability computations are interrupted after timeout"
               (let [from now-1d
                     to   now]
-                (with-redefs [data-utils/query-data-max-time 10]
+                (with-redefs [data-utils/query-data-max-time 100]
                   (-> (metrics-request {:datasets    ["availability-stats"]
                                         :from        from
                                         :to          to
