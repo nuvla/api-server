@@ -18,8 +18,7 @@
     [sixsq.nuvla.server.resources.ts-nuvlaedge-telemetry :as ts-nuvlaedge-telemetry]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.time :as time]
-    [sixsq.nuvla.utils.log-memory :as logm])
+    [sixsq.nuvla.server.util.time :as time])
   (:import
     (java.io StringWriter)
     (java.text DecimalFormat DecimalFormatSymbols)
@@ -34,7 +33,7 @@
 
 (def first-availability-query-timeout (env/env :first-availability-query-timeout 10000))
 (def latest-availability-query-timeout (env/env :latest-availability-query-timeout 10000))
-(def max-nuvlaboxes-count (env/env :max-nuvlaboxes-count 500))
+(def max-nuvlaboxes-count (env/env :max-nuvlaboxes-count 50000))
 
 (defn add-jvm-shutdown-hook
   [f]
@@ -256,7 +255,7 @@
     custom-es-aggregations
     {:aggregations custom-es-aggregations}))
 
-(defn build-ts-query [{:keys [last nuvlaedge-ids from to additional-filters] :as options}]
+(defn build-ts-query [{:keys [last nuvlaedge-ids from to additional-filters orderby] :as options}]
   (let [nuvlabox-id-filter (str "nuvlaedge-id=[" (str/join " " (map #(str "'" % "'")
                                                                     nuvlaedge-ids))
                                 "]")
@@ -265,16 +264,18 @@
                                 "@timestamp<'" (time/to-str to) "'")
         aggregation-clause (build-aggregations-clause options)]
     (cond->
-      {:cimi-params {:last (or last 0)
-                     :filter
-                     (parser/parse-cimi-filter
-                       (str "("
-                            (apply str
-                                   (interpose " and "
-                                              (into [nuvlabox-id-filter
-                                                     time-range-filter]
-                                                    additional-filters)))
-                            ")"))}}
+      {:cimi-params (cond->
+                      {:last (or last 0)
+                       :filter
+                       (parser/parse-cimi-filter
+                         (str "("
+                              (apply str
+                                     (interpose " and "
+                                                (into [nuvlabox-id-filter
+                                                       time-range-filter]
+                                                      additional-filters)))
+                              ")"))}
+                      orderby (assoc :orderby orderby))}
       aggregation-clause
       (assoc :params {:tsds-aggregation (json/write-str aggregation-clause)}))))
 
@@ -528,7 +529,7 @@
   [{:keys [nuvlaboxes] :as params}]
   (assoc params
     :nuvlaboxes
-    (map #(update % :created time/date-from-str) nuvlaboxes)))
+    (mapv #(update % :created time/date-from-str) nuvlaboxes)))
 
 (defn granularity->duration
   "Converts from a string of the form <n>-<units> to java.time duration"
@@ -550,7 +551,7 @@
 
 (defn filter-available-before-period-end
   [{:keys [to nuvlaboxes] :as params}]
-  (let [nuvlaboxes (filter #(available-before? % to) nuvlaboxes)]
+  (let [nuvlaboxes (filterv #(available-before? % to) nuvlaboxes)]
     (assoc params
       :nuvlaboxes nuvlaboxes
       :nuvlaedge-ids (mapv :id nuvlaboxes))))
@@ -1004,66 +1005,79 @@
   - total commissioned time
   - total online time
   - n edges"
-  [options start end latests hits idx total-hits skipped]
-  (loop [latests                 latests
-         hits                    hits
-         hits-count              (.length hits)
-         total-hits              total-hits
-         skipped                 skipped
-         idx                     idx
-         total-commissioned-time 0.0
-         total-online-time       0.0
-         doc-count               0
-         bucket-edge-ids         (transient #{})]
-    (if (< idx hits-count)
-      (let [hit            (some-> (nth hits idx) :_source)
-            nuvlaedge-id   (:nuvlaedge-id hit)
-            latest         (get latests nuvlaedge-id)
-            prev-online    (get latest :online)
-            timestamp      (some-> (get hit (keyword "@timestamp")) time/date-from-str)
-            prev-timestamp (time/max-time (get latest :timestamp) start)
-            secs           (time/time-between prev-timestamp timestamp :seconds)]
-        (recur (assoc! latests nuvlaedge-id
-                       (if latest
-                         (assoc! latest
-                                 :timestamp timestamp
-                                 :online (get hit :online))
-                         (transient {:timestamp timestamp
-                                     :online    (get hit :online)})))
-               hits
-               (.length hits)
-               total-hits
-               skipped
-               (inc idx)
-               (+ total-commissioned-time secs)
-               (if (= prev-online 1) (+ total-online-time secs) total-online-time)
-               (inc doc-count)
-               (conj! bucket-edge-ids nuvlaedge-id)))
-      (let [processed (+ skipped hits-count)]
-        (if (< processed total-hits)
-          (let [[total-hits hits] (query-availability-raw options processed)]
-            (recur latests
+  [{:keys [nuvlaboxes] :as options} now start end latests hits idx total-hits skipped]
+  (let [end (time/min-time now end)]
+    (loop [latests                 latests
+           hits                    hits
+           hits-count              (.length hits)
+           total-hits              total-hits
+           skipped                 skipped
+           idx                     idx
+           total-commissioned-time 0.0
+           total-online-time       0.0
+           doc-count               0]
+      (let [hit       (when (< idx hits-count) (some-> (nth hits idx) :_source))
+            timestamp (some-> (get hit (keyword "@timestamp")) time/date-from-str)]
+        (if (and (< idx hits-count) (time/before? timestamp end))
+          (let [nuvlaedge-id   (:nuvlaedge-id hit)
+                latest         (get latests nuvlaedge-id)
+                prev-online    (get latest :online)
+                prev-timestamp (time/max-time (get latest :timestamp) start)
+                secs           (time/time-between prev-timestamp timestamp :seconds)]
+            (recur (assoc! latests nuvlaedge-id
+                           (if latest
+                             (assoc! latest
+                                     :timestamp timestamp
+                                     :online (get hit :online))
+                             (transient {:timestamp timestamp
+                                         :online    (get hit :online)})))
                    hits
                    (.length hits)
                    total-hits
-                   processed
-                   0
-                   total-commissioned-time
-                   total-online-time
-                   doc-count
-                   bucket-edge-ids))
-          ;; TODO: go through (:nuvlaedge-ids options) and update the bucket with edges with no hits, and with with the last time interval
-          (let [n-edges               (count bucket-edge-ids)
-                n-edges-not-in-bucket (count (set/difference (set (:nuvlaedge-ids options))
-                                                             (persistent! bucket-edge-ids)))
-                bucket-duration       (time/time-between start end :seconds)
-                bucket                {:start                   (time/to-str start)
-                                       :end                     (time/to-str end)
-                                       :total-commissioned-time (+ total-commissioned-time (* bucket-duration n-edges-not-in-bucket))
-                                       :total-online-time       total-online-time
-                                       :doc-count               doc-count
-                                       :n-edges                 n-edges}]
-            [latests hits idx total-hits skipped bucket]))))))
+                   skipped
+                   (inc idx)
+                   (if latest (+ total-commissioned-time secs) total-commissioned-time)
+                   (if (= prev-online 1) (+ total-online-time secs) total-online-time)
+                   (inc doc-count)))
+          (let [processed (+ skipped hits-count)]
+            (if (and (< processed total-hits) (time/before? timestamp end))
+              ;; fetch more data from ES
+              (let [[total-hits hits] (query-availability-raw options processed)]
+                (recur latests
+                       hits
+                       (.length hits)
+                       total-hits
+                       processed
+                       0
+                       total-commissioned-time
+                       total-online-time
+                       doc-count))
+              ;; compute remaining intervals to end of bucket
+              (let [[total-commissioned-time total-online-time bucket-edges-count]
+                    (loop [total-commissioned-time total-commissioned-time
+                           total-online-time       total-online-time
+                           edge-idx                0
+                           bucket-edges-count      0]
+                      (if (= (.length nuvlaboxes) edge-idx)
+                        [total-commissioned-time total-online-time bucket-edges-count]
+                        (let [nb             (nth nuvlaboxes edge-idx)
+                              edge-id        (:id nb)
+                              created        (:created nb)
+                              latest         (get latests edge-id)
+                              prev-online    (get latest :online)
+                              prev-timestamp (time/max-time (get latest :timestamp) start)
+                              secs           (time/time-between (time/max-time created prev-timestamp start) end :seconds)]
+                          (recur (+ total-commissioned-time secs)
+                                 (if (= prev-online 1) (+ total-online-time secs) total-online-time)
+                                 (inc edge-idx)
+                                 (if (some? prev-online) (inc bucket-edges-count) bucket-edges-count)))))
+                    bucket {:start                   (time/to-str start)
+                            :end                     (time/to-str end)
+                            :total-commissioned-time total-commissioned-time
+                            :total-online-time       total-online-time
+                            :doc-count               doc-count
+                            :n-edges                 bucket-edges-count}]
+                [latests hits idx total-hits skipped bucket]))))))))
 
 (defn query-and-process-availabilities*
   [{:keys [nuvlaedge-ids from to granularity-duration] :as options}]
@@ -1082,7 +1096,7 @@
       (if (time/after? start to)
         (persistent! buckets)
         (let [[latests hits idx total-hits first bucket]
-              (compute-bucket options start end latests hits idx total-hits skipped)]
+              (compute-bucket options now start end latests hits idx total-hits skipped)]
           (recur end
                  (time/plus end granularity-duration)
                  latests
@@ -1095,37 +1109,19 @@
 (defn query-and-process-availabilities
   [{:keys [predefined-aggregations nuvlaboxes] :as options}]
   (if predefined-aggregations
-    (logm/logmemory
-      :query-and-process-availabilities
-      (let [ret (query-and-process-availabilities* options)]
-        [{:dimensions {:nuvlaedge-count (count nuvlaboxes)}
-          :ts-data    (mapv
-                        (fn [{:keys [start n-edges total-commissioned-time total-online-time] :as _bucket}]
-                          (let [virtual-edges-online (* n-edges (/ (double total-online-time)
-                                                                   total-commissioned-time))]
-                            {:timestamp    start
-                             :doc-count    n-edges          ;; TODO: change doc-count to changed-edges
-                             :aggregations {:edges-count           {:value n-edges}
-                                            :virtual-edges-offline {:value virtual-edges-online}
-                                            :virtual-edges-online  {:value (- n-edges virtual-edges-online)}}}))
-                        ret)}]))
+    (let [ret (query-and-process-availabilities* options)]
+      [{:dimensions {:nuvlaedge-count (count nuvlaboxes)}
+        :ts-data    (mapv
+                      (fn [{:keys [start n-edges doc-count total-commissioned-time total-online-time] :as _bucket}]
+                        (let [virtual-edges-online (* n-edges (/ (double total-online-time)
+                                                                 total-commissioned-time))]
+                          {:timestamp    start
+                           :doc-count    doc-count
+                           :aggregations {:edges-count           {:value n-edges}
+                                          :virtual-edges-online  {:value virtual-edges-online}
+                                          :virtual-edges-offline {:value (- n-edges virtual-edges-online)}}}))
+                      ret)}])
     (query-availability options)))
-
-(defn post-process-availabilities
-  [[{:keys [predefined-aggregations] :as query-opts} resp]]
-  [query-opts
-   (if predefined-aggregations
-     resp
-     ((comp timestamps->str
-            dissoc-hits
-            add-virtual-edge-number-by-status-fn
-            compute-global-availability
-            add-edges-count
-            add-missing-edges-fn
-            compute-nuvlaboxes-availabilities
-            assoc-latest-availability
-            timestamps->date)
-      resp))])
 
 (defn keep-response-aggs-only
   [{:keys [predefined-aggregations response-aggs] :as _query-opts} resp]
@@ -1154,7 +1150,9 @@
                                                        throw-too-many-nuvlaboxes
                                                        (partial assoc-commissioned-nuvlaboxes ["id" "created"]))
                                 :query-fn        query-and-process-availabilities
-                                :post-process-fn post-process-availabilities
+                                :response-aggs   [:edges-count
+                                                  :virtual-edges-online
+                                                  :virtual-edges-offline]
                                 :csv-export-fn   (availability-csv-export-fn)}
      "availability-stats2"     {:metric          "availability"
                                 :pre-process-fn  (comp filter-available-before-period-end
@@ -1472,3 +1470,4 @@
             (swap! requesting-query-data dec))))
       ;; let non-availability queries go through
       (query-data params request))))
+

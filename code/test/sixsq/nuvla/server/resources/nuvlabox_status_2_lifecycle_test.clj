@@ -19,7 +19,9 @@
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [sixsq.nuvla.server.resources.ts-nuvlaedge-availability :as ts-ne-availability]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [sixsq.nuvla.server.util.time :as time])
+    [sixsq.nuvla.server.util.time :as time]
+    [sixsq.nuvla.utils.log-memory :as logm]
+    [sixsq.nuvla.utils.log-time :as logt])
   (:import (java.text DecimalFormat DecimalFormatSymbols)
            (java.util Locale)))
 
@@ -1378,6 +1380,91 @@
                                            2.4 "IN_current" "A"]) "\n")
                        (csv-request "power-consumption-stats" "raw")))))))))))
 
+(defn create-commissioned-nuvlabox
+  [session body created]
+  (with-redefs [time/now-str (constantly (time/to-str created))]
+    (let [nuvlabox     (-> session
+                           (request nuvlabox-base-uri
+                                    :request-method :post
+                                    :body (json/write-str body))
+                           (ltu/body->edn)
+                           (ltu/is-status 201))
+          nuvlabox-id  (ltu/location nuvlabox)
+          nuvlabox-url (str p/service-context nuvlabox-id)
+          _            (-> session
+                           (request (-> session
+                                        (request nuvlabox-url)
+                                        (ltu/body->edn)
+                                        (ltu/is-status 200)
+                                        (ltu/get-op-url :activate)))
+                           (ltu/body->edn)
+                           (ltu/is-status 200))
+          _            (-> session
+                           (request (-> session
+                                        (request nuvlabox-url)
+                                        (ltu/body->edn)
+                                        (ltu/is-status 200)
+                                        (ltu/get-op-url :commission)))
+                           (ltu/body->edn)
+                           (ltu/is-status 200))]
+      nuvlabox-id)))
+
+(defn create-availability-test-nuvlaboxes
+  [session-user session-nb session-admin now]
+  (let [now-5d             (time/minus now (time/duration-unit 5 :days))
+        now-1d             (time/minus now (time/duration-unit 1 :days))
+        midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
+        yesterday-2am      (time/plus midnight-yesterday (time/duration-unit 2 :hours))
+        yesterday-10am     (time/plus midnight-yesterday (time/duration-unit 10 :hours))
+        ;; add a nuvlabox in state COMMISSIONED, first online 5 days ago, and down for 8 hours yesterday from 2am until 10am
+        nuvlabox-id-2      (create-commissioned-nuvlabox session-user valid-nuvlabox2 now-5d)
+        nuvlabox-url-2     (str p/service-context nuvlabox-id-2)
+        heartbeat-op-2     (-> session-user
+                               (request nuvlabox-url-2)
+                               (ltu/body->edn)
+                               (ltu/is-status 200)
+                               (ltu/get-op-url nb-utils/action-heartbeat))
+        set-offline-op-2   (str nuvlabox-url-2 "/" nb-utils/action-set-offline)
+        _                  (with-redefs [time/now (constantly now-5d)]
+                             (-> session-user
+                                 (request heartbeat-op-2)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)))
+        _                  (with-redefs [time/now (constantly yesterday-2am)]
+                             (-> session-admin
+                                 (request set-offline-op-2)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)))
+        _                  (with-redefs [time/now (constantly yesterday-10am)]
+                             (-> session-nb
+                                 (request heartbeat-op-2)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)))
+        ;; and another nuvlabox in state COMMISSIONED, first online 1 day ago
+        nuvlabox-id-3      (create-commissioned-nuvlabox session-user valid-nuvlabox3 now-5d)
+        nuvlabox-url-3     (str p/service-context nuvlabox-id-3)
+        heartbeat-op-3     (-> session-nb
+                               (request nuvlabox-url-3)
+                               (ltu/body->edn)
+                               (ltu/is-status 200)
+                               (ltu/get-op-url nb-utils/action-heartbeat))
+        _                  (with-redefs [time/now (constantly now-1d)]
+                             (-> session-nb
+                                 (request heartbeat-op-3)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)))
+        ;; add yet another nuvlabox in state COMMISSIONED, but for which we send no metrics
+        nuvlabox-id-4      (create-commissioned-nuvlabox session-user valid-nuvlabox4 now-5d)
+        ;; and another one which we leave in state NEW, so it should not be considered as offline
+        nuvlabox-id-5      (-> session-user
+                               (request nuvlabox-base-uri
+                                        :request-method :post
+                                        :body (json/write-str (assoc valid-nuvlabox :created (time/to-str now-5d))))
+                               (ltu/body->edn)
+                               (ltu/is-status 201)
+                               (ltu/location))]
+    [nuvlabox-id-2 nuvlabox-id-3 nuvlabox-id-4 nuvlabox-id-5]))
+
 (deftest availability-data
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [now                (time/now)
@@ -1394,33 +1481,7 @@
                                  (content-type "application/json"))
           session-admin      (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
           session-user       (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
-          create-nuvlabox    (fn [body created]
-                               (with-redefs [time/now-str (constantly (time/to-str created))]
-                                 (let [nuvlabox     (-> session-user
-                                                        (request nuvlabox-base-uri
-                                                                 :request-method :post
-                                                                 :body (json/write-str body))
-                                                        (ltu/body->edn)
-                                                        (ltu/is-status 201))
-                                       nuvlabox-id  (ltu/location nuvlabox)
-                                       nuvlabox-url (str p/service-context nuvlabox-id)
-                                       _            (-> session-user
-                                                        (request (-> session-user
-                                                                     (request nuvlabox-url)
-                                                                     (ltu/body->edn)
-                                                                     (ltu/is-status 200)
-                                                                     (ltu/get-op-url :activate)))
-                                                        (ltu/body->edn)
-                                                        (ltu/is-status 200))
-                                       _            (-> session-user
-                                                        (request (-> session-user
-                                                                     (request nuvlabox-url)
-                                                                     (ltu/body->edn)
-                                                                     (ltu/is-status 200)
-                                                                     (ltu/get-op-url :commission)))
-                                                        (ltu/body->edn)
-                                                        (ltu/is-status 200))]
-                                   nuvlabox-id)))
+          create-nuvlabox    (partial create-commissioned-nuvlabox session-user)
           nuvlabox-id        (create-nuvlabox valid-nuvlabox now-5d)
           nuvlabox-url       (str p/service-context nuvlabox-id)
           session-nb         (header session authn-info-header (str "user/jane user/jane group/nuvla-user group/nuvla-anon"))
@@ -1572,55 +1633,9 @@
                          (csv-request "availability-stats" "raw"))))))))
 
         (testing "availability data across multiple nuvlaboxes"
-          (let [;; add another nuvlabox in state COMMISSIONED, first online 5 days ago, and down for 8 hours yesterday from 2am until 10am
-                nuvlabox-id-2      (create-nuvlabox valid-nuvlabox2 now-5d)
-                nuvlabox-url-2     (str p/service-context nuvlabox-id-2)
-                heartbeat-op-2     (-> session-nb
-                                       (request nuvlabox-url-2)
-                                       (ltu/body->edn)
-                                       (ltu/is-status 200)
-                                       (ltu/get-op-url nb-utils/action-heartbeat))
-                set-offline-op-2   (str nuvlabox-url-2 "/" nb-utils/action-set-offline)
-                _                  (with-redefs [time/now (constantly now-5d)]
-                                     (-> session-nb
-                                         (request heartbeat-op-2)
-                                         (ltu/body->edn)
-                                         (ltu/is-status 200)))
-                _                  (with-redefs [time/now (constantly yesterday-2am)]
-                                     (-> session-admin
-                                         (request set-offline-op-2)
-                                         (ltu/body->edn)
-                                         (ltu/is-status 200)))
-                _                  (with-redefs [time/now (constantly yesterday-10am)]
-                                     (-> session-nb
-                                         (request heartbeat-op-2)
-                                         (ltu/body->edn)
-                                         (ltu/is-status 200)))
-                ;; and another nuvlabox in state COMMISSIONED, first online 1 day ago
-                nuvlabox-id-3      (create-nuvlabox valid-nuvlabox3 now-5d)
-                nuvlabox-url-3     (str p/service-context nuvlabox-id-3)
-                heartbeat-op-3     (-> session-nb
-                                       (request nuvlabox-url-3)
-                                       (ltu/body->edn)
-                                       (ltu/is-status 200)
-                                       (ltu/get-op-url nb-utils/action-heartbeat))
-                _                  (with-redefs [time/now (constantly now-1d)]
-                                     (-> session-nb
-                                         (request heartbeat-op-3)
-                                         (ltu/body->edn)
-                                         (ltu/is-status 200)))
-                ;; add yet another nuvlabox in state COMMISSIONED, but for which we send no metrics
-                nuvlabox-id-4      (create-nuvlabox valid-nuvlabox4 now-5d)
-                ;; and another one which we leave in state NEW, so it should not be considered as offline
-                nuvlabox-id-5      (-> session-user
-                                       (request nuvlabox-base-uri
-                                                :request-method :post
-                                                :body (json/write-str (assoc valid-nuvlabox :created (time/to-str now-5d))))
-                                       (ltu/body->edn)
-                                       (ltu/is-status 201)
-                                       (ltu/location))
+          (let [[nuvlabox-id-2 nuvlabox-id-3 nuvlabox-id-4 nuvlabox-id-5] (create-availability-test-nuvlaboxes
+                                                                            session-user session-nb session-admin now)
                 nuvlabox-data-url  (str p/service-context nb/resource-type "/data")
-                now                (time/now)
                 midnight-today     (time/truncated-to-days now)
                 midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
                 metrics-request    (fn [{:keys [datasets from from-str to to-str granularity accept-header]}]
@@ -1650,13 +1665,16 @@
                                     (ltu/is-status 200)
                                     (ltu/body->edn)
                                     (ltu/body))]
-                #_(is (= [{:dimensions {:nuvlaedge-count 2}
+                (is (ish? [{:dimensions {:nuvlaedge-count 2}
                             :ts-data    [;; yesterday:
                                          ;; edge2 was down 8 hours => 2/3 available
                                          ;; edge3 came up the first time in the middle of the day, but still it should be counted as 100% available
                                          ;; edge4 and edge5 should not be counted (not sending data and not commissioned)
-                                         (let [global-avg-online (double (/ (+ 1 2/3) 2))
-                                               online-edges      (* 2 global-avg-online)]
+                                         (let [seconds-in-day          (* 3600 24)
+                                               seconds-edge3-yesterday (time/time-between now-1d midnight-today :seconds)
+                                               global-avg-online       (double (/ (+ (* 2/3 seconds-in-day) seconds-edge3-yesterday)
+                                                                                  (+ seconds-in-day seconds-edge3-yesterday)))
+                                               online-edges            (* 2 global-avg-online)]
                                            {:timestamp    (time/to-str midnight-yesterday)
                                             :doc-count    3
                                             :aggregations {:edges-count           {:value 2}
@@ -1709,7 +1727,7 @@
                                               (ltu/is-status 200)
                                               (ltu/body->edn)
                                               (ltu/body))]
-                #_(is (= [{:dimensions {:nuvlaedge-count 2}
+                (is (= [{:dimensions {:nuvlaedge-count 2}
                          :ts-data    (->> [{:nuvlaedge-id nuvlabox-id-2
                                             :online       0
                                             :timestamp    (time/to-str yesterday-2am)}
@@ -1735,10 +1753,13 @@
                                       (ltu/is-header "Content-disposition" "attachment;filename=export.csv")
                                       (ltu/body)))
                     fmt         #(.format (DecimalFormat. "0.####" (DecimalFormatSymbols. Locale/US)) %)]
-                #_(testing "export with predefined aggregations"
+                (testing "export with predefined aggregations"
                   (is (= (str "nuvlaedge-count,timestamp,doc-count,edges-count,virtual-edges-online,virtual-edges-offline\n"
-                              (let [global-avg-online (double (/ (+ 1 2/3) 2))
-                                    online-edges      (* 2 global-avg-online)]
+                              (let [seconds-in-day          (* 3600 24)
+                                    seconds-edge3-yesterday (time/time-between now-1d midnight-today :seconds)
+                                    global-avg-online       (double (/ (+ (* 2/3 seconds-in-day) seconds-edge3-yesterday)
+                                                                       (+ seconds-in-day seconds-edge3-yesterday)))
+                                    online-edges            (* 2 global-avg-online)]
                                 (str/join "," [2
                                                (time/to-str midnight-yesterday)
                                                3, 2, (fmt online-edges), (fmt (- 2 online-edges))])) "\n"
@@ -1756,6 +1777,75 @@
                                                                    nuvlabox-id-3, 1])]))
                               "\n")
                          (csv-request "availability-stats" "raw"))))))))))))
+
+(deftest availability-perf-test
+  ;; Perf tests are commented out because it takes long time to insert 10k nuvlaedges.
+  ;; Uncomment locally and run them as needed.
+  #_(binding [config-nuvla/*stripe-api-key* nil]
+      (let [now           (time/now)
+            now-1d        (time/minus now (time/duration-unit 1 :days))
+            session       (-> (ltu/ring-app)
+                              session
+                              (content-type "application/json"))
+            session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+            session-user  (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
+            session-nb    (header session authn-info-header (str "user/jane user/jane group/nuvla-user group/nuvla-anon"))]
+        (testing "performance test querying multiple muvlaboxes"
+          (let [n 2500]
+            (dotimes [_i n]
+              (create-availability-test-nuvlaboxes
+                session-user session-nb session-admin now))
+            (ltu/refresh-es-indices)
+            (let [nuvlabox-data-url  (str p/service-context nb/resource-type "/data")
+                  midnight-today     (time/truncated-to-days now)
+                  midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
+                  metrics-request    (fn [{:keys [datasets from from-str to to-str granularity accept-header]}]
+                                       (-> session-nb
+                                           (cond-> accept-header (header "accept" accept-header))
+                                           (request nuvlabox-data-url
+                                                    :request-method :patch
+                                                    :headers {:bulk true}
+                                                    :body (json/write-str
+                                                            {:dataset     datasets
+                                                             :from        (if from (time/to-str from) from-str)
+                                                             :to          (if to (time/to-str to) to-str)
+                                                             :granularity granularity}))))
+                  from               midnight-yesterday
+                  to                 now
+                  [mem-used [elapsed-time metric-data]]
+                  (logm/logmemory1
+                    (logt/logtime1
+                      (-> (metrics-request {:datasets    ["availability-stats"]
+                                            :from        from
+                                            :to          to
+                                            :granularity "1-days"})
+                          (ltu/is-status 200)
+                          (ltu/body->edn)
+                          (ltu/body))))
+                  n-av-edges         (* 2 n)]
+              (is (< 10000 mem-used))
+              (is (< 25000 elapsed-time))
+              (is (ish? [{:dimensions {:nuvlaedge-count n-av-edges}
+                          :ts-data    [;; yesterday:
+                                       ;; edge2 was down 8 hours => 2/3 available
+                                       ;; edge3 came up the first time in the middle of the day, but still it should be counted as 100% available
+                                       ;; edge4 and edge5 should not be counted (not sending data and not commissioned)
+                                       (let [seconds-in-day          (* 3600 24)
+                                             seconds-edge3-yesterday (time/time-between now-1d midnight-today :seconds)
+                                             global-avg-online       (double (/ (+ (* 2/3 seconds-in-day) seconds-edge3-yesterday)
+                                                                                (+ seconds-in-day seconds-edge3-yesterday)))
+                                             online-edges            (* n-av-edges global-avg-online)]
+                                         {:timestamp    (time/to-str midnight-yesterday)
+                                          :doc-count    (* 3 n)
+                                          :aggregations {:edges-count           {:value n-av-edges}
+                                                         :virtual-edges-offline {:value (- n-av-edges online-edges)}
+                                                         :virtual-edges-online  {:value online-edges}}})
+                                       {:timestamp    (time/to-str midnight-today)
+                                        :doc-count    0
+                                        :aggregations {:edges-count           {:value n-av-edges}
+                                                       :virtual-edges-offline {:value 0}
+                                                       :virtual-edges-online  {:value n-av-edges}}}]}]
+                        (:availability-stats metric-data)))))))))
 
 (deftest lifecycle-online-next-heartbeat
   (test-online-next-heartbeat))

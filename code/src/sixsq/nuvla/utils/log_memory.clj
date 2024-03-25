@@ -17,6 +17,10 @@
     (gc)
     (- (.totalMemory runtime) (.freeMemory runtime))))
 
+(defn used-memory-no-gc []
+  (let [runtime (Runtime/getRuntime)]
+    (- (.totalMemory runtime) (.freeMemory runtime))))
+
 (defmacro logmemory [msg expr]
   `(let [before# (used-memory)]
      (try
@@ -25,18 +29,16 @@
          (log/error (str ~msg " -> Used memory: " (- after# before#) " bytes"))
          ret#)
        (catch Throwable t#
-         (let [after# (used-memory)]
+         (let [after# (used-memory-no-gc)]
            (log/error (str ~msg "Exception!! -> Used memory: " (- after# before#) " bytes"))
            (throw t#))))))
 
-(defn is-version-before-2?
-  [nuvlabox]
-  (< (:version nuvlabox) 2))
-
-(defn measure [f]
-  (let [before (used-memory)
-        _ (def foo (binding [*in* (java.io.PushbackReader.
-                                    (clojure.java.io/reader f))]
-                     (read)))
-        after (used-memory)]
-    (- after before)))
+(defmacro logmemory1 [expr]
+  "Like logmemory but also returns the amount of memory used in bytes and does not log."
+  `(let [before# (used-memory)]
+     (try
+       (let [ret# ~expr
+             after# (used-memory)]
+         [(- after# before#) ret#])
+       (catch Throwable t#
+         (throw t#)))))
