@@ -1046,9 +1046,8 @@
           (let [processed (+ skipped hits-count)]
             (if (and (pos? hits-count) (= idx hits-count))
               ;; fetch more data from ES
-              (let [last-hit (some-> (nth hits (dec idx)) :_source)
-                    [total-hits hits] (query-availability-raw options [(get last-hit (keyword "@timestamp"))
-                                                                       (:nuvlaedge-id last-hit)])]
+              (let [last-hit-sort-values (some-> (nth hits (dec idx)) :sort)
+                    [total-hits hits] (query-availability-raw options last-hit-sort-values)]
                 (recur latests
                        hits
                        (.length hits)
