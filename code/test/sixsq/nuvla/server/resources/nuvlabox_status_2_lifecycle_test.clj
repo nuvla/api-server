@@ -1791,7 +1791,7 @@
           session-user  (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
           session-nb    (header session authn-info-header (str "user/jane user/jane group/nuvla-user group/nuvla-anon"))]
       (testing "performance test querying multiple muvlaboxes"
-        (let [n 2500]                                         ; n 2500 => 10k nuvlaboxes
+        (let [n 2500]                                       ; n 2500 => 10k nuvlaboxes
           (dotimes [_i n]
             (create-availability-test-nuvlaboxes
               session-user session-nb session-admin now))

@@ -375,24 +375,26 @@
    (let [nuvlabox-id-filter (str "nuvlaedge-id=[" (str/join " " (map #(str "'" % "'")
                                                                      nuvlaedge-ids))
                                  "]")]
-     (->> {:cimi-params {:filter (cimi-params-impl/cimi-filter
+     (->> {:cimi-params {:last   0
+                         :filter (cimi-params-impl/cimi-filter
                                    {:filter (cond-> nuvlabox-id-filter
                                                     before-timestamp
                                                     (str " and @timestamp<'" (time/to-str before-timestamp) "'"))})
                          :select ["@timestamp" "online"]}
            ;; sending an empty :tsds-aggregation to avoid acl checks. TODO: find a cleaner way
-           :params      {:tsds-aggregation "{}"
-                         :collapse         (json/write-str
-                                             {:field      "nuvlaedge-id"
-                                              :inner_hits [{:name :most_recent
-                                                            :sort [{"@timestamp" {:order "desc"}}]
-                                                            :size 1}]})}}
+           :params      {:tsds-aggregation    "{}"
+                         :custom-aggregations {:most_recent {:terms {:field "nuvlaedge-id"
+                                                                     :size  10000}
+                                                             :aggs  {:latest_hit {:top_hits {:sort [{"@timestamp" {:order "desc"}}]
+                                                                                             :size 1}}}}}}}
           (query-with-timeout ts-nuvlaedge-availability/resource-type latest-availability-query-timeout)
-          second
-          (map #(get-in % [:inner_hits :most_recent :hits :hits 0 :_source]))
-          (map (fn [hit] (-> hit
-                             (assoc :timestamp (time/date-from-str (get hit (keyword "@timestamp"))))
-                             (dissoc (keyword "@timestamp")))))))))
+          first
+          (#(get-in % [:aggregations :most_recent :buckets]))
+          (map (fn [bucket]
+                 (let [source (get-in bucket [:latest_hit :hits :hits 0 :_source])]
+                   (-> source
+                       (assoc :timestamp (time/date-from-str (get source (keyword "@timestamp"))))
+                       (dissoc (keyword "@timestamp"))))))))))
 
 (defn all-latest-availability-transient-hashmap
   [nuvlaedge-ids before-timestamp]
@@ -563,21 +565,23 @@
   (let [nuvlabox-id-filter (str "nuvlaedge-id=[" (str/join " " (map #(str "'" % "'")
                                                                     nuvlaedge-ids))
                                 "]")]
-    (->> {:cimi-params {:filter (cimi-params-impl/cimi-filter {:filter nuvlabox-id-filter})
+    (->> {:cimi-params {:last   0
+                        :filter (cimi-params-impl/cimi-filter {:filter nuvlabox-id-filter})
                         :select ["@timestamp" "online"]}
           ;; sending an empty :tsds-aggregation to avoid acl checks. TODO: find a cleaner way
-          :params      {:tsds-aggregation "{}"
-                        :collapse         (json/write-str
-                                            {:field      "nuvlaedge-id"
-                                             :inner_hits [{:name :oldest
-                                                           :sort [{"@timestamp" {:order "asc"}}]
-                                                           :size 1}]})}}
+          :params      {:tsds-aggregation    "{}"
+                        :custom-aggregations {:first_av {:terms {:field "nuvlaedge-id"
+                                                                 :size  10000}
+                                                         :aggs  {:first_hit {:top_hits {:sort [{"@timestamp" {:order "asc"}}]
+                                                                                        :size 1}}}}}}}
          (query-with-timeout ts-nuvlaedge-availability/resource-type first-availability-query-timeout)
-         second
-         (map #(get-in % [:inner_hits :oldest :hits :hits 0 :_source]))
-         (mapv (fn [hit] (-> hit
-                             (assoc :timestamp (time/date-from-str (get hit (keyword "@timestamp"))))
-                             (dissoc (keyword "@timestamp"))))))))
+         first
+         (#(get-in % [:aggregations :first_av :buckets]))
+         (map (fn [bucket]
+                (let [source (get-in bucket [:first_hit :hits :hits 0 :_source])]
+                  (-> source
+                      (assoc :timestamp (time/date-from-str (get source (keyword "@timestamp"))))
+                      (dissoc (keyword "@timestamp")))))))))
 
 (defn assoc-first-availability
   [{:keys [nuvlaboxes nuvlaedge-ids] :as params}]

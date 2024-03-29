@@ -185,15 +185,16 @@
     (let [index                   (escu/collection-id->index collection-id)
           paging                  (paging/paging cimi-params)
           orderby                 (order/sorters cimi-params)
-          aggregation             (aggregation/aggregators cimi-params)
+          aggregation             (merge-with merge
+                                              (aggregation/aggregators cimi-params)
+                                              (aggregation/custom-aggregations params))
           ts-aggregation          (aggregation/tsds-aggregators params)
-          collapse                (aggregation/collapse params)
           selected                (select/select cimi-params)
           query                   {:query (if ts-aggregation
                                             (filter/filter cimi-params)
                                             (acl/and-acl-query (filter/filter cimi-params) options))}
           timeout                 (timeout params)
-          body                    (merge paging orderby selected query timeout aggregation ts-aggregation collapse)
+          body                    (merge paging orderby selected query timeout aggregation ts-aggregation)
           response                (spandex/request client {:url    [index :_search]
                                                            :method :post
                                                            :body   body})
@@ -207,9 +208,7 @@
                                              ts-aggregation
                                              (map (fn [hit] (-> hit
                                                                 (assoc :timestamp (get hit (keyword "@timestamp")))
-                                                                (dissoc (keyword "@timestamp")))))
-                                             collapse
-                                             (map merge (->> response :body :hits :hits (map #(select-keys % [:inner_hits]))))))]
+                                                                (dissoc (keyword "@timestamp")))))))]
       (if (shards-successful? response)
         [meta hits]
         (let [msg (str "error when querying: " (:body response))]

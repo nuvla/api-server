@@ -33,14 +33,14 @@
     (when (seq entries)
       {:aggs (into {} entries)})))
 
+(defn custom-aggregations
+  "Add all of the given custom aggregations clauses to the aggs map."
+  [{:keys [custom-aggregations] :as _params}]
+  (when (seq custom-aggregations)
+    {:aggs custom-aggregations}))
+
 (defn tsds-aggregators
   "Deserialize the tsds aggregation information in the :params parameter."
   [{:keys [tsds-aggregation] :as _params}]
   (some-> tsds-aggregation json/read-str))
-
-(defn collapse
-  "Deserialize the collapse information in the :params parameter."
-  [{:keys [collapse] :as _params}]
-  (when collapse
-    {:collapse (json/read-str collapse)}))
 
