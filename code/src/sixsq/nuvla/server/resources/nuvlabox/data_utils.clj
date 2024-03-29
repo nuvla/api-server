@@ -386,7 +386,6 @@
         (query-with-timeout ts-nuvlaedge-availability/resource-type latest-availability-query-timeout)
         (#(get-in % [:aggregations :most_recent :buckets]))
         (map (fn [bucket]
-               (prn :bb bucket)
                (let [source (get-in bucket [:latest_hit :hits :hits 0 :_source])]
                  (-> source
                      (assoc :timestamp (time/date-from-str (get source (keyword "@timestamp"))))
