@@ -294,16 +294,22 @@
 (defn query-availability-raw
   ([options]
    (query-availability-raw options 0))
-  ([options skip]
-   (let [[{total-hits :count} hits]
-         (->> (-> (build-availability-query (-> options
-                                                (dissoc :predefined-aggregations :custom-es-aggregations)
-                                                (assoc :raw true
-                                                       :last 10000
-                                                       :orderby [["@timestamp" :asc]])
-                                                (cond-> (pos? skip) (assoc :first skip))))
-                  (assoc :skip-hits-processing true))
-              (crud/query-as-admin ts-nuvlaedge-availability/resource-type))]
+  ([{:keys [nuvlaedge-ids from to] :as options} skip]
+   (let [{{{total-hits :value} :total :keys [hits]} :hits}
+         (crud/query-native
+           ts-nuvlaedge-availability/resource-type
+           (cond->
+             {:size  10000
+              :query {:constant_score
+                      {:filter
+                       {:bool
+                        {:filter
+                         (cond-> [{:terms {"nuvlaedge-id" nuvlaedge-ids}}]
+                                 from (conj {:range {"@timestamp" {:gt (time/to-str from)}}})
+                                 to (conj {:range {"@timestamp" {:lt (time/to-str to)}}}))}}
+                       :boost 1.0}}
+              :sort  [{"@timestamp" "asc"}]}
+             (pos? skip) (assoc :from skip)))]
      [total-hits hits])))
 
 (defn build-telemetry-query [{:keys [raw metric] :as options}]
