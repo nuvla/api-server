@@ -64,7 +64,7 @@
 (defn query-with-timeout
   [resource-type timeout query]
   ;; just send the timeout to ES for now, and run the query in the current thread
-  (crud/query-as-admin resource-type (assoc query :timeout timeout)))
+  (crud/query-native resource-type (assoc query :timeout (str timeout "ms"))))
 
 (defn exec-with-timeout!
   ([f timeout]
@@ -372,29 +372,25 @@
   ([nuvlaedge-ids]
    (all-latest-availability-status nuvlaedge-ids nil))
   ([nuvlaedge-ids before-timestamp]
-   (let [nuvlabox-id-filter (str "nuvlaedge-id=[" (str/join " " (map #(str "'" % "'")
-                                                                     nuvlaedge-ids))
-                                 "]")]
-     (->> {:cimi-params {:last   0
-                         :filter (cimi-params-impl/cimi-filter
-                                   {:filter (cond-> nuvlabox-id-filter
-                                                    before-timestamp
-                                                    (str " and @timestamp<'" (time/to-str before-timestamp) "'"))})
-                         :select ["@timestamp" "online"]}
-           ;; sending an empty :tsds-aggregation to avoid acl checks. TODO: find a cleaner way
-           :params      {:tsds-aggregation    "{}"
-                         :custom-aggregations {:most_recent {:terms {:field "nuvlaedge-id"
-                                                                     :size  10000}
-                                                             :aggs  {:latest_hit {:top_hits {:sort [{"@timestamp" {:order "desc"}}]
-                                                                                             :size 1}}}}}}}
-          (query-with-timeout ts-nuvlaedge-availability/resource-type latest-availability-query-timeout)
-          first
-          (#(get-in % [:aggregations :most_recent :buckets]))
-          (map (fn [bucket]
-                 (let [source (get-in bucket [:latest_hit :hits :hits 0 :_source])]
-                   (-> source
-                       (assoc :timestamp (time/date-from-str (get source (keyword "@timestamp"))))
-                       (dissoc (keyword "@timestamp"))))))))))
+   (->> {:size  10000
+         :query {:constant_score
+                 {:filter
+                  {:bool {:filter (cond->
+                                    [{:terms {:nuvlaedge-id nuvlaedge-ids}}]
+                                    before-timestamp
+                                    (conj {:range {"@timestamp" {:lt (time/to-str before-timestamp)}}}))}}}}
+         :aggs  {:most_recent {:terms {:field "nuvlaedge-id"
+                                       :size  10000}
+                               :aggs  {:latest_hit {:top_hits {:sort [{"@timestamp" {:order "desc"}}]
+                                                               :size 1}}}}}}
+        (query-with-timeout ts-nuvlaedge-availability/resource-type latest-availability-query-timeout)
+        (#(get-in % [:aggregations :most_recent :buckets]))
+        (map (fn [bucket]
+               (prn :bb bucket)
+               (let [source (get-in bucket [:latest_hit :hits :hits 0 :_source])]
+                 (-> source
+                     (assoc :timestamp (time/date-from-str (get source (keyword "@timestamp"))))
+                     (dissoc (keyword "@timestamp")))))))))
 
 (defn all-latest-availability-transient-hashmap
   [nuvlaedge-ids before-timestamp]
@@ -562,26 +558,22 @@
 
 (defn all-first-availability-status
   [nuvlaedge-ids]
-  (let [nuvlabox-id-filter (str "nuvlaedge-id=[" (str/join " " (map #(str "'" % "'")
-                                                                    nuvlaedge-ids))
-                                "]")]
-    (->> {:cimi-params {:last   0
-                        :filter (cimi-params-impl/cimi-filter {:filter nuvlabox-id-filter})
-                        :select ["@timestamp" "online"]}
-          ;; sending an empty :tsds-aggregation to avoid acl checks. TODO: find a cleaner way
-          :params      {:tsds-aggregation    "{}"
-                        :custom-aggregations {:first_av {:terms {:field "nuvlaedge-id"
-                                                                 :size  10000}
-                                                         :aggs  {:first_hit {:top_hits {:sort [{"@timestamp" {:order "asc"}}]
-                                                                                        :size 1}}}}}}}
-         (query-with-timeout ts-nuvlaedge-availability/resource-type first-availability-query-timeout)
-         first
-         (#(get-in % [:aggregations :first_av :buckets]))
-         (map (fn [bucket]
-                (let [source (get-in bucket [:first_hit :hits :hits 0 :_source])]
-                  (-> source
-                      (assoc :timestamp (time/date-from-str (get source (keyword "@timestamp"))))
-                      (dissoc (keyword "@timestamp")))))))))
+  (->> {:size    10000
+        :_source ["@timestamp", "online"]
+        :query   {:constant_score
+                  {:filter
+                   {:bool {:filter [{:terms {:nuvlaedge-id nuvlaedge-ids}}]}}}}
+        :aggs    {:first_av {:terms {:field "nuvlaedge-id"
+                                     :size  10000}
+                             :aggs  {:first_hit {:top_hits {:sort [{"@timestamp" {:order "asc"}}]
+                                                            :size 1}}}}}}
+       (query-with-timeout ts-nuvlaedge-availability/resource-type first-availability-query-timeout)
+       (#(get-in % [:aggregations :first_av :buckets]))
+       (map (fn [bucket]
+              (let [source (get-in bucket [:first_hit :hits :hits 0 :_source])]
+                (-> source
+                    (assoc :timestamp (time/date-from-str (get source (keyword "@timestamp"))))
+                    (dissoc (keyword "@timestamp"))))))))
 
 (defn assoc-first-availability
   [{:keys [nuvlaboxes nuvlaedge-ids] :as params}]
@@ -1097,8 +1089,7 @@
 (defn query-and-process-availabilities*
   [{:keys [nuvlaedge-ids from to granularity-duration int-atom] :as options}]
   (let [now              (time/now)
-        latests          (all-latest-availability-transient-hashmap
-                           nuvlaedge-ids from)
+        latests          (all-latest-availability-transient-hashmap nuvlaedge-ids from)
         [total-hits hits] (query-availability-raw options)
         initial-used-mem (used-memory)
         gc-limit         (* 100 1024 1024)                  ;; do a gc every 100mb of used mem

@@ -42,6 +42,9 @@
 (defn query [collection-id & [options]]
   (p/query *impl* collection-id options))
 
+(defn query-native [collection-id query]
+  (p/query-native *impl* collection-id query))
+
 (defn add-metric [collection-id data & [options]]
   (p/add-metric *impl* collection-id data options))
 

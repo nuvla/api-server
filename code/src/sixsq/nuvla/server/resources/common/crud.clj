@@ -52,6 +52,11 @@
   [collection-id options]
   (db/query collection-id (assoc options :nuvla/authn auth/internal-identity) ))
 
+(defn query-native
+  "Executes the database query as a native query."
+  [collection-id query]
+  (db/query-native collection-id query))
+
 
 (defmulti bulk-delete resource-name-dispatch)
 

@@ -219,6 +219,23 @@
             msg   (str "unexpected exception querying: " (or error e))]
         (throw (r/ex-response msg 500))))))
 
+(defn query-data-native
+  [client collection-id query]
+  (try
+    (let [index    (escu/collection-id->index collection-id)
+          response (spandex/request client {:url    [index :_search]
+                                            :method :post
+                                            :body   query})]
+      (if (shards-successful? response)
+        (:body response)
+        (let [msg (str "error when querying: " (:body response))]
+          (throw (r/ex-response msg 500)))))
+    (catch Exception e
+      (let [{:keys [body] :as _response} (ex-data e)
+            error (:error body)
+            msg   (str "unexpected exception querying: " (or error e))]
+        (throw (r/ex-response msg 500))))))
+
 (defn add-metric-data
   [client collection-id data {:keys [refresh]
                               :or   {refresh true}
@@ -468,6 +485,9 @@
 
   (query [_ collection-id options]
     (query-data client collection-id options))
+
+  (query-native [_ collection-id query]
+    (query-data-native client collection-id query))
 
   (add-metric [_ collection-id data options]
     (add-metric-data client collection-id data options))
