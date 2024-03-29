@@ -33,7 +33,7 @@
 
 (def first-availability-query-timeout (env/env :first-availability-query-timeout 10000))
 (def latest-availability-query-timeout (env/env :latest-availability-query-timeout 10000))
-(def max-nuvlaboxes-count (env/env :max-nuvlaboxes-count 50000))
+(def max-nuvlaboxes-count (env/env :max-nuvlaboxes-count 10000))
 
 (defn add-jvm-shutdown-hook
   [f]
@@ -293,23 +293,24 @@
 
 (defn query-availability-raw
   ([options]
-   (query-availability-raw options 0))
-  ([{:keys [nuvlaedge-ids from to] :as options} skip]
-   (let [{{{total-hits :value} :total :keys [hits]} :hits}
+   (query-availability-raw options nil))
+  ([{:keys [nuvlaedge-ids from to] :as _options} search-after]
+   (let [{{{total-hits :value} :total :keys [hits]} :hits :as resp}
          (crud/query-native
            ts-nuvlaedge-availability/resource-type
            (cond->
-             {:size  10000
-              :query {:constant_score
-                      {:filter
-                       {:bool
-                        {:filter
-                         (cond-> [{:terms {"nuvlaedge-id" nuvlaedge-ids}}]
-                                 from (conj {:range {"@timestamp" {:gt (time/to-str from)}}})
-                                 to (conj {:range {"@timestamp" {:lt (time/to-str to)}}}))}}
-                       :boost 1.0}}
-              :sort  [{"@timestamp" "asc"}]}
-             (pos? skip) (assoc :from skip)))]
+             {:size             10000
+              :query            {:constant_score
+                                 {:filter
+                                  {:bool
+                                   {:filter
+                                    (cond-> [{:terms {"nuvlaedge-id" nuvlaedge-ids}}]
+                                            from (conj {:range {"@timestamp" {:gt (time/to-str from)}}})
+                                            to (conj {:range {"@timestamp" {:lt (time/to-str to)}}}))}}
+                                  :boost 1.0}}
+              :sort             [{"@timestamp" "asc"}
+                                 {"nuvlaedge-id" "asc"}]}
+             search-after (assoc :search_after search-after)))]
      [total-hits hits])))
 
 (defn build-telemetry-query [{:keys [raw metric] :as options}]
@@ -1043,9 +1044,11 @@
                    (if (= prev-online 1) (+ total-online-time secs) total-online-time)
                    (inc doc-count)))
           (let [processed (+ skipped hits-count)]
-            (if (and (< processed total-hits) (time/before? timestamp end))
+            (if (and (pos? hits-count) (= idx hits-count))
               ;; fetch more data from ES
-              (let [[total-hits hits] (query-availability-raw options processed)]
+              (let [last-hit (some-> (nth hits (dec idx)) :_source)
+                    [total-hits hits] (query-availability-raw options [(get last-hit (keyword "@timestamp"))
+                                                                       (:nuvlaedge-id last-hit)])]
                 (recur latests
                        hits
                        (.length hits)
