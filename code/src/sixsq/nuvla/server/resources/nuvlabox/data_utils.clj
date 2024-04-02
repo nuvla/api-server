@@ -18,7 +18,6 @@
     [sixsq.nuvla.server.resources.ts-nuvlaedge-telemetry :as ts-nuvlaedge-telemetry]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.time :as t]
     [sixsq.nuvla.server.util.time :as time])
   (:import
     (java.io StringWriter)
@@ -323,7 +322,7 @@
          timestamps (->> aggregations
                          :timestamps
                          :buckets
-                         (map (comp t/date-from-str :key_as_string)))]
+                         (map (comp time/date-from-str :key_as_string)))]
      [total-hits hits timestamps])))
 
 (defn build-telemetry-query [{:keys [raw metric] :as options}]
@@ -1201,27 +1200,6 @@
                                                  :virtual-edges-online
                                                  :virtual-edges-offline]
                                 :csv-export-fn  (availability-csv-export-fn)}
-     "availability-stats2"     {:metric          "availability"
-                                :pre-process-fn  (comp filter-available-before-period-end
-                                                       assoc-first-availability
-                                                       precompute-query-params
-                                                       update-nuvlaboxes-dates
-                                                       throw-too-many-nuvlaboxes
-                                                       (partial assoc-commissioned-nuvlaboxes ["id" "created"]))
-                                :query-fn        query-availability
-                                :post-process-fn (comp timestamps->str
-                                                       dissoc-hits
-                                                       add-virtual-edge-number-by-status-fn
-                                                       compute-global-availability
-                                                       add-edges-count
-                                                       add-missing-edges-fn
-                                                       compute-nuvlaboxes-availabilities
-                                                       assoc-latest-availability
-                                                       timestamps->date)
-                                :response-aggs   [:edges-count
-                                                  :virtual-edges-online
-                                                  :virtual-edges-offline]
-                                :csv-export-fn   (availability-csv-export-fn)}
      "availability-by-edge"    {:metric          "availability"
                                 :pre-process-fn  (comp filter-available-before-period-end
                                                        assoc-first-availability
