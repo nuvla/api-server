@@ -18,6 +18,7 @@
     [sixsq.nuvla.server.resources.ts-nuvlaedge-telemetry :as ts-nuvlaedge-telemetry]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.time :as t]
     [sixsq.nuvla.server.util.time :as time])
   (:import
     (java.io StringWriter)
@@ -294,24 +295,36 @@
 (defn query-availability-raw
   ([options]
    (query-availability-raw options nil))
-  ([{:keys [nuvlaedge-ids from to] :as _options} search-after]
-   (let [{{{total-hits :value} :total :keys [hits]} :hits}
+  ([{:keys [nuvlaedge-ids from to ts-interval] :as _options} search-after]
+   (let [{{{total-hits :value} :total :keys [hits]} :hits :keys [aggregations]}
          (crud/query-native
            ts-nuvlaedge-availability/resource-type
            (cond->
-             {:size  10000
-              :query {:constant_score
-                      {:filter
-                       {:bool
-                        {:filter
-                         (cond-> [{:terms {"nuvlaedge-id" nuvlaedge-ids}}]
-                                 from (conj {:range {"@timestamp" {:gt (time/to-str from)}}})
-                                 to (conj {:range {"@timestamp" {:lt (time/to-str to)}}}))}}
-                       :boost 1.0}}
-              :sort  [{"@timestamp" "asc"}
-                      {"nuvlaedge-id" "asc"}]}
-             search-after (assoc :search_after search-after)))]
-     [total-hits hits])))
+             {:size         10000
+              :query        {:constant_score
+                             {:filter
+                              {:bool
+                               {:filter
+                                (cond-> [{:terms {"nuvlaedge-id" nuvlaedge-ids}}]
+                                        from (conj {:range {"@timestamp" {:gt (time/to-str from)}}})
+                                        to (conj {:range {"@timestamp" {:lt (time/to-str to)}}}))}}
+                              :boost 1.0}}
+              :aggregations {:timestamps
+                             {:date_histogram
+                              {:field           "@timestamp"
+                               :fixed_interval  ts-interval
+                               :min_doc_count   0
+                               :extended_bounds {:min (time/to-str from)
+                                                 :max (time/to-str to)}}
+                              :aggregations {}}}
+              :sort         [{"@timestamp" "asc"}
+                             {"nuvlaedge-id" "asc"}]}
+             search-after (assoc :search_after search-after)))
+         timestamps (->> aggregations
+                         :timestamps
+                         :buckets
+                         (map (comp t/date-from-str :key_as_string)))]
+     [total-hits hits timestamps])))
 
 (defn build-telemetry-query [{:keys [raw metric] :as options}]
   (build-ts-query (-> options
@@ -1102,15 +1115,14 @@
     (- (.totalMemory runtime) (.freeMemory runtime))))
 
 (defn query-and-process-availabilities*
-  [{:keys [nuvlaedge-ids from to granularity-duration int-atom] :as options}]
+  [{:keys [nuvlaedge-ids from granularity-duration int-atom] :as options}]
   (let [now              (time/now)
         latests          (all-latest-availability-transient-hashmap nuvlaedge-ids from)
-        [total-hits hits] (query-availability-raw options)
+        [total-hits hits timestamps] (query-availability-raw options)
         initial-used-mem (used-memory)
         gc-limit         (* 100 1024 1024)                  ;; do a gc every 100mb of used mem
         ]
-    (loop [start      from
-           end        (time/plus start granularity-duration)
+    (loop [timestamps timestamps
            latests    latests
            hits       hits
            idx        0
@@ -1118,9 +1130,11 @@
            skipped    0
            buckets    (transient [])
            used-mem   (used-memory)]
-      (if (time/after? start to)
+      (if (empty? timestamps)
         (persistent! buckets)
-        (let [[latests hits idx total-hits first bucket]
+        (let [start (first timestamps)
+              end   (time/plus start granularity-duration)
+              [latests hits idx total-hits first bucket]
               (compute-bucket options now start end latests hits idx total-hits skipped)]
           (when @int-atom
             (throw (InterruptedException.)))
@@ -1130,8 +1144,7 @@
                     total   (.totalMemory runtime)]
                 (log/error "used/free/total memory: " (- total free) " / " free " / " total))
             (System/gc))
-          (recur end
-                 (time/plus end granularity-duration)
+          (recur (rest timestamps)
                  latests
                  hits
                  idx
