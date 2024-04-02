@@ -295,21 +295,21 @@
   ([options]
    (query-availability-raw options nil))
   ([{:keys [nuvlaedge-ids from to] :as _options} search-after]
-   (let [{{{total-hits :value} :total :keys [hits]} :hits :as resp}
+   (let [{{{total-hits :value} :total :keys [hits]} :hits}
          (crud/query-native
            ts-nuvlaedge-availability/resource-type
            (cond->
-             {:size             10000
-              :query            {:constant_score
-                                 {:filter
-                                  {:bool
-                                   {:filter
-                                    (cond-> [{:terms {"nuvlaedge-id" nuvlaedge-ids}}]
-                                            from (conj {:range {"@timestamp" {:gt (time/to-str from)}}})
-                                            to (conj {:range {"@timestamp" {:lt (time/to-str to)}}}))}}
-                                  :boost 1.0}}
-              :sort             [{"@timestamp" "asc"}
-                                 {"nuvlaedge-id" "asc"}]}
+             {:size  10000
+              :query {:constant_score
+                      {:filter
+                       {:bool
+                        {:filter
+                         (cond-> [{:terms {"nuvlaedge-id" nuvlaedge-ids}}]
+                                 from (conj {:range {"@timestamp" {:gt (time/to-str from)}}})
+                                 to (conj {:range {"@timestamp" {:lt (time/to-str to)}}}))}}
+                       :boost 1.0}}
+              :sort  [{"@timestamp" "asc"}
+                      {"nuvlaedge-id" "asc"}]}
              search-after (assoc :search_after search-after)))]
      [total-hits hits])))
 
@@ -422,13 +422,14 @@
 
 (defn edge-at
   "Returns the edge if it was created before the given timestamp, and if sent
-   a metric datapoint before the given timestamp, nil otherwise"
+   a metric datapoint before the given timestamp, or if it never sent a telemetry datapoint, nil otherwise"
   [{:keys [created first-availability] :as _nuvlabox} timestamp]
   (and (some-> created
                (time/before? timestamp))
-       (some-> first-availability
-               :timestamp
-               (time/before? timestamp))))
+       (or (nil? first-availability)                        ; do not exclude edges that never sent telemetry
+           (some-> first-availability
+                   :timestamp
+                   (time/before? timestamp)))))
 
 (defn bucket-end-time
   [bucket-start-time granularity-duration]
@@ -553,7 +554,8 @@
 
 (defn available-before?
   [{:keys [first-availability] :as _nuvlabox} timestamp]
-  (some-> first-availability :timestamp (time/before? timestamp)))
+  (or (nil? first-availability)                             ; do not exclude edges that never sent telemetry
+      (-> first-availability :timestamp (time/before? timestamp))))
 
 (defn filter-available-before-period-end
   [{:keys [to nuvlaboxes] :as params}]
@@ -588,8 +590,8 @@
         nuvlaboxes (->> nuvlaboxes
                         (mapv (fn [{:keys [id] :as nb}]
                                 (assoc nb :first-availability
-                                          (-> (first (get first-av id))
-                                              (select-keys [:online :timestamp]))))))]
+                                          (some-> (first (get first-av id))
+                                                  (select-keys [:online :timestamp]))))))]
     (assoc params :nuvlaboxes nuvlaboxes)))
 
 (defn throw-too-many-nuvlaboxes
@@ -619,8 +621,9 @@
                              (group-by :nuvlaedge-id))
         nuvlaboxes      (->> nuvlaboxes
                              (map (fn [{:keys [id] :as nb}]
-                                    (assoc nb :latest-availability (select-keys (first (get latest-av id))
-                                                                                [:online :timestamp])))))]
+                                    (assoc nb :latest-availability
+                                              (some-> (first (get latest-av id))
+                                                      (select-keys [:online :timestamp]))))))]
     [(assoc query-opts :nuvlaboxes nuvlaboxes) resp]))
 
 (defn simplify-hits
@@ -891,9 +894,10 @@
                                 (->> (filter #(= timestamp (:timestamp %))))
                                 first
                                 (get-in [:aggregations :by-edge :buckets 0]))]
-              (update-in ts-data-point
-                         [:aggregations :by-edge :buckets]
-                         (fn [buckets] (conj (or buckets []) nb-bucket)))))))
+              (cond-> ts-data-point
+                      nb-bucket
+                      (update-in [:aggregations :by-edge :buckets]
+                                 (fn [buckets] (conj (or buckets []) nb-bucket))))))))
       resp
       nb-resps)))
 
@@ -907,7 +911,7 @@
           edge-bucket-update-fn (fn [nuvlaedge-id ts-data-point availability]
                                   (assoc-in ts-data-point [:aggregations :by-edge :buckets]
                                             [{:key             nuvlaedge-id
-                                              :edge-avg-online {:value availability}}]))]
+                                              :edge-avg-online {:value (or availability 0.0)}}]))]
       [query-opts (availabilities-sequential query-opts resp now hits edge-bucket-update-fn)])
     [query-opts resp]))
 
@@ -1080,7 +1084,11 @@
                               (+ total-online-time secs)
                               total-online-time)
                             (inc edge-idx)
-                            (if (some? (get latests (:id nb))) (inc bucket-edges-count) bucket-edges-count)))))
+                            (if (or (some? (get latests (:id nb)))
+                                    (and (nil? (:first-availability nb))
+                                         (time/before? (:created nb) end))) ; count edges that never sent telemetry after creation
+                              (inc bucket-edges-count)
+                              bucket-edges-count)))))
                     bucket    {:start                   (time/to-str start)
                                :end                     (time/to-str end)
                                :total-commissioned-time total-commissioned-time
