@@ -87,7 +87,7 @@
 
 (defn str-key->date
   [k m]
-  (update m k time/date-from-str))
+  (update m k time/parse-date))
 
 (defmulti nuvlabox-status->metric-data (fn [_ _nb metric _] metric))
 
@@ -322,7 +322,7 @@
          timestamps (->> aggregations
                          :timestamps
                          :buckets
-                         (map (comp time/date-from-str :key_as_string)))]
+                         (map (comp time/parse-date :key_as_string)))]
      [total-hits hits timestamps])))
 
 (defn build-telemetry-query [{:keys [raw metric] :as options}]
@@ -364,7 +364,7 @@
           ;; when availability status has changed, or no availability data was recorded for the year yet
           (when (or (not= (:online latest)
                           (if online 1 0))
-                    (not= (some-> (:timestamp latest) time/date-from-str time/year)
+                    (not= (some-> (:timestamp latest) time/parse-date time/year)
                           (time/year now)))
             {:nuvlaedge-id parent
              :timestamp    (time/to-str now)
@@ -407,7 +407,7 @@
         (map (fn [bucket]
                (let [source (get-in bucket [:latest_hit :hits :hits 0 :_source])]
                  (-> source
-                     (assoc :timestamp (time/date-from-str (get source (keyword "@timestamp"))))
+                     (assoc :timestamp (time/parse-date (get source (keyword "@timestamp"))))
                      (dissoc (keyword "@timestamp")))))))))
 
 (defn all-latest-availability-transient-hashmap
@@ -548,7 +548,7 @@
   [{:keys [nuvlaboxes] :as params}]
   (assoc params
     :nuvlaboxes
-    (mapv #(update % :created time/date-from-str) nuvlaboxes)))
+    (mapv #(update % :created time/parse-date) nuvlaboxes)))
 
 (defn granularity->duration
   "Converts from a string of the form <n>-<units> to java.time duration"
@@ -592,7 +592,7 @@
        (map (fn [bucket]
               (let [source (get-in bucket [:first_hit :hits :hits 0 :_source])]
                 (-> source
-                    (assoc :timestamp (time/date-from-str (get source (keyword "@timestamp"))))
+                    (assoc :timestamp (time/parse-date (get source (keyword "@timestamp"))))
                     (dissoc (keyword "@timestamp"))))))))
 
 (defn assoc-first-availability
@@ -617,7 +617,7 @@
   [query-opts (update-resp-ts-data-points
                 resp
                 (fn [ts-data-point]
-                  (update ts-data-point :timestamp time/date-from-str)))])
+                  (update ts-data-point :timestamp time/parse-date)))])
 
 (defn timestamps->str
   [[query-opts resp]]
@@ -628,7 +628,7 @@
 
 (defn assoc-latest-availability
   [[{:keys [nuvlaboxes nuvlaedge-ids] :as query-opts} resp]]
-  (let [first-bucket-ts (some-> resp first :ts-data first :timestamp time/date-from-str)
+  (let [first-bucket-ts (some-> resp first :ts-data first :timestamp time/parse-date)
         latest-av       (->> (all-latest-availability-status nuvlaedge-ids first-bucket-ts)
                              (group-by :nuvlaedge-id))
         nuvlaboxes      (->> nuvlaboxes
@@ -684,7 +684,7 @@
     (let [nuvlabox     (first nuvlaboxes)
           now          (time/now)
           hits         (->> (get-in resp [0 :hits])
-                            (map #(update % :timestamp time/date-from-str))
+                            (map #(update % :timestamp time/parse-date))
                             reverse)
           update-av-fn (fn [ts-data-point availability]
                          (update ts-data-point
@@ -918,7 +918,7 @@
   (if predefined-aggregations
     (let [now                   (time/now)
           hits                  (->> (get-in resp [0 :hits])
-                                     (map #(update % :timestamp time/date-from-str))
+                                     (map #(update % :timestamp time/parse-date))
                                      reverse)
           edge-bucket-update-fn (fn [nuvlaedge-id ts-data-point availability]
                                   (assoc-in ts-data-point [:aggregations :by-edge :buckets]
@@ -1037,7 +1037,7 @@
            total-online-time       0.0
            doc-count               0]
       (let [hit       (when (< idx hits-count) (some-> (nth hits idx) :_source))
-            timestamp (some-> (get hit (keyword "@timestamp")) time/date-from-str)]
+            timestamp (some-> (get hit (keyword "@timestamp")) time/parse-date)]
         (if (and (< idx hits-count) (time/before? timestamp end))
           (let [nuvlaedge-id   (:nuvlaedge-id hit)
                 latest         (get latests nuvlaedge-id)
@@ -1301,8 +1301,8 @@
                                         json/read-str)]
     (-> params
         (assoc :datasets datasets)
-        (assoc :from (time/date-from-str from))
-        (assoc :to (time/date-from-str to))
+        (assoc :from (time/parse-date from))
+        (assoc :to (time/parse-date to))
         (cond->
           uuid (assoc :id (u/resource-id "nuvlabox" uuid))
           raw (assoc :raw true)
@@ -1317,9 +1317,9 @@
 (defn throw-mandatory-from-to-parameters
   [{:keys [from to] :as params}]
   (when-not from
-    (logu/log-and-throw-400 (str "from parameter is mandatory, with format " time/iso8601-format)))
+    (logu/log-and-throw-400 (str "from parameter is mandatory, with format iso8601 (uuuu-MM-dd'T'HH:mm:ss[.SSS]Z)")))
   (when-not to
-    (logu/log-and-throw-400 (str "to parameter is mandatory, with format " time/iso8601-format)))
+    (logu/log-and-throw-400 (str "to parameter is mandatory, with format iso8601 (uuuu-MM-dd'T'HH:mm:ss[.SSS]Z)")))
   params)
 
 (defn throw-from-not-before-to

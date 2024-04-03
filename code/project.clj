@@ -41,7 +41,7 @@
    [com.draines/postal]
    [clj-http]
    [clj-stacktrace]
-   [clojure.java-time]
+   [clojure.java-time "1.4.2"]
    [com.amazonaws/aws-java-sdk-s3]
    [duratom :exclusions [org.clojure/clojure]]
    [expound]

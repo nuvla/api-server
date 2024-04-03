@@ -2,11 +2,11 @@
   "Utilities for creating expiration times for token claims and for formatting
    them correctly for the cookie 'expires' field."
   (:require
-    [java-time :as t]
+    [java-time.api :as t]
     [sixsq.nuvla.server.util.time :as time]))
 
 
-(def default-ttl-minutes 10080)                       ;; 1 week
+(def default-ttl-minutes 10080)                             ;; 1 week
 
 
 (defn rfc822
@@ -14,7 +14,7 @@
    number of **seconds** since the epoch."
   [seconds-since-epoch]
   (t/with-clock
-    (t/system-clock "UTC")
+    time/utc-clock
     (let [millis-since-epoch (* seconds-since-epoch 1000)
           offset-date-time   (-> millis-since-epoch
                                  (t/instant)
@@ -44,8 +44,7 @@
 
 
 (defn rfc822->iso8601
-  [rfc822]
-  (->> rfc822
-       (t/offset-date-time time/rfc822-formatter)
-       (t/format time/iso8601-formatter)))
-
+  [^String rfc822]
+  (-> rfc822
+      (time/parse-date-fmt time/rfc822-formatter)
+      time/to-str))

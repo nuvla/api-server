@@ -33,7 +33,7 @@
                                 :capabilities [t/capability-heartbeat]}))))
 
 (deftest compute-next-heartbeat
-  (with-redefs [time/now #(time/date-from-str "2023-08-24T13:14:39.121Z")]
+  (with-redefs [time/now #(time/parse-date "2023-08-24T13:14:39.121Z")]
     (let [tolerance-fn #(-> % (* 2) (+ 10))]
      (is (nil? (t/compute-next-report nil tolerance-fn)))
      (is (= (t/compute-next-report 10 tolerance-fn) "2023-08-24T13:15:09.121Z"))

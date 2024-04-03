@@ -24,7 +24,7 @@
              :json-schema/value-scope {:values (vec metrics)})))
 
 (s/def ::timestamp
-  (-> (st/spec time/date-from-str)
+  (-> (st/spec time/parse-date)
       (assoc :name "@timestamp"
              :json-schema/field-type :timestamp
              :json-schema/description "UTC timestamp"

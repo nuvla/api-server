@@ -1,24 +1,62 @@
 (ns sixsq.nuvla.server.util.time
-  (:require [java-time :as t])
-  (:import (java.time Instant LocalTime OffsetDateTime ZoneOffset)
-           (java.time.temporal ChronoUnit)))
+  (:require [java-time.api :as t])
+  (:import (java.time Instant LocalTime OffsetDateTime ZoneOffset Clock)
+           (java.time.temporal ChronoUnit)
+           (java.time.format DateTimeFormatter DateTimeFormatterBuilder DecimalStyle ResolverStyle SignStyle)
+           (java.time.temporal ChronoField ChronoUnit)
+           (java.util Date)))
 
-(def rfc822-formatter (t/formatter :rfc-1123-date-time))
+(def rfc822-formatter (DateTimeFormatter/RFC_1123_DATE_TIME))
 
-(def iso8601-format "uuuu-MM-dd'T'HH:mm:ss[.SSS]XXXXX")
 
-(def iso8601-formatter (t/formatter iso8601-format
-                                    {:resolver-style :strict}))
+(def iso8601-formatter-base
+  (-> (doto
+        (DateTimeFormatterBuilder.)
+        (.appendValue ChronoField/YEAR, 4, 4, SignStyle/NOT_NEGATIVE)
+        (.appendLiteral "-")
+        (.appendValue ChronoField/MONTH_OF_YEAR, 2, 2, SignStyle/NOT_NEGATIVE)
+        (.appendLiteral "-")
+        (.appendValue ChronoField/DAY_OF_MONTH, 2, 2, SignStyle/NOT_NEGATIVE)
+        (.optionalStart)
+        (.appendLiteral "T")
+        (.optionalStart)
+        (.appendValue ChronoField/HOUR_OF_DAY, 2, 2, SignStyle/NOT_NEGATIVE)
+        (.optionalStart)
+        (.appendLiteral ":")
+        (.appendValue ChronoField/MINUTE_OF_HOUR, 2, 2, SignStyle/NOT_NEGATIVE)
+        (.optionalStart)
+        (.appendLiteral ":")
+        (.appendValue ChronoField/SECOND_OF_MINUTE, 2, 2, SignStyle/NOT_NEGATIVE))
+      (.toFormatter)))
 
-(def utc-clock (t/system-clock "UTC"))
+(def iso8601-formatter-input
+  (-> (doto
+        (DateTimeFormatterBuilder.)
+        (.append iso8601-formatter-base)
+        (.optionalStart)
+        (.appendFraction ChronoField/MILLI_OF_SECOND, 0, 3, true)
+        (.optionalEnd)
+        (.appendZoneOrOffsetId))
+      (.toFormatter)
+      (.withResolverStyle ResolverStyle/STRICT)))
+
+(def iso8601-formatter-output
+  (-> (doto
+        (DateTimeFormatterBuilder.)
+        (.append iso8601-formatter-base)
+        (.appendFraction ChronoField/MILLI_OF_SECOND, 3, 3, true)
+        (.appendZoneOrOffsetId))
+      (.toFormatter)))
+
+(def utc-clock (Clock/systemUTC))
 
 (def plus t/plus)
 
 (def minus t/minus)
 
-(def java-date t/java-date)
-
-(def period t/period)
+(defn java-date
+  [^OffsetDateTime date]
+  (Date/from (.toInstant date)))
 
 (def before? t/before?)
 
@@ -57,19 +95,23 @@
 
 (defn to-str
   [^OffsetDateTime date]
-  (t/format iso8601-formatter date))
+  (.format iso8601-formatter-output date))
 
 (defn now-str
   []
   (to-str (now)))
 
-(defn date-from-str
-  [^String string]
-  (when (string? string)
-    (try
-      (t/offset-date-time iso8601-formatter string)
-      (catch Exception _
-        nil))))
+(defn parse-date-fmt
+  [^String s ^DateTimeFormatter fmt]
+  (try
+    (OffsetDateTime/from (.parse fmt s))
+    (catch Exception _)))
+
+(defn parse-date
+  [^String s]
+  (try
+    (parse-date-fmt s iso8601-formatter-input)
+    (catch Exception _)))
 
 (defn date-from-unix-timestamp
   [^Long timestamp]
@@ -83,7 +125,7 @@
 (defn time-between-date-now
   [^String start-date unit]
   (-> start-date
-      date-from-str
+      parse-date
       (t/time-between (now) unit)))
 
 (defn unix-timestamp->str

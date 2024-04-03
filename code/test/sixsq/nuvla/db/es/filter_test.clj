@@ -137,6 +137,6 @@
                                               :shape    {:coordinates [1.0
                                                                        2.0]
                                                          :type        "Point"}}}}]}}
-                      {:range {"created" {:gte (time/date-from-str
+                      {:range {"created" {:gte (time/parse-date
                                                  "2022-03-29T14:21:37.659Z")}}}]}}}}
          (t/transform parser-test/expected-transform-complex-query))))

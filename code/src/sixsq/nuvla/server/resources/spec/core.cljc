@@ -60,7 +60,7 @@
 
 ;; FIXME: Provide an implementation that works with ClojureScript.
 (s/def ::timestamp
-  (-> (st/spec time/date-from-str)
+  (-> (st/spec time/parse-date)
       (assoc :name "timestamp"
              :json-schema/description "UTC timestamp"
              :json-schema/type "date-time")))
