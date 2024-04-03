@@ -47,7 +47,7 @@
    [instaparse]
    [metosin/spec-tools]
    [org.bouncycastle/bcpkix-jdk15on "1.70"]
-   [selmer "1.12.50"]
+   [selmer "1.12.59"]
    [org.clojure/data.csv "1.1.0"]
    [org.clojure/data.json]
    [org.clojure/java.classpath]
@@ -62,13 +62,13 @@
    ;; spatial4j and jts-core are needed for factual/geo and for elasticsearch mock test instance
    ;; issue in Factual geo https://github.com/Factual/geo/issues/74
    [org.locationtech.spatial4j/spatial4j "0.8"]
-   [org.locationtech.jts/jts-core "1.18.2"]
+   [org.locationtech.jts/jts-core "1.19.0"]
    ;; need for Factual geo wkt polygon to geojson
    ;; upgrading jts2geojson dependency to 0.16 or 0.17 creates conflicts for now
-   [org.wololo/jts2geojson "0.15.0"]
-   [one-time "0.7.0"]
+   [org.wololo/jts2geojson "0.18.1"]
+   [one-time "0.8.0"]
    [funcool/promesa "11.0.678"]
-   [nrepl "1.1.0"]]
+   [nrepl "1.1.1"]]
 
   :profiles
   {
@@ -76,7 +76,7 @@
                              [sixsq.nuvla.ring/code ~nuvla-ring-version]
                              [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
 
-   :test     {:dependencies   [[org.ow2.asm/asm "9.5"]
+   :test     {:dependencies   [[org.ow2.asm/asm "9.7"]
                                [me.raynes/fs]
                                [peridot]
                                [clj-test-containers "0.7.4"]

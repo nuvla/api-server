@@ -2,7 +2,7 @@
   (:require [java-time.api :as t])
   (:import (java.time Instant LocalTime OffsetDateTime ZoneOffset Clock)
            (java.time.temporal ChronoUnit)
-           (java.time.format DateTimeFormatter DateTimeFormatterBuilder DecimalStyle ResolverStyle SignStyle)
+           (java.time.format DateTimeFormatter DateTimeFormatterBuilder ResolverStyle SignStyle)
            (java.time.temporal ChronoField ChronoUnit)
            (java.util Date)))
 
