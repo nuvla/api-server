@@ -1,5 +1,5 @@
-(def parent-version "6.7.14")
-(def nuvla-ring-version "2.0.8")
+(def parent-version "6.7.15-SNAPSHOT")
+(def nuvla-ring-version "2.0.10-SNAPSHOT")
 (def kinsky-version "0.3.1")
 
 (defproject sixsq.nuvla.server/api-jar "6.5.1-SNAPSHOT"
@@ -35,14 +35,13 @@
    [org.clojars.konstan/kinsky ~kinsky-version]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
-   ;; TODO: remove explicit version once parent is updated.
-   [cc.qbits/spandex "0.8.2" :exclusions [org.clojure/clojure]]
-   [compojure]
+   [cc.qbits/spandex "0.8.2"]
+   [compojure "1.7.1"]
    [com.draines/postal]
    [clj-http]
    [clj-stacktrace]
    [clojure.java-time "1.4.2"]
-   [com.amazonaws/aws-java-sdk-s3]
+   [com.amazonaws/aws-java-sdk-s3 "1.12.186"]
    [duratom :exclusions [org.clojure/clojure]]
    [expound]
    [instaparse]
