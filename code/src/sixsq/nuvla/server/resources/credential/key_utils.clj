@@ -5,8 +5,7 @@
   (:import (java.io ByteArrayOutputStream DataOutputStream StringWriter)
            (java.security KeyPairGenerator)
            (java.util Base64)
-           (org.bouncycastle.openssl.jcajce JcaPEMWriter)
-           (sun.security.rsa RSAPublicKeyImpl)))
+           (org.bouncycastle.openssl.jcajce JcaPEMWriter)))
 
 
 ;;
@@ -67,7 +66,7 @@
 
 
 (defn public-key->string
-  [^RSAPublicKeyImpl pub-key]
+  [pub-key]
   (let [baos           (new ByteArrayOutputStream)
         ssh-rsa-bytes  (.getBytes "ssh-rsa" "US-ASCII")
         exponent-bytes (.toByteArray (.getPublicExponent pub-key))
@@ -76,9 +75,9 @@
       (.writeInt (alength ssh-rsa-bytes))
       (.write ssh-rsa-bytes)
       (.writeInt (alength exponent-bytes))
-      (.write exponent-bytes)
+      (.write ^bytes exponent-bytes)
       (.writeInt (alength modulus-bytes))
-      (.write modulus-bytes)
+      (.write ^bytes modulus-bytes)
       (.close))
     (str "ssh-rsa " (.encodeToString (Base64/getEncoder) (.toByteArray baos)))))
 

@@ -1014,7 +1014,7 @@
   [session-owner {depl-name :name
                   depl-tags :tags}]
   (let [;; setup a module that can be referenced from the deployment
-        module-id        (setup-module session-owner (valid-module "component" valid-component (str depl-name "/tags" (u/random-uuid))))
+        module-id        (setup-module session-owner (valid-module "component" valid-component (str depl-name "/tags" (u/rand-uuid))))
 
         valid-deployment {:module {:href module-id}}
         deployment-id    (-> session-owner

@@ -73,7 +73,7 @@
 
   :profiles
   {
-   :provided {:dependencies [[org.clojure/clojure]
+   :provided {:dependencies [[org.clojure/clojure "1.11.2"]
                              [sixsq.nuvla.ring/code ~nuvla-ring-version]
                              [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
 

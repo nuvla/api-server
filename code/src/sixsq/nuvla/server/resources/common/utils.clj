@@ -50,10 +50,10 @@
 ;; resource ID utilities
 ;;
 
-(defn random-uuid
+(defn rand-uuid
   "Provides the string representation of a pseudo-random UUID."
   []
-  (str (UUID/randomUUID)))
+  (str (random-uuid)))
 
 
 (defn from-data-uuid
@@ -64,7 +64,7 @@
 
 (defn new-resource-id
   [resource-name]
-  (str resource-name "/" (random-uuid)))
+  (str resource-name "/" (rand-uuid)))
 
 
 (defn resource-id

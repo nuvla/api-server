@@ -34,7 +34,7 @@
                                :acl         st/resource-acl})
 
 (deftest check-uuid->id
-  (let [uuid       (u/random-uuid)
+  (let [uuid       (u/rand-uuid)
         correct-id (str "credential/" uuid)]
     (is (= correct-id (t/uuid->id uuid)))
     (is (= correct-id (t/uuid->id correct-id)))))
@@ -83,7 +83,7 @@
 
   (let [[secret digest] (key-utils/generate)
         [_ bad-digest] (key-utils/generate)
-        uuid                (u/random-uuid)
+        uuid                (u/rand-uuid)
         valid-api-key       {:id      (str "credential/" uuid)
                              :subtype api-key-tpl/credential-subtype
                              :method  api-key-tpl/method

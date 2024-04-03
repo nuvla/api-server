@@ -467,7 +467,7 @@
 
           (let [plan             (utils/plan u-deployment-set u-applications-sets-v11)
                 fake-deployment  (fn [{:keys [target] {app-id :id app-ver :version :keys [environmental-variables files]} :application}]
-                                   {:id                  (str "deployment/" (u/random-uuid))
+                                   {:id                  (str "deployment/" (u/rand-uuid))
                                     :parent              target
                                     :state               "STARTED"
                                     :module              {:content       {:id                      (str "module/" app-ver)
