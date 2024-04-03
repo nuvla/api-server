@@ -185,9 +185,7 @@
     (let [index                   (escu/collection-id->index collection-id)
           paging                  (paging/paging cimi-params)
           orderby                 (order/sorters cimi-params)
-          aggregation             (merge-with merge
-                                              (aggregation/aggregators cimi-params)
-                                              (aggregation/custom-aggregations params))
+          aggregation             (aggregation/aggregators cimi-params)
           ts-aggregation          (aggregation/tsds-aggregators params)
           selected                (select/select cimi-params)
           query                   {:query (if ts-aggregation
