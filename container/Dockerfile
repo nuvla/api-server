@@ -16,9 +16,8 @@ LABEL ci.build.number=${TRAVIS_BUILD_NUMBER}
 LABEL ci.build.web.url=${TRAVIS_BUILD_WEB_URL}
 
 COPY target/dependency/lib /opt/nuvla/server/lib.d/api
-
-COPY src/scripts/start-api.sh /opt/nuvla/server/bin/
 COPY src/scripts/session-key-pair.sh /opt/nuvla/server/bin/
+COPY src/scripts/start-api.sh /opt/nuvla/server/bin/
 
 ENV NUVLA_SERVER_INIT=sixsq.nuvla.server.app.server/init
 ENV PERSISTENT_DB_BINDING=sixsq.nuvla.db.es.loader
@@ -28,7 +27,9 @@ ENV ES_ENDPOINTS=localhost:9200
 RUN addgroup -S "$USER_GROUP"  \
     && adduser -S "$USER_GROUP" -G "$USER_GROUP" \
     && mkdir -p /etc/nuvla \
-    && chown "$USER_GROUP:$USER_GROUP" /etc/nuvla
+    && chown "$USER_GROUP:$USER_GROUP" /etc/nuvla \
+    && chmod 0755 /opt/nuvla/server/bin/session-key-pair.sh \
+    && chmod 0755 /opt/nuvla/server/bin/start-api.sh
 
 USER "$USER_GROUP"
 ENTRYPOINT ["/opt/nuvla/server/bin/start-api.sh"]
