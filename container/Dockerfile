@@ -1,4 +1,4 @@
-FROM nuvla/ring:2.0.8
+FROM nuvladev/ring:jdk-21
                 
 ARG GIT_BRANCH
 ARG GIT_COMMIT_ID

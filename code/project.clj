@@ -1,4 +1,4 @@
-(def parent-version "6.7.15-SNAPSHOT")
+(def parent-version "6.7.15")
 (def nuvla-ring-version "2.0.10-SNAPSHOT")
 (def kinsky-version "0.3.1")
 
@@ -41,7 +41,7 @@
    [clj-http]
    [clj-stacktrace]
    [clojure.java-time "1.4.2"]
-   [com.amazonaws/aws-java-sdk-s3 "1.12.186"]
+   [com.amazonaws/aws-java-sdk-s3 "1.12.694"]
    [duratom :exclusions [org.clojure/clojure]]
    [expound]
    [instaparse]
