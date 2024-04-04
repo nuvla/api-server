@@ -41,7 +41,7 @@ jobs:
         working-directory: code
         run: |
           VERSION=$( lein project-version )
-          echo "{version}={$VERSION}" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo $version
           cat $GITHUB_OUTPUT
           mvn -version
