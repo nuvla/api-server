@@ -872,8 +872,7 @@
                               :pre-process-fn assoc-nuvlaedge-ids
                               :query-fn       query-metrics
                               :group-by       :power-consumption.metric-name
-                              :aggregations   {:energy-consumption {:max {:field :power-consumption.energy-consumption}}
-                                               #_:unit                   #_{:first {:field :power-consumption.unit}}}
+                              :aggregations   {:energy-consumption {:max {:field :power-consumption.energy-consumption}}}
                               :csv-export-fn  (telemetry-csv-export-fn :power-consumption)}})
 
 (defn edges-at
@@ -956,26 +955,6 @@
      (update-resp-ts-data-point-aggs
        (fn [_ts-data-point {:keys [by-edge] :as aggs}]
          (assoc aggs :edges-count {:value (count (:buckets by-edge))}))))])
-
-(defn add-virtual-edge-number-by-status-fn
-  [[{:keys [predefined-aggregations granularity-duration nuvlaboxes] :as query-opts} resp]]
-  (if predefined-aggregations
-    (let [edges-count (fn [timestamp] (count (edges-at nuvlaboxes (bucket-end-time timestamp granularity-duration))))]
-      [query-opts
-       (update-resp-ts-data-points
-         resp
-         (fn [{:keys [timestamp aggregations] :as ts-data-point}]
-           (let [global-avg-online    (get-in aggregations [:global-avg-online :value])
-                 edges-count-agg      (get-in aggregations [:edges-count :value])
-                 n-virt-online-edges  (double (or (some->> global-avg-online (* edges-count-agg)) 0))
-                 n-edges              (edges-count timestamp)
-                 n-virt-offline-edges (- n-edges n-virt-online-edges)]
-             (-> ts-data-point
-                 (assoc-in [:aggregations :virtual-edges-online]
-                           {:value n-virt-online-edges})
-                 (assoc-in [:aggregations :virtual-edges-offline]
-                           {:value n-virt-offline-edges})))))])
-    [query-opts resp]))
 
 (defn update-resp-edge-buckets
   [resp f]
@@ -1138,10 +1117,6 @@
           (when @int-atom
             (throw (InterruptedException.)))
           (when (> (- used-mem initial-used-mem) gc-limit)
-            #_(let [runtime (Runtime/getRuntime)
-                    free    (.freeMemory runtime)
-                    total   (.totalMemory runtime)]
-                (log/error "used/free/total memory: " (- total free) " / " free " / " total))
             (System/gc))
           (recur (rest timestamps)
                  latests
@@ -1286,7 +1261,6 @@
                                 :query-fn       query-metrics
                                 :group-by       :power-consumption.metric-name
                                 :aggregations   {:energy-consumption     (group-by-edge {:by-edge {:max {:field :power-consumption.energy-consumption}}})
-                                                 #_:unit                   #_{:first {:field :power-consumption.unit}}
                                                  :sum-energy-consumption {:sum_bucket {:buckets_path :energy-consumption>by-edge}}}
                                 :response-aggs  [:sum-energy-consumption]
                                 :csv-export-fn  (telemetry-csv-export-fn :power-consumption)}}))
