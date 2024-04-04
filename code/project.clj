@@ -56,6 +56,7 @@
    [org.clojure/tools.reader]                               ;; required by spandex through core.async
    [ring/ring-core]
    [ring/ring-json]
+   [fundingcircle/ring-accept "2.0.4"]
    [zookeeper-clj :exclusions [[org.slf4j/slf4j-log4j12]]]
    [factual/geo "3.0.1" :exclusions [[org.locationtech.jts/jts-core]
                                      [org.locationtech.spatial4j/spatial4j]
