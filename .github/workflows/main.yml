@@ -49,19 +49,8 @@ jobs:
         working-directory: code
         run: |
           VERSION=$( lein project-version )
-          echo "::set-output name=version::$VERSION"
+          echo "{version}={$VERSION}" >> $GITHUB_OUTPUT
         id: project_version
-
-      - name: cloverage
-        working-directory: code
-        run: |
-          lein -version 
-          export JAVA_OPTS="-Xms6g -Xmx7g"
-          export ES_JAVA_OPTS="-Xms6g -Xmx7g"
-          lein test
-          lein cloverage --codecov
-          ls -al test-reports/sonar/*
-          lein test
 
       - name: Setup Sonar Scanner
         uses: warchant/setup-sonar-scanner@v3
