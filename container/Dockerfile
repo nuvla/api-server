@@ -16,10 +16,8 @@ LABEL ci.build.web.url=${TRAVIS_BUILD_WEB_URL}
 
 ADD target/dependency/lib /opt/nuvla/server/lib.d/api
 
-ADD src/scripts/start-api.sh /opt/nuvla/server/bin/start-api.sh
-RUN chmod 0755 /opt/nuvla/server/bin/start-api.sh
-ADD src/scripts/session-key-pair.sh /opt/nuvla/server/bin/session-key-pair.sh
-RUN chmod 0755 /opt/nuvla/server/bin/session-key-pair.sh
+COPY --chmod=0755 src/scripts/start-api.sh /opt/nuvla/server/bin/
+COPY --chmod=0755 src/scripts/session-key-pair.sh /opt/nuvla/server/bin/
 
 ENV NUVLA_SERVER_INIT=sixsq.nuvla.server.app.server/init
 ENV PERSISTENT_DB_BINDING=sixsq.nuvla.db.es.loader
