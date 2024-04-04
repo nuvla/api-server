@@ -18,25 +18,17 @@ jobs:
   job-build:
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # Disabling shallow clone is recommended for improving relevancy of reporting for sonar
           fetch-depth: 0
 
-      - name: Cache local Maven repository
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-            - name: Cache local Maven repository
-
       - name: Set up JDK 21
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '21'
+          cache: maven
 
       # Ubuntu Repos on Azure fail often. Attempt to install before other
       # long-running operations.
@@ -50,6 +42,9 @@ jobs:
         run: |
           VERSION=$( lein project-version )
           echo "{version}={$VERSION}" >> $GITHUB_OUTPUT
+          echo $version
+          cat $GITHUB_OUTPUT
+          mvn -version
         id: project_version
 
       - name: Setup Sonar Scanner
