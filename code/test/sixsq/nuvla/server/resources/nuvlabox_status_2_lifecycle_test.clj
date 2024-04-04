@@ -1570,7 +1570,7 @@
                           (:availability-stats metric-data)))))
 
             (testing "raw availability data query"
-              (let [from                  (time/minus (time/now) (time/duration-unit 1 :days))
+              (let [from                  (time/minus now (time/duration-unit 1 :days))
                     to                    now
                     raw-availability-data (-> (metrics-request {:datasets    ["availability-stats"]
                                                                 :from        from
