@@ -698,6 +698,11 @@
   [[query-opts resp]]
   [query-opts (update-in resp [0] dissoc :hits)])
 
+(defn throw-custom-aggregations-not-exportable
+  [{:keys [custom-es-aggregations]}]
+  (when custom-es-aggregations
+    (logu/log-and-throw-400 "Custom aggregations cannot be exported to csv format")))
+
 (defn metrics-data->csv [options dimension-keys meta-keys metric-keys data-fn response]
   (with-open [writer (StringWriter.)]
     ;; write csv header
@@ -723,6 +728,7 @@
 (defn csv-export-fn
   [dimension-keys-fn meta-keys-fn metric-keys-fn data-fn]
   (fn [{:keys [resps] :as options}]
+    (throw-custom-aggregations-not-exportable options)
     (metrics-data->csv
       options
       (dimension-keys-fn options)
