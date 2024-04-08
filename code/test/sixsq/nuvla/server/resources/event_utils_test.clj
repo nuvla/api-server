@@ -24,7 +24,7 @@
 
 (deftest build-event
   (with-redefs [time/now-str (constantly "2023-08-17T07:25:57.259Z")]
-    (let [id      (str "resource/" (u/random-uuid))
+    (let [id      (str "resource/" (u/rand-uuid))
           context {:category "add"
                    :params   {:resource-name "resource"}}
           request (req {:nuvla-authn-info "super super group/nuvla-admin"

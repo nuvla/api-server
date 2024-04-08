@@ -141,7 +141,7 @@ These resources represent a deployment set that regroups deployments.
 (defn create-module-apps-set
   [{:keys [modules]} request]
   (create-module
-    {:path    (str module-utils/project-apps-sets "/" (u/random-uuid))
+    {:path    (str module-utils/project-apps-sets "/" (u/rand-uuid))
      :subtype module-utils/subtype-apps-sets
      :acl     {:owners [(auth/current-active-claim request)]}
      :content {:commit "no commit message"

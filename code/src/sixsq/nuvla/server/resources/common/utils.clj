@@ -50,10 +50,10 @@
 ;; resource ID utilities
 ;;
 
-(defn random-uuid
+(defn rand-uuid
   "Provides the string representation of a pseudo-random UUID."
   []
-  (str (UUID/randomUUID)))
+  (str (random-uuid)))
 
 
 (defn from-data-uuid
@@ -64,7 +64,7 @@
 
 (defn new-resource-id
   [resource-name]
-  (str resource-name "/" (random-uuid)))
+  (str resource-name "/" (rand-uuid)))
 
 
 (defn resource-id
@@ -218,7 +218,7 @@
   "This will return true if the given date (as a string) represents a moment
    of time in the past. Returns false otherwise."
   [expiry]
-  (boolean (and expiry (time/before? (time/date-from-str expiry) (time/now)))))
+  (boolean (and expiry (time/before? (time/parse-date expiry) (time/now)))))
 
 
 (def not-expired? (complement expired?))

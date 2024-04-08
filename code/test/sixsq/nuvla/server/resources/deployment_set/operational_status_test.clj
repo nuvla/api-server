@@ -65,7 +65,7 @@
 (defn set-random-deployment-id
   [{:keys [id] :as deployment}]
   (cond-> deployment
-          (nil? id) (assoc :id (u/random-uuid))))
+          (nil? id) (assoc :id (u/rand-uuid))))
 
 
 (defn set-random-deployment-ids

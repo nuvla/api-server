@@ -825,18 +825,18 @@
                                        :from          (time/minus now (time/duration-unit 1 :days))
                                        :to            now
                                        :granularity   "1-days"})))
-              (is (= "from parameter is mandatory, with format uuuu-MM-dd'T'HH:mm:ss[.SSS]XXXXX"
+              (is (= "from parameter is mandatory, with format iso8601 (uuuu-MM-dd'T'HH:mm:ss[.SSS]Z)"
                      (invalid-request {:datasets    ["cpu-stats"]
                                        :granularity "1-days"})))
-              (is (= "from parameter is mandatory, with format uuuu-MM-dd'T'HH:mm:ss[.SSS]XXXXX"
+              (is (= "from parameter is mandatory, with format iso8601 (uuuu-MM-dd'T'HH:mm:ss[.SSS]Z)"
                      (invalid-request {:datasets    ["cpu-stats"]
                                        :from-str    "wrong-datetime"
                                        :granularity "1-days"})))
-              (is (= "to parameter is mandatory, with format uuuu-MM-dd'T'HH:mm:ss[.SSS]XXXXX"
+              (is (= "to parameter is mandatory, with format iso8601 (uuuu-MM-dd'T'HH:mm:ss[.SSS]Z)"
                      (invalid-request {:datasets    ["cpu-stats"]
                                        :from        (time/minus now (time/duration-unit 1 :days))
                                        :granularity "1-days"})))
-              (is (= "to parameter is mandatory, with format uuuu-MM-dd'T'HH:mm:ss[.SSS]XXXXX"
+              (is (= "to parameter is mandatory, with format iso8601 (uuuu-MM-dd'T'HH:mm:ss[.SSS]Z)"
                      (invalid-request {:datasets    ["cpu-stats"]
                                        :from        (time/minus now (time/duration-unit 1 :days))
                                        :to-str      "wrong-datetime"

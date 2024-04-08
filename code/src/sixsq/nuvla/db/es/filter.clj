@@ -41,7 +41,7 @@
 
 (defn transform-date-value
   [^String s]
-  [:Value (time/date-from-str s)])
+  [:Value (time/parse-date s)])
 
 (defn transform-wkt-value
   [[_ s]]
