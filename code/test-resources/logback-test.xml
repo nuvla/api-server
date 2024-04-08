@@ -1,6 +1,6 @@
 <!-- Logback Configuration. See http://logback.qos.ch/ -->
 <!-- scan configuration for changes enable it by setting it to true -->
-<configuration scan="true" scanPeriod="3 seconds">
+<configuration scan="true" scanPeriod="10 seconds">
 
     <!--    <property resource="nuvla.properties"/>-->
 
@@ -9,13 +9,13 @@
 
         <!-- Only print log messages at level WARN or higher. -->
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>INFO</level>
+            <level>ERROR</level>
         </filter>
 
         <!-- Default encoder is ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
         <encoder>
             <!-- two-line layout suitable for a terminal -->
-            <pattern>%date - %-5level - %logger - [%thread]%n%msg%n</pattern>
+            <pattern>%date - %-5level - %logger - [%thread] - %msg%n</pattern>
             <charset>UTF-8</charset>
         </encoder>
     </appender>

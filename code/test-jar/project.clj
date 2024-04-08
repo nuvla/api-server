@@ -10,10 +10,8 @@
                                        :url
                                        :plugins
                                        :min-lein-version
-                                       :managed-dependencies
                                        :repositories
                                        :deploy-repositories
-                                       :resource-paths
                                        :pom-location
                                        [:profiles :provided]]}
             :source-paths ["../test"]
