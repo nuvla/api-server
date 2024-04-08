@@ -1065,14 +1065,16 @@ particular NuvlaBox release.
       (or (ex-data e) (throw e)))))
 
 (defmethod crud/do-action [resource-type "data"]
-  [{:keys [params] {accept-header "accept"} :headers :as request}]
-  (data-utils/gated-query-data (assoc params :mode :single-edge-query
-                                             :accept-header accept-header) request))
+  [{:keys [params] :as request}]
+  (data-utils/wrapped-query-data
+    (assoc params :mode :single-edge-query)
+    request))
 
 (defn bulk-query-data
-  [_ {:keys [body] {accept-header "accept"} :headers :as request}]
-  (data-utils/gated-query-data (assoc body :mode :multi-edge-query
-                                           :accept-header accept-header) request))
+  [_ {:keys [body] :as request}]
+  (data-utils/wrapped-query-data
+    (assoc body :mode :multi-edge-query)
+    request))
 
 (def validate-bulk-data-body (u/create-spec-validation-request-body-fn
                                ::nuvlabox/bulk-data-body))

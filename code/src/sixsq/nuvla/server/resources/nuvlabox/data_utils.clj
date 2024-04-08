@@ -8,6 +8,7 @@
     [environ.core :as env]
     [promesa.core :as p]
     [promesa.exec :as px]
+    [ring.middleware.accept :refer [wrap-accept]]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
@@ -1266,7 +1267,8 @@
                                 :csv-export-fn  (telemetry-csv-export-fn :power-consumption)}}))
 
 (defn parse-params
-  [{:keys [uuid dataset from to granularity custom-es-aggregations] :as params}]
+  [{:keys [uuid dataset from to granularity custom-es-aggregations] :as params}
+   {:keys [accept] :as _request}]
   (let [datasets                (if (coll? dataset) dataset [dataset])
         raw                     (= "raw" granularity)
         predefined-aggregations (not (or raw custom-es-aggregations))
@@ -1274,6 +1276,7 @@
                                         (string? custom-es-aggregations)
                                         json/read-str)]
     (-> params
+        (assoc :mime-type (:mime accept))
         (assoc :datasets datasets)
         (assoc :from (time/date-from-str from))
         (assoc :to (time/date-from-str to))
@@ -1282,6 +1285,12 @@
           raw (assoc :raw true)
           predefined-aggregations (assoc :predefined-aggregations true)
           custom-es-aggregations (assoc :custom-es-aggregations custom-es-aggregations)))))
+
+(defn throw-response-format-not-supported
+  [{:keys [mime-type] :as params}]
+  (when-not mime-type
+    (logu/log-and-throw-400 406 "Not Acceptable"))
+  params)
 
 (defn throw-mandatory-dataset-parameter
   [{:keys [datasets] :as params}]
@@ -1323,12 +1332,6 @@
                                     (granularity->duration granularity))]
       (when (> n-buckets max-n-buckets)
         (logu/log-and-throw-400 "too many data points requested. Please restrict the time interval or increase the time granularity."))))
-  params)
-
-(defn throw-response-format-not-supported
-  [{:keys [accept-header] :as params}]
-  (when (and (some? accept-header) (not (#{"application/json" "text/csv"} accept-header)))
-    (logu/log-and-throw-400 (str "format not supported: " accept-header)))
   params)
 
 (defn granularity->ts-interval
@@ -1375,8 +1378,8 @@
   params)
 
 (defn throw-csv-multi-dataset
-  [{:keys [datasets accept-header] :as params}]
-  (when (and (= "text/csv" accept-header) (not= 1 (count datasets)))
+  [{:keys [datasets mime-type] :as params}]
+  (when (and (= "text/csv" mime-type) (not= 1 (count datasets)))
     (logu/log-and-throw-400 (str "exactly one dataset must be specified with accept header 'text/csv'")))
   params)
 
@@ -1407,9 +1410,9 @@
     (r/csv-response "export.csv" (csv-export-fn options))))
 
 (defn send-data-response
-  [{:keys [accept-header] :as options}]
-  (case accept-header
-    (nil "application/json")                                ; by default return a json response
+  [{:keys [mime-type] :as options}]
+  (case mime-type
+    "application/json"
     (json-data-response options)
     "text/csv"
     (csv-response options)))
@@ -1417,14 +1420,14 @@
 (defn query-data
   [params request]
   (-> params
-      (parse-params)
+      (parse-params request)
+      (throw-response-format-not-supported)
       (throw-mandatory-dataset-parameter)
       (throw-mandatory-from-to-parameters)
       (throw-from-not-before-to)
       (throw-mandatory-granularity-parameter)
       (throw-too-many-data-points)
       (throw-custom-es-aggregations-checks)
-      (throw-response-format-not-supported)
       (assoc-base-query-opts request)
       (assoc-datasets-opts)
       (throw-unknown-datasets)
@@ -1472,4 +1475,12 @@
             (swap! requesting-query-data dec))))
       ;; let non-availability queries go through
       (query-data params request))))
+
+(defn wrapped-query-data
+  [params request]
+  (let [query-data (wrap-accept (partial gated-query-data params)
+                                {:mime ["application/json" :qs 1
+                                        "text/csv" :qs 0.5]})]
+    (query-data request)))
+
 
