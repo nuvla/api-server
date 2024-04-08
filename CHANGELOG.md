@@ -4,6 +4,23 @@
 
 ## Released
 
+## [6.6.0] - 2024-04-08
+
+- JDK 21
+  - clojure upgrade and random-uuid and type hints for ssh generation
+  - upgrade deps
+  - parent dependencies
+  - github action warning fix
+  - logback test config
+  - reorder deps and add exclusions to remove confusion in deps
+- Nuvlaedge data
+  - Mem optimized version of compute-availabilities
+  - Fix inconsistency of dynamic filter definition and number of edges
+  - Consider commissioned edges that never sent telemetry as always offline since their creation
+  - Let ES compute the aggregation timestamps
+  - Add ring-accept library
+  - Add library for full support of http Accept header
+
 ## [6.5.0] - 2024-03-21
 
 - Nuvlabox data resource to query availability and telemetry
