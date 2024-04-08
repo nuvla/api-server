@@ -1,5 +1,5 @@
-(def parent-version "6.7.15")
-(def nuvla-ring-version "2.1.0")
+(def parent-version "6.8.0")
+(def nuvla-ring-version "2.1.1-SNAPSHOT")
 (def kinsky-version "0.3.1")
 
 (defproject sixsq.nuvla.server/api-jar "6.5.1-SNAPSHOT"
@@ -12,14 +12,10 @@
             :url          "http://www.apache.org/licenses/LICENSE-2.0.txt"
             :distribution :repo}
 
-  :plugins [[lein-parent "0.3.9"]
-            [lein-environ "1.2.0"]
-            [lein-project-version "0.1.0"]]
+  :plugins [[lein-parent "0.3.9"]]
 
   :parent-project {:coords  [sixsq.nuvla/parent ~parent-version]
                    :inherit [:plugins
-                             :min-lein-version
-                             :managed-dependencies
                              :repositories
                              :deploy-repositories]}
 
@@ -31,35 +27,34 @@
 
   :dependencies
   [[metosin/tilakone "0.0.4"]
-   [buddy/buddy-core]
+   [buddy/buddy-core "1.11.423"]
+   [buddy/buddy-hashers "2.0.167"]
+   [buddy/buddy-sign "3.5.351"]
    [org.clojars.konstan/kinsky ~kinsky-version]
-   [buddy/buddy-hashers]
-   [buddy/buddy-sign]
    [cc.qbits/spandex "0.8.2"]
    [compojure "1.7.1"]
-   [com.draines/postal]
-   [clj-http]
-   [clj-stacktrace]
+   [com.draines/postal "2.0.5"]
+   [clj-http "3.12.3"]
+   [clj-stacktrace "0.2.8"]
    [clojure.java-time "1.4.2"]
    [com.amazonaws/aws-java-sdk-s3 "1.12.694"]
-   [duratom :exclusions [org.clojure/clojure]]
-   [expound]
-   [instaparse]
-   [metosin/spec-tools]
+   [duratom "0.5.9"]
+   [expound "0.9.0"]
+   [instaparse "1.4.14"]
+   [metosin/spec-tools "0.10.6"]
    [org.bouncycastle/bcpkix-jdk15on "1.70"]
    [selmer "1.12.59"]
    [org.clojure/data.csv "1.1.0"]
-   [org.clojure/data.json]
-   [org.clojure/java.classpath]
-   [org.clojure/tools.namespace]
-   [org.clojure/tools.reader]                               ;; required by spandex through core.async
-   [ring/ring-core]
-   [ring/ring-json]
-   [zookeeper-clj :exclusions [[org.slf4j/slf4j-log4j12]]]
+   [org.clojure/data.json "2.5.0"]
+   [org.clojure/java.classpath "1.1.0"]
+   [org.clojure/tools.namespace "1.5.0"]
+   [ring/ring-core "1.12.1"]
+   [ring/ring-json "0.5.1"]
+   [zookeeper-clj "0.11.0"]
    [factual/geo "3.0.1" :exclusions [[org.locationtech.jts/jts-core]
                                      [org.locationtech.spatial4j/spatial4j]
                                      [org.wololo/jts2geojson]]]
-   ;; spatial4j and jts-core are needed for factual/geo and for elasticsearch mock test instance
+   ;; spatial4j and jts-core are needed for factual/geo
    ;; issue in Factual geo https://github.com/Factual/geo/issues/74
    [org.locationtech.spatial4j/spatial4j "0.8"]
    [org.locationtech.jts/jts-core "1.19.0"]
@@ -71,51 +66,40 @@
    [nrepl "1.1.1"]]
 
   :profiles
-  {
-   :provided {:dependencies [[org.clojure/clojure "1.11.2"]
+  {:provided {:dependencies [[org.clojure/clojure "1.11.2"]
                              [sixsq.nuvla.ring/code ~nuvla-ring-version]
                              [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
 
-   :test     {:dependencies   [[org.ow2.asm/asm "9.7"]
-                               [me.raynes/fs]
-                               [peridot]
-                               [clj-test-containers "0.7.4"]
-                               [org.apache.logging.log4j/log4j-core] ;; needed for ES logging
-                               [org.apache.logging.log4j/log4j-api] ;; needed for ES logging
-                               [org.clojure/test.check]
-                               [org.slf4j/slf4j-api]
-                               [org.slf4j/slf4j-log4j12]
-                               [com.cemerick/url]
-                               [org.apache.curator/curator-test]
-                               [org.clojars.konstan/kinsky-test-jar ~kinsky-version]
-                               [same/ish "0.1.6"]]
-              :resource-paths ["test-resources"]
-              :env            {:nuvla-session-key           "test-resources/session.key"
-                               :nuvla-session-crt           "test-resources/session.crt"
-                               :es-sniffer-init             "no"
-                               :kafka-producer-init         "yes"}
-              :aot            :all
-              :plugins        [[org.clojars.konstan/lein-test-report-sonar "0.0.4"]]
-              :test-report-sonar {:output-dir "test-reports"
+   :test     {:dependencies      [[me.raynes/fs "1.4.6"]
+                                  [org.testcontainers/testcontainers"1.17.6"]
+                                  [peridot "0.5.4"]
+                                  [clj-test-containers "0.7.4"]
+                                  [org.clojure/test.check "1.1.1"]
+                                  [com.cemerick/url "0.1.1"]
+                                  [org.apache.curator/curator-test "5.6.0"]
+                                  [org.clojars.konstan/kinsky-test-jar ~kinsky-version]
+                                  [same/ish "0.1.6"]]
+              :resource-paths    ["test-resources"]
+              :env               {:nuvla-session-key   "test-resources/session.key"
+                                  :nuvla-session-crt   "test-resources/session.crt"
+                                  :es-sniffer-init     "no"
+                                  :kafka-producer-init "yes"}
+              :aot               :all
+              :plugins           [[org.clojars.konstan/lein-test-report-sonar "0.0.4"]]
+              :test-report-sonar {:output-dir     "test-reports"
                                   :emit-junit-xml true}}
 
-   :dev      {:dependencies          [[org.apache.zookeeper/zookeeper]
-                                      [clj-kondo "RELEASE"]
-                                      ;; for running linters
-                                      [me.raynes/fs]
-                                      [peridot]
-                                      [org.apache.curator/curator-test]
-                                      [org.apache.logging.log4j/log4j-core]]
+   :dev      {:dependencies   [[clj-kondo "RELEASE"]]
               ;; paths
-              :source-paths          ["src"]
-              :test-paths            ["test"]
-              :resource-paths        ["test-resources"]
+              :source-paths   ["src"]
+              :test-paths     ["test"]
+              :resource-paths ["test-resources"]
               ;; linters
-              :eastwood              {:exclude-namespaces [sixsq.nuvla.server.resources.job.utils]}
-              :env                   {:nuvla-session-key   "test-resources/session.key"
-                                      :nuvla-session-crt   "test-resources/session.crt"
-                                      :es-sniffer-init     "no"
-                                      :kafka-producer-init "no"}
+              :eastwood       {:exclude-namespaces [sixsq.nuvla.server.resources.job.utils]}
+              :env            {:nuvla-session-key   "test-resources/session.key"
+                               :nuvla-session-crt   "test-resources/session.crt"
+                               :es-sniffer-init     "no"
+                               :kafka-producer-init "no"}
               ;; code coverage
-              :cloverage             {:ns-exclude-regex [#"sixsq.nuvla.pricing.protocol"]}
+              :cloverage      {:ns-exclude-regex [#"sixsq.nuvla.pricing.protocol"]}
               }})
