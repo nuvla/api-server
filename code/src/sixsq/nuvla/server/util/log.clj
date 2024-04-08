@@ -16,12 +16,15 @@
 (defn log-and-throw-400
   "Logs the given message as a warning and then throws an exception with a 400
    response."
-  [msg]
-  (let [response (-> {:status 400 :message msg}
-                     r/json-response
-                     (ring-resp/status 400))]
-    (log/warn msg)
-    (throw (ex-info msg response))))
+  ([msg]
+   (log-and-throw-400 400 msg))
+  ([status msg]
+   (assert (<= 400 status 499))
+   (let [response (-> {:status status :message msg}
+                      r/json-response
+                      (ring-resp/status status))]
+     (log/warn msg)
+     (throw (ex-info msg response)))))
 
 
 (defn log-error-and-throw-with-redirect

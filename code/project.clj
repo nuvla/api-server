@@ -43,6 +43,7 @@
    [org.clojure/data.csv "1.1.0"]
    [org.clojure/data.json "2.5.0"]
    [ring/ring-json "0.5.1"]
+   [ring-middleware-accept "2.0.3"]
    [buddy/buddy-core "1.11.423"]
    [buddy/buddy-hashers "2.0.167"]
    [buddy/buddy-sign "3.5.351"]

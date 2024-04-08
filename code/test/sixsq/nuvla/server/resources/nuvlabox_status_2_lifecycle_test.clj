@@ -471,6 +471,51 @@
               (ltu/is-status 200)
               (ltu/is-key-value :online true)))))))
 
+(defn check-accept-header
+  [metrics-request now]
+  (testing "accept header"
+    (let [invalid-format (fn [accept-header]
+                           (-> (metrics-request
+                                 {:accept-header accept-header
+                                  :datasets      ["cpu-stats"]
+                                  :from          (time/minus now (time/duration-unit 1 :days))
+                                  :to            now
+                                  :granularity   "1-days"})
+                               (ltu/is-status 406)
+                               (ltu/body->edn)
+                               (ltu/is-key-value :message "Not Acceptable")))]
+      (invalid-format "text/plain")
+      (invalid-format "text/html"))
+    (let [metrics-request (fn [accept-header response-content-type]
+                            (-> (metrics-request
+                                  (cond->
+                                    {:datasets    ["cpu-stats"]
+                                     :from        (time/minus now (time/duration-unit 1 :days))
+                                     :to          now
+                                     :granularity "1-days"}
+                                    accept-header
+                                    (assoc :accept-header accept-header)))
+                                (ltu/is-status 200)
+                                (ltu/is-header "Content-Type" response-content-type)))]
+      (metrics-request nil
+                       "application/json")
+      (metrics-request "application/json"
+                       "application/json")
+      (metrics-request "application/*"
+                       "application/json")
+      (metrics-request "*/*"
+                       "application/json")
+      (metrics-request "application/json;q=1.0,text/csv;q=0.1"
+                       "application/json")
+      (metrics-request "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+                       "application/json")
+      (metrics-request "text/csv"
+                       "text/csv")
+      (metrics-request "text/*"
+                       "text/csv")
+      (metrics-request "application/json;q=0.1,text/csv;q=1.0"
+                       "text/csv"))))
+
 (deftest telemetry-data
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session         (-> (ltu/ring-app)
@@ -765,6 +810,8 @@
                                          :timestamp    (time/to-str midnight-today)}]}]
                          (:disk-stats custom-cpu-agg)))))))
 
+          (check-accept-header metrics-request now)
+
           (testing "query request validation"
             (let [invalid-request (fn [options]
                                     (-> (metrics-request options)
@@ -772,12 +819,6 @@
                                         (ltu/body->edn)
                                         (ltu/body)
                                         :message))]
-              (is (= "format not supported: text/plain"
-                     (invalid-request {:accept-header "text/plain"
-                                       :datasets      ["cpu-stats"]
-                                       :from          (time/minus now (time/duration-unit 1 :days))
-                                       :to            now
-                                       :granularity   "1-days"})))
               (is (= "exactly one dataset must be specified with accept header 'text/csv'"
                      (invalid-request {:accept-header "text/csv"
                                        :datasets      ["cpu-stats" "network-stats"]
@@ -1223,6 +1264,8 @@
                                          :timestamp    (time/to-str midnight-today)}]}]
                          (:disk-stats custom-disk-agg)))))))
 
+          (check-accept-header metrics-request now)
+
           (testing "query request validation"
             (let [invalid-request (fn [options]
                                     (-> (metrics-request options)
@@ -1230,12 +1273,6 @@
                                         (ltu/body->edn)
                                         (ltu/body)
                                         :message))]
-              (is (= "format not supported: text/plain"
-                     (invalid-request {:accept-header "text/plain"
-                                       :datasets      ["cpu-stats"]
-                                       :from          (time/minus now (time/duration-unit 1 :days))
-                                       :to            now
-                                       :granularity   "1-days"})))
               (is (= "exactly one dataset must be specified with accept header 'text/csv'"
                      (invalid-request {:accept-header "text/csv"
                                        :datasets      ["cpu-stats" "network-stats"]
@@ -1570,7 +1607,7 @@
                           (:availability-stats metric-data)))))
 
             (testing "raw availability data query"
-              (let [from                  (time/minus (time/now) (time/duration-unit 1 :days))
+              (let [from                  (time/minus now (time/duration-unit 1 :days))
                     to                    now
                     raw-availability-data (-> (metrics-request {:datasets    ["availability-stats"]
                                                                 :from        from

@@ -8,6 +8,7 @@
     [environ.core :as env]
     [promesa.core :as p]
     [promesa.exec :as px]
+    [ring.middleware.accept :refer [wrap-accept]]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
@@ -872,8 +873,7 @@
                               :pre-process-fn assoc-nuvlaedge-ids
                               :query-fn       query-metrics
                               :group-by       :power-consumption.metric-name
-                              :aggregations   {:energy-consumption {:max {:field :power-consumption.energy-consumption}}
-                                               #_:unit                   #_{:first {:field :power-consumption.unit}}}
+                              :aggregations   {:energy-consumption {:max {:field :power-consumption.energy-consumption}}}
                               :csv-export-fn  (telemetry-csv-export-fn :power-consumption)}})
 
 (defn edges-at
@@ -956,26 +956,6 @@
      (update-resp-ts-data-point-aggs
        (fn [_ts-data-point {:keys [by-edge] :as aggs}]
          (assoc aggs :edges-count {:value (count (:buckets by-edge))}))))])
-
-(defn add-virtual-edge-number-by-status-fn
-  [[{:keys [predefined-aggregations granularity-duration nuvlaboxes] :as query-opts} resp]]
-  (if predefined-aggregations
-    (let [edges-count (fn [timestamp] (count (edges-at nuvlaboxes (bucket-end-time timestamp granularity-duration))))]
-      [query-opts
-       (update-resp-ts-data-points
-         resp
-         (fn [{:keys [timestamp aggregations] :as ts-data-point}]
-           (let [global-avg-online    (get-in aggregations [:global-avg-online :value])
-                 edges-count-agg      (get-in aggregations [:edges-count :value])
-                 n-virt-online-edges  (double (or (some->> global-avg-online (* edges-count-agg)) 0))
-                 n-edges              (edges-count timestamp)
-                 n-virt-offline-edges (- n-edges n-virt-online-edges)]
-             (-> ts-data-point
-                 (assoc-in [:aggregations :virtual-edges-online]
-                           {:value n-virt-online-edges})
-                 (assoc-in [:aggregations :virtual-edges-offline]
-                           {:value n-virt-offline-edges})))))])
-    [query-opts resp]))
 
 (defn update-resp-edge-buckets
   [resp f]
@@ -1138,10 +1118,6 @@
           (when @int-atom
             (throw (InterruptedException.)))
           (when (> (- used-mem initial-used-mem) gc-limit)
-            #_(let [runtime (Runtime/getRuntime)
-                    free    (.freeMemory runtime)
-                    total   (.totalMemory runtime)]
-                (log/error "used/free/total memory: " (- total free) " / " free " / " total))
             (System/gc))
           (recur (rest timestamps)
                  latests
@@ -1286,13 +1262,13 @@
                                 :query-fn       query-metrics
                                 :group-by       :power-consumption.metric-name
                                 :aggregations   {:energy-consumption     (group-by-edge {:by-edge {:max {:field :power-consumption.energy-consumption}}})
-                                                 #_:unit                   #_{:first {:field :power-consumption.unit}}
                                                  :sum-energy-consumption {:sum_bucket {:buckets_path :energy-consumption>by-edge}}}
                                 :response-aggs  [:sum-energy-consumption]
                                 :csv-export-fn  (telemetry-csv-export-fn :power-consumption)}}))
 
 (defn parse-params
-  [{:keys [uuid dataset from to granularity custom-es-aggregations] :as params}]
+  [{:keys [uuid dataset from to granularity custom-es-aggregations] :as params}
+   {:keys [accept] :as _request}]
   (let [datasets                (if (coll? dataset) dataset [dataset])
         raw                     (= "raw" granularity)
         predefined-aggregations (not (or raw custom-es-aggregations))
@@ -1300,6 +1276,7 @@
                                         (string? custom-es-aggregations)
                                         json/read-str)]
     (-> params
+        (assoc :mime-type (:mime accept))
         (assoc :datasets datasets)
         (assoc :from (time/parse-date from))
         (assoc :to (time/parse-date to))
@@ -1308,6 +1285,12 @@
           raw (assoc :raw true)
           predefined-aggregations (assoc :predefined-aggregations true)
           custom-es-aggregations (assoc :custom-es-aggregations custom-es-aggregations)))))
+
+(defn throw-response-format-not-supported
+  [{:keys [mime-type] :as params}]
+  (when-not mime-type
+    (logu/log-and-throw-400 406 "Not Acceptable"))
+  params)
 
 (defn throw-mandatory-dataset-parameter
   [{:keys [datasets] :as params}]
@@ -1349,12 +1332,6 @@
                                     (granularity->duration granularity))]
       (when (> n-buckets max-n-buckets)
         (logu/log-and-throw-400 "too many data points requested. Please restrict the time interval or increase the time granularity."))))
-  params)
-
-(defn throw-response-format-not-supported
-  [{:keys [accept-header] :as params}]
-  (when (and (some? accept-header) (not (#{"application/json" "text/csv"} accept-header)))
-    (logu/log-and-throw-400 (str "format not supported: " accept-header)))
   params)
 
 (defn granularity->ts-interval
@@ -1401,8 +1378,8 @@
   params)
 
 (defn throw-csv-multi-dataset
-  [{:keys [datasets accept-header] :as params}]
-  (when (and (= "text/csv" accept-header) (not= 1 (count datasets)))
+  [{:keys [datasets mime-type] :as params}]
+  (when (and (= "text/csv" mime-type) (not= 1 (count datasets)))
     (logu/log-and-throw-400 (str "exactly one dataset must be specified with accept header 'text/csv'")))
   params)
 
@@ -1433,9 +1410,9 @@
     (r/csv-response "export.csv" (csv-export-fn options))))
 
 (defn send-data-response
-  [{:keys [accept-header] :as options}]
-  (case accept-header
-    (nil "application/json")                                ; by default return a json response
+  [{:keys [mime-type] :as options}]
+  (case mime-type
+    "application/json"
     (json-data-response options)
     "text/csv"
     (csv-response options)))
@@ -1443,14 +1420,14 @@
 (defn query-data
   [params request]
   (-> params
-      (parse-params)
+      (parse-params request)
+      (throw-response-format-not-supported)
       (throw-mandatory-dataset-parameter)
       (throw-mandatory-from-to-parameters)
       (throw-from-not-before-to)
       (throw-mandatory-granularity-parameter)
       (throw-too-many-data-points)
       (throw-custom-es-aggregations-checks)
-      (throw-response-format-not-supported)
       (assoc-base-query-opts request)
       (assoc-datasets-opts)
       (throw-unknown-datasets)
@@ -1498,4 +1475,12 @@
             (swap! requesting-query-data dec))))
       ;; let non-availability queries go through
       (query-data params request))))
+
+(defn wrapped-query-data
+  [params request]
+  (let [query-data (wrap-accept (partial gated-query-data params)
+                                {:mime ["application/json" :qs 1
+                                        "text/csv" :qs 0.5]})]
+    (query-data request)))
+
 
