@@ -75,19 +75,6 @@
    [funcool/promesa "11.0.678"]
    [nrepl "1.1.1"]]
 
-  :exclusions [;; exclude libraries, we use only logging libs coming from sixsq.nuvla.ring/code
-               [commons-logging/commons-logging]
-               [org.clojure/tools.logging]
-               [org.slf4j/slf4j-api]
-               [ch.qos.logback/logback-classic]
-               [ch.qos.logback/logback-core]
-               ;; excluded because already comming from sixsq.nuvla.ring/code
-               [ring/ring-core]
-               [ring/ring-codec]
-               [commons-codec]
-               [commons-io]
-               [org.clojure/clojure]]
-
   :profiles
   {:provided {:dependencies [[sixsq.nuvla.ring/code ~nuvla-ring-version]
                              [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
