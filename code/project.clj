@@ -68,7 +68,10 @@
    ;; need for Factual geo wkt polygon to geojson
    ;; upgrading jts2geojson dependency to 0.16 or 0.17 creates conflicts for now
    [org.wololo/jts2geojson "0.18.1"]
-   [one-time "0.8.0"]
+   [one-time "0.8.0" :exclusions [[org.apache.xmlgraphics/batik-dom]
+                                  [org.apache.xmlgraphics/batik-svggen]
+                                  [com.github.kenglxn.qrgen/javase]
+                                  [com.google.zxing/javase]]]
    [funcool/promesa "11.0.678"]
    [nrepl "1.1.1"]]
 
