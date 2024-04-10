@@ -9,7 +9,7 @@
 
         <!-- Only print log messages at level WARN or higher. -->
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>ERROR</level>
+            <level>WARN</level>
         </filter>
 
         <!-- Default encoder is ch.qos.logback.classic.encoder.PatternLayoutEncoder -->

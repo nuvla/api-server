@@ -1,5 +1,5 @@
 (def parent-version "6.8.0")
-(def nuvla-ring-version "2.1.1")
+(def nuvla-ring-version "2.1.2")
 (def kinsky-version "0.3.1")
 
 (defproject sixsq.nuvla.server/api-jar "6.6.1-SNAPSHOT"
@@ -26,11 +26,11 @@
   :pom-location "target/"
 
   :dependencies
-  [[ring/ring-core "1.12.1"]
-   [cc.qbits/spandex "0.8.2"]
+  [[cc.qbits/spandex "0.8.2"]
    [metosin/tilakone "0.0.4"]
    [zookeeper-clj "0.11.0"
     :exclusions [[potemkin]
+                 [commons-codec]
                  [io.netty/netty-handler]
                  [io.netty/netty-transport-native-epoll]]]
    [org.clojars.konstan/kinsky ~kinsky-version
@@ -59,7 +59,8 @@
    [org.clojure/tools.namespace "1.5.0"]
    [factual/geo "3.0.1" :exclusions [[org.locationtech.jts/jts-core]
                                      [org.locationtech.spatial4j/spatial4j]
-                                     [org.wololo/jts2geojson]]]
+                                     [org.wololo/jts2geojson]
+                                     [junit/junit]]]
    ;; spatial4j and jts-core are needed for factual/geo
    ;; issue in Factual geo https://github.com/Factual/geo/issues/74
    [org.locationtech.spatial4j/spatial4j "0.8"]
@@ -71,9 +72,21 @@
    [funcool/promesa "11.0.678"]
    [nrepl "1.1.1"]]
 
+  :exclusions [;; exclude libraries, we use only logging libs coming from sixsq.nuvla.ring/code
+               [commons-logging/commons-logging]
+               [org.clojure/tools.logging]
+               [org.slf4j/slf4j-api]
+               [ch.qos.logback/logback-classic]
+               [ch.qos.logback/logback-core]
+               ;; excluded because already comming from sixsq.nuvla.ring/code
+               [ring/ring-core]
+               [ring/ring-codec]
+               [commons-codec]
+               [commons-io]
+               [org.clojure/clojure]]
+
   :profiles
-  {:provided {:dependencies [[org.clojure/clojure "1.11.2"]
-                             [sixsq.nuvla.ring/code ~nuvla-ring-version]
+  {:provided {:dependencies [[sixsq.nuvla.ring/code ~nuvla-ring-version]
                              [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
 
    :test     {:dependencies      [[me.raynes/fs "1.4.6"]
