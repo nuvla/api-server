@@ -44,7 +44,7 @@
           <artifactId>test-report-junit-xml</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>clojars.konstan</groupId>
+          <groupId>org.clojars.konstan</groupId>
           <artifactId>test-report-sonar</artifactId>
         </exclusion>
       </exclusions>
