@@ -14,17 +14,16 @@
   (->
     (st/spec ::core/nonblank-string)
     (assoc :name "docker-compose"
-           :json-schema/description "Text in yaml format for docker-compose or kubernetes manifest"
+           :json-schema/type "free-text"
            :json-schema/indexed false
-
-           :json-schema/fulltext true)))
+           :json-schema/description "Text in yaml format for docker-compose or kubernetes manifest")))
 
 
 (s/def ::file-content
   (-> (st/spec string?)
       (assoc :name "file-content"
-             :json-schema/indexed false
-             :json-schema/fulltext true)))
+             :json-schema/type "free-text"
+             :json-schema/indexed false)))
 
 
 (s/def ::file-name

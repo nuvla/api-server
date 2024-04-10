@@ -47,6 +47,7 @@
     anyOf (first anyOf)
     type (case type
            "map" (assoc m :type "object")
+           "free-text" (assoc m :type "object")
            "geo-point" (assoc m :type "geo_point"
                                 :ignore_z_value true)
            "geo-shape" (-> m

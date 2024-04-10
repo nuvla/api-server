@@ -12,7 +12,7 @@
 (s/def ::type #{"boolean"
                 "date-time" "duration"
                 "long" "integer" "number" "double"
-                "string" "resource-id" "uri"
+                "string" "resource-id" "uri" "free-text"
                 "map" "array" "geo-point" "geo-shape"
                 "any"})
 
