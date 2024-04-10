@@ -4,6 +4,16 @@
 
 ## Released
 
+## [6.6.1] - 2024-04-10
+
+- dependencies optimization and remove lib with high security flows
+  - put test logging into warn mode
+  - cleanup and optimize container jars
+  - ring upgrade
+  - exclude qrcode visual generation from one-time
+- module-application - Allow module application content and file-content to be bigger than 32K
+
+
 ## [6.6.0] - 2024-04-08
 
 - JDK 21
