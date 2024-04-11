@@ -4,6 +4,10 @@
 
 ## Released
 
+## [6.6.2] - 2024-04-11
+
+- contrainer ring upgrade missing fix
+
 ## [6.6.1] - 2024-04-10
 
 - dependencies optimization and remove lib with high security flows
