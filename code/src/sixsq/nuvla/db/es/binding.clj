@@ -378,7 +378,7 @@
           (log/error "unexpected status code when creating/updating" policy-name "ILM policy (" status "). " (or error e)))))))
 
 (defn create-timeseries-template
-  [client index mapping {:keys [routing-path look-back-time look-ahead-time start-time lifecycle-name]}]
+  [client index mappings {:keys [routing-path look-back-time look-ahead-time start-time lifecycle-name]}]
   (let [template-name (str index "-template")]
     (try
       (let [{:keys [status]} (spandex/request client
@@ -401,7 +401,7 @@
                                                            look-back-time (assoc :index.look_back_time look-back-time)
                                                            start-time (assoc :index.time_series.start_time start-time)
                                                            lifecycle-name (assoc :index.lifecycle.name lifecycle-name))
-                                                         :mappings mapping}}})]
+                                                         :mappings mappings}}})]
         (if (= 200 status)
           (do (log/debug template-name "index template created/updated")
               template-name)
@@ -433,27 +433,55 @@
                   error (:error body)]
               (log/error "unexpected status code when creating" datastream-index-name "datastream (" status "). " (or error e)))))))))
 
-(defn initialize-timeserie-datastream
-  [client collection-id {:keys [spec ilm-policy look-back-time look-ahead-time start-time]
-                         :or   {ilm-policy     hot-warm-cold-delete-policy
-                                look-back-time "7d"}
-                         :as   _options}]
-  (let [index           (escu/collection-id->index collection-id)
-        mapping         (mapping/mapping spec {:dynamic-templates false, :fulltext false})
-        routing-path    (mapping/time-series-routing-path spec)
-        ilm-policy-name (create-or-update-lifecycle-policy client index ilm-policy)]
-    (create-timeseries-template client index mapping {:routing-path    routing-path
-                                                      :lifecycle-name  ilm-policy-name
-                                                      :look-ahead-time look-ahead-time
-                                                      :look-back-time  look-back-time
-                                                      :start-time      start-time})
-    (create-datastream client index)))
+(defn create-timeseries-impl
+  [client timeseries-id
+   {:keys [mappings
+           routing-path
+           ilm-policy
+           look-back-time
+           look-ahead-time
+           start-time]
+    :or   {ilm-policy     hot-warm-cold-delete-policy
+           look-back-time "7d"}
+    :as   _options}]
+  (let [ilm-policy-name (create-or-update-lifecycle-policy client timeseries-id ilm-policy)]
+    (create-timeseries-template client timeseries-id mappings
+                                {:routing-path    routing-path
+                                 :lifecycle-name  ilm-policy-name
+                                 :look-ahead-time look-ahead-time
+                                 :look-back-time  look-back-time
+                                 :start-time      start-time})
+    (create-datastream client timeseries-id)))
+
+(defn retrieve-timeseries-impl
+  [client timeseries-id]
+  (try
+    (let [response (spandex/request client {:url [:_data_stream timeseries-id], :method :get})
+          found?   (seq (get-in response [:body :data_streams]))]
+      (if found?
+        (:body response)
+        (throw (r/ex-not-found timeseries-id))))
+    (catch Exception e
+      (let [{:keys [status] :as _response} (ex-data e)]
+        (if (= 404 status)
+          (throw (r/ex-not-found timeseries-id))
+          (throw e))))))
+
+(defn initialize-collection-timeseries
+  [client collection-id {:keys [spec] :as options}]
+  (let [timeseries-id (escu/collection-id->index collection-id)
+        mappings      (mapping/mapping spec {:dynamic-templates false, :fulltext false})
+        routing-path  (mapping/time-series-routing-path spec)]
+    (create-timeseries-impl client timeseries-id
+                            (assoc options
+                              :mappings mappings
+                              :routing-path routing-path))))
 
 (defn initialize-db
   [client collection-id {:keys [spec timeseries] :as options}]
   (let [index (escu/collection-id->index collection-id)]
     (if timeseries
-      (initialize-timeserie-datastream client collection-id options)
+      (initialize-collection-timeseries client collection-id options)
       (let [mapping (mapping/mapping spec)]
         (create-index client index)
         (set-index-mapping client index mapping)))))
@@ -500,6 +528,12 @@
 
   (bulk-edit [_ collection-id options]
     (bulk-edit-data client collection-id options))
+
+  (create-timeseries [_ timeseries-id options]
+    (create-timeseries-impl client timeseries-id options))
+
+  (retrieve-timeseries [_ timeseries-id]
+    (retrieve-timeseries-impl client timeseries-id))
 
   Closeable
   (close [_]

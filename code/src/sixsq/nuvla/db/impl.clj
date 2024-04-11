@@ -57,6 +57,11 @@
 (defn bulk-edit [collection-id & [options]]
   (p/bulk-edit *impl* collection-id options))
 
+(defn create-timeseries [timeseries-id & [options]]
+  (p/create-timeseries *impl* timeseries-id options))
+
+(defn retrieve-timeseries [timeseries-id]
+  (p/retrieve-timeseries *impl* timeseries-id))
 
 (defn close []
   (when-let [^Closeable impl *impl*]

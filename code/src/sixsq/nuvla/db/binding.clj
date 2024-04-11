@@ -154,4 +154,18 @@
      On failure, the function must throw an ex-info containing the error
      ring response.  If the resource-id does not correspond to a Collection,
      then a 400 (bad-request) response must be returned.  Other appropriate
-     error codes can also be thrown."))
+     error codes can also be thrown.")
+
+  (create-timeseries
+    [this timeseries-id options]
+    "This function creates the given timeseries in the database.")
+
+  (retrieve-timeseries
+    [this timeseries-id]
+    "This function retrieves the identified timeseries from the database.
+
+     On success, this returns the clojure map representation of the
+     timeseries.  The response must not be embedded in a ring response.
+
+     On failure, this function must throw an ex-info containing the error
+     ring response. If the resource doesn't exist, use a 404 status."))
