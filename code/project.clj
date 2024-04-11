@@ -76,7 +76,8 @@
    [nrepl "1.1.1"]]
 
   :profiles
-  {:provided {:dependencies [[sixsq.nuvla.ring/code ~nuvla-ring-version]
+  {:provided {:dependencies [[org.clojure/clojure "1.11.2"]
+                             [sixsq.nuvla.ring/code ~nuvla-ring-version]
                              [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
 
    :test     {:dependencies      [[me.raynes/fs "1.4.6"]
