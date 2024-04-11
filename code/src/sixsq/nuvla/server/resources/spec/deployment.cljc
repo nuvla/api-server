@@ -17,8 +17,20 @@
                            :json-schema/editable false
                            :json-schema/order 6)))
 
+(s/def :module/content
+  (-> (st/spec map?)
+      (assoc :name "content"
+             :json-schema/type "map"
+             :json-schema/indexed false
+             :json-schema/display-name "content")))
 
-(s/def ::module ::core/resource-link)
+(s/def ::module
+  (-> (st/spec (s/keys :req-un [::core/href]
+                       :opt-un [:module/content]))
+      (assoc :name "module"
+             :json-schema/type "map"
+             :json-schema/display-name "module"
+             :json-schema/description "map containing a reference (href) to a module")))
 
 
 (s/def ::state
