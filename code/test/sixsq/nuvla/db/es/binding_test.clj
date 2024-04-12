@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.db.es.binding-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [qbits.spandex :as spandex]
     [sixsq.nuvla.db.binding-lifecycle :as lifecycle]
@@ -13,27 +12,25 @@
     [sixsq.nuvla.server.resources.spec.ts-nuvlaedge-telemetry :as ts-nuvlaedge]
     [sixsq.nuvla.server.util.time :as time]))
 
-
 (use-fixtures :each ltu/with-test-server-fixture)
-
 
 (deftest check-es-protocol
 
-  (let [client  (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})
+  (let [client  (esu/create-es-client (ltu/es-test-endpoint (ltu/es-node)))
         binding (t/->ElasticsearchRestBinding client nil)]
     (lifecycle/check-binding-lifecycle binding))
 
-  (with-open [client  (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})
+  (with-open [client  (esu/create-es-client (ltu/es-test-endpoint (ltu/es-node)))
               binding (t/->ElasticsearchRestBinding client nil)]
     (queries/check-binding-queries binding))
 
   (testing "sniffer get closed when defined"
-    (with-open [client   (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})
+    (with-open [client   (esu/create-es-client (ltu/es-test-endpoint (ltu/es-node)))
                 sniffer  (spandex/sniffer client)
                 _binding (t/->ElasticsearchRestBinding client sniffer)])))
 
 (deftest check-index-creation
-  (with-open [client (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})]
+  (with-open [client (esu/create-es-client (ltu/es-test-endpoint (ltu/es-node)))]
     (let [index-name "test-index-creation"]
       (t/create-index client index-name)
       (is (= {:number_of_shards   "3"
@@ -44,7 +41,7 @@
                  (select-keys [:number_of_shards :number_of_replicas])))))))
 
 (deftest check-timeseries-index
-  (with-open [client (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})]
+  (with-open [client (esu/create-es-client (ltu/es-test-endpoint (ltu/es-node)))]
     (let [spec                  ::ts-nuvlaedge/schema
           mapping               (mapping/mapping spec {:dynamic-templates false, :fulltext false})
           routing-path          (mapping/time-series-routing-path ::ts-nuvlaedge/schema)
@@ -77,7 +74,7 @@
           (is (seq response)))))))
 
 (deftest check-timeseries-ilm-policy
-  (with-open [client (esu/create-client {:hosts (ltu/es-test-endpoint (ltu/es-node))})]
+  (with-open [client (esu/create-es-client (ltu/es-test-endpoint (ltu/es-node)))]
     (let [spec          ::ts-nuvlaedge/schema
           mapping       (mapping/mapping spec {:dynamic-templates false, :fulltext false})
           routing-path  (mapping/time-series-routing-path ::ts-nuvlaedge/schema)

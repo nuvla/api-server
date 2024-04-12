@@ -32,12 +32,12 @@
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.util.kafka :as ka]
     [sixsq.nuvla.server.util.zookeeper :as uzk]
-    [zookeeper :as zk])
-  (:import
-    (java.util UUID)
-    (org.apache.curator.test TestingServer)))
+    [zookeeper :as zk]))
 
 (def ^:private es-node-client-cache (atom nil))
+
+(def es-port 9200)
+(def zk-port 2181)
 
 (defn es-node
   []
@@ -47,9 +47,9 @@
   []
   (second @es-node-client-cache))
 
-(defn es-test-endpoint
-  [es-node]
-  [(str "localhost:" (get (:mapped-ports es-node) 9200))])
+(defn container-endpoint
+  [container port]
+  (str "localhost:" (get (:mapped-ports container) port)))
 
 (defn random-string
   "provides a random string with optional prefix"
@@ -91,7 +91,7 @@
   `((fn [m# header# value#]
       (let [actual# (get-in m# [:response :headers header#])]
         (is (= value# actual#) (str "Expecting header " header# " with value " value# " got " (or actual# "nil") ". Message: "
-                                     (get-in m# [:response :body :message])))
+                                    (get-in m# [:response :body :message])))
         m#)) ~m ~header ~value))
 
 (defmacro is-key-value
@@ -313,15 +313,19 @@
 ;; Handling of Zookeeper server and client
 ;;
 
+(defn create-zk-server
+  [port]
+  (log/info "creating zookeeper server on port" port)
+  (tc/start!
+    (tc/create {:image-name    "zookeeper:3.4.13"
+                :exposed-ports [port]})))
+
 (defn create-zk-client-server
   []
-  (let [port 21810]
-    (log/info "creating zookeeper server on port" port)
-    (let [server (TestingServer. port)
-          client (zk/connect (str "127.0.0.1:" port))]
-      (uzk/set-client! client)
-      [client server])))
-
+  (let [server (create-zk-server zk-port)
+        client (zk/connect (container-endpoint server zk-port))]
+    (uzk/set-client! client)
+    [client server]))
 
 (defonce ^:private zk-client-server-cache (atom nil))
 
@@ -338,54 +342,38 @@
   ;; creation of ring application instances.
   (swap! zk-client-server-cache (fn [current] (or current (create-zk-client-server)))))
 
-
-;(defn clear-zk-client-server-cache
-;  "Unconditionally clears the cached Elasticsearch node and client. Can be
-;   used to force the re-initialization of the node and client. If the current
-;   values are not nil, then the node and client will be closed, with errors
-;   silently ignored."
-;  []
-;  (let [[[client server] _] (swap-vals! zk-client-server-cache (constantly nil))]
-;    (when client
-;      (try
-;        (.close client)
-;        (catch Exception _)))
-;    (when server
-;      (try
-;        (.close server)
-;        (catch Exception _)))))
-
-
 ;;
 ;; Handling of Elasticsearch node and client for tests
 ;;
 
-
 (defn create-test-node
   "Creates a local elasticsearch node that holds data that can be access
    through the native or HTTP protocols."
-  ([]
-   (create-test-node (str (UUID/randomUUID))))
-  ([^String cluster-name]
-   (-> (tc/create {:image-name    "docker.elastic.co/elasticsearch/elasticsearch:8.11.3"
-                   :env-vars      {"ES_JAVA_OPTS"                                          "-Xms512m -Xmx512m"
-                                   "xpack.security.enabled"                                "false"
-                                   "discovery.type"                                        "single-node"
-                                   "cluster.routing.allocation.disk.watermark.low"         "1gb"
-                                   "cluster.routing.allocation.disk.watermark.high"        "500mb"
-                                   "cluster.routing.allocation.disk.watermark.flood_stage" "100mb"
-                                   "cluster.name"                                          cluster-name}
-                   :exposed-ports [9200]})
-       (tc/start!))))
+  ([port]
+   (create-test-node (random-string) port))
+  ([^String cluster-name port]
+   (log/warn "creating ES server on port" port)
+   (tc/start!
+     (tc/create {:image-name    "docker.elastic.co/elasticsearch/elasticsearch:8.11.3"
+                 :env-vars      {"ES_JAVA_OPTS"                                          "-Xms512m -Xmx512m"
+                                 "xpack.security.enabled"                                "false"
+                                 "discovery.type"                                        "single-node"
+                                 "cluster.routing.allocation.disk.watermark.low"         "1gb"
+                                 "cluster.routing.allocation.disk.watermark.high"        "500mb"
+                                 "cluster.routing.allocation.disk.watermark.flood_stage" "100mb"
+                                 "cluster.name"                                          cluster-name}
+                 :exposed-ports [port]}))))
+
+(defn es-test-endpoint
+  [node]
+  [(container-endpoint node es-port)])
 
 (defn create-es-node-client
   []
-  (log/info "creating elasticsearch node and client")
-  (let [node   (create-test-node)
-        client (-> (esu/create-es-client (es-test-endpoint node))
-                   esu/wait-for-cluster)]
+  (let [node   (create-test-node es-port)
+        client (esu/wait-for-cluster
+                 (esu/create-es-client (es-test-endpoint node)))]
     [node client]))
-
 
 (defn set-es-node-client-cache
   "Sets the value of the cached Elasticsearch node and client. If the current
@@ -479,30 +467,30 @@
   [f]
   (log/debug "executing with-test-kafka-fixture")
   (let [log-dir (ke/create-tmp-dir "kraft-combined-logs")
-        kafka (profile "start kafka"
+        kafka   (profile "start kafka"
                          ke/start-embedded-kafka
                          {::ke/host          kafka-host
                           ::ke/port          kafka-port
                           ::ke/log-dirs      (str log-dir)
                           ::ke/server-config {"auto.create.topics.enable" "true"
                                               "transaction.timeout.ms"    "5000"}})]
-      (try
-        (when (= 0 (count @ka/producers!))
-          (profile "create kafka producers"
-                   ka/create-producers! (format "%s:%s" kafka-host kafka-port)))
-        (profile "run supplied function" f)
-        (catch Throwable t
-          (throw t))
-        (finally
-          (ka/close-producers!)
-          (log/debug "finalising with-test-kafka-fixture")
-          ;; FIXME: Closing Kafka server takes ~6 sec. Instead of closing Kafka
-          ;; server, delete all the topics. In case of the last test, the server
-          ;; will just go down with the JVM.
-          (let [ts (System/currentTimeMillis)]
-            (.close kafka)
-            (log/debug (str "--->: close kafka done in: "
-                            (- (System/currentTimeMillis) ts))))
+    (try
+      (when (= 0 (count @ka/producers!))
+        (profile "create kafka producers"
+                 ka/create-producers! (format "%s:%s" kafka-host kafka-port)))
+      (profile "run supplied function" f)
+      (catch Throwable t
+        (throw t))
+      (finally
+        (ka/close-producers!)
+        (log/debug "finalising with-test-kafka-fixture")
+        ;; FIXME: Closing Kafka server takes ~6 sec. Instead of closing Kafka
+        ;; server, delete all the topics. In case of the last test, the server
+        ;; will just go down with the JVM.
+        (let [ts (System/currentTimeMillis)]
+          (.close kafka)
+          (log/debug (str "--->: close kafka done in: "
+                          (- (System/currentTimeMillis) ts))))
         (ke/delete-dir log-dir)))))
 
 
