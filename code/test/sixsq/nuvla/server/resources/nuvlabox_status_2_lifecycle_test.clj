@@ -3,6 +3,7 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is testing use-fixtures]]
+    [clojure.tools.logging :as log]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [same.compare :refer [compare-ulp]]
@@ -1502,6 +1503,8 @@
                                (ltu/body->edn)
                                (ltu/is-status 201)
                                (ltu/location))]
+    (prn :t1 yesterday-2am :t2 yesterday-10am :t3 now-1d)
+    (log/error :t1 yesterday-2am :t2 yesterday-10am :t3 now-1d)
     [nuvlabox-id-2 nuvlabox-id-3 nuvlabox-id-4 nuvlabox-id-5]))
 
 (deftest availability-data
