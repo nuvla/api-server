@@ -86,7 +86,6 @@
                                   [clj-test-containers "0.7.4"]
                                   [org.clojure/test.check "1.1.1"]
                                   [com.cemerick/url "0.1.1"]
-                                  [org.apache.curator/curator-test "5.6.0"]
                                   [org.clojars.konstan/kinsky-test-jar ~kinsky-version]
                                   [same/ish "0.1.6"]]
               :resource-paths    ["test-resources"]
