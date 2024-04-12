@@ -6,7 +6,7 @@
            (java.time.temporal ChronoField ChronoUnit)
            (java.util Date)))
 
-(def rfc822-formatter (DateTimeFormatter/RFC_1123_DATE_TIME))
+(def rfc822-formatter DateTimeFormatter/RFC_1123_DATE_TIME)
 
 
 (def iso8601-formatter-base
