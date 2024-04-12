@@ -162,7 +162,7 @@
             (nuvlabox-status->bulk-insert-metrics-request from-telemetry)
             (crud/bulk-action))
     (catch Exception ex
-      (log/error "An error occurred inserting metrics: " ex))))
+      (log/error "An error occurred inserting metrics: " (ex-message ex)))))
 
 (defn ->predefined-aggregations-resp
   [{:keys [mode nuvlaedge-ids aggregations] group-by-field :group-by} resp]

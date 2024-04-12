@@ -278,13 +278,15 @@
           success?       (not (errors? response))]
       (if success?
         body-response
-        (let [msg (str "error when bulk inserting metrics: " body-response)]
+        (let [items (:items body-response)
+              msg   (str (if (seq items)
+                           {:errors-count (count items)
+                            :first-error  (first items)}
+                           body-response))]
           (throw (r/ex-response msg 400)))))
     (catch Exception e
-      (let [{:keys [body status] :as _response} (ex-data e)
-            error (:error body)
-            msg   (str "unexpected exception bulk inserting metrics: " _response (or error e))]
-        (throw (r/ex-response msg (or status 500)))))))
+      (let [{:keys [body status]} (ex-data e)]
+        (throw (r/ex-response (str body) (or status 500)))))))
 
 (defn bulk-edit-data
   [client collection-id
