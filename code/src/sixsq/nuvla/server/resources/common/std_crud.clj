@@ -8,6 +8,7 @@
     [clojure.walk :as w]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.es.common.utils :as escu]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -213,23 +214,24 @@
                           (str "_" resource-name))]
       (create-bulk-job action-name resource-name authn-info acl body))))
 
-(defn add-metric-fn
+(defn add-timeseries-datapoint-fn
   [resource-name collection-acl _resource-uri & {:keys [validate-fn options]}]
   (validate-collection-acl collection-acl)
   (fn [{:keys [body] :as request}]
     (a/throw-cannot-add collection-acl request)
     (validate-fn body)
-    (db/add-metric resource-name body options)))
+    (db/add-timeseries-datapoint (escu/collection-id->index resource-name)
+                                 body options)))
 
-(defn bulk-insert-metrics-fn
-  [resource-name collection-acl _collection-uri]
+(defn bulk-insert-timeseries-datapoints-fn
+  [index collection-acl _collection-uri]
   (validate-collection-acl collection-acl)
   (fn [{:keys [body] :as request}]
     (throw-bulk-header-missing request)
     (a/throw-cannot-add collection-acl request)
     (a/throw-cannot-bulk-action collection-acl request)
     (let [options    (select-keys request [:nuvla/authn :body])
-          response   (db/bulk-insert-metrics resource-name body options)]
+          response   (db/bulk-insert-timeseries-datapoints index body options)]
       (r/json-response response))))
 
 (defn generic-bulk-operation-fn

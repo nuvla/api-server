@@ -1,7 +1,8 @@
 (ns sixsq.nuvla.db.es.binding
   "Binding protocol implemented for an Elasticsearch database that makes use
    of the Elasticsearch REST API."
-  (:require [clojure.tools.logging :as log]
+  (:require [clojure.data.json :as json]
+            [clojure.tools.logging :as log]
             [qbits.spandex :as spandex]
             [sixsq.nuvla.auth.utils.acl :as acl-utils]
             [sixsq.nuvla.db.binding :refer [Binding]]
@@ -234,13 +235,12 @@
             msg   (str "unexpected exception querying: " (or error e))]
         (throw (r/ex-response msg 500))))))
 
-(defn add-metric-data
-  [client collection-id data {:keys [refresh]
-                              :or   {refresh true}
-                              :as   _options}]
+(defn add-timeseries-datapoint
+  [client index data {:keys [refresh]
+                      :or   {refresh true}
+                      :as   _options}]
   (try
-    (let [index        (escu/collection-id->index collection-id)
-          updated-data (-> data
+    (let [updated-data (-> data
                            (dissoc :timestamp)
                            (assoc "@timestamp" (:timestamp data)))
           response     (spandex/request client {:url          [index :_doc]
@@ -251,20 +251,19 @@
       (if success?
         {:status 201
          :body   {:status  201
-                  :message (str collection-id " metric added")}}
-        (r/response-conflict collection-id)))
+                  :message (str index " metric added")}}
+        (r/response-conflict index)))
     (catch Exception e
       (let [{:keys [status body] :as _response} (ex-data e)
             error (:error body)]
         (if (= 409 status)
-          (r/response-conflict collection-id)
+          (r/response-conflict index)
           (r/response-error (str "unexpected exception: " (or error e))))))))
 
-(defn bulk-insert-metrics
-  [client collection-id data _options]
+(defn bulk-insert-timeseries-datapoints
+  [client index data _options]
   (try
-    (let [index          (escu/collection-id->index collection-id)
-          data-transform (fn [{:keys [timestamp] :as doc}]
+    (let [data-transform (fn [{:keys [timestamp] :as doc}]
                            (-> doc
                                (dissoc :timestamp)
                                (assoc "@timestamp" timestamp)))
@@ -517,12 +516,6 @@
   (query-native [_ collection-id query]
     (query-data-native client collection-id query))
 
-  (add-metric [_ collection-id data options]
-    (add-metric-data client collection-id data options))
-
-  (bulk-insert-metrics [_ collection-id data options]
-    (bulk-insert-metrics client collection-id data options))
-
   (bulk-delete [_ collection-id options]
     (bulk-delete-data client collection-id options))
 
@@ -534,6 +527,13 @@
 
   (retrieve-timeseries [_ timeseries-id]
     (retrieve-timeseries-impl client timeseries-id))
+
+  (add-timeseries-datapoint [_ index data options]
+    (add-timeseries-datapoint client index data options))
+
+  (bulk-insert-timeseries-datapoints [_ index data options]
+    (bulk-insert-timeseries-datapoints client index data options))
+
 
   Closeable
   (close [_]

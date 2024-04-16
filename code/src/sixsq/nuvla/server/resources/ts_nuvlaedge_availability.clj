@@ -39,9 +39,9 @@ The `ts-nuvlaedge` resources create a timeseries related to nuvlaedge availabili
   [resource _request]
   resource)
 
-(def add-impl (std-crud/add-metric-fn resource-type collection-acl resource-type
-                                      :validate-fn validate
-                                      :options {:refresh false}))
+(def add-impl (std-crud/add-timeseries-datapoint-fn resource-type collection-acl resource-type
+                                                    :validate-fn validate
+                                                    :options {:refresh false}))
 
 
 (defmethod crud/add resource-type

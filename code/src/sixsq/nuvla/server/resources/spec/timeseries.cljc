@@ -14,6 +14,7 @@
 
 (s/def ::field-type
   (assoc (st/spec field-types)
+    :json-schema/type "string"
     :json-schema/description "Timeseries field name"))
 
 (s/def ::dimension
@@ -31,13 +32,21 @@
 
 (s/def ::metric-type
   (assoc (st/spec metric-types)
+    :json-schema/type "string"
     :json-schema/description "Timeseries metric type"))
+
+(s/def ::optional
+  (-> (st/spec boolean?)
+      (assoc :name "optional"
+             :json-schema/type "boolean"
+             :json-schema/description "optional value ? (default false)")))
 
 (s/def ::metric
   (assoc (st/spec (su/only-keys
                     :req-un [::field-name
                              ::field-type
-                             ::metric-type]))
+                             ::metric-type]
+                    :opt-un [::optional]))
     :json-schema/type "map"
     :json-schema/description "Timeseries metric"))
 

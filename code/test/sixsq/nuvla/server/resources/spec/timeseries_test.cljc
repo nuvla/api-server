@@ -20,7 +20,11 @@
                                       :field-type "keyword"}]
                      :metrics       [{:field-name  "test-metric"
                                       :field-type  "long"
-                                      :metric-type "gauge"}]}]
+                                      :metric-type "gauge"}
+                                     {:field-name  "test-optional-metric"
+                                      :field-type  "long"
+                                      :metric-type "counter"
+                                      :optional    true}]}]
 
     (stu/is-valid ::timeseries/schema valid-entry)
     (stu/is-invalid ::timeseries/schema (assoc valid-entry :unknown "value"))
