@@ -114,7 +114,7 @@
                                                    :metric    "ram"
                                                    :ram       {:used 0}})
                                           (range 100))]
-              (t/bulk-insert-metrics client collection-id test-data-last-sec {}))
+              (t/bulk-insert-timeseries-datapoints client (escu/collection-id->index collection-id) test-data-last-sec {}))
             (spandex/request client {:url [:_refresh], :method :post})
             (let [_response (-> (spandex/request client {:url (str "_data_stream/" index-name)})
                                 (get-in [:body :data_streams]))
