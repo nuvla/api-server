@@ -376,7 +376,25 @@
               error (:error body)]
           (log/error "unexpected status code when creating/updating" policy-name "ILM policy (" status "). " (or error e)))))))
 
-(defn create-timeseries-template
+(defn delete-lifecycle-policy
+  [client index]
+  (let [policy-name (str index "-ilm-policy")]
+    (try
+      (let [{:keys [status]}
+            (spandex/request
+              client
+              {:url    [:_ilm :policy policy-name]
+               :method :delete})]
+        (if (= 200 status)
+          (do (log/debug policy-name "ILM policy deleted")
+              policy-name)
+          (log/error "unexpected status code when deleting" policy-name "ILM policy (" status ")")))
+      (catch Exception e
+        (let [{:keys [status body] :as _response} (ex-data e)
+              error (:error body)]
+          (log/error "unexpected status code when deleting" policy-name "ILM policy (" status "). " (or error e)))))))
+
+(defn create-or-update-timeseries-template
   [client index mappings {:keys [routing-path look-back-time look-ahead-time start-time lifecycle-name]}]
   (let [template-name (str index "-template")]
     (try
@@ -410,6 +428,22 @@
               error (:error body)]
           (log/error "unexpected status code when creating/updating" template-name "index template (" status "). " (or error e)))))))
 
+(defn delete-timeseries-template
+  [client index]
+  (let [template-name (str index "-template")]
+    (try
+      (let [{:keys [status]} (spandex/request client
+                                              {:url    [:_index_template template-name],
+                                               :method :delete})]
+        (if (= 200 status)
+          (do (log/debug template-name "index template deleted")
+              template-name)
+          (log/error "unexpected status code when deleting" template-name "index template (" status ")")))
+      (catch Exception e
+        (let [{:keys [status body] :as _response} (ex-data e)
+              error (:error body)]
+          (log/error "unexpected status code when deleting" template-name "index template (" status "). " (or error e)))))))
+
 (defn create-datastream
   [client datastream-index-name]
   (try
@@ -432,6 +466,19 @@
                   error (:error body)]
               (log/error "unexpected status code when creating" datastream-index-name "datastream (" status "). " (or error e)))))))))
 
+(defn delete-datastream
+  [client datastream-index-name]
+  (try
+    (let [{:keys [status]} (spandex/request client {:url [:_data_stream datastream-index-name]
+                                                    :method :delete})]
+      (if (= 200 status)
+        (log/debug datastream-index-name "datastream deleted")
+        (log/error "unexpected status code when deleting" datastream-index-name "datastream (" status ")")))
+    (catch Exception e
+      (let [{:keys [status body] :as _response} (ex-data e)
+            error (:error body)]
+        (log/error "unexpected status code when deleting" datastream-index-name "datastream (" status "). " (or error e))))))
+
 (defn create-timeseries-impl
   [client timeseries-id
    {:keys [mappings
@@ -444,8 +491,8 @@
            look-back-time "7d"}
     :as   _options}]
   (let [ilm-policy-name (create-or-update-lifecycle-policy client timeseries-id ilm-policy)]
-    (create-timeseries-template client timeseries-id mappings
-                                {:routing-path    routing-path
+    (create-or-update-timeseries-template client timeseries-id mappings
+                                          {:routing-path    routing-path
                                  :lifecycle-name  ilm-policy-name
                                  :look-ahead-time look-ahead-time
                                  :look-back-time  look-back-time
@@ -465,6 +512,30 @@
         (if (= 404 status)
           (throw (r/ex-not-found timeseries-id))
           (throw e))))))
+
+(defn edit-timeseries-impl
+  [client timeseries-id
+   {:keys [mappings
+           routing-path
+           ilm-policy
+           look-back-time
+           look-ahead-time
+           start-time]
+    :as   _options}]
+  (when ilm-policy
+    (create-or-update-lifecycle-policy client timeseries-id ilm-policy))
+  (create-or-update-timeseries-template
+    client timeseries-id mappings
+    {:routing-path    routing-path
+     :look-ahead-time look-ahead-time
+     :look-back-time  look-back-time
+     :start-time      start-time}))
+
+(defn delete-timeseries-impl
+  [client timeseries-id _options]
+  (delete-datastream client timeseries-id)
+  (delete-timeseries-template client timeseries-id)
+  (delete-lifecycle-policy client timeseries-id))
 
 (defn initialize-collection-timeseries
   [client collection-id {:keys [spec] :as options}]
@@ -528,11 +599,17 @@
   (retrieve-timeseries [_ timeseries-id]
     (retrieve-timeseries-impl client timeseries-id))
 
+  (edit-timeseries [_ timeseries-id options]
+    (edit-timeseries-impl client timeseries-id options))
+
   (add-timeseries-datapoint [_ index data options]
     (add-timeseries-datapoint client index data options))
 
   (bulk-insert-timeseries-datapoints [_ index data options]
     (bulk-insert-timeseries-datapoints client index data options))
+
+  (delete-timeseries [_ timeseries-id options]
+    (delete-timeseries-impl client timeseries-id options))
 
 
   Closeable

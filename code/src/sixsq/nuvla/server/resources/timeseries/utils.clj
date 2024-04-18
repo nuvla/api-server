@@ -38,14 +38,49 @@
   (mapv :field-name dimensions))
 
 (defn create-timeseries
-  [resource-id]
-  (let [resource     (crud/retrieve-by-id-as-admin resource-id)
-        mappings     (ts-resource->mappings resource)
+  [{:keys [id] :as resource}]
+  (let [mappings     (ts-resource->mappings resource)
         routing-path (ts-resource->routing-path resource)]
     (db/create-timeseries
-      (resource-id->timeseries-index resource-id)
+      (resource-id->timeseries-index id)
       {:mappings     mappings
        :routing-path routing-path})))
+
+(defn throw-dimensions-can-only-be-appended
+  [{{new-dimensions :dimensions} :body :as request}
+   {current-dimensions :dimensions :as _current}]
+  (when current-dimensions
+    (when-not (and (>= (count new-dimensions) (count current-dimensions))
+                   (= current-dimensions
+                      (subvec new-dimensions 0 (count current-dimensions))))
+      (throw (r/ex-response "dimensions can only be appended" 400))))
+  request)
+
+(defn throw-metrics-can-only-be-added
+  [{{new-metrics :metrics} :body :as request}
+   {current-metrics :metrics :as _current}]
+  (when-not (every? (fn [{:keys [field-name] :as current-metric}]
+                      (= current-metric
+                         (->> new-metrics
+                              (filter #(= field-name (:field-name %)))
+                              first)))
+                    current-metrics)
+    (throw (r/ex-response "metrics can only be added" 400)))
+  request)
+
+(defn edit-timeseries
+  [{:keys [id] :as resource}]
+  (let [mappings     (ts-resource->mappings resource)
+        routing-path (ts-resource->routing-path resource)]
+    (db/edit-timeseries
+      (resource-id->timeseries-index id)
+      {:mappings     mappings
+       :routing-path routing-path})))
+
+(defn delete-timeseries
+  [resource-id]
+  (db/delete-timeseries
+    (resource-id->timeseries-index resource-id)))
 
 (defn throw-missing-dimensions
   [{:keys [dimensions] :as _timeseries} datapoint]

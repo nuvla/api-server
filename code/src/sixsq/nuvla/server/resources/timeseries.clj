@@ -51,8 +51,10 @@ The `timeseries` resources represent a timeseries.
 
 (defmethod crud/add resource-type
   [request]
-  (let [{{:keys [resource-id]} :body :as response} (add-impl request)]
-    (utils/create-timeseries resource-id)
+  (let [{status :status {:keys [resource-id]} :body :as response} (add-impl request)]
+    (when (= 201 status)
+      (-> (crud/retrieve-by-id-as-admin resource-id)
+          (utils/create-timeseries)))
     response))
 
 
@@ -63,13 +65,29 @@ The `timeseries` resources represent a timeseries.
   [request]
   (retrieve-impl request))
 
+(def edit-impl (std-crud/edit-fn resource-type))
+
+(defmethod crud/edit resource-type
+  [{{uuid :uuid} :params :as request}]
+  (let [current (-> (str resource-type "/" uuid)
+                    crud/retrieve-by-id-as-admin
+                    (a/throw-cannot-edit request))
+        resp    (-> request
+                    (utils/throw-dimensions-can-only-be-appended current)
+                    (utils/throw-metrics-can-only-be-added current)
+                    edit-impl)]
+    (utils/edit-timeseries (:body resp))
+    resp))
 
 (def delete-impl (std-crud/delete-fn resource-type))
 
 
 (defmethod crud/delete resource-type
   [request]
-  (delete-impl request))
+  (let [{:keys [status] :as response} (delete-impl request)]
+    (when (= 200 status)
+      (utils/delete-timeseries (u/request->resource-id request)))
+    response))
 
 ;;
 ;; insert/bulk insert datapoints actions

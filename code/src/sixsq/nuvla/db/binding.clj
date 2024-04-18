@@ -145,6 +145,11 @@
      On failure, this function must throw an ex-info containing the error
      ring response. If the resource doesn't exist, use a 404 status.")
 
+  (edit-timeseries
+    [this index options]
+    "This function updates (edits) the given timeseries in the database.
+     The timeseries must already exist in the database.")
+
   (add-timeseries-datapoint
     [this index data options]
     "This function adds the given timeseries datapoint to the database.
@@ -167,4 +172,8 @@
      On failure, the function must throw an ex-info containing the error
      ring response.  If the resource-id does not correspond to a Collection,
      then a 400 (bad-request) response must be returned.  Other appropriate
-     error codes can also be thrown."))
+     error codes can also be thrown.")
+
+  (delete-timeseries
+    [this index options]
+    "This function deletes a timeseries with the given index name from the database."))

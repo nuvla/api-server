@@ -54,6 +54,9 @@
 (defn create-timeseries [index & [options]]
   (p/create-timeseries *impl* index options))
 
+(defn edit-timeseries [index & [options]]
+  (p/edit-timeseries *impl* index options))
+
 (defn retrieve-timeseries [timeseries-id]
   (p/retrieve-timeseries *impl* timeseries-id))
 
@@ -62,6 +65,9 @@
 
 (defn bulk-insert-timeseries-datapoints [index data & [options]]
   (p/bulk-insert-timeseries-datapoints *impl* index data options))
+
+(defn delete-timeseries [index & [options]]
+  (p/delete-timeseries *impl* index options))
 
 (defn close []
   (when-let [^Closeable impl *impl*]

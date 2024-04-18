@@ -50,7 +50,7 @@
           datastream-index-name "test-ts-index-1"]
 
       (testing "Create timeseries template"
-        (t/create-timeseries-template client index-name mapping {:routing-path routing-path})
+        (t/create-or-update-timeseries-template client index-name mapping {:routing-path routing-path})
         (let [response (-> (spandex/request client {:url (str "_index_template/" template-name)})
                            (get-in [:body :index_templates 0]))]
           (is (= template-name (:name response)))
@@ -94,8 +94,8 @@
           (is (= #{:hot :warm :delete} (set (keys phases))))
 
           (testing "Create timeseries template with ilm policy"
-            (let [template-name (t/create-timeseries-template client index-name mapping
-                                                              {:routing-path   routing-path
+            (let [template-name (t/create-or-update-timeseries-template client index-name mapping
+                                                                        {:routing-path   routing-path
                                                                :start-time     (time/to-str (time/minus (time/now) (time/duration-unit 20 :hours)))
                                                                :lifecycle-name ilm-policy-name})
                   response      (-> (spandex/request client {:url (str "_index_template/" template-name)})

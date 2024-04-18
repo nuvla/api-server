@@ -37,6 +37,7 @@
                                      :field-type  "long"
                                      :metric-type "counter"
                                      :optional    true}]}
+        ;; create timeseries
         ts-id         (-> session-user
                           (request base-uri
                                    :request-method :post
@@ -45,13 +46,16 @@
                           (ltu/is-status 201)
                           (ltu/location))
         ts-url        (str p/service-context ts-id)
+        ;; retrieve timeseries
         ts-response   (-> session-user
                           (request ts-url)
                           (ltu/body->edn)
                           (ltu/is-status 200)
                           (ltu/is-operation-present tu/action-insert))
         ts-resource   (ltu/body ts-response)
-        ts            (db/retrieve-timeseries (tu/resource-id->timeseries-index ts-id))
+        ts-index      (tu/resource-id->timeseries-index ts-id)
+        ts            (db/retrieve-timeseries ts-index)
+        insert-op-url (ltu/get-op-url ts-response tu/action-insert)
         now           (time/now)]
     (is (= (assoc entry
              :id ts-id
@@ -75,8 +79,7 @@
       (let [datapoint     {:timestamp (time/to-str now)
                            dimension1 "d1-val1"
                            metric1    3.14
-                           metric2    1000}
-            insert-op-url (ltu/get-op-url ts-response tu/action-insert)]
+                           metric2    1000}]
         (testing "datapoint validation error: missing dimensions"
           (-> session-user
               (request insert-op-url
@@ -171,7 +174,110 @@
                        :request-method :post
                        :body (json/write-str (map #(dissoc % :timestamp) datapoints)))
               (ltu/body->edn)
-              (ltu/is-status 200)))))))
+              (ltu/is-status 200)))))
+
+    (testing "update timeseries"
+      (let [dimension2 "test-dimension2"
+            metric3    "test-metric3"]
+        (testing "removing existing dimensions is not allowed"
+          (let [nok-entry {:dimensions [{:field-name dimension2
+                                         :field-type "keyword"}]
+                           :metrics    [{:field-name  metric1
+                                         :field-type  "double"
+                                         :metric-type "gauge"}
+                                        {:field-name  metric2
+                                         :field-type  "long"
+                                         :metric-type "counter"
+                                         :optional    true}]}]
+            (-> session-user
+                (request ts-url
+                         :request-method :put
+                         :body (json/write-str nok-entry))
+                (ltu/body->edn)
+                (ltu/is-status 400)
+                (ltu/is-key-value :message "dimensions can only be appended"))))
+
+        (testing "removing existing metrics is not allowed"
+          (let [nok-entry {:dimensions [{:field-name dimension1
+                                         :field-type "keyword"}]
+                           :metrics    [{:field-name  metric1
+                                         :field-type  "double"
+                                         :metric-type "gauge"}
+                                        {:field-name  metric3
+                                         :field-type  "double"
+                                         :metric-type "gauge"}]}]
+            (-> session-user
+                (request ts-url
+                         :request-method :put
+                         :body (json/write-str nok-entry))
+                (ltu/body->edn)
+                (ltu/is-status 400)
+                (ltu/is-key-value :message "metrics can only be added"))))
+
+        (testing "successful update - additional dimension and additional metric"
+          (let [updated-entry {:dimensions [{:field-name dimension1
+                                             :field-type "keyword"}
+                                            {:field-name dimension2
+                                             :field-type "keyword"}]
+                               :metrics    [{:field-name  metric1
+                                             :field-type  "double"
+                                             :metric-type "gauge"}
+                                            {:field-name  metric2
+                                             :field-type  "long"
+                                             :metric-type "counter"
+                                             :optional    true}
+                                            {:field-name  metric3
+                                             :field-type  "double"
+                                             :metric-type "gauge"}]}]
+            (-> session-user
+                (request ts-url
+                         :request-method :put
+                         :body (json/write-str updated-entry))
+                (ltu/body->edn)
+                (ltu/is-status 200))
+
+            (testing "insert datapoint with updated schema"
+              (let [datapoint {:timestamp (time/now-str)
+                               dimension1 "d1-val1"
+                               dimension2 "d2-val1"
+                               metric1    3.14
+                               metric2    1000
+                               metric3    12.34}]
+                (-> session-user
+                    (request insert-op-url
+                             :request-method :post
+                             :body (json/write-str datapoint))
+                    (ltu/body->edn)
+                    (ltu/is-status 201))))
+
+            (testing "changing the order of existing dimensions is not allowed"
+              (let [nok-entry (assoc updated-entry :dimensions
+                                                   [{:field-name dimension2
+                                                     :field-type "keyword"}
+                                                    {:field-name dimension1
+                                                     :field-type "keyword"}])]
+                (-> session-user
+                    (request ts-url
+                             :request-method :put
+                             :body (json/write-str nok-entry))
+                    (ltu/body->edn)
+                    (ltu/is-status 400)
+                    (ltu/is-key-value :message "dimensions can only be appended"))))))))
+
+    (testing "delete timeseries"
+      (-> session-user
+          (request ts-url :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      ;; timeseries meta doc is deleted
+      (-> session-user
+          (request ts-url)
+          (ltu/body->edn)
+          (ltu/is-status 404))
+
+      ;; timeseries is also deleted
+      (is (thrown? Exception (db/retrieve-timeseries ts-index))))))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
