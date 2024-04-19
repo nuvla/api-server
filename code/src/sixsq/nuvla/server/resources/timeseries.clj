@@ -124,6 +124,24 @@ The `timeseries` resources represent a timeseries.
       (or (ex-data e) (throw e)))))
 
 ;;
+;; data query action
+;;
+
+(defmethod crud/do-action [resource-type utils/action-data]
+  [{{uuid :uuid} :params body :body :as request}]
+  (try
+    (let [id               (str resource-type "/" uuid)
+          timeseries-index (utils/resource-id->timeseries-index id)
+          timeseries       (-> (crud/retrieve-by-id-as-admin id)
+                               (a/throw-cannot-manage request))]
+      (->> body
+           (utils/add-timestamp)
+           (utils/validate-datapoint timeseries)
+           (db/add-timeseries-datapoint timeseries-index)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+;;
 ;; available operations
 ;;
 

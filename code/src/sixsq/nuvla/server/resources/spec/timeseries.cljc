@@ -37,8 +37,7 @@
 
 (s/def ::optional
   (-> (st/spec boolean?)
-      (assoc :name "optional"
-             :json-schema/type "boolean"
+      (assoc :json-schema/type "boolean"
              :json-schema/description "optional value ? (default false)")))
 
 (s/def ::metric
@@ -54,7 +53,58 @@
   (-> (st/spec (s/coll-of ::metric :kind vector? :distinct true))
       (assoc :json-schema/description "Timeseries metrics")))
 
+(s/def ::query-name
+  (assoc (st/spec ::core/nonblank-string)
+    :json-schema/description "Timeseries query name"))
+
+(def query-types #{"standard" "custom-es-query"})
+
+(s/def ::query-type
+  (assoc (st/spec query-types)
+    :json-schema/type "string"
+    :json-schema/description "Timeseries query type"))
+
+(s/def ::aggregation-name
+  (assoc (st/spec ::core/nonblank-string)
+    :json-schema/description "Timeseries query aggregation name"))
+
+(def aggregation-types #{"avg" "min" "max"})
+
+(s/def ::aggregation-type
+  (assoc (st/spec aggregation-types)
+    :json-schema/type "string"
+    :json-schema/description "Timeseries query aggregation type"))
+
+(s/def ::aggregation
+  (assoc (st/spec (su/only-keys
+                    :req-un [::aggregation-name
+                             ::aggregation-type
+                             ::field-name]))
+    :json-schema/type "map"
+    :json-schema/description "Timeseries query aggregation specification"))
+
+(s/def ::aggregations
+  (-> (st/spec (s/coll-of ::aggregation :kind vector? :distinct true))
+      (assoc :json-schema/description "Query aggregations")))
+
+(s/def ::query
+  (assoc (st/spec (su/only-keys
+                    :req-un [::aggregations]))
+    :json-schema/type "map"
+    :json-schema/description "Timeseries query"))
+
+(s/def ::query-definition
+  (assoc (st/spec (su/only-keys
+                    :req-un [::query-name
+                             ::query-type
+                             ::query]))
+    :json-schema/type "map"
+    :json-schema/description "Timeseries query definition"))
+
+(s/def ::queries
+  (-> (st/spec (s/coll-of ::query-definition :kind vector? :distinct true))
+      (assoc :json-schema/description "Queries supported by the timeseries")))
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
-                     {:req-un [::dimensions ::metrics]}))
-
+                     {:req-un [::dimensions ::metrics ::queries]}))

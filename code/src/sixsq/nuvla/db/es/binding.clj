@@ -1,8 +1,7 @@
 (ns sixsq.nuvla.db.es.binding
   "Binding protocol implemented for an Elasticsearch database that makes use
    of the Elasticsearch REST API."
-  (:require [clojure.data.json :as json]
-            [clojure.tools.logging :as log]
+  (:require [clojure.tools.logging :as log]
             [qbits.spandex :as spandex]
             [sixsq.nuvla.auth.utils.acl :as acl-utils]
             [sixsq.nuvla.db.binding :refer [Binding]]

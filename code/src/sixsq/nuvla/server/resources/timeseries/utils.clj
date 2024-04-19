@@ -2,13 +2,13 @@
   (:require [clojure.set :as set]
             [clojure.string :as str]
             [sixsq.nuvla.db.impl :as db]
-            [sixsq.nuvla.server.resources.common.crud :as crud]
             [sixsq.nuvla.server.resources.common.utils :as u]
             [sixsq.nuvla.server.util.response :as r]
             [sixsq.nuvla.server.util.time :as time]))
 
 (def action-insert "insert")
 (def action-bulk-insert "bulk-insert")
+(def action-data "data")
 
 (defn resource-id->timeseries-index
   [resource-id]
