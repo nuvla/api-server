@@ -159,6 +159,14 @@
                        :request-method :post
                        :body (json/write-str (dissoc datapoint :timestamp)))
               (ltu/body->edn)
+              (ltu/is-status 201)))
+
+        (testing "optional metrics can be omitted"
+          (-> session-user
+              (request insert-op-url
+                       :request-method :post
+                       :body (json/write-str (dissoc datapoint :timestamp metric2)))
+              (ltu/body->edn)
               (ltu/is-status 201)))))
 
     (testing "bulk insert timeseries datapoints"

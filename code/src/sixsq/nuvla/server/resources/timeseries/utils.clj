@@ -118,7 +118,8 @@
 (defn throw-wrong-types
   [{:keys [dimensions metrics] :as _timeseries} datapoint]
   (doseq [{:keys [field-name] :as field} (concat dimensions metrics)]
-    (throw-wrong-type field (get datapoint (keyword field-name))))
+    (some->> (get datapoint (keyword field-name))
+             (throw-wrong-type field)))
   datapoint)
 
 (defn throw-extra-keys
