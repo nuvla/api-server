@@ -3,6 +3,7 @@
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
+    [qbits.spandex :as spandex]
     [ring.util.codec :as rc]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.params :as p]
@@ -280,6 +281,12 @@
                          :body (json/write-str updated-entry))
                 (ltu/body->edn)
                 (ltu/is-status 200))
+
+            (testing "check that the write index mapping has been updated with the new metric"
+              (let [client        (ltu/es-client)
+                    ts-index-meta (spandex/request client {:url [ts-index], :method :get})]
+                (is (some? (-> ts-index-meta :body first second :mappings :properties
+                               (get (keyword metric3)))))))
 
             (testing "insert datapoint with updated schema"
               (let [datapoint {:timestamp (time/now-str)

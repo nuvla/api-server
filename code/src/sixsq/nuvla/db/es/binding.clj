@@ -466,10 +466,21 @@
                   error (:error body)]
               (log/error "unexpected status code when creating" datastream-index-name "datastream (" status "). " (or error e)))))))))
 
+(defn edit-datastream
+  [client datastream-index-name new-mappings]
+  (let [{{:keys [acknowledged]} :body}
+        (spandex/request client {:url          [datastream-index-name :_mapping]
+                                 :query-string {:write_index_only true}
+                                 :method       :put
+                                 :body         new-mappings})]
+    (if acknowledged
+      (log/info datastream-index-name "datastream updated")
+      (log/warn datastream-index-name "datastream may or may not have been updated"))))
+
 (defn delete-datastream
   [client datastream-index-name]
   (try
-    (let [{:keys [status]} (spandex/request client {:url [:_data_stream datastream-index-name]
+    (let [{:keys [status]} (spandex/request client {:url    [:_data_stream datastream-index-name]
                                                     :method :delete})]
       (if (= 200 status)
         (log/debug datastream-index-name "datastream deleted")
@@ -493,10 +504,10 @@
   (let [ilm-policy-name (create-or-update-lifecycle-policy client timeseries-id ilm-policy)]
     (create-or-update-timeseries-template client timeseries-id mappings
                                           {:routing-path    routing-path
-                                 :lifecycle-name  ilm-policy-name
-                                 :look-ahead-time look-ahead-time
-                                 :look-back-time  look-back-time
-                                 :start-time      start-time})
+                                           :lifecycle-name  ilm-policy-name
+                                           :look-ahead-time look-ahead-time
+                                           :look-back-time  look-back-time
+                                           :start-time      start-time})
     (create-datastream client timeseries-id)))
 
 (defn retrieve-timeseries-impl
@@ -521,15 +532,18 @@
            look-back-time
            look-ahead-time
            start-time]
+    :or   {ilm-policy     hot-warm-cold-delete-policy
+           look-back-time "7d"}
     :as   _options}]
-  (when ilm-policy
-    (create-or-update-lifecycle-policy client timeseries-id ilm-policy))
-  (create-or-update-timeseries-template
-    client timeseries-id mappings
-    {:routing-path    routing-path
-     :look-ahead-time look-ahead-time
-     :look-back-time  look-back-time
-     :start-time      start-time}))
+  (let [ilm-policy-name (create-or-update-lifecycle-policy client timeseries-id ilm-policy)]
+    (create-or-update-timeseries-template
+      client timeseries-id mappings
+      {:routing-path    routing-path
+       :lifecycle-name  ilm-policy-name
+       :look-ahead-time look-ahead-time
+       :look-back-time  look-back-time
+       :start-time      start-time}))
+  (edit-datastream client timeseries-id mappings))
 
 (defn delete-timeseries-impl
   [client timeseries-id _options]
