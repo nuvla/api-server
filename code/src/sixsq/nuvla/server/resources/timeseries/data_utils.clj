@@ -242,7 +242,7 @@
              (= (count v) 1)
              {field-name (first v)}
 
-             (pos? v)
+             (pos? (count v))
              {field-name {:count (count v)}})))
        (into {})))
 
@@ -412,12 +412,24 @@
     (cond-> params
             dimensions-filters (assoc :dimensions-filters dimensions-filters))))
 
+(defn throw-invalid-dimensions
+  [{:keys [dimensions-filters] {:keys [dimensions]} :timeseries :as params}]
+  (let [dimensions-filters-keys (set (keys dimensions-filters))
+        dimensions-field-names  (set (map :field-name dimensions))]
+    (when (seq dimensions-filters-keys)
+      (when-not (set/subset? dimensions-filters-keys dimensions-field-names)
+        (throw (r/ex-response (str "invalid dimensions: "
+                                   (str/join "," (set/difference dimensions-filters-keys dimensions-field-names)))
+                              400)))))
+  params)
+
 (defn generic-ts-query-data
   [params request]
   (-> params
       (assoc-timeseries request)
       (assoc-query-specs)
       (assoc-dimensions-filters)
+      (throw-invalid-dimensions)
       (query-data request)))
 
 (defn wrapped-query-data

@@ -402,6 +402,18 @@
                                    :doc-count    1
                                    :aggregations {(keyword aggregation1) {:value 10.0}}}]}]
                    (get metric-data (keyword query1))))))
+        (testing "basic query with wrong dimension filter"
+          (let [from        (time/minus now (time/duration-unit 1 :days))
+                to          now]
+            (-> (metrics-request {:dimensions-filters ["wrong-dimension=w1"
+                                                       "wrong-dimension=w2"]
+                                  :queries            [query1]
+                                  :from               from
+                                  :to                 to
+                                  :granularity        "1-days"})
+                (ltu/body->edn)
+                (ltu/is-status 400)
+                (ltu/is-key-value :message "invalid dimensions: wrong-dimension"))))
         (testing "raw query"
           (let [from        (time/minus now (time/duration-unit 1 :days))
                 to          now
