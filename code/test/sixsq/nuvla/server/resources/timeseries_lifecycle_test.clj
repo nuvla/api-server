@@ -3,6 +3,7 @@
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
+    [ring.util.codec :as rc]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -16,6 +17,47 @@
 
 (def base-uri (str p/service-context t/resource-type))
 
+(def dimension1 "test-dimension1")
+
+(def metric1 "test-metric1")
+(def metric2 "test-metric2")
+
+(def query1 "test-query1")
+(def query2 "test-query2")
+(def aggregation1 "test-metric1-avg")
+
+(def valid-entry {:dimensions [{:field-name dimension1
+                                :field-type "keyword"}]
+                  :metrics    [{:field-name  metric1
+                                :field-type  "double"
+                                :metric-type "gauge"}
+                               {:field-name  metric2
+                                :field-type  "long"
+                                :metric-type "counter"
+                                :optional    true}]
+                  :queries    [{:query-name query1
+                                :query-type "standard"
+                                :query      {:aggregations [{:aggregation-name aggregation1
+                                                             :aggregation-type "avg"
+                                                             :field-name       metric1}]}}
+                               {:query-name      query2
+                                :query-type      "custom-es-query"
+                                :custom-es-query {:aggregations
+                                                  {:agg1 {:date_histogram
+                                                          {:field          "@timestamp"
+                                                           :fixed_interval "1d"
+                                                           :min_doc_count  0}
+                                                          :aggregations {:custom-agg {:stats {:field metric1}}}}}}}]})
+
+(defn create-timeseries
+  [session entry]
+  (-> session
+      (request base-uri
+               :request-method :post
+               :body (json/write-str entry))
+      (ltu/body->edn)
+      (ltu/is-status 201)
+      (ltu/location)))
 
 (deftest lifecycle
   (let [session-anon  (-> (ltu/ring-app)
@@ -23,28 +65,8 @@
                           (content-type "application/json"))
         session-user  (header session-anon authn-info-header
                               "user/jane user/jane group/nuvla-user group/nuvla-anon")
-        session-admin (header session-anon authn-info-header
-                              "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        dimension1    "test-dimension1"
-        metric1       "test-metric1"
-        metric2       "test-metric2"
-        entry         {:dimensions [{:field-name dimension1
-                                     :field-type "keyword"}]
-                       :metrics    [{:field-name  metric1
-                                     :field-type  "double"
-                                     :metric-type "gauge"}
-                                    {:field-name  metric2
-                                     :field-type  "long"
-                                     :metric-type "counter"
-                                     :optional    true}]}
         ;; create timeseries
-        ts-id         (-> session-user
-                          (request base-uri
-                                   :request-method :post
-                                   :body (json/write-str entry))
-                          (ltu/body->edn)
-                          (ltu/is-status 201)
-                          (ltu/location))
+        ts-id         (create-timeseries session-user valid-entry)
         ts-url        (str p/service-context ts-id)
         ;; retrieve timeseries
         ts-response   (-> session-user
@@ -57,10 +79,10 @@
         ts            (db/retrieve-timeseries ts-index)
         insert-op-url (ltu/get-op-url ts-response tu/action-insert)
         now           (time/now)]
-    (is (= (assoc entry
+    (is (= (assoc valid-entry
              :id ts-id
              :resource-type "timeseries")
-           (select-keys ts-resource [:resource-type :id :dimensions :metrics])))
+           (select-keys ts-resource [:resource-type :id :dimensions :metrics :queries])))
     (is (pos? (count (:data_streams ts))))
 
     (testing "query timeseries"
@@ -70,16 +92,16 @@
                                (ltu/is-status 200)
                                (ltu/is-count 1)
                                (ltu/body))]
-        (is (= entry (-> query-response
-                         :resources
-                         first
-                         (select-keys [:dimensions :metrics]))))))
+        (is (= valid-entry (-> query-response
+                               :resources
+                               first
+                               (select-keys [:dimensions :metrics :queries]))))))
 
     (testing "insert timeseries datapoint"
-      (let [datapoint     {:timestamp (time/to-str now)
-                           dimension1 "d1-val1"
-                           metric1    3.14
-                           metric2    1000}]
+      (let [datapoint {:timestamp (time/to-str now)
+                       dimension1 "d1-val1"
+                       metric1    3.14
+                       metric2    1000}]
         (testing "datapoint validation error: missing dimensions"
           (-> session-user
               (request insert-op-url
@@ -278,6 +300,128 @@
 
       ;; timeseries is also deleted
       (is (thrown? Exception (db/retrieve-timeseries ts-index))))))
+
+(deftest query
+  (let [session-anon       (-> (ltu/ring-app)
+                               session
+                               (content-type "application/json"))
+        session-user       (header session-anon authn-info-header
+                                   "user/jane user/jane group/nuvla-user group/nuvla-anon")
+        ts-id              (create-timeseries session-user valid-entry)
+        ts-url             (str p/service-context ts-id)
+        ;; retrieve timeseries
+        ts-response        (-> session-user
+                               (request ts-url)
+                               (ltu/body->edn)
+                               (ltu/is-status 200)
+                               (ltu/is-operation-present tu/action-insert))
+        bulk-insert-op-url (ltu/get-op-url ts-response tu/action-bulk-insert)
+        data-op-url        (ltu/get-op-url ts-response tu/action-data)
+
+        now                (time/now)
+        now-1h             (time/minus now (time/duration-unit 1 :hours))
+        d1-val1            "d1q-val1"
+        d1-val2            "d1q-val2"
+        datapoints         [{:timestamp (time/to-str now-1h)
+                             dimension1 d1-val1
+                             metric1    10.0
+                             metric2    1}
+                            {:timestamp (time/to-str now-1h)
+                             dimension1 d1-val2
+                             metric1    20.0
+                             metric2    2}]]
+
+    (testing "successful bulk insert"
+      (-> session-user
+          (request bulk-insert-op-url
+                   :headers {"bulk" true}
+                   :request-method :post
+                   :body (json/write-str datapoints))
+          (ltu/body->edn)
+          (ltu/is-status 200)))
+
+    (ltu/refresh-es-indices)
+
+    (testing "Query metrics"
+      (let [midnight-today     (time/truncated-to-days now)
+            midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
+            metrics-request    (fn [{:keys [dimensions-filters queries from from-str to to-str granularity accept-header]}]
+                                 (-> session-user
+                                     (content-type "application/x-www-form-urlencoded")
+                                     (cond-> accept-header (header "accept" accept-header))
+                                     (request data-op-url
+                                              :body (rc/form-encode
+                                                      (cond->
+                                                        {:query queries
+                                                         :from  (if from (time/to-str from) from-str)
+                                                         :to    (if to (time/to-str to) to-str)}
+                                                        dimensions-filters (assoc :dimension-filter dimensions-filters)
+                                                        granularity (assoc :granularity granularity))))))]
+        (testing "basic query"
+          (let [from        (time/minus now (time/duration-unit 1 :days))
+                to          now
+                metric-data (-> (metrics-request {:queries     [query1]
+                                                  :from        from
+                                                  :to          to
+                                                  :granularity "1-days"})
+                                (ltu/is-status 200)
+                                (ltu/body->edn)
+                                (ltu/body))]
+            (is (= [{:dimensions {(keyword dimension1) "all"}
+                     :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
+                                   :doc-count    0
+                                   :aggregations {(keyword aggregation1) {:value nil}}}
+                                  {:timestamp    (time/to-str midnight-today)
+                                   :doc-count    2
+                                   :aggregations {(keyword aggregation1) {:value 15.0}}}]}]
+                   (get metric-data (keyword query1))))))
+        (testing "basic query with dimension filter"
+          (let [from        (time/minus now (time/duration-unit 1 :days))
+                to          now
+                metric-data (-> (metrics-request {:dimensions-filters [(str dimension1 "=" d1-val1)]
+                                                  :queries            [query1]
+                                                  :from               from
+                                                  :to                 to
+                                                  :granularity        "1-days"})
+                                (ltu/is-status 200)
+                                (ltu/body->edn)
+                                (ltu/body))]
+            (is (= [{:dimensions {(keyword dimension1) d1-val1}
+                     :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
+                                   :doc-count    0
+                                   :aggregations {(keyword aggregation1) {:value nil}}}
+                                  {:timestamp    (time/to-str midnight-today)
+                                   :doc-count    1
+                                   :aggregations {(keyword aggregation1) {:value 10.0}}}]}]
+                   (get metric-data (keyword query1))))))
+        (testing "raw query"
+          (let [from        (time/minus now (time/duration-unit 1 :days))
+                to          now
+                metric-data (-> (metrics-request {:queries     [query1]
+                                                  :from        from
+                                                  :to          to
+                                                  :granularity "raw"})
+                                (ltu/is-status 200)
+                                (ltu/body->edn)
+                                (ltu/body))]
+            (is (= [{:dimensions {(keyword dimension1) "all"}
+                     :ts-data    (set (map #(update-keys % keyword) datapoints))}]
+                   (-> (get metric-data (keyword query1))
+                       (update-in [0 :ts-data] set))))))
+        #_(testing "custom es query"
+          (let [from        (time/minus now (time/duration-unit 1 :days))
+                to          now
+                metric-data (-> (metrics-request {:queries     [query2]
+                                                  :from        from
+                                                  :to          to
+                                                  :granularity "1-days"})
+                                (ltu/is-status 200)
+                                (ltu/body->edn)
+                                (ltu/body))]
+            (is (= [{:dimensions {(keyword dimension1) "all"}
+                     :ts-data    (set (map #(update-keys % keyword) datapoints))}]
+                   (-> (get metric-data (keyword query1))
+                       (update-in [0 :ts-data] set))))))))))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]

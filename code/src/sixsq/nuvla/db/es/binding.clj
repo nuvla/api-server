@@ -180,9 +180,11 @@
     {:timeout (str timeout "ms")}))
 
 (defn query-data
-  [client collection-id {:keys [cimi-params params] :as options}]
+  [client collection-id {:keys [cimi-params params no-prefix] :as options}]
   (try
-    (let [index                   (escu/collection-id->index collection-id)
+    (let [index                   (if no-prefix
+                                    collection-id
+                                    (escu/collection-id->index collection-id))
           paging                  (paging/paging cimi-params)
           orderby                 (order/sorters cimi-params)
           aggregation             (merge-with merge
@@ -218,10 +220,9 @@
         (throw (r/ex-response msg 500))))))
 
 (defn query-data-native
-  [client collection-id query]
+  [client index query]
   (try
-    (let [index    (escu/collection-id->index collection-id)
-          response (spandex/request client {:url    [index :_search]
+    (let [response (spandex/request client {:url    [index :_search]
                                             :method :post
                                             :body   query})]
       (if (shards-successful? response)
@@ -583,8 +584,8 @@
   (query [_ collection-id options]
     (query-data client collection-id options))
 
-  (query-native [_ collection-id query]
-    (query-data-native client collection-id query))
+  (query-native [_ index query]
+    (query-data-native client index query))
 
   (bulk-delete [_ collection-id options]
     (bulk-delete-data client collection-id options))

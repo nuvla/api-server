@@ -56,4 +56,7 @@
     (stu/is-invalid ::timeseries/schema (assoc valid-entry :unknown "value"))
 
     (doseq [attr #{:metrics :dimensions}]
-      (stu/is-invalid ::timeseries/schema (dissoc valid-entry attr)))))
+      (stu/is-invalid ::timeseries/schema (dissoc valid-entry attr)))
+
+    (doseq [attr #{:queries}]
+      (stu/is-valid ::timeseries/schema (dissoc valid-entry attr)))))

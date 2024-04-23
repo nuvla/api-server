@@ -9,6 +9,7 @@ The `timeseries` resources represent a timeseries.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.timeseries :as timeseries]
+    [sixsq.nuvla.server.resources.timeseries.data-utils :as data-utils]
     [sixsq.nuvla.server.resources.timeseries.utils :as utils]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -128,16 +129,9 @@ The `timeseries` resources represent a timeseries.
 ;;
 
 (defmethod crud/do-action [resource-type utils/action-data]
-  [{{uuid :uuid} :params body :body :as request}]
+  [{{uuid :uuid :as body} :body :keys [params] :as request}]
   (try
-    (let [id               (str resource-type "/" uuid)
-          timeseries-index (utils/resource-id->timeseries-index id)
-          timeseries       (-> (crud/retrieve-by-id-as-admin id)
-                               (a/throw-cannot-manage request))]
-      (->> body
-           (utils/add-timestamp)
-           (utils/validate-datapoint timeseries)
-           (db/add-timeseries-datapoint timeseries-index)))
+    (data-utils/wrapped-query-data params request)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -149,12 +143,13 @@ The `timeseries` resources represent a timeseries.
   [{:keys [id] :as resource} request]
   (let [insert-op      (u/action-map id utils/action-insert)
         bulk-insert-op (u/action-map id utils/action-bulk-insert)
+        data-op        (u/action-map id utils/action-data)
         can-manage?    (a/can-manage? resource request)]
     (assoc resource
       :operations
       (cond-> []
               can-manage?
-              (conj insert-op bulk-insert-op)))))
+              (conj insert-op bulk-insert-op data-op)))))
 
 
 ;;
@@ -170,4 +165,3 @@ The `timeseries` resources represent a timeseries.
 (defn initialize
   []
   (std-crud/initialize resource-type ::timeseries/schema))
-

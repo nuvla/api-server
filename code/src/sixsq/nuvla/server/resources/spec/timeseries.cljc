@@ -93,11 +93,14 @@
     :json-schema/type "map"
     :json-schema/description "Timeseries query"))
 
+(s/def ::custom-es-query any?)
+
 (s/def ::query-definition
   (assoc (st/spec (su/only-keys
                     :req-un [::query-name
-                             ::query-type
-                             ::query]))
+                             ::query-type]
+                    :opt-un [::query
+                             ::custom-es-query]))
     :json-schema/type "map"
     :json-schema/description "Timeseries query definition"))
 
@@ -107,4 +110,5 @@
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
-                     {:req-un [::dimensions ::metrics ::queries]}))
+                     {:req-un [::dimensions ::metrics]
+                      :opt-un [::queries]}))

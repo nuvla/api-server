@@ -42,8 +42,8 @@
 (defn query [collection-id & [options]]
   (p/query *impl* collection-id options))
 
-(defn query-native [collection-id query]
-  (p/query-native *impl* collection-id query))
+(defn query-native [index query]
+  (p/query-native *impl* index query))
 
 (defn bulk-delete [collection-id & [options]]
   (p/bulk-delete *impl* collection-id options))

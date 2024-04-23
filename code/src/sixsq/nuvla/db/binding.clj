@@ -94,16 +94,13 @@
      error codes can also be thrown.")
 
   (query-native
-    [this collection-id options]
-    "This function executes a native query, where the collection-id
-     corresponds to the name of a Collection.
+    [this index options]
+    "This function executes a native query against the given index.
 
      On success, the function must return the response body.
 
      On failure, the function must throw an ex-info containing the error
-     ring response.  If the resource-id does not correspond to a Collection,
-     then a 400 (bad-request) response must be returned.  Other appropriate
-     error codes can also be thrown.")
+     ring response.")
 
   (bulk-delete
     [this collection-id options]

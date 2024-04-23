@@ -819,7 +819,7 @@
                                         (ltu/body->edn)
                                         (ltu/body)
                                         :message))]
-              (is (= "exactly one dataset must be specified with accept header 'text/csv'"
+              (is (= "exactly one query must be specified with accept header 'text/csv'"
                      (invalid-request {:accept-header "text/csv"
                                        :datasets      ["cpu-stats" "network-stats"]
                                        :from          (time/minus now (time/duration-unit 1 :days))
@@ -846,7 +846,7 @@
                                        :from        now
                                        :to          now
                                        :granularity "1-days"})))
-              (is (= "unknown datasets: invalid-1,invalid-2"
+              (is (= "unknown queries: invalid-1,invalid-2"
                      (invalid-request {:datasets    ["invalid-1" "cpu-stats" "invalid-2"]
                                        :from        (time/minus now (time/duration-unit 1 :days))
                                        :to          now
@@ -1273,7 +1273,7 @@
                                         (ltu/body->edn)
                                         (ltu/body)
                                         :message))]
-              (is (= "exactly one dataset must be specified with accept header 'text/csv'"
+              (is (= "exactly one query must be specified with accept header 'text/csv'"
                      (invalid-request {:accept-header "text/csv"
                                        :datasets      ["cpu-stats" "network-stats"]
                                        :from          (time/minus now (time/duration-unit 1 :days))
@@ -1284,7 +1284,7 @@
                                        :from        now
                                        :to          now
                                        :granularity "1-days"})))
-              (is (= "unknown datasets: invalid-1,invalid-2"
+              (is (= "unknown queries: invalid-1,invalid-2"
                      (invalid-request {:datasets    ["invalid-1" "cpu-stats" "invalid-2"]
                                        :from        (time/minus now (time/duration-unit 1 :days))
                                        :to          now
