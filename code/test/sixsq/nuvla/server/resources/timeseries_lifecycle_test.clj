@@ -85,6 +85,21 @@
            (select-keys ts-resource [:resource-type :id :dimensions :metrics :queries])))
     (is (pos? (count (:data_streams ts))))
 
+    (testing "invalid timeseries creation attempts"
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str (assoc valid-entry :dimensions [])))
+          (ltu/body->edn)
+          (ltu/is-status 400))
+
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str (assoc valid-entry :metrics [])))
+          (ltu/body->edn)
+          (ltu/is-status 400)))
+
     (testing "query timeseries"
       (let [query-response (-> session-user
                                (request base-uri)
@@ -403,8 +418,8 @@
                                    :aggregations {(keyword aggregation1) {:value 10.0}}}]}]
                    (get metric-data (keyword query1))))))
         (testing "basic query with wrong dimension filter"
-          (let [from        (time/minus now (time/duration-unit 1 :days))
-                to          now]
+          (let [from (time/minus now (time/duration-unit 1 :days))
+                to   now]
             (-> (metrics-request {:dimensions-filters ["wrong-dimension=w1"
                                                        "wrong-dimension=w2"]
                                   :queries            [query1]
@@ -429,19 +444,19 @@
                    (-> (get metric-data (keyword query1))
                        (update-in [0 :ts-data] set))))))
         #_(testing "custom es query"
-          (let [from        (time/minus now (time/duration-unit 1 :days))
-                to          now
-                metric-data (-> (metrics-request {:queries     [query2]
-                                                  :from        from
-                                                  :to          to
-                                                  :granularity "1-days"})
-                                (ltu/is-status 200)
-                                (ltu/body->edn)
-                                (ltu/body))]
-            (is (= [{:dimensions {(keyword dimension1) "all"}
-                     :ts-data    (set (map #(update-keys % keyword) datapoints))}]
-                   (-> (get metric-data (keyword query1))
-                       (update-in [0 :ts-data] set))))))))))
+            (let [from        (time/minus now (time/duration-unit 1 :days))
+                  to          now
+                  metric-data (-> (metrics-request {:queries     [query2]
+                                                    :from        from
+                                                    :to          to
+                                                    :granularity "1-days"})
+                                  (ltu/is-status 200)
+                                  (ltu/body->edn)
+                                  (ltu/body))]
+              (is (= [{:dimensions {(keyword dimension1) "all"}
+                       :ts-data    (set (map #(update-keys % keyword) datapoints))}]
+                     (-> (get metric-data (keyword query1))
+                         (update-in [0 :ts-data] set))))))))))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]

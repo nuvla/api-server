@@ -25,7 +25,7 @@
     :json-schema/description "Timeseries dimension"))
 
 (s/def ::dimensions
-  (-> (st/spec (s/coll-of ::dimension :kind vector? :distinct true))
+  (-> (st/spec (s/coll-of ::dimension :kind vector? :distinct true :min-count 1))
       (assoc :json-schema/description "Timeseries dimensions")))
 
 (def metric-types #{"gauge" "counter"})
@@ -50,7 +50,7 @@
     :json-schema/description "Timeseries metric"))
 
 (s/def ::metrics
-  (-> (st/spec (s/coll-of ::metric :kind vector? :distinct true))
+  (-> (st/spec (s/coll-of ::metric :kind vector? :distinct true :min-count 1))
       (assoc :json-schema/description "Timeseries metrics")))
 
 (s/def ::query-name
