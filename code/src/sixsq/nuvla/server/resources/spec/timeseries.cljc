@@ -93,7 +93,10 @@
     :json-schema/type "map"
     :json-schema/description "Timeseries query"))
 
-(s/def ::custom-es-query any?)
+(s/def ::custom-es-query
+  (-> (st/spec (su/constrained-map keyword? any?))
+      (assoc :json-schema/type "map"
+             :json-schema/description "custom ElasticSearch query")))
 
 (s/def ::query-definition
   (assoc (st/spec (su/only-keys
