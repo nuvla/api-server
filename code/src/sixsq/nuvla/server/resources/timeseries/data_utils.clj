@@ -5,7 +5,6 @@
             [ring.middleware.accept :refer [wrap-accept]]
             [sixsq.nuvla.auth.acl-resource :as a]
             [sixsq.nuvla.db.filter.parser :as parser]
-            [sixsq.nuvla.db.impl :as db]
             [sixsq.nuvla.server.resources.common.crud :as crud]
             [sixsq.nuvla.server.resources.timeseries.utils :as utils]
             [sixsq.nuvla.server.util.log :as logu]

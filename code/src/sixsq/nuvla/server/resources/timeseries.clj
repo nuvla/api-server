@@ -129,7 +129,7 @@ The `timeseries` resources represent a timeseries.
 ;;
 
 (defmethod crud/do-action [resource-type utils/action-data]
-  [{{uuid :uuid :as body} :body :keys [params] :as request}]
+  [{:keys [params] :as request}]
   (try
     (data-utils/wrapped-query-data params request)
     (catch Exception e
