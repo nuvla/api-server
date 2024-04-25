@@ -466,13 +466,35 @@
                   error (:error body)]
               (log/error "unexpected status code when creating" datastream-index-name "datastream (" status "). " (or error e)))))))))
 
+(defn datastream-mappings
+  [client datastream-index-name]
+  (-> (spandex/request client {:url [datastream-index-name :_mapping], :method :get})
+      :body seq first second :mappings :properties))
+
+(defn datastream-rollover
+  [client datastream-index-name]
+  (try
+    (let [{{:keys [acknowledged]} :body}
+          (spandex/request client {:url    [datastream-index-name :_rollover]
+                                   :method :post})]
+      (if acknowledged
+        (log/info datastream-index-name "rollover executed successfully")
+        (log/warn datastream-index-name "rollover may or may not have executed")))
+    (catch Exception e
+      (let [{:keys [status body] :as _response} (ex-data e)
+            error (:error body)]
+        (log/error "unexpected status code when executing datastream rollover operation" datastream-index-name "datastream (" status "). " (or error e))))))
+
 (defn edit-datastream
   [client datastream-index-name new-mappings]
-  (let [{{:keys [acknowledged]} :body}
+  (let [current-mappings (datastream-mappings client datastream-index-name)
+        {{:keys [acknowledged]} :body}
         (spandex/request client {:url          [datastream-index-name :_mapping]
                                  :query-string {:write_index_only true}
                                  :method       :put
                                  :body         new-mappings})]
+    (when-not (= current-mappings (datastream-mappings client datastream-index-name))
+      (datastream-rollover client datastream-index-name))
     (if acknowledged
       (log/info datastream-index-name "datastream updated")
       (log/warn datastream-index-name "datastream may or may not have been updated"))))

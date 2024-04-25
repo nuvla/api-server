@@ -141,15 +141,16 @@ The `timeseries` resources represent a timeseries.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [insert-op      (u/action-map id utils/action-insert)
+  (let [delete-op      (u/operation-map id :delete)
+        insert-op      (u/action-map id utils/action-insert)
         bulk-insert-op (u/action-map id utils/action-bulk-insert)
         data-op        (u/action-map id utils/action-data)
         can-manage?    (a/can-manage? resource request)]
     (assoc resource
       :operations
       (cond-> []
-              can-manage?
-              (conj insert-op bulk-insert-op data-op)))))
+              (a/can-delete? resource request) (conj delete-op)
+              can-manage? (conj insert-op bulk-insert-op data-op)))))
 
 
 ;;
