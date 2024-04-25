@@ -468,8 +468,8 @@
 
 (defn datastream-mappings
   [client datastream-index-name]
-  (-> (spandex/request client {:url [datastream-index-name :_mapping], :method :get})
-      :body seq first second :mappings :properties))
+  (->> (spandex/request client {:url [datastream-index-name :_mapping], :method :get})
+       :body seq (sort-by first) last second :mappings :properties))
 
 (defn datastream-rollover
   [client datastream-index-name]
@@ -494,6 +494,7 @@
                                  :method       :put
                                  :body         new-mappings})]
     (when-not (= current-mappings (datastream-mappings client datastream-index-name))
+      ;; if there was a change in the mappings do a rollover
       (datastream-rollover client datastream-index-name))
     (if acknowledged
       (log/info datastream-index-name "datastream updated")
