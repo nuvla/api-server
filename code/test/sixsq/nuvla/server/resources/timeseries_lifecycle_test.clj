@@ -283,9 +283,7 @@
                 (ltu/is-status 200))
 
             (testing "check that the timestream mapping has been updated with the new metric"
-              (let [es-client     (ltu/es-client)]
-                (prn (try (es-binding/datastream-mappings es-client ts-index)
-                          (catch Exception ex (prn ex))))
+              (let [es-client (ltu/es-client)]
                 (is (= {:time_series_metric "gauge"
                         :type               "double"}
                        (-> (es-binding/datastream-mappings es-client ts-index)
