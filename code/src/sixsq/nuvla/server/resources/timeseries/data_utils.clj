@@ -5,6 +5,7 @@
             [ring.middleware.accept :refer [wrap-accept]]
             [sixsq.nuvla.auth.acl-resource :as a]
             [sixsq.nuvla.db.filter.parser :as parser]
+            [sixsq.nuvla.db.impl :as db]
             [sixsq.nuvla.server.resources.common.crud :as crud]
             [sixsq.nuvla.server.resources.timeseries.utils :as utils]
             [sixsq.nuvla.server.util.log :as logu]
@@ -422,6 +423,13 @@
                               400)))))
   params)
 
+(defn throw-timeseries-not-created-yet
+  [{:keys [timeseries-index] :as params}]
+  (when-not (db/retrieve-timeseries timeseries-index)
+    (throw (r/ex-response "timeseries not created yet. Insert some data prior to querying the timeseries"
+                          404)))
+  params)
+
 (defn generic-ts-query-data
   [params request]
   (-> params
@@ -429,6 +437,7 @@
       (assoc-query-specs)
       (assoc-dimensions-filters)
       (throw-invalid-dimensions)
+      (throw-timeseries-not-created-yet)
       (query-data request)))
 
 (defn wrapped-query-data

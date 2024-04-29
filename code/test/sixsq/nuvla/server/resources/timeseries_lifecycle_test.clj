@@ -366,17 +366,6 @@
                              metric1    20.0
                              metric2    2}]]
 
-    (testing "successful bulk insert"
-      (-> session-user
-          (request bulk-insert-op-url
-                   :headers {"bulk" true}
-                   :request-method :post
-                   :body (json/write-str datapoints))
-          (ltu/body->edn)
-          (ltu/is-status 200)))
-
-    (ltu/refresh-es-indices)
-
     (testing "Query metrics"
       (let [midnight-today     (time/truncated-to-days now)
             midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
@@ -392,6 +381,27 @@
                                                          :to    (if to (time/to-str to) to-str)}
                                                         dimensions-filters (assoc :dimension-filter dimensions-filters)
                                                         granularity (assoc :granularity granularity))))))]
+
+        (testing "query before first insert return 404"
+          (let [from        (time/minus now (time/duration-unit 1 :days))
+                to          now]
+            (-> (metrics-request {:queries     [query1]
+                                  :from        from
+                                  :to          to
+                                  :granularity "1-days"})
+                (ltu/is-status 404))))
+
+        (testing "successful bulk insert"
+          (-> session-user
+              (request bulk-insert-op-url
+                       :headers {"bulk" true}
+                       :request-method :post
+                       :body (json/write-str datapoints))
+              (ltu/body->edn)
+              (ltu/is-status 200)))
+
+        (ltu/refresh-es-indices)
+
         (testing "basic query"
           (let [from        (time/minus now (time/duration-unit 1 :days))
                 to          now
