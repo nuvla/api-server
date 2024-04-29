@@ -48,7 +48,6 @@
                                   (ltu/body->edn)
                                   (ltu/is-status 200)
                                   (ltu/body))
-        _ (println template)
 
         create-import-no-href {:template (ltu/strip-unwanted-attrs template)}
 

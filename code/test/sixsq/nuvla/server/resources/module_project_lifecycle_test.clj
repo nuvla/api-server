@@ -1,14 +1,15 @@
 (ns sixsq.nuvla.server.resources.module-project-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest use-fixtures]]
+    [clojure.test :refer [deftest use-fixtures is]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.module :as module]
-    [sixsq.nuvla.server.resources.module.utils :as utils]))
+    [sixsq.nuvla.server.resources.module.utils :as utils]
+    [sixsq.nuvla.server.resources.spec.module :as module-spec]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -49,11 +50,14 @@
         (ltu/is-status 403))
 
     (doseq [session [session-admin session-user]]
-      (-> session
-          (request base-uri)
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-count zero?)))
+      (let [resources (-> session
+                          (request base-uri)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          (ltu/body)
+                          :resources)]
+        (is (empty? (utils/filter-project-apps-sets resources))
+            (str "No modules should be present apart from " utils/project-apps-sets))))
 
     ;; adding, retrieving and deleting entry as user should succeed
     (let [uri     (-> session-user
@@ -123,7 +127,7 @@
 
             valid-app   {:parent-path   "example"
                          :path          "example/app"
-                         :subtype       utils/subtype-app
+                         :subtype       module-spec/subtype-app
                          :compatibility "docker-compose"}
             app-uri     (-> session-user
                             (request base-uri

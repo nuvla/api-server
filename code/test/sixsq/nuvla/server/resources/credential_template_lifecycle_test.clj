@@ -14,6 +14,7 @@
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-azure :as srvc-azure]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-exoscale :as srvc]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-google :as srvc-gce]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-helm-repo :as srvc-helm-repo]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-kubernetes :as srvc-kubernetes]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as srvc-minio]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-openstack :as srvc-openstack]
@@ -105,7 +106,8 @@
              (str ct/resource-type "/" srvc-gce/method)
              (str ct/resource-type "/" swarm-token/method)
              (str ct/resource-type "/" srvc-vpn/method)
-             (str ct/resource-type "/" srvc-registry/method)}
+             (str ct/resource-type "/" srvc-registry/method)
+             (str ct/resource-type "/" srvc-helm-repo/method)}
            ids))
     (is (= #{akey/method
              gpgkey/method
@@ -114,6 +116,7 @@
              srvc-minio/method
              srvc-openstack/method
              srvc-registry/method
+             srvc-helm-repo/method
              srvc-swarm/method
              srvc-kubernetes/method
              srvc-aws/method
@@ -129,6 +132,7 @@
              srvc-minio/credential-subtype
              srvc-openstack/credential-subtype
              srvc-registry/credential-subtype
+             srvc-helm-repo/credential-subtype
              srvc-swarm/credential-subtype
              srvc-kubernetes/credential-subtype
              srvc-aws/credential-subtype

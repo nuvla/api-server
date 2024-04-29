@@ -10,21 +10,12 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.spec.module :as module-spec]
     [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]))
 
-(def ^:const resource-type "module")
-
-(def ^:const subtype-comp "component")
-
-(def ^:const subtype-app "application")
-
-(def ^:const subtype-app-k8s "application_kubernetes")
-
-(def ^:const subtype-apps-sets "applications_sets")
-
-(def ^:const subtype-project "project")
+(def ^:private ^:const resource-type "module")
 
 (def ^:const project-apps-sets "apps-sets")
 
@@ -38,23 +29,23 @@
 
 (defn is-application?
   [resource]
-  (is-subtype? resource subtype-app))
+  (is-subtype? resource module-spec/subtype-app))
 
 (defn is-application-k8s?
   [resource]
-  (is-subtype? resource subtype-app-k8s))
+  (is-subtype? resource module-spec/subtype-app-k8s))
 
 (defn is-applications-sets?
   [resource]
-  (is-subtype? resource subtype-apps-sets))
+  (is-subtype? resource module-spec/subtype-apps-sets))
 
 (defn is-component?
   [resource]
-  (is-subtype? resource subtype-comp))
+  (is-subtype? resource module-spec/subtype-comp))
 
 (defn is-project?
   [resource]
-  (is-subtype? resource subtype-project))
+  (is-subtype? resource module-spec/subtype-project))
 
 (def is-not-project?
   (complement is-project?))
@@ -316,7 +307,7 @@
   []
   (let [{:keys [status]
          :as   response} (create-module
-                           {:subtype subtype-project
+                           {:subtype module-spec/subtype-project
                             :path    project-apps-sets
                             :name    project-apps-sets
                             :acl     {:owners    ["group/nuvla-admin"]
@@ -326,6 +317,12 @@
       409 (log/infof "project '%s' already exists." project-apps-sets)
       (log/errorf "unexpected status code (%s) when creating %s resource: %s"
                   (str status) project-apps-sets response))))
+
+
+(defn filter-project-apps-sets
+  [resources]
+  (filter #(not= (:path %) project-apps-sets) resources))
+
 
 (defn module-current-version
   [{{:keys [id]} :content versions :versions}]
