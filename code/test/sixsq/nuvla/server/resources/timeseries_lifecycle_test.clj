@@ -77,14 +77,15 @@
                           (ltu/is-operation-present tu/action-insert))
         ts-resource   (ltu/body ts-response)
         ts-index      (tu/resource-id->timeseries-index ts-id)
-        ts            (db/retrieve-timeseries ts-index)
         insert-op-url (ltu/get-op-url ts-response tu/action-insert)
         now           (time/now)]
     (is (= (assoc valid-entry
              :id ts-id
              :resource-type "timeseries")
            (select-keys ts-resource [:resource-type :id :dimensions :metrics :queries])))
-    (is (pos? (count (:data_streams ts))))
+
+    (testing "No timeseries is created yet"
+      (is (thrown? Exception (db/retrieve-timeseries ts-index))))
 
     (testing "invalid timeseries creation attempts"
       (-> session-user
@@ -160,6 +161,9 @@
                        :body (json/write-str datapoint))
               (ltu/body->edn)
               (ltu/is-status 201)))
+
+        (testing "timeseries is now created"
+          (is (some? (db/retrieve-timeseries ts-index))))
 
         (testing "insert same datapoint again -> conflict"
           (-> session-user
