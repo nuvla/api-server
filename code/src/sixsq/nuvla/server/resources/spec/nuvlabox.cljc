@@ -98,15 +98,17 @@
 ;; actions
 
 (s/def ::dataset (s/coll-of ::core/nonblank-string))
+(s/def ::query (s/coll-of ::core/nonblank-string))
 (s/def ::filter (st/spec ::core/nonblank-string))
 (s/def ::from (st/spec ::core/timestamp))
 (s/def ::to (st/spec ::core/timestamp))
 (s/def ::granularity (st/spec (s/or :raw #{"raw"}
                                     :granularity-duration data-utils/granularity->duration)))
 (s/def ::custom-es-aggregations any?)
-(s/def ::bulk-data-body (su/only-keys-maps {:req-un [::dataset
-                                                     ::from
+(s/def ::bulk-data-body (su/only-keys-maps {:req-un [::from
                                                      ::to]
-                                            :opt-un [::filter
+                                            :opt-un [::dataset
+                                                     ::query
+                                                     ::filter
                                                      ::granularity
                                                      ::custom-es-aggregations]}))
