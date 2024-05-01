@@ -156,6 +156,16 @@
         (ltu/is-status 403))
 
     (doseq [session [session-admin session-user]]
+      (let [resources (-> session
+                          (request base-uri)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          (ltu/body)
+                          :resources)]
+        (is (empty? (utils/filter-project-apps-sets resources))
+            (str "No modules should be present apart from " utils/project-apps-sets))))
+
+    #_(doseq [session [session-admin session-user]]
       (-> session
           (request base-uri)
           (ltu/body->edn)
@@ -643,6 +653,14 @@
                             :applications-sets
                             "some content")))))
 
+
+(deftest lifecycle-application-helm
+  (let [valid-application {:author          "someone",
+                           :commit          "wip",
+                           :helm-chart-name "hello-world",
+                           :helm-repo-url   "https://helm.github.com/examples",
+                           :urls            [["hello-world" "https://${hostname}:${Service.hello-world.tcp.80}/"]]}]
+    (lifecycle-test-module module-spec/subtype-app-helm valid-application)))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id module/resource-type))]

@@ -22,8 +22,7 @@
 (def timestamp "1964-08-25T10:00:00.00Z")
 
 
-(def valid-entry {:id                  (str module-application/resource-type "/module-application-uuid")
-                  :resource-type       module-application/resource-type
+(def valid-entry {:resource-type       module-application/resource-type
                   :created             timestamp
                   :updated             timestamp
                   :acl                 valid-acl

@@ -95,7 +95,7 @@
              :json-schema/editable false)))
 
 
-(def module-regex #"^module\-(component|application|applications-sets)/[a-z0-9]+(-[a-z0-9]+)*$")
+(def module-regex #"^module\-(component|application|applications-sets|application-helm)/[a-z0-9]+(-[a-z0-9]+)*$")
 
 (s/def ::href
   (-> (st/spec (s/and string? #(re-matches module-regex %)))

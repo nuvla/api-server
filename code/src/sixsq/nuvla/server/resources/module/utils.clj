@@ -35,6 +35,10 @@
   [resource]
   (is-subtype? resource module-spec/subtype-app-k8s))
 
+(defn is-application-helm?
+  [resource]
+  (is-subtype? resource module-spec/subtype-app-helm))
+
 (defn is-applications-sets?
   [resource]
   (is-subtype? resource module-spec/subtype-apps-sets))
