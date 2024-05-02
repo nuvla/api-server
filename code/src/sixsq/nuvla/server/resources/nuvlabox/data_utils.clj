@@ -629,7 +629,7 @@
 
 (defn assoc-latest-availability
   [[{:keys [nuvlaboxes nuvlaedge-ids] :as query-opts} resp]]
-  (let [first-bucket-ts (some-> resp first :ts-data first :timestamp time/parse-date)
+  (let [first-bucket-ts (some-> resp first :ts-data first :timestamp)
         latest-av       (->> (all-latest-availability-status nuvlaedge-ids first-bucket-ts)
                              (group-by :nuvlaedge-id))
         nuvlaboxes      (->> nuvlaboxes
