@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.server.resources.timeseries.data-utils
-  (:require [clojure.data.json :as json]
+  (:require [clojure.data.csv :as csv]
+            [clojure.data.json :as json]
             [clojure.set :as set]
             [clojure.string :as str]
             [ring.middleware.accept :refer [wrap-accept]]
@@ -10,7 +11,11 @@
             [sixsq.nuvla.server.resources.timeseries.utils :as utils]
             [sixsq.nuvla.server.util.log :as logu]
             [sixsq.nuvla.server.util.response :as r]
-            [sixsq.nuvla.server.util.time :as time]))
+            [sixsq.nuvla.server.util.time :as time])
+  (:import
+    (java.io StringWriter)
+    (java.text DecimalFormat DecimalFormatSymbols)
+    (java.util Locale)))
 
 (def max-data-points 200)
 
@@ -361,10 +366,10 @@
        (crud/query-as-admin timeseries-index)
        (->ts-query-resp (assoc params :->resp-dimensions-fn ->resp-dimensions))))
 
-(defmulti ts-query->query-spec (fn [{:keys [query-type]}] query-type))
+(defmulti ts-query->query-spec (fn [_params {:keys [query-type]}] query-type))
 
 (defmethod ts-query->query-spec :default
-  [{:keys [query-type]}]
+  [_params {:keys [query-type]}]
   (logu/log-and-throw-400 (str "unrecognized query type " query-type)))
 
 (defn parse-aggregations
@@ -374,25 +379,111 @@
               [aggregation-name {(keyword aggregation-type) {:field field-name}}]))
        (into {})))
 
+(defn throw-custom-aggregations-not-exportable
+  [{:keys [custom-es-aggregations]}]
+  (when custom-es-aggregations
+    (logu/log-and-throw-400 "Custom aggregations cannot be exported to csv format")))
+
+(defn metrics-data->csv [options dimension-keys meta-keys metric-keys data-fn response]
+  (with-open [writer (StringWriter.)]
+    ;; write csv header
+    (csv/write-csv writer [(concat (map name dimension-keys)
+                                   (map name meta-keys)
+                                   (map name metric-keys))])
+    ;; write csv data
+    (let [df (DecimalFormat. "0.####" (DecimalFormatSymbols. Locale/US))]
+      (csv/write-csv writer
+                     (for [{:keys [dimensions ts-data]} response
+                           data-point ts-data]
+                       (concat (map dimensions dimension-keys)
+                               (map data-point meta-keys)
+                               (map (fn [metric-key]
+                                      (let [v (data-fn options data-point metric-key)]
+                                        (if (float? v)
+                                          ;; format floats with 4 decimal and dot separator
+                                          (.format df v)
+                                          v)))
+                                    metric-keys)))))
+    (.toString writer)))
+
+(defn csv-export-fn
+  [dimension-keys-fn meta-keys-fn metric-keys-fn data-fn]
+  (fn [{:keys [resps] :as options}]
+    (throw-custom-aggregations-not-exportable options)
+    (metrics-data->csv
+      options
+      (dimension-keys-fn options)
+      (meta-keys-fn options)
+      (metric-keys-fn options)
+      data-fn
+      (first resps))))
+
+(defn csv-dimension-keys-fn
+  [{:keys [dimensions]} _query-spec]
+  (fn [{:keys [raw predefined-aggregations queries query-specs mode]}]
+    (cond
+      raw
+      []
+
+      predefined-aggregations
+      (let [{group-by-field :group-by} (get query-specs (first queries))
+            dimension-keys (map :field-name dimensions)]
+        (cond-> dimension-keys
+                (and predefined-aggregations group-by-field) (conj group-by-field))))))
+
+(defn csv-meta-keys-fn
+  [{:keys [dimensions]} _query-spec]
+  (fn [{:keys [predefined-aggregations raw]}]
+    (cond
+      raw (concat [:timestamp] (map :field-name dimensions))
+      predefined-aggregations [:timestamp :doc-count])))
+
+(defn csv-query-keys-fn
+  [{:keys [query-name]}]
+  (fn [{:keys [predefined-aggregations raw queries query-specs resps]}]
+    (let [{:keys [aggregations response-aggs]}
+          (get query-specs (first queries))]
+      (cond
+        raw
+        (sort (keys (-> resps ffirst :ts-data first (get query-name))))
+
+        predefined-aggregations
+        (or response-aggs (keys aggregations))))))
+
+(defn csv-data-fn
+  [{:keys [query-name]}]
+  (fn [{:keys [predefined-aggregations raw]}
+       {:keys [aggregations] :as data-point} metric-key]
+    (cond
+      raw
+      (get-in data-point [query-name metric-key])
+
+      predefined-aggregations
+      (get-in aggregations [(keyword metric-key) :value]))))
+
+(defn generic-csv-export-fn
+  [timeseries ts-query]
+  (csv-export-fn (csv-dimension-keys-fn timeseries ts-query)
+                 (csv-meta-keys-fn timeseries ts-query)
+                 (csv-query-keys-fn ts-query)
+                 (csv-data-fn ts-query)))
+
 (defmethod ts-query->query-spec "standard"
-  [{:keys [query] :as _ts-query}]
+  [{:keys [timeseries]} {:keys [query] :as ts-query}]
   {:query-fn     generic-query-fn
    :aggregations (some-> query :aggregations parse-aggregations)
-   ; :csv-export-fn  (telemetry-csv-export-fn :cpu)
-   })
+   :csv-export-fn  (generic-csv-export-fn timeseries ts-query)})
 
 (defmethod ts-query->query-spec "custom-es-query"
-  [{:keys [custom-es-query] :as _ts-query}]
+  [_params {:keys [custom-es-query] :as _ts-query}]
   {:query-fn     generic-query-fn
-   :aggregations (some-> custom-es-query :aggregations)
-   ; :csv-export-fn  (telemetry-csv-export-fn :cpu)
-   })
+   :aggregations (some-> custom-es-query :aggregations)})
 
 (defn assoc-query-specs
   [{:keys [timeseries] :as params}]
   (let [query-specs (-> (get timeseries :queries)
                         (->> (group-by :query-name))
-                        (update-vals (comp ts-query->query-spec first)))]
+                        (update-vals (comp (partial ts-query->query-spec params) first)))]
     (cond-> params
             query-specs (assoc :query-specs query-specs))))
 

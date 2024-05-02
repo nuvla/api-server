@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.data-utils
   (:require
-    [clojure.data.csv :as csv]
     [clojure.set :as set]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
@@ -18,11 +17,7 @@
     [sixsq.nuvla.server.resources.ts-nuvlaedge-telemetry :as ts-nuvlaedge-telemetry]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.time :as time])
-  (:import
-    (java.io StringWriter)
-    (java.text DecimalFormat DecimalFormatSymbols)
-    (java.util Locale)
-    (java.util.concurrent ExecutionException TimeoutException)))
+  (:import (java.util.concurrent ExecutionException TimeoutException)))
 
 (def running-query-data (atom 0))
 (def requesting-query-data (atom 0))
@@ -590,45 +585,6 @@
   [[query-opts resp]]
   [query-opts (update-in resp [0] dissoc :hits)])
 
-(defn throw-custom-aggregations-not-exportable
-  [{:keys [custom-es-aggregations]}]
-  (when custom-es-aggregations
-    (logu/log-and-throw-400 "Custom aggregations cannot be exported to csv format")))
-
-(defn metrics-data->csv [options dimension-keys meta-keys metric-keys data-fn response]
-  (with-open [writer (StringWriter.)]
-    ;; write csv header
-    (csv/write-csv writer [(concat (map name dimension-keys)
-                                   (map name meta-keys)
-                                   (map name metric-keys))])
-    ;; write csv data
-    (let [df (DecimalFormat. "0.####" (DecimalFormatSymbols. Locale/US))]
-      (csv/write-csv writer
-                     (for [{:keys [dimensions ts-data]} response
-                           data-point ts-data]
-                       (concat (map dimensions dimension-keys)
-                               (map data-point meta-keys)
-                               (map (fn [metric-key]
-                                      (let [v (data-fn options data-point metric-key)]
-                                        (if (float? v)
-                                          ;; format floats with 4 decimal and dot separator
-                                          (.format df v)
-                                          v)))
-                                    metric-keys)))))
-    (.toString writer)))
-
-(defn csv-export-fn
-  [dimension-keys-fn meta-keys-fn metric-keys-fn data-fn]
-  (fn [{:keys [resps] :as options}]
-    (throw-custom-aggregations-not-exportable options)
-    (metrics-data->csv
-      options
-      (dimension-keys-fn options)
-      (meta-keys-fn options)
-      (metric-keys-fn options)
-      data-fn
-      (first resps))))
-
 (defn csv-dimension-keys-fn
   []
   (fn [{:keys [raw predefined-aggregations queries query-specs mode]}]
@@ -677,10 +633,10 @@
 
 (defn availability-csv-export-fn
   []
-  (csv-export-fn (csv-dimension-keys-fn)
-                 (csv-meta-keys-fn)
-                 (availability-csv-metric-keys-fn)
-                 (availability-csv-data-fn)))
+  (ts-data-utils/csv-export-fn (csv-dimension-keys-fn)
+                               (csv-meta-keys-fn)
+                               (availability-csv-metric-keys-fn)
+                               (availability-csv-data-fn)))
 
 (defn telemetry-csv-metric-keys-fn
   [metric]
@@ -707,10 +663,10 @@
 
 (defn telemetry-csv-export-fn
   [metric]
-  (csv-export-fn (csv-dimension-keys-fn)
-                 (csv-meta-keys-fn)
-                 (telemetry-csv-metric-keys-fn metric)
-                 (telemetry-csv-data-fn metric)))
+  (ts-data-utils/csv-export-fn (csv-dimension-keys-fn)
+                               (csv-meta-keys-fn)
+                               (telemetry-csv-metric-keys-fn metric)
+                               (telemetry-csv-data-fn metric)))
 
 (defn single-edge-queries
   []
@@ -1177,7 +1133,7 @@
    Allow max 4 additional requests to wait at most 5 seconds to get
    access to computation."
   [{:keys [mode query dataset] :as params} request]
-  (let [query (or query dataset)
+  (let [query   (or query dataset)
         queries (if (coll? query) query [query])]
     (if (and (= :multi-edge-query mode)
              (some #{"availability-stats" "availability-by-edge"} queries))

@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.timeseries-lifecycle-test
   (:require
     [clojure.data.json :as json]
+    [clojure.string :as str]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.db.es.binding :as es-binding]
@@ -478,7 +479,35 @@
               (is (= [{:dimensions {(keyword dimension1) "all"}
                        :ts-data    (set (map #(update-keys % keyword) datapoints))}]
                      (-> (get metric-data (keyword query1))
-                         (update-in [0 :ts-data] set))))))))))
+                         (update-in [0 :ts-data] set))))))
+
+        (testing "csv export"
+          (let [from        (time/minus now (time/duration-unit 1 :days))
+                to          now
+                csv-request (fn [query granularity]
+                              (-> (metrics-request {:accept-header "text/csv"
+                                                    :queries       [query]
+                                                    :from          from
+                                                    :to            to
+                                                    :granularity   granularity})
+                                  (ltu/is-status 200)
+                                  (ltu/is-header "Content-Type" "text/csv")
+                                  (ltu/is-header "Content-disposition" "attachment;filename=export.csv")
+                                  (ltu/body)))]
+            (testing "Basic query"
+              (is (= (str "test-dimension1,timestamp,doc-count,test-metric1-avg\n"
+                          (str/join "," ["all" (time/to-str midnight-yesterday)
+                                         0 nil]) "\n"
+                          (str/join "," ["all" (time/to-str midnight-today)
+                                         2 15]) "\n")
+                     (csv-request query1 "1-days"))))
+            #_(testing "Export raw data"
+              (is (= (str "timestamp,test-dimension1,test-metric1\n"
+                          (str/join "," [(time/to-str midnight-yesterday)
+                                         10 5.5]) "\n")
+                     (csv-request query1 "raw"))))
+            (testing "Export with custom queries not allowed"
+              )))))))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
