@@ -134,13 +134,28 @@
                (str "unexpected keys: " (str/join "," extra-keys))
                400)))))
 
+(defn throw-outside-acceptable-time-range
+  [_timeseries {:keys [timestamp] :as datapoint}]
+  (let [ts              (time/parse-date timestamp)
+        now             (time/now)
+        look-ahead-time (time/duration-unit 2 :hours)
+        look-back-time  (time/duration-unit 7 :days)
+        start-time      (time/minus now look-back-time)
+        end-time        (time/plus now look-ahead-time)]
+    (if (and (time/before? start-time ts) (time/before? ts end-time))
+      datapoint
+      (throw (r/ex-response
+               (str "timestamp is outside acceptable range: " ts " not in [" start-time " - " end-time "]")
+               400)))))
+
 (defn validate-datapoint
   [timeseries datapoint]
   (->> datapoint
        (throw-missing-dimensions timeseries)
        (throw-missing-mandatory-metrics timeseries)
        (throw-wrong-types timeseries)
-       (throw-extra-keys timeseries)))
+       (throw-extra-keys timeseries)
+       (throw-outside-acceptable-time-range timeseries)))
 
 (defn validate-datapoints
   [timeseries datapoints]

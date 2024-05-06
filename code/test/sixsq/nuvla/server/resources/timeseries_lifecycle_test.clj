@@ -209,6 +209,31 @@
               (ltu/is-status 400)
               (ltu/is-key-value :message "Bulk request should contain bulk http header.")))
 
+        (testing "Sending data outside insert window should throw 400 error"
+          (-> session-user
+              (request bulk-insert-op-url
+                       :headers {"bulk" true}
+                       :request-method :post
+                       :body (json/write-str
+                               (map (fn [entry]
+                                      (assoc entry :timestamp
+                                                   (time/to-str (time/minus now (time/duration-unit 2 :weeks)))))
+                                    datapoints)))
+              (ltu/body->edn)
+              (ltu/is-status 400))
+
+          (-> session-user
+              (request bulk-insert-op-url
+                       :headers {"bulk" true}
+                       :request-method :post
+                       :body (json/write-str
+                               (map (fn [entry]
+                                      (assoc entry :timestamp
+                                                   (time/to-str (time/plus now (time/duration-unit 4 :hours)))))
+                                    datapoints)))
+              (ltu/body->edn)
+              (ltu/is-status 400)))
+
         (testing "successful bulk insert"
           (-> session-user
               (request bulk-insert-op-url
@@ -384,8 +409,8 @@
                                                         granularity (assoc :granularity granularity))))))]
 
         (testing "query before first insert return 404"
-          (let [from        (time/minus now (time/duration-unit 1 :days))
-                to          now]
+          (let [from (time/minus now (time/duration-unit 1 :days))
+                to   now]
             (-> (metrics-request {:queries     [query1]
                                   :from        from
                                   :to          to
@@ -502,10 +527,10 @@
                                          2 15]) "\n")
                      (csv-request query1 "1-days"))))
             #_(testing "Export raw data"
-              (is (= (str "timestamp,test-dimension1,test-metric1\n"
-                          (str/join "," [(time/to-str midnight-yesterday)
-                                         10 5.5]) "\n")
-                     (csv-request query1 "raw"))))
+                (is (= (str "timestamp,test-dimension1,test-metric1\n"
+                            (str/join "," [(time/to-str midnight-yesterday)
+                                           10 5.5]) "\n")
+                       (csv-request query1 "raw"))))
             (testing "Export with custom queries not allowed"
               )))))))
 

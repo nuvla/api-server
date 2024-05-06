@@ -166,3 +166,4 @@ The `timeseries` resources represent a timeseries.
 (defn initialize
   []
   (std-crud/initialize resource-type ::timeseries/schema))
+

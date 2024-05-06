@@ -274,6 +274,19 @@
           (r/response-conflict index)
           (es-logu/log-and-throw-unexpected-es-ex e))))))
 
+(defn process-es-response
+  [response]
+  (let [body-response (:body response)
+        success?      (not (errors? response))]
+    (if success?
+      body-response
+      (let [items (:items body-response)
+            msg   (str (if (seq items)
+                         {:errors-count (count items)
+                          :first-error  (first items)}
+                         body-response))]
+        (es-logu/log-and-throw-unexpected-es-ex msg (ex-info msg {}))))))
+
 (defn bulk-insert-timeseries-datapoints
   [client index data _options]
   (let [data-transform (fn [{:keys [timestamp] :as doc}]
@@ -286,17 +299,8 @@
                                                 :method  :put
                                                 :headers {"Content-Type" "application/x-ndjson"}
                                                 :body    body}
-                                        #{200})
-        body-response  (:body response)
-        success?       (not (errors? response))]
-    (if success?
-      body-response
-      (let [items (:items body-response)
-            msg   (str (if (seq items)
-                         {:errors-count (count items)
-                          :first-error  (first items)}
-                         body-response))]
-        (es-logu/throw-bad-request-ex msg)))))
+                                        #{200})]
+    (process-es-response response)))
 
 (defn bulk-edit-data
   [client collection-id
