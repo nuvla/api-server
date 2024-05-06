@@ -280,12 +280,17 @@
         success?      (not (errors? response))]
     (if success?
       body-response
-      (let [items (:items body-response)
-            msg   (str (if (seq items)
-                         {:errors-count (count items)
-                          :first-error  (first items)}
-                         body-response))]
-        (es-logu/log-and-throw-unexpected-es-ex msg (ex-info msg {}))))))
+      (let [items        (:items body-response)
+            status-codes (map (comp :status second first) items)
+            msg          (str (if (seq items)
+                                {:errors-count (count items)
+                                 :first-error  (first items)}
+                                body-response))]
+        (cond
+          (some #{409} status-codes)
+          (es-logu/throw-conflict-ex "")
+          :else
+          (es-logu/log-and-throw-unexpected-es-ex msg (ex-info msg {})))))))
 
 (defn bulk-insert-timeseries-datapoints
   [client index data _options]
