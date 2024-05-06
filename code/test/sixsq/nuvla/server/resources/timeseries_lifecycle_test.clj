@@ -4,8 +4,8 @@
     [clojure.string :as str]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
-    [sixsq.nuvla.db.es.binding :as es-binding]
     [ring.util.codec :as rc]
+    [sixsq.nuvla.db.es.binding :as es-binding]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -402,9 +402,9 @@
                                      (request data-op-url
                                               :body (rc/form-encode
                                                       (cond->
-                                                        {:query queries
-                                                         :from  (if from (time/to-str from) from-str)
-                                                         :to    (if to (time/to-str to) to-str)}
+                                                        {:from (if from (time/to-str from) from-str)
+                                                         :to   (if to (time/to-str to) to-str)}
+                                                        queries (assoc :query queries)
                                                         dimensions-filters (assoc :dimension-filter dimensions-filters)
                                                         granularity (assoc :granularity granularity))))))]
 
@@ -477,7 +477,7 @@
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/is-key-value :message "invalid dimensions: wrong-dimension"))))
-        (testing "raw query"
+        (testing "raw data with query"
           (let [from        (time/minus now (time/duration-unit 1 :days))
                 to          now
                 metric-data (-> (metrics-request {:queries     [query1]
@@ -491,6 +491,18 @@
                      :ts-data    (set (map #(update-keys % keyword) datapoints))}]
                    (-> (get metric-data (keyword query1))
                        (update-in [0 :ts-data] set))))))
+        (testing "raw data without query"
+          (let [from        (time/minus now (time/duration-unit 1 :days))
+                to          now
+                metric-data (-> (metrics-request {:from        from
+                                                  :to          to
+                                                  :granularity "raw"})
+                                (ltu/is-status 200)
+                                (ltu/body->edn)
+                                (ltu/body))]
+            (is (= {:raw [{:dimensions {(keyword dimension1) "all"}
+                           :ts-data    (set (map #(update-keys % keyword) datapoints))}]}
+                   (update-in metric-data [:raw 0 :ts-data] set)))))
         #_(testing "custom es query"
             (let [from        (time/minus now (time/duration-unit 1 :days))
                   to          now
@@ -510,11 +522,11 @@
           (let [from        (time/minus now (time/duration-unit 1 :days))
                 to          now
                 csv-request (fn [query granularity]
-                              (-> (metrics-request {:accept-header "text/csv"
-                                                    :queries       [query]
-                                                    :from          from
-                                                    :to            to
-                                                    :granularity   granularity})
+                              (-> (metrics-request (cond-> {:accept-header "text/csv"
+                                                            :from          from
+                                                            :to            to
+                                                            :granularity   granularity}
+                                                           query (assoc :queries [query])))
                                   (ltu/is-status 200)
                                   (ltu/is-header "Content-Type" "text/csv")
                                   (ltu/is-header "Content-disposition" "attachment;filename=export.csv")
@@ -526,11 +538,18 @@
                           (str/join "," ["all" (time/to-str midnight-today)
                                          2 15]) "\n")
                      (csv-request query1 "1-days"))))
-            #_(testing "Export raw data"
-                (is (= (str "timestamp,test-dimension1,test-metric1\n"
-                            (str/join "," [(time/to-str midnight-yesterday)
-                                           10 5.5]) "\n")
-                       (csv-request query1 "raw"))))
+            (testing "Export raw data to csv"
+              (is (= (into #{["timestamp" "test-dimension1" "test-metric1" "test-metric2"]}
+                           (map (fn [{:keys [timestamp] :as datapoint}]
+                                  [timestamp
+                                   (get datapoint dimension1)
+                                   (str (int (get datapoint metric1)))
+                                   (str (int (get datapoint metric2)))])
+                                datapoints))
+                     (-> (csv-request nil "raw")
+                         (str/split #"\n")
+                         (->> (mapv #(str/split % #",")))
+                         set))))
             (testing "Export with custom queries not allowed"
               )))))))
 

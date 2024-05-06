@@ -62,7 +62,9 @@
 (defn parse-params
   [{:keys [query from to granularity custom-es-aggregations] :as params}
    {:keys [accept] :as _request}]
-  (let [queries                 (if (coll? query) query [query])
+  (let [queries                 (if (coll? query)
+                                  query
+                                  (if (some? query) [query] []))
         raw                     (= "raw" granularity)
         predefined-aggregations (not (or raw custom-es-aggregations))
         custom-es-aggregations  (cond-> custom-es-aggregations
@@ -85,8 +87,9 @@
   params)
 
 (defn throw-mandatory-query-parameter
-  [{:keys [queries] :as params}]
-  (when-not (seq queries) (logu/log-and-throw-400 "query parameter is mandatory"))
+  [{:keys [raw queries] :as params}]
+  (when (and (not raw) (not (seq queries)))
+    (logu/log-and-throw-400 "query parameter is mandatory"))
   params)
 
 (defn throw-mandatory-from-to-parameters
@@ -420,7 +423,7 @@
 
 (defn csv-dimension-keys-fn
   [{:keys [dimensions]} _query-spec]
-  (fn [{:keys [raw predefined-aggregations queries query-specs mode]}]
+  (fn [{:keys [raw predefined-aggregations queries query-specs]}]
     (cond
       raw
       []
@@ -435,28 +438,28 @@
   [{:keys [dimensions]} _query-spec]
   (fn [{:keys [predefined-aggregations raw]}]
     (cond
-      raw (concat [:timestamp] (map :field-name dimensions))
+      raw (concat [:timestamp] (map (comp keyword :field-name) dimensions))
       predefined-aggregations [:timestamp :doc-count])))
 
 (defn csv-query-keys-fn
-  [{:keys [query-name]}]
-  (fn [{:keys [predefined-aggregations raw queries query-specs resps]}]
-    (let [{:keys [aggregations response-aggs]}
-          (get query-specs (first queries))]
-      (cond
-        raw
-        (sort (keys (-> resps ffirst :ts-data first (get query-name))))
+  [{:keys [metrics]} _query-spec]
+  (fn [{:keys [predefined-aggregations raw queries query-specs]}]
+    (cond
+      raw
+      (sort (map :field-name metrics))
 
-        predefined-aggregations
+      predefined-aggregations
+      (let [{:keys [aggregations response-aggs]}
+            (get query-specs (first queries))]
         (or response-aggs (keys aggregations))))))
 
 (defn csv-data-fn
-  [{:keys [query-name]}]
+  [_query-spec]
   (fn [{:keys [predefined-aggregations raw]}
        {:keys [aggregations] :as data-point} metric-key]
     (cond
       raw
-      (get-in data-point [query-name metric-key])
+      (get data-point (keyword metric-key))
 
       predefined-aggregations
       (get-in aggregations [(keyword metric-key) :value]))))
@@ -465,14 +468,14 @@
   [timeseries ts-query]
   (csv-export-fn (csv-dimension-keys-fn timeseries ts-query)
                  (csv-meta-keys-fn timeseries ts-query)
-                 (csv-query-keys-fn ts-query)
+                 (csv-query-keys-fn timeseries ts-query)
                  (csv-data-fn ts-query)))
 
 (defmethod ts-query->query-spec "standard"
   [{:keys [timeseries]} {:keys [query] :as ts-query}]
-  {:query-fn     generic-query-fn
-   :aggregations (some-> query :aggregations parse-aggregations)
-   :csv-export-fn  (generic-csv-export-fn timeseries ts-query)})
+  {:query-fn      generic-query-fn
+   :aggregations  (some-> query :aggregations parse-aggregations)
+   :csv-export-fn (generic-csv-export-fn timeseries ts-query)})
 
 (defmethod ts-query->query-spec "custom-es-query"
   [_params {:keys [custom-es-query] :as _ts-query}]
@@ -521,6 +524,15 @@
                           404)))
   params)
 
+(defn assoc-raw-query
+  "If granularity is raw and no query is specified, generate a new query returning all the metrics."
+  [{:keys [granularity query timeseries] :as params}]
+  (cond-> params
+          (and (= "raw" granularity) (nil? query))
+          (assoc :query ["raw"]
+                 :query-specs {"raw" {:query-fn      generic-query-fn
+                                      :csv-export-fn (generic-csv-export-fn timeseries {:query-name "raw"})}})))
+
 (defn generic-ts-query-data
   [params request]
   (-> params
@@ -529,6 +541,7 @@
       (assoc-dimensions-filters)
       (throw-invalid-dimensions)
       (throw-timeseries-not-created-yet)
+      (assoc-raw-query)
       (query-data request)))
 
 (defn wrapped-query-data
