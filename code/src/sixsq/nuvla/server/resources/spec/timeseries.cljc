@@ -17,10 +17,15 @@
     :json-schema/type "string"
     :json-schema/description "Timeseries field name"))
 
+(s/def ::description
+  (-> (st/spec string?)
+      (assoc :json-schema/description "human-readable description")))
+
 (s/def ::dimension
   (assoc (st/spec (su/only-keys
                     :req-un [::field-name
-                             ::field-type]))
+                             ::field-type]
+                    :opt-un [::description]))
     :json-schema/type "map"
     :json-schema/description "Timeseries dimension"))
 
@@ -45,7 +50,8 @@
                     :req-un [::field-name
                              ::field-type
                              ::metric-type]
-                    :opt-un [::optional]))
+                    :opt-un [::description
+                             ::optional]))
     :json-schema/type "map"
     :json-schema/description "Timeseries metric"))
 
@@ -102,7 +108,8 @@
   (assoc (st/spec (su/only-keys
                     :req-un [::query-name
                              ::query-type]
-                    :opt-un [::query
+                    :opt-un [::description
+                             ::query
                              ::custom-es-query]))
     :json-schema/type "map"
     :json-schema/description "Timeseries query definition"))

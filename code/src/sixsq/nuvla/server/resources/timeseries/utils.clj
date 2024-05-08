@@ -51,8 +51,10 @@
    {current-dimensions :dimensions :as _current}]
   (when current-dimensions
     (when-not (and (>= (count new-dimensions) (count current-dimensions))
-                   (= current-dimensions
-                      (subvec new-dimensions 0 (count current-dimensions))))
+                   (= (map #(dissoc % :description)
+                           current-dimensions)
+                      (map #(dissoc % :description)
+                           (subvec new-dimensions 0 (count current-dimensions)))))
       (throw (r/ex-response "dimensions can only be appended" 400))))
   request)
 
@@ -60,10 +62,11 @@
   [{{new-metrics :metrics} :body :as request}
    {current-metrics :metrics :as _current}]
   (when-not (every? (fn [{:keys [field-name] :as current-metric}]
-                      (= current-metric
-                         (->> new-metrics
-                              (filter #(= field-name (:field-name %)))
-                              first)))
+                      (= (dissoc current-metric :description)
+                         (dissoc (->> new-metrics
+                                  (filter #(= field-name (:field-name %)))
+                                  first)
+                                 :description)))
                     current-metrics)
     (throw (r/ex-response "metrics can only be added" 400)))
   request)

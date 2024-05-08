@@ -29,21 +29,26 @@
 (def aggregation1 "test-metric1-avg")
 
 (def valid-entry {:dimensions [{:field-name dimension1
-                                :field-type "keyword"}]
+                                :field-type "keyword"
+                                :description "description of dimension 1"}]
                   :metrics    [{:field-name  metric1
                                 :field-type  "double"
-                                :metric-type "gauge"}
+                                :metric-type "gauge"
+                                :description "description of metric 1"}
                                {:field-name  metric2
                                 :field-type  "long"
+                                :description "description of metric 2"
                                 :metric-type "counter"
                                 :optional    true}]
                   :queries    [{:query-name query1
                                 :query-type "standard"
+                                :description "description of query 1"
                                 :query      {:aggregations [{:aggregation-name aggregation1
                                                              :aggregation-type "avg"
                                                              :field-name       metric1}]}}
                                {:query-name      query2
                                 :query-type      "custom-es-query"
+                                :description "description of query 2"
                                 :custom-es-query {:aggregations
                                                   {:agg1 {:date_histogram
                                                           {:field          "@timestamp"
@@ -503,20 +508,60 @@
             (is (= {:raw [{:dimensions {(keyword dimension1) "all"}
                            :ts-data    (set (map #(update-keys % keyword) datapoints))}]}
                    (update-in metric-data [:raw 0 :ts-data] set)))))
-        #_(testing "custom es query"
-            (let [from        (time/minus now (time/duration-unit 1 :days))
-                  to          now
-                  metric-data (-> (metrics-request {:queries     [query2]
-                                                    :from        from
-                                                    :to          to
-                                                    :granularity "1-days"})
-                                  (ltu/is-status 200)
-                                  (ltu/body->edn)
-                                  (ltu/body))]
-              (is (= [{:dimensions {(keyword dimension1) "all"}
-                       :ts-data    (set (map #(update-keys % keyword) datapoints))}]
-                     (-> (get metric-data (keyword query1))
-                         (update-in [0 :ts-data] set))))))
+
+        (testing "raw data with dimension filter"
+          (let [from        (time/minus now (time/duration-unit 1 :days))
+                to          now
+                metric-data (-> (metrics-request {:dimensions-filters [(str dimension1 "=" d1-val1)]
+                                                  :from               from
+                                                  :to                 to
+                                                  :granularity        "raw"})
+                                (ltu/is-status 200)
+                                (ltu/body->edn)
+                                (ltu/body))]
+            (is (= {:raw [{:dimensions {(keyword dimension1) d1-val1}
+                           :ts-data    (->> datapoints
+                                            (filter #(= d1-val1 (get % dimension1)))
+                                            (map #(update-keys % keyword))
+                                            set)}]}
+                   (update-in metric-data [:raw 0 :ts-data] set)))))
+
+        (testing "custom es query"
+          (let [from (time/minus now (time/duration-unit 1 :days))
+                to   now]
+            (testing "query with no dimensions filter"
+              (let [metric-data (-> (metrics-request {:queries [query2]
+                                                      :from    from
+                                                      :to      to})
+                                    (ltu/is-status 200)
+                                    (ltu/body->edn)
+                                    (ltu/body))]
+                (is (= [{:dimensions {(keyword dimension1) "all"}
+                         :agg1       [{:timestamp    (time/to-str midnight-today)
+                                       :doc-count    2
+                                       :aggregations {:custom-agg {:avg   15.0
+                                                                   :count 2
+                                                                   :max   20.0
+                                                                   :min   10.0
+                                                                   :sum   30.0}}}]}]
+                       (get metric-data (keyword query2))))))
+            (testing "query with dimensions filter"
+              (let [metric-data (-> (metrics-request {:dimensions-filters [(str dimension1 "=" d1-val1)]
+                                                      :queries            [query2]
+                                                      :from               from
+                                                      :to                 to})
+                                    (ltu/is-status 200)
+                                    (ltu/body->edn)
+                                    (ltu/body))]
+                (is (= [{:dimensions {(keyword dimension1) d1-val1}
+                         :agg1       [{:timestamp    (time/to-str midnight-today)
+                                       :doc-count    1
+                                       :aggregations {:custom-agg {:avg   10.0
+                                                                   :count 1
+                                                                   :max   10.0
+                                                                   :min   10.0
+                                                                   :sum   10.0}}}]}]
+                       (get metric-data (keyword query2))))))))
 
         (testing "csv export"
           (let [from        (time/minus now (time/duration-unit 1 :days))

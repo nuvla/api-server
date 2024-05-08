@@ -19,6 +19,9 @@
 
 (def max-data-points 200)
 
+(def query-type-standard "standard")
+(def query-type-custom-es-query "custom-es-query")
+
 (defn update-resp-ts-data
   [resp f]
   (-> resp
@@ -49,10 +52,10 @@
         (logu/log-and-throw-400 (str "unrecognized value for granularity " granularity))))))
 
 (defn keep-response-aggs-only
-  [{:keys [predefined-aggregations response-aggs] :as _query-opts} resp]
+  [{:keys [query-type response-aggs] :as _query-opts} resp]
   (cond->
     resp
-    predefined-aggregations
+    (= query-type-standard query-type)
     (update-resp-ts-data-point-aggs
       (fn [_ts-data-point aggs]
         (if response-aggs
@@ -65,20 +68,13 @@
   (let [queries                 (if (coll? query)
                                   query
                                   (if (some? query) [query] []))
-        raw                     (= "raw" granularity)
-        predefined-aggregations (not (or raw custom-es-aggregations))
-        custom-es-aggregations  (cond-> custom-es-aggregations
-                                        (string? custom-es-aggregations)
-                                        json/read-str)]
+        raw                     (= "raw" granularity)]
     (-> params
         (assoc :mime-type (:mime accept))
         (assoc :queries queries)
         (assoc :from (time/parse-date from))
         (assoc :to (time/parse-date to))
-        (cond->
-          raw (assoc :raw true)
-          predefined-aggregations (assoc :predefined-aggregations true)
-          custom-es-aggregations (assoc :custom-es-aggregations custom-es-aggregations)))))
+        (cond-> raw (assoc :raw true)))))
 
 (defn throw-response-format-not-supported
   [{:keys [mime-type] :as params}]
@@ -107,21 +103,18 @@
   params)
 
 (defn throw-mandatory-granularity-parameter
-  [{:keys [raw granularity custom-es-aggregations] :as params}]
-  (when (and (not raw) (not custom-es-aggregations) (empty? granularity))
-    (logu/log-and-throw-400 "granularity parameter is mandatory"))
-  params)
-
-(defn throw-custom-es-aggregations-checks
-  [{:keys [custom-es-aggregations granularity] :as params}]
-  (when custom-es-aggregations
-    (when granularity
-      (logu/log-and-throw-400 "when custom-es-aggregations is specified, granularity parameter must be omitted")))
+  [{:keys [raw granularity queries query-specs] :as params}]
+  (when (and (not raw)
+             (->> (select-keys query-specs queries)
+                  vals
+                  (some #(= query-type-standard (:query-type %))))
+             (empty? granularity))
+    (logu/log-and-throw-400 "granularity parameter is mandatory with standard queries"))
   params)
 
 (defn throw-too-many-data-points
-  [{:keys [from to granularity predefined-aggregations] :as params}]
-  (when predefined-aggregations
+  [{:keys [from to granularity raw] :as params}]
+  (when (and granularity (not raw))
     (let [max-n-buckets max-data-points
           n-buckets     (.dividedBy (time/duration from to)
                                     (granularity->duration granularity))]
@@ -151,9 +144,9 @@
   (cond-> params filter (assoc :cimi-filter filter)))
 
 (defn assoc-ts-interval
-  [{:keys [predefined-aggregations granularity] :as params}]
+  [{:keys [raw granularity] :as params}]
   (cond-> params
-          predefined-aggregations
+          (and granularity (not raw))
           (assoc :ts-interval (granularity->ts-interval granularity))))
 
 (defn throw-unknown-queries
@@ -171,13 +164,13 @@
   params)
 
 (defn run-query
-  [params query-specs query-key]
+  [{:keys [raw] :as params} query-specs query-key]
   (let [{:keys [pre-process-fn query-fn post-process-fn] :as query-spec} (get query-specs query-key)
-        {:keys [predefined-aggregations] :as query-opts} (merge params query-spec)
+        {:keys [query-type] :as query-opts} (merge params query-spec)
         query-opts (if pre-process-fn (doall (pre-process-fn query-opts)) query-opts)]
     (cond->> (doall (query-fn query-opts))
              post-process-fn ((fn [resp] (doall (second (post-process-fn [query-opts resp])))))
-             predefined-aggregations (keep-response-aggs-only query-opts))))
+             (and (not raw) (= query-type-standard query-type)) (keep-response-aggs-only query-opts))))
 
 (defn run-queries
   [{:keys [queries query-specs] :as params}]
@@ -214,7 +207,6 @@
       (throw-from-not-before-to)
       (throw-mandatory-granularity-parameter)
       (throw-too-many-data-points)
-      (throw-custom-es-aggregations-checks)
       (assoc-request request)
       (assoc-cimi-filter)
       (assoc-ts-interval)
@@ -254,7 +246,7 @@
              {field-name {:count (count v)}})))
        (into {})))
 
-(defn ->predefined-aggregations-resp
+(defn ->standard-query-resp
   [{:keys [aggregations ->resp-dimensions-fn] group-by-field :group-by :as params} resp]
   (let [ts-data (fn [tsds-stats]
                   (map
@@ -277,7 +269,7 @@
           :ts-data    (ts-data (get-in resp [0 :aggregations :tsds-stats]))}
          (seq hits) (assoc :hits hits))])))
 
-(defn ->custom-es-aggregations-resp
+(defn ->custom-es-query-resp
   [{:keys [->resp-dimensions-fn] :as params} resp]
   (let [ts-data (fn [tsds-stats]
                   (map
@@ -297,24 +289,25 @@
       :ts-data    (sort-by :timestamp hits)}]))
 
 (defn ->ts-query-resp
-  [{:keys [predefined-aggregations custom-es-aggregations raw] :as params} resp]
+  [{:keys [query-type raw] :as params} resp]
   (cond
-    predefined-aggregations
-    (->predefined-aggregations-resp params resp)
-
     raw
     (->raw-resp params resp)
 
-    custom-es-aggregations
-    (->custom-es-aggregations-resp params resp)))
+    (= query-type-standard query-type)
+    (->standard-query-resp params resp)
+
+    (= query-type-custom-es-query query-type)
+    (->custom-es-query-resp params resp)))
 
 (defn build-aggregations-clause
-  [{:keys [predefined-aggregations raw custom-es-aggregations from to ts-interval aggregations] group-by-field :group-by}]
+  [{:keys          [from to ts-interval raw query-type aggregations]
+    group-by-field :group-by}]
   (cond
     raw
     {}                                                      ;; send an empty :tsds-aggregation to avoid acl checks. TODO: find a cleaner way
 
-    predefined-aggregations
+    (= query-type-standard query-type)
     (let [tsds-aggregations {:tsds-stats
                              {:date_histogram
                               {:field           "@timestamp"
@@ -330,8 +323,8 @@
            :aggregations tsds-aggregations}}}
         {:aggregations tsds-aggregations}))
 
-    custom-es-aggregations
-    {:aggregations custom-es-aggregations}))
+    (= query-type-custom-es-query query-type)
+    {:aggregations aggregations}))
 
 (defn dimension-filter->cimi-filter
   [[dimension values]]
@@ -422,46 +415,46 @@
       (first resps))))
 
 (defn csv-dimension-keys-fn
-  [{:keys [dimensions]} _query-spec]
-  (fn [{:keys [raw predefined-aggregations queries query-specs]}]
+  [{:keys [dimensions]} {:keys [query-type] :as _query-spec}]
+  (fn [{:keys [raw queries query-specs]}]
     (cond
       raw
       []
 
-      predefined-aggregations
+      (= query-type-standard query-type)
       (let [{group-by-field :group-by} (get query-specs (first queries))
             dimension-keys (map :field-name dimensions)]
         (cond-> dimension-keys
-                (and predefined-aggregations group-by-field) (conj group-by-field))))))
+                group-by-field (conj group-by-field))))))
 
 (defn csv-meta-keys-fn
-  [{:keys [dimensions]} _query-spec]
-  (fn [{:keys [predefined-aggregations raw]}]
+  [{:keys [dimensions]} {:keys [query-type] :as _query-spec}]
+  (fn [{:keys [raw]}]
     (cond
       raw (concat [:timestamp] (map (comp keyword :field-name) dimensions))
-      predefined-aggregations [:timestamp :doc-count])))
+      (= query-type-standard query-type) [:timestamp :doc-count])))
 
 (defn csv-query-keys-fn
-  [{:keys [metrics]} _query-spec]
-  (fn [{:keys [predefined-aggregations raw queries query-specs]}]
+  [{:keys [metrics]} {:keys [query-type] :as _query-spec}]
+  (fn [{:keys [raw queries query-specs]}]
     (cond
       raw
       (sort (map :field-name metrics))
 
-      predefined-aggregations
+      (= query-type-standard query-type)
       (let [{:keys [aggregations response-aggs]}
             (get query-specs (first queries))]
         (or response-aggs (keys aggregations))))))
 
 (defn csv-data-fn
-  [_query-spec]
-  (fn [{:keys [predefined-aggregations raw]}
+  [{:keys [query-type] :as _query-spec}]
+  (fn [{:keys [raw]}
        {:keys [aggregations] :as data-point} metric-key]
     (cond
       raw
       (get data-point (keyword metric-key))
 
-      predefined-aggregations
+      (= query-type-standard query-type)
       (get-in aggregations [(keyword metric-key) :value]))))
 
 (defn generic-csv-export-fn
@@ -471,15 +464,17 @@
                  (csv-query-keys-fn timeseries ts-query)
                  (csv-data-fn ts-query)))
 
-(defmethod ts-query->query-spec "standard"
+(defmethod ts-query->query-spec query-type-standard
   [{:keys [timeseries]} {:keys [query] :as ts-query}]
-  {:query-fn      generic-query-fn
+  {:query-type    query-type-standard
+   :query-fn      generic-query-fn
    :aggregations  (some-> query :aggregations parse-aggregations)
    :csv-export-fn (generic-csv-export-fn timeseries ts-query)})
 
-(defmethod ts-query->query-spec "custom-es-query"
+(defmethod ts-query->query-spec query-type-custom-es-query
   [_params {:keys [custom-es-query] :as _ts-query}]
-  {:query-fn     generic-query-fn
+  {:query-type   query-type-custom-es-query
+   :query-fn     generic-query-fn
    :aggregations (some-> custom-es-query :aggregations)})
 
 (defn assoc-query-specs
