@@ -234,10 +234,7 @@
         (let [msg (str "error when querying: " (:body response))]
           (throw (r/ex-response msg 500)))))
     (catch Exception e
-      (let [{:keys [body] :as _response} (ex-data e)
-            error (:error body)
-            msg   (str "unexpected exception querying: " (or error e))]
-        (throw (r/ex-response msg 500))))))
+      (es-logu/log-and-throw-unexpected-es-ex e))))
 
 (defn query-data-native
   [client index query]

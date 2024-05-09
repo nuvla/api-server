@@ -26,10 +26,11 @@
 
 (def query1 "test-query1")
 (def query2 "test-query2")
+(def query3 "test-query3-invalid")
 (def aggregation1 "test-metric1-avg")
 
-(def valid-entry {:dimensions [{:field-name dimension1
-                                :field-type "keyword"
+(def valid-entry {:dimensions [{:field-name  dimension1
+                                :field-type  "keyword"
                                 :description "description of dimension 1"}]
                   :metrics    [{:field-name  metric1
                                 :field-type  "double"
@@ -40,21 +41,26 @@
                                 :description "description of metric 2"
                                 :metric-type "counter"
                                 :optional    true}]
-                  :queries    [{:query-name query1
-                                :query-type "standard"
+                  :queries    [{:query-name  query1
+                                :query-type  "standard"
                                 :description "description of query 1"
-                                :query      {:aggregations [{:aggregation-name aggregation1
-                                                             :aggregation-type "avg"
-                                                             :field-name       metric1}]}}
+                                :query       {:aggregations [{:aggregation-name aggregation1
+                                                              :aggregation-type "avg"
+                                                              :field-name       metric1}]}}
                                {:query-name      query2
                                 :query-type      "custom-es-query"
-                                :description "description of query 2"
+                                :description     "description of query 2"
                                 :custom-es-query {:aggregations
                                                   {:agg1 {:date_histogram
                                                           {:field          "@timestamp"
                                                            :fixed_interval "1d"
                                                            :min_doc_count  0}
-                                                          :aggregations {:custom-agg {:stats {:field metric1}}}}}}}]})
+                                                          :aggregations {:custom-agg {:stats {:field metric1}}}}}}}
+                               {:query-name      query3
+                                :query-type      "custom-es-query"
+                                :description     "invalid query"
+                                :custom-es-query {:aggregations
+                                                  {:agg1 {:invalid "invalid"}}}}]})
 
 (defn create-timeseries
   [session entry]
@@ -561,7 +567,12 @@
                                                                    :max   10.0
                                                                    :min   10.0
                                                                    :sum   10.0}}}]}]
-                       (get metric-data (keyword query2))))))))
+                       (get metric-data (keyword query2))))))
+            (testing "invalid ES query"
+              (-> (metrics-request {:queries [query3]
+                                    :from    from
+                                    :to      to})
+                  (ltu/is-status 500)))))
 
         (testing "csv export"
           (let [from        (time/minus now (time/duration-unit 1 :days))
