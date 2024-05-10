@@ -28,6 +28,8 @@
 (def query2 "test-query2")
 (def query3 "test-query3-invalid")
 (def aggregation1 "test-metric1-avg")
+(def aggregation2 "test-metric1-value-count")
+(def aggregation3 "test-metric1-sum")
 
 (def valid-entry {:dimensions [{:field-name  dimension1
                                 :field-type  "keyword"
@@ -46,6 +48,12 @@
                                 :description "description of query 1"
                                 :query       {:aggregations [{:aggregation-name aggregation1
                                                               :aggregation-type "avg"
+                                                              :field-name       metric1}
+                                                             {:aggregation-name aggregation2
+                                                              :aggregation-type "value_count"
+                                                              :field-name       metric1}
+                                                             {:aggregation-name aggregation3
+                                                              :aggregation-type "sum"
                                                               :field-name       metric1}]}}
                                {:query-name      query2
                                 :query-type      "custom-es-query"
@@ -452,10 +460,14 @@
             (is (= [{:dimensions {(keyword dimension1) "all"}
                      :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
                                    :doc-count    0
-                                   :aggregations {(keyword aggregation1) {:value nil}}}
+                                   :aggregations {(keyword aggregation1) {:value nil}
+                                                  (keyword aggregation2) {:value 0}
+                                                  (keyword aggregation3) {:value 0.0}}}
                                   {:timestamp    (time/to-str midnight-today)
                                    :doc-count    2
-                                   :aggregations {(keyword aggregation1) {:value 15.0}}}]}]
+                                   :aggregations {(keyword aggregation1) {:value 15.0}
+                                                  (keyword aggregation2) {:value 2}
+                                                  (keyword aggregation3) {:value 30.0}}}]}]
                    (get metric-data (keyword query1))))))
         (testing "basic query with dimension filter"
           (let [from        (time/minus now (time/duration-unit 1 :days))
@@ -471,10 +483,14 @@
             (is (= [{:dimensions {(keyword dimension1) d1-val1}
                      :ts-data    [{:timestamp    (time/to-str midnight-yesterday)
                                    :doc-count    0
-                                   :aggregations {(keyword aggregation1) {:value nil}}}
+                                   :aggregations {(keyword aggregation1) {:value nil}
+                                                  (keyword aggregation2) {:value 0}
+                                                  (keyword aggregation3) {:value 0.0}}}
                                   {:timestamp    (time/to-str midnight-today)
                                    :doc-count    1
-                                   :aggregations {(keyword aggregation1) {:value 10.0}}}]}]
+                                   :aggregations {(keyword aggregation1) {:value 10.0}
+                                                  (keyword aggregation2) {:value 1}
+                                                  (keyword aggregation3) {:value 10.0}}}]}]
                    (get metric-data (keyword query1))))))
         (testing "basic query with wrong dimension filter"
           (let [from (time/minus now (time/duration-unit 1 :days))
@@ -572,7 +588,9 @@
               (-> (metrics-request {:queries [query3]
                                     :from    from
                                     :to      to})
-                  (ltu/is-status 500)))))
+                  (ltu/body->edn)
+                  (ltu/is-status 500)
+                  (ltu/is-key-value :message "unexpected error")))))
 
         (testing "csv export"
           (let [from        (time/minus now (time/duration-unit 1 :days))
@@ -588,11 +606,11 @@
                                   (ltu/is-header "Content-disposition" "attachment;filename=export.csv")
                                   (ltu/body)))]
             (testing "Basic query"
-              (is (= (str "test-dimension1,timestamp,doc-count,test-metric1-avg\n"
+              (is (= (str "test-dimension1,timestamp,doc-count,test-metric1-avg,test-metric1-value-count,test-metric1-sum\n"
                           (str/join "," ["all" (time/to-str midnight-yesterday)
-                                         0 nil]) "\n"
+                                         0 nil 0 0]) "\n"
                           (str/join "," ["all" (time/to-str midnight-today)
-                                         2 15]) "\n")
+                                         2 15 2 30]) "\n")
                      (csv-request query1 "1-days"))))
             (testing "Export raw data to csv"
               (is (= (into #{["timestamp" "test-dimension1" "test-metric1" "test-metric2"]}
@@ -607,7 +625,13 @@
                          (->> (mapv #(str/split % #",")))
                          set))))
             (testing "Export with custom queries not allowed"
-              )))))))
+              (-> (metrics-request {:accept-header "text/csv"
+                                    :from          from
+                                    :to            to
+                                    :queries       [query3]})
+                  (ltu/is-status 400)
+                  (ltu/body->edn)
+                  (ltu/is-key-value :message (str "csv export not supported for query " query3))))))))))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]

@@ -74,7 +74,7 @@
   (assoc (st/spec ::core/nonblank-string)
     :json-schema/description "Timeseries query aggregation name"))
 
-(def aggregation-types #{"avg" "min" "max"})
+(def aggregation-types #{"avg" "min" "max" "sum" "value_count"})
 
 (s/def ::aggregation-type
   (assoc (st/spec aggregation-types)
