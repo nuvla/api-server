@@ -165,13 +165,6 @@
         (is (empty? (utils/filter-project-apps-sets resources))
             (str "No modules should be present apart from " utils/project-apps-sets))))
 
-    #_(doseq [session [session-admin session-user]]
-      (-> session
-          (request base-uri)
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-count zero?)))
-
     ;; Creating editable parent project
     (create-parent-projects (:path valid-entry) session-user)
 

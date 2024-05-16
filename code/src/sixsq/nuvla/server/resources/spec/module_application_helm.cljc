@@ -26,7 +26,7 @@
 (s/def ::helm-absolute-url
   (-> (st/spec ::core/url)
       (assoc :name "helm-absolute-url"
-             :json-schema/description "Helm absolute URL")))
+             :json-schema/description "Helm chart absolute URL")))
 
 
 (s/def ::helm-chart-version
@@ -41,14 +41,14 @@
              :json-schema/description "Helm repo creds URL")))
 
 
-(s/def ::helm-variables
+(s/def ::helm-chart-values
   (-> (st/spec string?)
-      (assoc :name "helm-variables"
-             :json-schema/description "Helm variables in YAML format")))
+      (assoc :name "helm-chart-values"
+             :json-schema/description "Helm values in YAML format")))
 
 
 (def module-application-helm-keys-spec (su/merge-keys-specs
-                                    [common/common-attrs
+                                         [common/common-attrs
                                      {:req-un [::module-component/author]
                                       :opt-un [::module-component/commit
                                                ::module-component/urls
@@ -67,7 +67,7 @@
                                                ;; optional Helm fields
                                                ::helm-chart-version
                                                ::helm-repo-creds
-                                               ::helm-variables]}]))
+                                               ::helm-chart-values]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-application-helm-keys-spec))
