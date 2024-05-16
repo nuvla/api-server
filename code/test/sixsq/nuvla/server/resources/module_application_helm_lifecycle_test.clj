@@ -105,7 +105,7 @@
         (ltu/is-status 200)
         (ltu/is-count 0))
 
-    ;; adding, retrieving and  deleting entry as user should succeed
+    ;; adding, retrieving and deleting entry as user should succeed
     (doseq [valid-entry [valid-entry-helm-repo valid-entry-chart-url]]
       (let [uri     (-> session-admin
                         (request base-uri
@@ -156,10 +156,45 @@
                    :request-method :post
                    :body (json/write-str invalid-entry))
           (ltu/body->edn)
-          (ltu/dump)
           (ltu/is-status 400)))
     ))
 
+
+(deftest lifecycle-edit
+  (let [session-anon  (-> (session (ltu/ring-app))
+                          (content-type "application/json"))
+        session-admin (header session-anon authn-info-header
+                              "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")]
+    (let [uri (-> session-admin
+                  (request base-uri
+                           :request-method :post
+                           :body (json/write-str valid-entry-helm-repo))
+                  (ltu/body->edn)
+                  (ltu/is-status 201)
+                  (ltu/location))
+
+          abs-uri (str p/service-context uri)]
+
+      (-> session-admin
+          (request abs-uri
+                   :request-method :put
+                   :body (json/write-str valid-entry-chart-url))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/body))
+
+      (-> session-admin
+          (request abs-uri
+                   :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      ;; verify that the resource was deleted.
+      (-> session-admin
+          (request abs-uri)
+          (ltu/body->edn)
+          (ltu/is-status 404)))
+    ))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id module-application-helm/resource-type))]
