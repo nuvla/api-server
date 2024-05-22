@@ -1071,7 +1071,7 @@
                                      end
                                      :seconds)]
                           (recur
-                            (+ total-commissioned-time secs)
+                            (if (pos? secs) (+ total-commissioned-time secs) total-commissioned-time)
                             (if (= (:online (get latests (:id nb))) 1)
                               (+ total-online-time secs)
                               total-online-time)

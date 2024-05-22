@@ -1833,6 +1833,134 @@
                               "\n")
                          (csv-request "availability-stats" "raw"))))))))))))
 
+(deftest issue-tasklist-3132-non-regression-test
+  (let [nuvlaboxes [{:id      "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296"
+                     :created "2024-05-18T16:37:02.291Z"}
+                    {:id      "nuvlabox/30393fec-ac24-47a6-bd6b-594009915653"
+                     :created "2024-05-21T16:50:10.759Z"}]
+        raw-data   [{:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       1,
+                     :timestamp    "2024-05-18T16:44:57.467Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       0,
+                     :timestamp    "2024-05-19T00:52:30.555Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       1,
+                     :timestamp    "2024-05-19T00:52:58.052Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       0,
+                     :timestamp    "2024-05-19T16:42:27.469Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       1,
+                     :timestamp    "2024-05-19T16:43:38.391Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       0,
+                     :timestamp    "2024-05-20T05:15:59.058Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       1,
+                     :timestamp    "2024-05-20T05:16:05.215Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       1,
+                     :timestamp    "2024-05-20T05:16:05.504Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       0,
+                     :timestamp    "2024-05-20T06:26:14.066Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       1,
+                     :timestamp    "2024-05-20T06:26:36.013Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       0,
+                     :timestamp    "2024-05-20T15:42:01.895Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       1,
+                     :timestamp    "2024-05-20T15:42:10.314Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       0,
+                     :timestamp    "2024-05-21T07:59:26.990Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       1,
+                     :timestamp    "2024-05-21T07:59:29.936Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       0,
+                     :timestamp    "2024-05-21T09:15:43.551Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       1,
+                     :timestamp    "2024-05-21T09:17:06.363Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       0,
+                     :timestamp    "2024-05-21T10:16:24.442Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       1,
+                     :timestamp    "2024-05-21T10:16:27.650Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       1,
+                     :timestamp    "2024-05-21T10:16:27.857Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       0,
+                     :timestamp    "2024-05-21T10:46:00.914Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       1,
+                     :timestamp    "2024-05-21T10:46:32.874Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       0,
+                     :timestamp    "2024-05-21T11:54:14.836Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       1,
+                     :timestamp    "2024-05-21T11:55:10.153Z"}
+                    {:nuvlaedge-id "nuvlabox/30393fec-ac24-47a6-bd6b-594009915653",
+                     :online       1,
+                     :timestamp    "2024-05-21T16:51:25.987Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       0,
+                     :timestamp    "2024-05-21T17:46:22.554Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       1,
+                     :timestamp    "2024-05-21T17:46:54.814Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       0,
+                     :timestamp    "2024-05-22T05:14:51.920Z"}
+                    {:nuvlaedge-id "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296",
+                     :online       1,
+                     :timestamp    "2024-05-22T05:15:07.649Z"}
+                    {:nuvlaedge-id "nuvlabox/30393fec-ac24-47a6-bd6b-594009915653",
+                     :online       0,
+                     :timestamp    "2024-05-22T05:30:26.498Z"}]
+        body       {:filter      "(id!=null)",
+                    :dataset     ["availability-stats"],
+                    :from        "2024-05-15T07:03:24Z",
+                    :to          "2024-05-22T07:03:24Z",
+                    :granularity "1-hours"}
+        request    {:headers {"content-type" "application/json"}
+                    :body    body}
+        start      (time/parse-date "2024-05-15T07:00:00.000Z")
+        end        (time/parse-date "2024-05-22T07:00:00.000Z")]
+    (with-redefs [data-utils/fetch-nuvlaboxes       (constantly nuvlaboxes)
+                  data-utils/query-availability-raw (fn [_ & args]
+                                                      (if (some? (first args))
+                                                        [0 [] []]
+                                                        [(count raw-data)
+                                                         (mapv (fn [{:keys [timestamp nuvlaedge-id online]}]
+                                                                 {:_source {(keyword "@timestamp") timestamp
+                                                                            :nuvlaedge-id          nuvlaedge-id
+                                                                            :online                online}
+                                                                  :sort    [(time/unix-timestamp-from-date (time/parse-date timestamp))
+                                                                            nuvlaedge-id]})
+                                                               raw-data)
+                                                         (loop [date start
+                                                                dates [start]]
+                                                           (if (time/before? date end)
+                                                             (recur (time/plus date (time/duration-unit 1 :hours))
+                                                                    (conj dates date))
+                                                             (conj dates end)))]))]
+      (let [data (-> (data-utils/wrapped-query-data
+                       (assoc body :mode :multi-edge-query)
+                       request)
+                     :body
+                     (get "availability-stats")
+                     first
+                     :ts-data)]
+        (is (every? #(not (neg? %)) (map (comp :value :virtual-edges-online :aggregations) data)))))))
+
 (deftest availability-perf-test
   ;; Perf tests are commented out because it takes long time to insert 10k nuvlaedges.
   ;; Uncomment locally and run them as needed.
