@@ -42,33 +42,13 @@
              :json-schema/order 33)))
 
 
-(def ^:const subtype-project "project")
-
-(def ^:const subtype-comp "component")
-
-(def ^:const subtype-app "Docker Application" "application")
-
-(def ^:const subtype-app-k8s "Kubernetes Application" "application_kubernetes")
-
-(def ^:const subtype-app-helm "Helm Application" "application_helm")
-
-(def ^:const subtype-apps-sets "Application Bouquet" "applications_sets")
-
-(def ^:const module-subtypes
-  [subtype-project
-   subtype-comp
-   subtype-app
-   subtype-app-k8s
-   subtype-app-helm
-   subtype-apps-sets])
-
-
 (s/def ::subtype
-  (-> (st/spec (set module-subtypes))
+  (-> (st/spec #{"project" "component" "application" "application_kubernetes" "applications_sets"})
       (assoc :name "subtype"
              :json-schema/type "string"
              :json-schema/description "module type"
-             :json-schema/value-scope {:values module-subtypes}
+             :json-schema/value-scope {:values ["project" "component" "application"
+                                                "application_kubernetes"]}
 
              :json-schema/editable false
              :json-schema/fulltext true
@@ -95,7 +75,7 @@
              :json-schema/editable false)))
 
 
-(def module-regex #"^module\-(component|application|applications-sets|application-helm)/[a-z0-9]+(-[a-z0-9]+)*$")
+(def module-regex #"^module\-(component|application|applications-sets)/[a-z0-9]+(-[a-z0-9]+)*$")
 
 (s/def ::href
   (-> (st/spec (s/and string? #(re-matches module-regex %)))

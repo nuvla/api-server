@@ -20,7 +20,7 @@ Allows credentials for Docker registry services to be stored.
 (def ^:const resource-name "Docker Registry Credentials")
 
 
-(def ^:const method credential-subtype)
+(def ^:const method "infrastructure-service-registry")
 
 
 (def resource-acl (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]

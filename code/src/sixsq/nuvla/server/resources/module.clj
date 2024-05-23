@@ -19,7 +19,6 @@ component, or application.
     [sixsq.nuvla.server.resources.infrastructure-service.utils :as infra-service-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.module-application :as module-application]
-    [sixsq.nuvla.server.resources.module-application-helm :as module-application-helm]
     [sixsq.nuvla.server.resources.module-applications-sets :as module-applications-sets]
     [sixsq.nuvla.server.resources.module-component :as module-component]
     [sixsq.nuvla.server.resources.module.utils :as utils]
@@ -63,12 +62,11 @@ component, or application.
 ;; CRUD operations
 ;;
 
-(defn subtype->collection-uri
+(defn subtype->resource-url
   [resource]
   (cond
     (utils/is-component? resource) module-component/resource-type
     (utils/is-application? resource) module-application/resource-type
-    (utils/is-application-helm? resource) module-application-helm/resource-type
     (utils/is-application-k8s? resource) module-application/resource-type
     (utils/is-applications-sets? resource) module-applications-sets/resource-type
     :else (throw (r/ex-bad-request (str "unknown module subtype: "
@@ -191,9 +189,9 @@ component, or application.
 (defn create-content
   [module]
   (if-let [content (:content module)]
-    (let [collection-uri  (subtype->collection-uri module)
-          content-body (merge content {:resource-type collection-uri})
-          content-href (-> (crud/add {:params      {:resource-name collection-uri}
+    (let [content-url  (subtype->resource-url module)
+          content-body (merge content {:resource-type content-url})
+          content-href (-> (crud/add {:params      {:resource-name content-url}
                                       :body        content-body
                                       :nuvla/authn auth/internal-identity})
                            :body
@@ -317,7 +315,7 @@ component, or application.
 (defn delete-content
   [module-meta content-id]
   (crud/delete
-    {:params      {:resource-name (subtype->collection-uri module-meta)
+    {:params      {:resource-name (subtype->resource-url module-meta)
                    :uuid          (u/id->uuid content-id)}
      :nuvla/authn auth/internal-identity}))
 
