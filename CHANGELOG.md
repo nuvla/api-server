@@ -4,6 +4,10 @@
 
 ## Released
 
+## [6.6.4] - 2024-05-23
+
+- nuvlabox data - Total commissioned time computation should take edge creation date into account
+
 ## [6.6.3] - 2024-05-16
 
 - nuvlabox-release resource: change query acl to group/nuvla-anon
