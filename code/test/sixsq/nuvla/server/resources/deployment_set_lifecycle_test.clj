@@ -23,6 +23,7 @@
 
 (def base-uri (str p/service-context t/resource-type))
 (def deployment-base-uri (str p/service-context deployment/resource-type))
+(def module-base-uri (str p/service-context module-utils/resource-type))
 
 (def session-id "session/324c6138-aaaa-bbbb-cccc-af3ad15815db")
 

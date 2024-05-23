@@ -236,9 +236,7 @@
                            (some->> deployment :registries-credentials
                                     (map crud/retrieve-by-id-as-admin)))
         registries-infra (when full
-                           (map (comp crud/retrieve-by-id-as-admin :parent) registries-creds))
-        helm-repo-cred   (some-> (-> deployment :module :content :helm-repo-creds)
-                                 crud/retrieve-by-id-as-admin)]
+                           (map (comp crud/retrieve-by-id-as-admin :parent) registries-creds))]
     (job-interface/get-context->response
       deployment
       credential
@@ -246,8 +244,7 @@
       nuvlaedge
       nuvlaedge-status
       registries-creds
-      registries-infra
-      helm-repo-cred)))
+      registries-infra)))
 
 (defn on-cancel
   [{:keys [target-resource] :as _job}]

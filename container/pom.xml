@@ -248,7 +248,6 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <skip>${skipDockerBuild}</skip>
                     <repository>docker.io/${docker-organization}/api</repository>
                     <tag>${docker-tag}</tag>
                     <useMavenSettingsForAuth>true</useMavenSettingsForAuth>
