@@ -15,9 +15,10 @@
   "Creates a client connecting to an instance of Zookeeper
   Parameters (host and port) are taken from environment variables."
   []
-  (let [zk-endpoints (or (env/env :zk-endpoints) "localhost:2181")]
-    (log/info "creating zookeeper client:" zk-endpoints)
-    (zk/connect zk-endpoints)))
+  (let [zk-endpoints (or (env/env :zk-endpoints) "localhost:2181")
+        timeout-msec (Integer/parseInt (env/env :zk-connect-timeout-msec "15000"))]
+    (log/info "creating zookeeper client:" zk-endpoints " timeout: " timeout-msec)
+    (zk/connect zk-endpoints :timeout-msec timeout-msec)))
 
 (defn close-client! []
   (when *client*
