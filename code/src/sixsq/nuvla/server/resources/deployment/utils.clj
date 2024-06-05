@@ -237,7 +237,7 @@
                                     (map crud/retrieve-by-id-as-admin)))
         registries-infra (when full
                            (map (comp crud/retrieve-by-id-as-admin :parent) registries-creds))
-        helm-repo-cred   (some-> (-> deployment :module :content :helm-repo-creds)
+        helm-repo-cred   (some-> deployment :module :content :helm-repo-creds
                                  crud/retrieve-by-id-as-admin)]
     (job-interface/get-context->response
       deployment
