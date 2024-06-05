@@ -4,6 +4,10 @@
 
 ## Released
 
+## [6.4.4.1] - 2024-06-05
+
+- allow setting of Zookeeper client creation timeout
+
 ## [6.4.4] - 2024-02-21
 
 - SERVER: Start nrepl when nrepl-port env is set
