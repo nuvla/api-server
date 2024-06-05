@@ -62,7 +62,7 @@ This resource implements the Helm Application module.
       request))
 
 
-(defn- trow-mandatory-fields-mismatch
+(defn- throw-mandatory-fields-mismatch
   [{{:keys [helm-repo-url
             helm-chart-name
             helm-absolute-url
@@ -78,7 +78,7 @@ This resource implements the Helm Application module.
   [request]
   (-> request
       throw-mandatory-fields-missing
-      trow-mandatory-fields-mismatch))
+      throw-mandatory-fields-mismatch))
 
 
 (defmethod crud/add resource-type
