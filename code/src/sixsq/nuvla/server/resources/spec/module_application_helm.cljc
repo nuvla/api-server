@@ -38,7 +38,7 @@
 (s/def ::helm-repo-creds
   (-> (st/spec ::core/url)
       (assoc :name "helm-repo-creds"
-             :json-schema/description "Helm repo creds URL")))
+             :json-schema/description "Helm repo credentials")))
 
 
 (s/def ::helm-chart-values
