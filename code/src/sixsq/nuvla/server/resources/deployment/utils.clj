@@ -19,6 +19,8 @@
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nuvlabox-utils]
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-registry :as cred-docker-registry]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-helm-repo :as cred-helm-repo]
     [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -194,7 +196,7 @@
                                 set)
         creds-to-be-checked (set/difference (set registries-credentials) preselected-creds)]
     (if (seq creds-to-be-checked)
-      (let [filter-cred (str "subtype='infrastructure-service-registry' and "
+      (let [filter-cred (str "subtype='" cred-docker-registry/credential-subtype "' and "
                              (u/filter-eq-vals "id" creds-to-be-checked))
             {:keys [body]} (crud/query {:params      {:resource-name credential/resource-type}
                                         :cimi-params {:filter (parser/parse-cimi-filter filter-cred)
@@ -203,6 +205,27 @@
         (if (< (get body :count 0)
                (count creds-to-be-checked))
           (throw (r/ex-response (format "some registries credentials for %s can't be accessed" id)
+                                403 id))
+          resource))
+      resource)))
+
+
+(defn throw-can-not-access-helm-repo-creds
+  [{:keys [id helm-repo-creds] :as resource} request]
+  (let [preselected-creds   (-> resource
+                                (get-in [:module :content :helm-repo-creds] [])
+                                set)
+        creds-to-be-checked (set/difference (set helm-repo-creds) preselected-creds)]
+    (if (seq creds-to-be-checked)
+      (let [filter-cred (str "subtype='" cred-helm-repo/credential-subtype "' and "
+                             (u/filter-eq-vals "id" creds-to-be-checked))
+            {:keys [body]} (crud/query {:params      {:resource-name credential/resource-type}
+                                        :cimi-params {:filter (parser/parse-cimi-filter filter-cred)
+                                                      :last   0}
+                                        :nuvla/authn (:nuvla/authn request)})]
+        (if (< (get body :count 0)
+               (count creds-to-be-checked))
+          (throw (r/ex-response (format "some helm repo credentials for %s can't be accessed" id)
                                 403 id))
           resource))
       resource)))
