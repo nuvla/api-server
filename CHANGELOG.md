@@ -4,6 +4,19 @@
 
 ## Released
 
+## [6.6.4] - 2024-05-23
+
+- nuvlabox data - Total commissioned time computation should take edge creation date into account
+
+## [6.6.3] - 2024-05-16
+
+- nuvlabox-release resource: change query acl to group/nuvla-anon
+- nuvlabox data-utils - Fix latest availability query parameter
+- Testing - replace curator test zookeeper server by container
+- Insert metrics: only return the first error when there are many
+- Deployment - module content should not be indexed to allow big docker-compose or manifest
+- Deps - force clojure version for repl
+
 ## [6.6.2] - 2024-04-11
 
 - contrainer ring upgrade missing fix

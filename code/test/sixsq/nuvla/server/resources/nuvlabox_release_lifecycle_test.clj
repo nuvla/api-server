@@ -57,7 +57,7 @@
     (-> session-anon
         (request base-uri)
         (ltu/body->edn)
-        (ltu/is-status 403))
+        (ltu/is-status 200))
 
     (-> session-anon
         (request base-uri
