@@ -65,7 +65,7 @@ jobs:
         run: |
           export JAVA_OPTS="-Xms6g -Xmx6g"
           export ES_JAVA_OPTS="-Xms6g -Xmx6g"
-          sonar-scanner -Dsonar.token=${{ secrets.SONARQUBE_TOKEN }} -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -Dsonar.projectVersion=${{ steps.project_version.outputs.version }}
+          sonar-scanner -X -Dsonar.token=${{ secrets.SONARQUBE_TOKEN }} -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -Dsonar.projectVersion=${{ steps.project_version.outputs.version }}
 
       - name: Get list of tests
         if: always()
