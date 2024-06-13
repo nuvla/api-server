@@ -52,12 +52,6 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
         id: project_version
 
-      - name: Cloverage debug
-        working-directory: code
-        run: |
-          lein cloverage --codecov
-        id: cloverage
-
       - name: Setup Sonar Scanner
         uses: warchant/setup-sonar-scanner@v7
         with:
