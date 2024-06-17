@@ -4,6 +4,13 @@
 
 ## Released
 
+## [6.7.0] - 2024-06-17
+
+- Notification method - Add mqtt as notif method option
+- Infrastructure service - Remove infrastructure service coe support
+- Credentials - Remove cloud provider credentials support
+- Zookeeper - Allow setting of Zookeeper client creation timeout
+
 ## [6.6.4] - 2024-05-23
 
 - nuvlabox data - Total commissioned time computation should take edge creation date into account
