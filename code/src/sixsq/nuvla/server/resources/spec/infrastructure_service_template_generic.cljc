@@ -108,7 +108,7 @@ services that are managed separately.
             ::capabilities]})
 
 
-;; Defines the contents of the this service-template resource.
+;; Defines the contents of the service-template resource.
 (s/def ::schema
   (su/only-keys-maps infra-service-tpl/resource-keys-spec
                      service-template-keys-spec))

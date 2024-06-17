@@ -2,7 +2,6 @@
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-exoscale :as exoscale]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as minio]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.time :as time])
@@ -129,14 +128,9 @@
   "Returns a tuple with the key and secret for accessing the S3 service. There
    are many subtypes of credentials, so the fields are different in each case."
   [{:keys [subtype] :as credential}]
-
-  ;; FIXME: Find a better solution for dispatching on credential subtype.
-  (cond
-    (= minio/credential-subtype subtype) [(:access-key credential)
-                                          (:secret-key credential)]
-    (= exoscale/credential-subtype subtype) [(:exoscale-api-key credential)
-                                             (:exoscale-api-secret-key credential)]
-    :else nil))
+  (when (= minio/credential-subtype subtype)
+    [(:access-key credential)
+     (:secret-key credential)]))
 
 
 (defn extract-s3-endpoint
