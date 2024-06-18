@@ -42,14 +42,8 @@
 (defn query [collection-id & [options]]
   (p/query *impl* collection-id options))
 
-(defn query-native [collection-id query]
-  (p/query-native *impl* collection-id query))
-
-(defn add-metric [collection-id data & [options]]
-  (p/add-metric *impl* collection-id data options))
-
-(defn bulk-insert-metrics [collection-id data & [options]]
-  (p/bulk-insert-metrics *impl* collection-id data options))
+(defn query-native [index query]
+  (p/query-native *impl* index query))
 
 (defn bulk-delete [collection-id & [options]]
   (p/bulk-delete *impl* collection-id options))
@@ -57,6 +51,23 @@
 (defn bulk-edit [collection-id & [options]]
   (p/bulk-edit *impl* collection-id options))
 
+(defn create-timeseries [index & [options]]
+  (p/create-timeseries *impl* index options))
+
+(defn edit-timeseries [index & [options]]
+  (p/edit-timeseries *impl* index options))
+
+(defn retrieve-timeseries [timeseries-id]
+  (p/retrieve-timeseries *impl* timeseries-id))
+
+(defn add-timeseries-datapoint [index data & [options]]
+  (p/add-timeseries-datapoint *impl* index data options))
+
+(defn bulk-insert-timeseries-datapoints [index data & [options]]
+  (p/bulk-insert-timeseries-datapoints *impl* index data options))
+
+(defn delete-timeseries [index & [options]]
+  (p/delete-timeseries *impl* index options))
 
 (defn close []
   (when-let [^Closeable impl *impl*]

@@ -2,6 +2,7 @@
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.es.common.utils :as escu]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -55,7 +56,7 @@
 (defn query-native
   "Executes the database query as a native query."
   [collection-id query]
-  (db/query-native collection-id query))
+  (db/query-native (escu/collection-id->index collection-id) query))
 
 
 (defmulti bulk-delete resource-name-dispatch)

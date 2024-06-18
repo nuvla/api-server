@@ -477,7 +477,7 @@
     (let [invalid-format (fn [accept-header]
                            (-> (metrics-request
                                  {:accept-header accept-header
-                                  :datasets      ["cpu-stats"]
+                                  :queries       ["cpu-stats"]
                                   :from          (time/minus now (time/duration-unit 1 :days))
                                   :to            now
                                   :granularity   "1-days"})
@@ -489,7 +489,7 @@
     (let [metrics-request (fn [accept-header response-content-type]
                             (-> (metrics-request
                                   (cond->
-                                    {:datasets    ["cpu-stats"]
+                                    {:queries     ["cpu-stats"]
                                      :from        (time/minus now (time/duration-unit 1 :days))
                                      :to          now
                                      :granularity "1-days"}
@@ -585,22 +585,22 @@
               now                (time/now)
               midnight-today     (time/truncated-to-days now)
               midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
-              metrics-request    (fn [{:keys [datasets from from-str to to-str granularity custom-es-aggregations accept-header] #_:or #_{accept-header "application/json"}}]
+              metrics-request    (fn [{:keys [queries from from-str to to-str granularity custom-es-aggregations accept-header] #_:or #_{accept-header "application/json"}}]
                                    (-> session-nb
                                        (content-type "application/x-www-form-urlencoded")
                                        (cond-> accept-header (header "accept" accept-header))
                                        (request nuvlabox-data-url
                                                 :body (rc/form-encode
                                                         (cond->
-                                                          {:dataset datasets
-                                                           :from    (if from (time/to-str from) from-str)
-                                                           :to      (if to (time/to-str to) to-str)}
+                                                          {:query queries
+                                                           :from  (if from (time/to-str from) from-str)
+                                                           :to    (if to (time/to-str to) to-str)}
                                                           granularity (assoc :granularity granularity)
                                                           custom-es-aggregations (assoc :custom-es-aggregations custom-es-aggregations))))))]
           (testing "new metrics data is added to ts-nuvlaedge time-serie"
             (let [from        (time/minus (time/now) (time/duration-unit 1 :days))
                   to          now
-                  metric-data (-> (metrics-request {:datasets    ["cpu-stats"
+                  metric-data (-> (metrics-request {:queries     ["cpu-stats"
                                                                   "ram-stats"
                                                                   "disk-stats"
                                                                   "network-stats"
@@ -700,7 +700,7 @@
           (testing "raw metric data query"
             (let [from            (time/minus (time/now) (time/duration-unit 1 :days))
                   to              now
-                  raw-metric-data (-> (metrics-request {:datasets    ["cpu-stats"
+                  raw-metric-data (-> (metrics-request {:queries     ["cpu-stats"
                                                                       "ram-stats"
                                                                       "disk-stats"
                                                                       "network-stats"
@@ -767,7 +767,7 @@
                   to   now]
               (testing "custom aggregation on cpu-stats"
                 (let [custom-cpu-agg (-> (metrics-request
-                                           {:datasets               ["cpu-stats"]
+                                           {:queries                ["cpu-stats"]
                                             :from                   from
                                             :to                     to
                                             :custom-es-aggregations (json/write-str
@@ -790,7 +790,7 @@
                          (:cpu-stats custom-cpu-agg)))))
               (testing "custom aggregation on disk-stats"
                 (let [custom-cpu-agg (-> (metrics-request
-                                           {:datasets               ["disk-stats"]
+                                           {:queries                ["disk-stats"]
                                             :from                   from
                                             :to                     to
                                             :custom-es-aggregations (json/write-str
@@ -819,45 +819,45 @@
                                         (ltu/body->edn)
                                         (ltu/body)
                                         :message))]
-              (is (= "exactly one dataset must be specified with accept header 'text/csv'"
+              (is (= "exactly one query must be specified with accept header 'text/csv'"
                      (invalid-request {:accept-header "text/csv"
-                                       :datasets      ["cpu-stats" "network-stats"]
+                                       :queries       ["cpu-stats" "network-stats"]
                                        :from          (time/minus now (time/duration-unit 1 :days))
                                        :to            now
                                        :granularity   "1-days"})))
               (is (= "from parameter is mandatory, with format iso8601 (uuuu-MM-dd'T'HH:mm:ss[.SSS]Z)"
-                     (invalid-request {:datasets    ["cpu-stats"]
+                     (invalid-request {:queries     ["cpu-stats"]
                                        :granularity "1-days"})))
               (is (= "from parameter is mandatory, with format iso8601 (uuuu-MM-dd'T'HH:mm:ss[.SSS]Z)"
-                     (invalid-request {:datasets    ["cpu-stats"]
+                     (invalid-request {:queries     ["cpu-stats"]
                                        :from-str    "wrong-datetime"
                                        :granularity "1-days"})))
               (is (= "to parameter is mandatory, with format iso8601 (uuuu-MM-dd'T'HH:mm:ss[.SSS]Z)"
-                     (invalid-request {:datasets    ["cpu-stats"]
+                     (invalid-request {:queries     ["cpu-stats"]
                                        :from        (time/minus now (time/duration-unit 1 :days))
                                        :granularity "1-days"})))
               (is (= "to parameter is mandatory, with format iso8601 (uuuu-MM-dd'T'HH:mm:ss[.SSS]Z)"
-                     (invalid-request {:datasets    ["cpu-stats"]
+                     (invalid-request {:queries     ["cpu-stats"]
                                        :from        (time/minus now (time/duration-unit 1 :days))
                                        :to-str      "wrong-datetime"
                                        :granularity "1-days"})))
               (is (= "from must be before to"
-                     (invalid-request {:datasets    ["cpu-stats"]
+                     (invalid-request {:queries     ["cpu-stats"]
                                        :from        now
                                        :to          now
                                        :granularity "1-days"})))
-              (is (= "unknown datasets: invalid-1,invalid-2"
-                     (invalid-request {:datasets    ["invalid-1" "cpu-stats" "invalid-2"]
+              (is (= "unknown queries: invalid-1,invalid-2"
+                     (invalid-request {:queries     ["invalid-1" "cpu-stats" "invalid-2"]
                                        :from        (time/minus now (time/duration-unit 1 :days))
                                        :to          now
                                        :granularity "1-days"})))
               (is (= "unrecognized value for granularity 1-invalid"
-                     (invalid-request {:datasets    ["cpu-stats"]
+                     (invalid-request {:queries     ["cpu-stats"]
                                        :from        (time/minus now (time/duration-unit 1 :days))
                                        :to          now
                                        :granularity "1-invalid"})))
               (is (= "too many data points requested. Please restrict the time interval or increase the time granularity."
-                     (invalid-request {:datasets    ["cpu-stats"]
+                     (invalid-request {:queries     ["cpu-stats"]
                                        :from        (time/minus now (time/duration-unit 1 :days))
                                        :to          now
                                        :granularity "1-minutes"})))))
@@ -865,9 +865,9 @@
           (testing "csv export of metrics data"
             (let [from        (time/minus now (time/duration-unit 1 :days))
                   to          now
-                  csv-request (fn [dataset granularity]
+                  csv-request (fn [query granularity]
                                 (-> (metrics-request {:accept-header "text/csv"
-                                                      :datasets      [dataset]
+                                                      :queries       [query]
                                                       :from          from
                                                       :to            to
                                                       :granularity   granularity})
@@ -959,7 +959,7 @@
               (testing "Export with custom es aggregations not allowed"
                 (let [csv-custom-cpu-agg (-> (metrics-request
                                                {:accept-header          "text/csv"
-                                                :datasets               ["cpu-stats"]
+                                                :queries                ["cpu-stats"]
                                                 :from                   from
                                                 :to                     to
                                                 :custom-es-aggregations (json/write-str
@@ -1017,7 +1017,7 @@
               now                (time/now)
               midnight-today     (time/truncated-to-days now)
               midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
-              metrics-request    (fn [{:keys [datasets from from-str to to-str granularity custom-es-aggregations accept-header]}]
+              metrics-request    (fn [{:keys [queries from from-str to to-str granularity custom-es-aggregations accept-header]}]
                                    (-> session-nb
                                        (cond-> accept-header (header "accept" accept-header))
                                        (request nuvlabox-data-url
@@ -1025,20 +1025,20 @@
                                                 :headers {:bulk true}
                                                 :body (json/write-str
                                                         (cond->
-                                                          {:filter  (str "(id='" nuvlabox-id "'"
-                                                                         " or id='" nuvlabox-id-2 "'"
-                                                                         " or id='" nuvlabox-id-3 "'"
-                                                                         " or id='" nuvlabox-id-4 "')")
-                                                           :dataset datasets
-                                                           :from    (if from (time/to-str from) from-str)
-                                                           :to      (if to (time/to-str to) to-str)}
+                                                          {:filter (str "(id='" nuvlabox-id "'"
+                                                                        " or id='" nuvlabox-id-2 "'"
+                                                                        " or id='" nuvlabox-id-3 "'"
+                                                                        " or id='" nuvlabox-id-4 "')")
+                                                           :query  queries
+                                                           :from   (if from (time/to-str from) from-str)
+                                                           :to     (if to (time/to-str to) to-str)}
                                                           granularity (assoc :granularity granularity)
                                                           custom-es-aggregations (assoc :custom-es-aggregations custom-es-aggregations))))))]
           (testing "new metrics data is added to ts-nuvlaedge time-serie"
             (ltu/refresh-es-indices)
             (let [from        (time/minus (time/now) (time/duration-unit 1 :days))
                   to          now
-                  metric-data (-> (metrics-request {:datasets    ["cpu-stats"
+                  metric-data (-> (metrics-request {:queries     ["cpu-stats"
                                                                   "ram-stats"
                                                                   "disk-stats"
                                                                   "network-stats"
@@ -1116,7 +1116,7 @@
             (ltu/refresh-es-indices)
             (let [from            (time/minus (time/now) (time/duration-unit 1 :days))
                   to              now
-                  raw-metric-data (-> (metrics-request {:datasets    ["cpu-stats"
+                  raw-metric-data (-> (metrics-request {:queries     ["cpu-stats"
                                                                       "ram-stats"
                                                                       "disk-stats"
                                                                       "network-stats"
@@ -1223,7 +1223,7 @@
                   to   now]
               (testing "custom aggregation on cpu-stats"
                 (let [custom-cpu-agg (-> (metrics-request
-                                           {:datasets               ["cpu-stats"]
+                                           {:queries                ["cpu-stats"]
                                             :from                   from
                                             :to                     to
                                             :custom-es-aggregations {:agg1 {:date_histogram
@@ -1245,7 +1245,7 @@
                          (:cpu-stats custom-cpu-agg)))))
               (testing "custom aggregation on disk-stats"
                 (let [custom-disk-agg (-> (metrics-request
-                                            {:datasets               ["disk-stats"]
+                                            {:queries                ["disk-stats"]
                                              :from                   from
                                              :to                     to
                                              :custom-es-aggregations {:agg1 {:date_histogram
@@ -1273,29 +1273,29 @@
                                         (ltu/body->edn)
                                         (ltu/body)
                                         :message))]
-              (is (= "exactly one dataset must be specified with accept header 'text/csv'"
+              (is (= "exactly one query must be specified with accept header 'text/csv'"
                      (invalid-request {:accept-header "text/csv"
-                                       :datasets      ["cpu-stats" "network-stats"]
+                                       :queries       ["cpu-stats" "network-stats"]
                                        :from          (time/minus now (time/duration-unit 1 :days))
                                        :to            now
                                        :granularity   "1-days"})))
               (is (= "from must be before to"
-                     (invalid-request {:datasets    ["cpu-stats"]
+                     (invalid-request {:queries     ["cpu-stats"]
                                        :from        now
                                        :to          now
                                        :granularity "1-days"})))
-              (is (= "unknown datasets: invalid-1,invalid-2"
-                     (invalid-request {:datasets    ["invalid-1" "cpu-stats" "invalid-2"]
+              (is (= "unknown queries: invalid-1,invalid-2"
+                     (invalid-request {:queries     ["invalid-1" "cpu-stats" "invalid-2"]
                                        :from        (time/minus now (time/duration-unit 1 :days))
                                        :to          now
                                        :granularity "1-days"})))
               (is (= "unrecognized value for granularity 1-invalid"
-                     (invalid-request {:datasets    ["cpu-stats"]
+                     (invalid-request {:queries     ["cpu-stats"]
                                        :from        (time/minus now (time/duration-unit 1 :days))
                                        :to          now
                                        :granularity "1-invalid"})))
               (is (= "too many data points requested. Please restrict the time interval or increase the time granularity."
-                     (invalid-request {:datasets    ["cpu-stats"]
+                     (invalid-request {:queries     ["cpu-stats"]
                                        :from        (time/minus now (time/duration-unit 1 :days))
                                        :to          now
                                        :granularity "1-minutes"})))))
@@ -1303,9 +1303,9 @@
           (testing "csv export of metrics data"
             (let [from        (time/minus now (time/duration-unit 1 :days))
                   to          now
-                  csv-request (fn [dataset granularity]
+                  csv-request (fn [query granularity]
                                 (-> (metrics-request {:accept-header "text/csv"
-                                                      :datasets      [dataset]
+                                                      :queries       [query]
                                                       :from          from
                                                       :to            to
                                                       :granularity   granularity})
@@ -1572,20 +1572,20 @@
 
         (testing "availability data on a single nuvlabox"
           (let [nuvlabox-data-url (str nuvlabox-url "/data")
-                metrics-request   (fn [{:keys [datasets from from-str to to-str granularity accept-header] #_:or #_{accept-header "application/json"}}]
+                metrics-request   (fn [{:keys [queries from from-str to to-str granularity accept-header] #_:or #_{accept-header "application/json"}}]
                                     (-> session-nb
                                         (content-type "application/x-www-form-urlencoded")
                                         (cond-> accept-header (header "accept" accept-header))
                                         (request nuvlabox-data-url
                                                  :body (rc/form-encode
-                                                         {:dataset     datasets
+                                                         {:query       queries
                                                           :from        (if from (time/to-str from) from-str)
                                                           :to          (if to (time/to-str to) to-str)
                                                           :granularity granularity}))))]
             (testing "from midnight yesterday until now"
               (let [from        midnight-yesterday
                     to          now
-                    metric-data (-> (metrics-request {:datasets    ["availability-stats"]
+                    metric-data (-> (metrics-request {:queries     ["availability-stats"]
                                                       :from        from
                                                       :to          to
                                                       :granularity "1-days"})
@@ -1618,7 +1618,7 @@
             (testing "raw availability data query"
               (let [from                  (time/minus now (time/duration-unit 1 :days))
                     to                    now
-                    raw-availability-data (-> (metrics-request {:datasets    ["availability-stats"]
+                    raw-availability-data (-> (metrics-request {:queries     ["availability-stats"]
                                                                 :from        from
                                                                 :to          to
                                                                 :granularity "raw"})
@@ -1637,9 +1637,9 @@
             (testing "csv export of availability data"
               (let [from        midnight-yesterday
                     to          now
-                    csv-request (fn [dataset granularity]
+                    csv-request (fn [query granularity]
                                   (-> (metrics-request {:accept-header "text/csv"
-                                                        :datasets      [dataset]
+                                                        :queries       [query]
                                                         :from          from
                                                         :to            to
                                                         :granularity   granularity})
@@ -1691,7 +1691,7 @@
                 nuvlabox-data-url  (str p/service-context nb/resource-type "/data")
                 midnight-today     (time/truncated-to-days now)
                 midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
-                metrics-request    (fn [{:keys [datasets from from-str to to-str granularity accept-header]}]
+                metrics-request    (fn [{:keys [queries from from-str to to-str granularity accept-header]}]
                                      (-> session-nb
                                          (cond-> accept-header (header "accept" accept-header))
                                          (request nuvlabox-data-url
@@ -1702,7 +1702,7 @@
                                                                              " or id='" nuvlabox-id-3 "'"
                                                                              " or id='" nuvlabox-id-4 "'"
                                                                              " or id='" nuvlabox-id-5 "')")
-                                                           :dataset     datasets
+                                                           :query       queries
                                                            :from        (if from (time/to-str from) from-str)
                                                            :to          (if to (time/to-str to) to-str)
                                                            :granularity granularity}))))]
@@ -1710,7 +1710,7 @@
               (ltu/refresh-es-indices)
               (let [from        midnight-yesterday
                     to          now
-                    metric-data (-> (metrics-request {:datasets    ["availability-stats"
+                    metric-data (-> (metrics-request {:queries     ["availability-stats"
                                                                     "availability-by-edge"]
                                                       :from        from
                                                       :to          to
@@ -1775,7 +1775,7 @@
             (testing "raw availability data query"
               (let [from                  midnight-yesterday
                     to                    now
-                    raw-availability-data (-> (metrics-request {:datasets    ["availability-stats"]
+                    raw-availability-data (-> (metrics-request {:queries     ["availability-stats"]
                                                                 :from        from
                                                                 :to          to
                                                                 :granularity "raw"})
@@ -1797,9 +1797,9 @@
                        (:availability-stats raw-availability-data)))))
 
             (testing "csv export of availability data"
-              (let [csv-request (fn [dataset granularity]
+              (let [csv-request (fn [query granularity]
                                   (-> (metrics-request {:accept-header "text/csv"
-                                                        :datasets      [dataset]
+                                                        :queries       [query]
                                                         :from          midnight-yesterday
                                                         :to            now
                                                         :granularity   granularity})
@@ -1983,14 +1983,14 @@
             (let [nuvlabox-data-url  (str p/service-context nb/resource-type "/data")
                   midnight-today     (time/truncated-to-days now)
                   midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
-                  metrics-request    (fn [{:keys [datasets from from-str to to-str granularity accept-header]}]
+                  metrics-request    (fn [{:keys [queries from from-str to to-str granularity accept-header]}]
                                        (-> session-nb
                                            (cond-> accept-header (header "accept" accept-header))
                                            (request nuvlabox-data-url
                                                     :request-method :patch
                                                     :headers {:bulk true}
                                                     :body (json/write-str
-                                                            {:dataset     datasets
+                                                            {:query       queries
                                                              :from        (if from (time/to-str from) from-str)
                                                              :to          (if to (time/to-str to) to-str)
                                                              :granularity granularity}))))
@@ -2001,7 +2001,7 @@
                 (let [from now-1d
                       to   now]
                   (with-redefs [data-utils/query-data-max-time 100]
-                    (-> (metrics-request {:datasets    ["availability-stats"]
+                    (-> (metrics-request {:queries     ["availability-stats"]
                                           :from        from
                                           :to          to
                                           :granularity "1-days"})
@@ -2012,7 +2012,7 @@
               (testing "availability query performance"
                 (let [[elapsed-time metric-data]
                       (logt/logtime1
-                        (-> (metrics-request {:datasets    ["availability-stats"]
+                        (-> (metrics-request {:queries     ["availability-stats"]
                                               :from        from
                                               :to          to
                                               :granularity "1-days"})

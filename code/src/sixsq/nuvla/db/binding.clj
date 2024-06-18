@@ -94,41 +94,13 @@
      error codes can also be thrown.")
 
   (query-native
-    [this collection-id options]
-    "This function executes a native query, where the collection-id
-     corresponds to the name of a Collection.
+    [this index options]
+    "This function executes a native query against the given index.
 
      On success, the function must return the response body.
 
      On failure, the function must throw an ex-info containing the error
-     ring response.  If the resource-id does not correspond to a Collection,
-     then a 400 (bad-request) response must be returned.  Other appropriate
-     error codes can also be thrown.")
-
-  (add-metric
-    [this collection-id data options]
-    "This function adds the given metric to the database.  The metric
-     must not already exist in the database.
-
-     On success, the function must return a 201 ring response with the
-     relative URL of the new metric as the Location.
-
-     On failure, the function must throw an ex-info containing the error
-     ring response.  The error must be 409 (conflict) if the metric
-     exists already.  Other appropriate error codes can also be thrown.")
-
-  (bulk-insert-metrics
-    [this collection-id data options]
-    "This function insert the given metrics in the database where the
-    collection-id corresponds to the name of a metrics Collection.
-
-     On success, the function must return the summary map of what was done
-     on the db.
-
-     On failure, the function must throw an ex-info containing the error
-     ring response.  If the resource-id does not correspond to a Collection,
-     then a 400 (bad-request) response must be returned.  Other appropriate
-     error codes can also be thrown.")
+     ring response.")
 
   (bulk-delete
     [this collection-id options]
@@ -154,4 +126,51 @@
      On failure, the function must throw an ex-info containing the error
      ring response.  If the resource-id does not correspond to a Collection,
      then a 400 (bad-request) response must be returned.  Other appropriate
-     error codes can also be thrown."))
+     error codes can also be thrown.")
+
+  (create-timeseries
+    [this index options]
+    "This function creates a timeseries with the given index name in the database.")
+
+  (retrieve-timeseries
+    [this index]
+    "This function retrieves the identified timeseries from the database.
+
+     On success, this returns the clojure map representation of the
+     timeseries.  The response must not be embedded in a ring response.
+
+     On failure, this function must throw an ex-info containing the error
+     ring response. If the resource doesn't exist, use a 404 status.")
+
+  (edit-timeseries
+    [this index options]
+    "This function updates (edits) the given timeseries in the database.
+     The timeseries must already exist in the database.")
+
+  (add-timeseries-datapoint
+    [this index data options]
+    "This function adds the given timeseries datapoint to the database.
+     The datapoint with the given timestamp and dimensions must not already exist in the database.
+
+     On success, the function must return a 201 ring response with the
+     relative URL of the new metric as the Location.
+
+     On failure, the function must throw an ex-info containing the error
+     ring response.  The error must be 409 (conflict) if the metric
+     exists already.  Other appropriate error codes can also be thrown.")
+
+  (bulk-insert-timeseries-datapoints
+    [this index data options]
+    "This function insert the given timeseries datapoints in the database.
+
+     On success, the function must return the summary map of what was done
+     on the db.
+
+     On failure, the function must throw an ex-info containing the error
+     ring response.  If the resource-id does not correspond to a Collection,
+     then a 400 (bad-request) response must be returned.  Other appropriate
+     error codes can also be thrown.")
+
+  (delete-timeseries
+    [this index options]
+    "This function deletes a timeseries with the given index name from the database."))

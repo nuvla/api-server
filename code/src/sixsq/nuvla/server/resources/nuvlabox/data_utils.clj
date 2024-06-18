@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.data-utils
   (:require
-    [clojure.data.csv :as csv]
     [clojure.data.json :as json]
     [clojure.set :as set]
     [clojure.string :as str]
@@ -8,25 +7,19 @@
     [environ.core :as env]
     [promesa.core :as p]
     [promesa.exec :as px]
-    [ring.middleware.accept :refer [wrap-accept]]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
+    [sixsq.nuvla.server.resources.timeseries.data-utils :as ts-data-utils]
     [sixsq.nuvla.server.resources.ts-nuvlaedge-availability :as ts-nuvlaedge-availability]
     [sixsq.nuvla.server.resources.ts-nuvlaedge-telemetry :as ts-nuvlaedge-telemetry]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time])
-  (:import
-    (java.io StringWriter)
-    (java.text DecimalFormat DecimalFormatSymbols)
-    (java.util Locale)
-    (java.util.concurrent ExecutionException TimeoutException)))
+  (:import (java.util.concurrent ExecutionException TimeoutException)))
 
-(def max-data-points 200)
 (def running-query-data (atom 0))
 (def requesting-query-data (atom 0))
 (def query-data-max-attempts (env/env :query-data-max-attempts 50))
@@ -164,123 +157,17 @@
     (catch Exception ex
       (log/error "An error occurred inserting metrics: " (ex-message ex)))))
 
-(defn ->predefined-aggregations-resp
-  [{:keys [mode nuvlaedge-ids aggregations] group-by-field :group-by} resp]
-  (let [ts-data    (fn [tsds-stats]
-                     (map
-                       (fn [{:keys [key_as_string doc_count] :as bucket}]
-                         {:timestamp    key_as_string
-                          :doc-count    doc_count
-                          :aggregations (->> (keys aggregations)
-                                             (select-keys bucket))})
-                       (:buckets tsds-stats)))
-        dimensions (case mode
-                     :single-edge-query
-                     {:nuvlaedge-id (first nuvlaedge-ids)}
-                     :multi-edge-query
-                     {:nuvlaedge-count (count nuvlaedge-ids)})
-        hits       (second resp)]
-    (if group-by-field
-      (for [{:keys [key tsds-stats]} (get-in resp [0 :aggregations :by-field :buckets])]
-        (cond->
-          {:dimensions (assoc dimensions group-by-field key)
-           :ts-data    (ts-data tsds-stats)}
-          (seq hits) (assoc :hits hits)))
-      [(cond->
-         {:dimensions dimensions
-          :ts-data    (ts-data (get-in resp [0 :aggregations :tsds-stats]))}
-         (seq hits) (assoc :hits hits))])))
+(defn ->resp-dimensions
+  [{:keys [mode nuvlaedge-ids]}]
+  (case mode
+    :single-edge-query
+    {:nuvlaedge-id (first nuvlaedge-ids)}
+    :multi-edge-query
+    {:nuvlaedge-count (count nuvlaedge-ids)}))
 
-(defn ->custom-es-aggregations-resp
-  [{:keys [mode nuvlaedge-ids]} resp]
-  (let [ts-data    (fn [tsds-stats]
-                     (map
-                       (fn [{:keys [key_as_string doc_count] :as bucket}]
-                         {:timestamp    key_as_string
-                          :doc-count    doc_count
-                          :aggregations (dissoc bucket :key_as_string :key :doc_count)})
-                       (:buckets tsds-stats)))
-        dimensions (case mode
-                     :single-edge-query
-                     {:nuvlaedge-id (first nuvlaedge-ids)}
-                     :multi-edge-query
-                     {:nuvlaedge-count (count nuvlaedge-ids)})]
-    [(merge {:dimensions dimensions}
-            (into {} (for [agg-key (keys (get-in resp [0 :aggregations]))]
-                       [agg-key (ts-data (get-in resp [0 :aggregations agg-key]))])))]))
-
-(defn ->raw-resp
-  [{:keys [mode nuvlaedge-ids]} resp]
-  (let [dimensions (case mode
-                     :single-edge-query
-                     {:nuvlaedge-id (first nuvlaedge-ids)}
-                     :multi-edge-query
-                     {:nuvlaedge-count (count nuvlaedge-ids)})
-        hits       (second resp)]
-    [{:dimensions dimensions
-      :ts-data    (sort-by :timestamp hits)}]))
-
-(defn ->metrics-resp
-  [{:keys [predefined-aggregations custom-es-aggregations raw] :as options} resp]
-  (cond
-    predefined-aggregations
-    (->predefined-aggregations-resp options resp)
-
-    raw
-    (->raw-resp options resp)
-
-    custom-es-aggregations
-    (->custom-es-aggregations-resp options resp)))
-
-(defn build-aggregations-clause
-  [{:keys [predefined-aggregations raw custom-es-aggregations from to ts-interval aggregations] group-by-field :group-by}]
-  (cond
-    raw
-    {}                                                      ;; send an empty :tsds-aggregation to avoid acl checks. TODO: find a cleaner way
-
-    predefined-aggregations
-    (let [tsds-aggregations {:tsds-stats
-                             {:date_histogram
-                              {:field           "@timestamp"
-                               :fixed_interval  ts-interval
-                               :min_doc_count   0
-                               :extended_bounds {:min (time/to-str from)
-                                                 :max (time/to-str to)}}
-                              :aggregations (or aggregations {})}}]
-
-      (if group-by-field
-        {:aggregations
-         {:by-field
-          {:terms        {:field group-by-field}
-           :aggregations tsds-aggregations}}}
-        {:aggregations tsds-aggregations}))
-
-    custom-es-aggregations
-    {:aggregations custom-es-aggregations}))
-
-(defn build-ts-query [{:keys [last nuvlaedge-ids from to additional-filters orderby] :as options}]
-  (let [nuvlabox-id-filter (str "nuvlaedge-id=[" (str/join " " (map #(str "'" % "'")
-                                                                    nuvlaedge-ids))
-                                "]")
-        time-range-filter  (str "@timestamp>'" (time/to-str from) "'"
-                                " and "
-                                "@timestamp<'" (time/to-str to) "'")
-        aggregation-clause (build-aggregations-clause options)]
-    (cond->
-      {:cimi-params (cond->
-                      {:last (or last 0)
-                       :filter
-                       (parser/parse-cimi-filter
-                         (str "("
-                              (apply str
-                                     (interpose " and "
-                                                (into [nuvlabox-id-filter
-                                                       time-range-filter]
-                                                      additional-filters)))
-                              ")"))}
-                      orderby (assoc :orderby orderby))}
-      aggregation-clause
-      (assoc :params {:tsds-aggregation (json/write-str aggregation-clause)}))))
+(defn build-ts-query [{:keys [nuvlaedge-ids] :as options}]
+  (ts-data-utils/build-ts-query
+    (assoc options :dimensions-filters {"nuvlaedge-id" nuvlaedge-ids})))
 
 (defn build-availability-query [options]
   ;; return up to 10000 availability state updates
@@ -290,7 +177,7 @@
   [options]
   (->> (build-availability-query options)
        (crud/query-as-admin ts-nuvlaedge-availability/resource-type)
-       (->metrics-resp options)))
+       (ts-data-utils/->ts-query-resp (assoc options :->resp-dimensions-fn ->resp-dimensions))))
 
 (defn query-availability-raw
   ([options]
@@ -329,13 +216,13 @@
 (defn build-telemetry-query [{:keys [raw metric] :as options}]
   (build-ts-query (-> options
                       (assoc :additional-filters [(str "metric='" metric "'")])
-                      (cond-> raw (assoc :last max-data-points)))))
+                      (cond-> raw (assoc :last ts-data-utils/max-data-points)))))
 
 (defn query-metrics
   [options]
   (->> (build-telemetry-query options)
        (crud/query-as-admin ts-nuvlaedge-telemetry/resource-type)
-       (->metrics-resp options)))
+       (ts-data-utils/->ts-query-resp (assoc options :->resp-dimensions-fn ->resp-dimensions))))
 
 (defn latest-availability-status
   ([nuvlaedge-id]
@@ -557,13 +444,15 @@
   (let [[_ n unit] (re-matches #"(.*)-(.*)" (name granularity))]
     (try
       (time/duration (Integer/parseInt n) (keyword unit))
-      (catch Exception _
+      (catch Exception e
+        (log/error e)
         (logu/log-and-throw-400 (str "unrecognized value for granularity " granularity))))))
 
 (defn precompute-query-params
-  [{:keys [predefined-aggregations granularity] :as query-opts}]
+  [{:keys [raw query-type granularity] :as query-opts}]
   (cond-> query-opts
-          predefined-aggregations (assoc :granularity-duration (granularity->duration granularity))))
+          (and (not raw) (= ts-data-utils/query-type-standard query-type))
+          (assoc :granularity-duration (granularity->duration granularity))))
 
 (defn available-before?
   [{:keys [first-availability] :as _nuvlabox} timestamp]
@@ -680,8 +569,8 @@
     resp))
 
 (defn compute-nuvlabox-availability
-  [[{:keys [predefined-aggregations granularity-duration nuvlaboxes] :as query-opts} resp]]
-  (if predefined-aggregations
+  [[{:keys [raw query-type granularity-duration nuvlaboxes] :as query-opts} resp]]
+  (if (and (not raw) (= ts-data-utils/query-type-standard query-type))
     (let [nuvlabox     (first nuvlaboxes)
           now          (time/now)
           hits         (->> (get-in resp [0 :hits])
@@ -699,129 +588,76 @@
   [[query-opts resp]]
   [query-opts (update-in resp [0] dissoc :hits)])
 
-(defn throw-custom-aggregations-not-exportable
-  [{:keys [custom-es-aggregations]}]
-  (when custom-es-aggregations
-    (logu/log-and-throw-400 "Custom aggregations cannot be exported to csv format")))
-
-(defn metrics-data->csv [options dimension-keys meta-keys metric-keys data-fn response]
-  (with-open [writer (StringWriter.)]
-    ;; write csv header
-    (csv/write-csv writer [(concat (map name dimension-keys)
-                                   (map name meta-keys)
-                                   (map name metric-keys))])
-    ;; write csv data
-    (let [df (DecimalFormat. "0.####" (DecimalFormatSymbols. Locale/US))]
-      (csv/write-csv writer
-                     (for [{:keys [dimensions ts-data]} response
-                           data-point ts-data]
-                       (concat (map dimensions dimension-keys)
-                               (map data-point meta-keys)
-                               (map (fn [metric-key]
-                                      (let [v (data-fn options data-point metric-key)]
-                                        (if (float? v)
-                                          ;; format floats with 4 decimal and dot separator
-                                          (.format df v)
-                                          v)))
-                                    metric-keys)))))
-    (.toString writer)))
-
-(defn csv-export-fn
-  [dimension-keys-fn meta-keys-fn metric-keys-fn data-fn]
-  (fn [{:keys [resps] :as options}]
-    (throw-custom-aggregations-not-exportable options)
-    (metrics-data->csv
-      options
-      (dimension-keys-fn options)
-      (meta-keys-fn options)
-      (metric-keys-fn options)
-      data-fn
-      (first resps))))
-
 (defn csv-dimension-keys-fn
   []
-  (fn [{:keys [raw predefined-aggregations datasets datasets-opts mode]}]
-    (cond
-      raw
+  (fn [{:keys [raw queries query-specs mode]}]
+    (if raw
       []
-
-      predefined-aggregations
-      (let [{group-by-field :group-by} (get datasets-opts (first datasets))
+      (let [{group-by-field :group-by} (get query-specs (first queries))
             dimension-keys (case mode
                              :single-edge-query
                              []
                              :multi-edge-query
                              [:nuvlaedge-count])]
         (cond-> dimension-keys
-                (and predefined-aggregations group-by-field) (conj group-by-field))))))
+                group-by-field (conj group-by-field))))))
 
 (defn csv-meta-keys-fn
   []
-  (fn [{:keys [mode predefined-aggregations raw]}]
-    (cond
-      raw (case mode
-            :single-edge-query
-            [:timestamp]
-            :multi-edge-query
-            [:timestamp :nuvlaedge-id])
-      predefined-aggregations [:timestamp :doc-count])))
+  (fn [{:keys [mode raw]}]
+    (if raw
+      (case mode
+        :single-edge-query
+        [:timestamp]
+        :multi-edge-query
+        [:timestamp :nuvlaedge-id])
+      [:timestamp :doc-count])))
 
 (defn availability-csv-metric-keys-fn
   []
-  (fn [{:keys [predefined-aggregations raw datasets datasets-opts]}]
-    (let [{:keys [response-aggs]} (get datasets-opts (first datasets))]
-      (cond
-        raw [:online]
-        predefined-aggregations response-aggs))))
+  (fn [{:keys [raw queries query-specs]}]
+    (let [{:keys [response-aggs]} (get query-specs (first queries))]
+      (if raw [:online] response-aggs))))
 
 (defn availability-csv-data-fn
   []
-  (fn [{:keys [predefined-aggregations raw]} {:keys [aggregations] :as data-point} metric-key]
-    (cond
-      raw
+  (fn [{:keys [raw]} {:keys [aggregations] :as data-point} metric-key]
+    (if raw
       (get data-point metric-key)
-
-      predefined-aggregations
       (get-in aggregations [metric-key :value]))))
 
 (defn availability-csv-export-fn
   []
-  (csv-export-fn (csv-dimension-keys-fn)
-                 (csv-meta-keys-fn)
-                 (availability-csv-metric-keys-fn)
-                 (availability-csv-data-fn)))
+  (ts-data-utils/csv-export-fn (csv-dimension-keys-fn)
+                               (csv-meta-keys-fn)
+                               (availability-csv-metric-keys-fn)
+                               (availability-csv-data-fn)))
 
 (defn telemetry-csv-metric-keys-fn
   [metric]
-  (fn [{:keys [predefined-aggregations raw datasets datasets-opts resps]}]
+  (fn [{:keys [raw queries query-specs resps]}]
     (let [{:keys [aggregations response-aggs]}
-          (get datasets-opts (first datasets))]
-      (cond
-        raw
+          (get query-specs (first queries))]
+      (if raw
         (sort (keys (-> resps ffirst :ts-data first (get metric))))
-
-        predefined-aggregations
         (or response-aggs (keys aggregations))))))
 
 (defn telemetry-csv-data-fn
   [metric]
-  (fn [{:keys [predefined-aggregations raw]}
+  (fn [{:keys [raw]}
        {:keys [aggregations] :as data-point} metric-key]
-    (cond
-      raw
+    (if raw
       (get-in data-point [metric metric-key])
-
-      predefined-aggregations
       (get-in aggregations [metric-key :value]))))
 
 (defn telemetry-csv-export-fn
   [metric]
-  (csv-export-fn (csv-dimension-keys-fn)
-                 (csv-meta-keys-fn)
-                 (telemetry-csv-metric-keys-fn metric)
-                 (telemetry-csv-data-fn metric)))
+  (ts-data-utils/csv-export-fn (csv-dimension-keys-fn)
+                               (csv-meta-keys-fn)
+                               (telemetry-csv-metric-keys-fn metric)
+                               (telemetry-csv-data-fn metric)))
 
-(defn single-edge-datasets
+(defn single-edge-queries
   []
   {"availability-stats"      {:metric          "availability"
                               :pre-process-fn  (comp filter-available-before-period-end
@@ -914,8 +750,8 @@
       nb-resps)))
 
 (defn compute-nuvlaboxes-availabilities
-  [[{:keys [predefined-aggregations] :as query-opts} resp]]
-  (if predefined-aggregations
+  [[{:keys [raw query-type] :as query-opts} resp]]
+  (if (and (not raw) (= ts-data-utils/query-type-standard query-type))
     (let [now                   (time/now)
           hits                  (->> (get-in resp [0 :hits])
                                      (map #(update % :timestamp time/parse-date))
@@ -928,11 +764,11 @@
     [query-opts resp]))
 
 (defn compute-global-availability
-  [[{:keys [predefined-aggregations] :as query-opts} resp]]
+  [[{:keys [raw query-type] :as query-opts} resp]]
   [query-opts
    (cond->
      resp
-     predefined-aggregations
+     (and (not raw) (= ts-data-utils/query-type-standard query-type))
      (update-resp-ts-data-point-aggs
        (fn [_ts-data-point {:keys [by-edge] :as aggs}]
          (let [avgs-count  (count (:buckets by-edge))
@@ -948,11 +784,11 @@
                                  nil)})))))])
 
 (defn add-edges-count
-  [[{:keys [predefined-aggregations] :as query-opts} resp]]
+  [[{:keys [raw query-type] :as query-opts} resp]]
   [query-opts
    (cond->
      resp
-     predefined-aggregations
+     (and (not raw) (= ts-data-utils/query-type-standard query-type))
      (update-resp-ts-data-point-aggs
        (fn [_ts-data-point {:keys [by-edge] :as aggs}]
          (assoc aggs :edges-count {:value (count (:buckets by-edge))}))))])
@@ -966,8 +802,8 @@
                  (partial map (partial f ts-data-point))))))
 
 (defn add-edge-names-fn
-  [[{:keys [predefined-aggregations nuvlaboxes] :as query-opts} resp]]
-  (if predefined-aggregations
+  [[{:keys [raw query-type nuvlaboxes] :as query-opts} resp]]
+  (if (and (not raw) (= ts-data-utils/query-type-standard query-type))
     (let [edge-names-by-id (->> nuvlaboxes
                                 (map (fn [{:keys [id name]}]
                                        [id name]))
@@ -980,8 +816,8 @@
     [query-opts resp]))
 
 (defn add-missing-edges-fn
-  [[{:keys [predefined-aggregations granularity-duration nuvlaboxes] :as query-opts} resp]]
-  (if predefined-aggregations
+  [[{:keys [raw query-type granularity-duration nuvlaboxes] :as query-opts} resp]]
+  (if (and (not raw) (= ts-data-utils/query-type-standard query-type))
     (letfn [(update-buckets
               [ts-data-point buckets]
               (let [bucket-edge-ids  (set (map :key buckets))
@@ -1129,8 +965,8 @@
                  (used-memory)))))))
 
 (defn query-and-process-availabilities
-  [{:keys [predefined-aggregations nuvlaboxes] :as options}]
-  (if predefined-aggregations
+  [{:keys [raw query-type nuvlaboxes] :as options}]
+  (if (and (not raw) (= ts-data-utils/query-type-standard query-type))
     (let [ret (query-and-process-availabilities* options)]
       [{:dimensions {:nuvlaedge-count (count nuvlaboxes)}
         :ts-data    (mapv
@@ -1145,18 +981,7 @@
                       ret)}])
     (query-availability options)))
 
-(defn keep-response-aggs-only
-  [{:keys [predefined-aggregations response-aggs] :as _query-opts} resp]
-  (cond->
-    resp
-    predefined-aggregations
-    (update-resp-ts-data-point-aggs
-      (fn [_ts-data-point aggs]
-        (if response-aggs
-          (select-keys aggs response-aggs)
-          aggs)))))
-
-(defn multi-edge-datasets
+(defn multi-edge-queries
   []
   (let [group-by-field     (fn [field aggs]
                              {:terms        {:field field}
@@ -1266,183 +1091,59 @@
                                 :response-aggs  [:sum-energy-consumption]
                                 :csv-export-fn  (telemetry-csv-export-fn :power-consumption)}}))
 
-(defn parse-params
-  [{:keys [uuid dataset from to granularity custom-es-aggregations] :as params}
-   {:keys [accept] :as _request}]
-  (let [datasets                (if (coll? dataset) dataset [dataset])
-        raw                     (= "raw" granularity)
-        predefined-aggregations (not (or raw custom-es-aggregations))
-        custom-es-aggregations  (cond-> custom-es-aggregations
-                                        (string? custom-es-aggregations)
-                                        json/read-str)]
-    (-> params
-        (assoc :mime-type (:mime accept))
-        (assoc :datasets datasets)
-        (assoc :from (time/parse-date from))
-        (assoc :to (time/parse-date to))
-        (cond->
-          uuid (assoc :id (u/resource-id "nuvlabox" uuid))
-          raw (assoc :raw true)
-          predefined-aggregations (assoc :predefined-aggregations true)
-          custom-es-aggregations (assoc :custom-es-aggregations custom-es-aggregations)))))
+(defn assoc-nuvlabox-id
+  [{:keys [uuid] :as params}]
+  (cond-> params
+          uuid (assoc :id (u/resource-id "nuvlabox" uuid))))
 
-(defn throw-response-format-not-supported
-  [{:keys [mime-type] :as params}]
-  (when-not mime-type
-    (logu/log-and-throw-400 406 "Not Acceptable"))
-  params)
+(defn assoc-query-specs
+  [{:keys [mode custom-es-aggregations] :as params} _request]
+  (let [custom-es-aggregations (cond-> custom-es-aggregations
+                                       (string? custom-es-aggregations)
+                                       json/read-str)
+        query-specs            (cond-> (case mode
+                                         :single-edge-query (single-edge-queries)
+                                         :multi-edge-query (multi-edge-queries))
 
-(defn throw-mandatory-dataset-parameter
-  [{:keys [datasets] :as params}]
-  (when-not (seq datasets) (logu/log-and-throw-400 "dataset parameter is mandatory"))
-  params)
+                                       (not custom-es-aggregations)
+                                       (update-vals #(assoc % :query-type ts-data-utils/query-type-standard))
 
-(defn throw-mandatory-from-to-parameters
-  [{:keys [from to] :as params}]
-  (when-not from
-    (logu/log-and-throw-400 (str "from parameter is mandatory, with format iso8601 (uuuu-MM-dd'T'HH:mm:ss[.SSS]Z)")))
-  (when-not to
-    (logu/log-and-throw-400 (str "to parameter is mandatory, with format iso8601 (uuuu-MM-dd'T'HH:mm:ss[.SSS]Z)")))
-  params)
-
-(defn throw-from-not-before-to
-  [{:keys [from to] :as params}]
-  (when-not (time/before? from to)
-    (logu/log-and-throw-400 "from must be before to"))
-  params)
-
-(defn throw-mandatory-granularity-parameter
-  [{:keys [raw granularity custom-es-aggregations] :as params}]
-  (when (and (not raw) (not custom-es-aggregations) (empty? granularity))
-    (logu/log-and-throw-400 "granularity parameter is mandatory"))
-  params)
+                                       custom-es-aggregations
+                                       (update-vals #(-> %
+                                                         (assoc :query-type ts-data-utils/query-type-custom-es-query)
+                                                         (assoc :aggregations custom-es-aggregations))))]
+    (assoc params :query-specs query-specs)))
 
 (defn throw-custom-es-aggregations-checks
-  [{:keys [custom-es-aggregations granularity] :as params}]
+  [{:keys [granularity custom-es-aggregations] :as params}]
   (when custom-es-aggregations
     (when granularity
       (logu/log-and-throw-400 "when custom-es-aggregations is specified, granularity parameter must be omitted")))
   params)
 
-(defn throw-too-many-data-points
-  [{:keys [from to granularity predefined-aggregations] :as params}]
-  (when predefined-aggregations
-    (let [max-n-buckets max-data-points
-          n-buckets     (.dividedBy (time/duration from to)
-                                    (granularity->duration granularity))]
-      (when (> n-buckets max-n-buckets)
-        (logu/log-and-throw-400 "too many data points requested. Please restrict the time interval or increase the time granularity."))))
-  params)
-
-(defn granularity->ts-interval
-  "Converts from a string of the form <n>-<units> to an ElasticSearch interval string"
-  [granularity]
-  (let [[_ n unit] (re-matches #"(.*)-(.*)" (name granularity))]
-    (str n (case unit
-             "seconds" "s"
-             "minutes" "m"
-             "hours" "h"
-             "days" "d"
-             "weeks" "d"
-             "months" "M"
-             (logu/log-and-throw-400 (str "unrecognized value for granularity " granularity))))))
-
-(defn assoc-base-query-opts
-  [{:keys [predefined-aggregations granularity filter] :as params} request]
-  (assoc params
-    :base-query-opts
-    (-> (select-keys params [:id :from :to :granularity
-                             :raw :custom-es-aggregations :predefined-aggregations
-                             :mode :int-atom])
-        (assoc :request request)
-        (cond->
-          filter
-          (assoc :cimi-filter filter)
-          predefined-aggregations
-          (assoc :ts-interval (granularity->ts-interval granularity))))))
-
-(defn assoc-datasets-opts
-  [{:keys [mode] :as params}]
-  (assoc params
-    :datasets-opts
-    (case mode
-      :single-edge-query (single-edge-datasets)
-      :multi-edge-query (multi-edge-datasets))))
-
-(defn throw-unknown-datasets
-  [{:keys [datasets datasets-opts] :as params}]
-  (when-not (every? (set (keys datasets-opts)) datasets)
-    (logu/log-and-throw-400 (str "unknown datasets: "
-                                 (str/join "," (sort (set/difference (set datasets)
-                                                                     (set (keys datasets-opts))))))))
-  params)
-
-(defn throw-csv-multi-dataset
-  [{:keys [datasets mime-type] :as params}]
-  (when (and (= "text/csv" mime-type) (not= 1 (count datasets)))
-    (logu/log-and-throw-400 (str "exactly one dataset must be specified with accept header 'text/csv'")))
-  params)
-
-(defn run-query
-  [base-query-opts datasets-opts dataset-key]
-  (let [{:keys [pre-process-fn query-fn post-process-fn] :as dataset-opts} (get datasets-opts dataset-key)
-        {:keys [predefined-aggregations] :as query-opts} (merge base-query-opts dataset-opts)
-        query-opts (if pre-process-fn (doall (pre-process-fn query-opts)) query-opts)]
-    (cond->> (doall (query-fn query-opts))
-             post-process-fn ((fn [resp] (doall (second (post-process-fn [query-opts resp])))))
-             predefined-aggregations (keep-response-aggs-only query-opts))))
-
-(defn run-queries
-  [{:keys [datasets base-query-opts datasets-opts] :as params}]
-  (assoc params
-    :resps
-    (map (partial run-query base-query-opts datasets-opts) datasets)))
-
-(defn json-data-response
-  [{:keys [datasets resps]}]
-  (r/json-response (zipmap datasets resps)))
-
-(defn csv-response
-  [{:keys [datasets datasets-opts] :as options}]
-  (let [{:keys [csv-export-fn]} (get datasets-opts (first datasets))]
-    (when-not csv-export-fn
-      (logu/log-and-throw-400 (str "csv export not supported for dataset " (first datasets))))
-    (r/csv-response "export.csv" (csv-export-fn options))))
-
-(defn send-data-response
-  [{:keys [mime-type] :as options}]
-  (case mime-type
-    "application/json"
-    (json-data-response options)
-    "text/csv"
-    (csv-response options)))
+(defn assoc-query
+  [{:keys [dataset] :as params}]
+  (cond-> params
+          dataset (assoc :query dataset)))
 
 (defn query-data
   [params request]
   (-> params
-      (parse-params request)
-      (throw-response-format-not-supported)
-      (throw-mandatory-dataset-parameter)
-      (throw-mandatory-from-to-parameters)
-      (throw-from-not-before-to)
-      (throw-mandatory-granularity-parameter)
-      (throw-too-many-data-points)
       (throw-custom-es-aggregations-checks)
-      (assoc-base-query-opts request)
-      (assoc-datasets-opts)
-      (throw-unknown-datasets)
-      (throw-csv-multi-dataset)
-      (run-queries)
-      (send-data-response)))
+      (assoc-nuvlabox-id)
+      (assoc-query)
+      (assoc-query-specs request)
+      (ts-data-utils/query-data request)))
 
 (defn gated-query-data
   "Only allow one call to query-data on availability of multiple edges at a time.
    Allow max 4 additional requests to wait at most 5 seconds to get
    access to computation."
-  [{:keys [mode dataset] :as params} request]
-  (let [datasets (if (coll? dataset) dataset [dataset])]
+  [{:keys [mode query dataset] :as params} request]
+  (let [query   (or query dataset)
+        queries (if (coll? query) query [query])]
     (if (and (= :multi-edge-query mode)
-             (some #{"availability-stats" "availability-by-edge"} datasets))
+             (some #{"availability-stats" "availability-by-edge"} queries))
       (if (> @requesting-query-data 4)
         (logu/log-and-throw 503 "Server too busy")
         ;; retry for up to 5 seconds (or QUERY_DATA_MAX_ATTEMPTS * 100ms)
@@ -1478,9 +1179,5 @@
 
 (defn wrapped-query-data
   [params request]
-  (let [query-data (wrap-accept (partial gated-query-data params)
-                                {:mime ["application/json" :qs 1
-                                        "text/csv" :qs 0.5]})]
+  (let [query-data (ts-data-utils/wrap-query-data-accept (partial gated-query-data params))]
     (query-data request)))
-
-
