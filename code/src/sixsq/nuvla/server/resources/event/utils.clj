@@ -181,39 +181,7 @@
   ([resource-href opts]
    (query-events (assoc opts :resource-href resource-href)))
   ([{:keys [resource-href linked-identifier category state start end orderby last] event-name :name :as opts}]
-   (log/error "query-events:" {:cimi-params
-                               (cond->
-                                 {:filter (parser/parse-cimi-filter
-                                            (str/join " and "
-                                                      (cond-> []
-                                                              resource-href (conj (str "content/resource/href='" resource-href "'"))
-                                                              (and (contains? opts :resource-href) (nil? resource-href)) (conj (str "content/resource/href=null"))
-                                                              event-name (conj (str "name='" event-name "'"))
-                                                              category (conj (str "category='" category "'"))
-                                                              state (conj (str "content/state='" state "'"))
-                                                              linked-identifier (conj (str "content/linked-identifiers='" linked-identifier "'"))
-                                                              start (conj (str "timestamp>='" start "'"))
-                                                              end (conj (str "timestamp<'" end "'")))))}
-                                 orderby (assoc :orderby orderby)
-                                 last (assoc :last last))}
-              (some-> event/resource-type
-                      (crud/query-as-admin
-                        {:cimi-params
-                         (cond->
-                           {:filter (parser/parse-cimi-filter
-                                      (str/join " and "
-                                                (cond-> []
-                                                        resource-href (conj (str "content/resource/href='" resource-href "'"))
-                                                        (and (contains? opts :resource-href) (nil? resource-href)) (conj (str "content/resource/href=null"))
-                                                        event-name (conj (str "name='" event-name "'"))
-                                                        category (conj (str "category='" category "'"))
-                                                        state (conj (str "content/state='" state "'"))
-                                                        linked-identifier (conj (str "content/linked-identifiers='" linked-identifier "'"))
-                                                        start (conj (str "timestamp>='" start "'"))
-                                                        end (conj (str "timestamp<'" end "'")))))}
-                           orderby (assoc :orderby orderby)
-                           last (assoc :last last))}))
-              )
+
    (some-> event/resource-type
            (crud/query-as-admin
              {:cimi-params

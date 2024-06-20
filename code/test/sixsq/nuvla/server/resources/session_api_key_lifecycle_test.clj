@@ -144,7 +144,6 @@
             (ltu/body->edn)
             (ltu/is-status 403))
 
-        (log/error "DEBUG uuid:" uuid)
         (ltu/is-last-event uuid {:name               "session.add"
                                  :description        "Login attempt failed."
                                  :category           "add"

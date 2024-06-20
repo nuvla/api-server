@@ -11,11 +11,8 @@
     (ec/with-context
       (let [response      (handler request)
             resource-type (-> (ec/get-context) :params :resource-name)]
-        (log/error "HERE (config/events-enabled? resource-type):" resource-type (config/events-enabled? resource-type))
         (when (config/events-enabled? resource-type)
           (let [event (eu/build-event (ec/get-context) request response)]
-            (log/error "HERE2 event:" event)
-            (log/error "HERE3 log-event?:" (config/log-event? event response))
             (when (config/log-event? event response)
-              (log/error "(eu/add-event event):" (eu/add-event event)))))
+              (eu/add-event event))))
         response))))
