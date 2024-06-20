@@ -66,17 +66,16 @@
              :json-schema/description "reference to associated resource")))
 
 
-(s/def :resource/content
+(s/def :resource/contentt
   (-> (st/spec map?)
-      (assoc :name "content"
+      (assoc :name "contentt"
              :json-schema/type "map"
              :json-schema/description "arbitrary content of the resource"
-             :json-schema/indexed false)))
+             :json-schema/indexed true)))
 
 
 (s/def ::resource
-  (-> (st/spec (su/only-keys :req-un [::href]
-                             :opt-un [:resource/content]))
+  (-> (st/spec (su/only-keys :req-un [::href]))
       (assoc :name "resource"
              :json-schema/type "map"
              :json-schema/description "link to associated resource")))
