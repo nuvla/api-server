@@ -487,14 +487,14 @@ status, a 'set-cookie' header, and a 'location' header with the created
                                               resolve-user-groups
                                               :user-groups)
           filter-validated "validated=true"
-          filter-emails (if (a/is-admin-request? request)
-                          filter-validated
-                          (some->> (concat root-groups subgroups)
-                                   (mapcat :users)
-                                   distinct
-                                   seq
-                                   (u/filter-eq-vals "parent")
-                                   (str filter-validated " and ")))]
+          filter-emails    (if (a/is-admin-request? request)
+                             filter-validated
+                             (some->> (concat root-groups subgroups)
+                                      (mapcat :users)
+                                      distinct
+                                      seq
+                                      (u/filter-eq-vals "parent")
+                                      (str filter-validated " and ")))]
       (r/json-response
         (if filter-emails
           (->> {:cimi-params {:filter (parser/parse-cimi-filter filter-emails)
@@ -534,27 +534,30 @@ status, a 'set-cookie' header, and a 'location' header with the created
                                            (some-> (eu/get-linked-resource-ids event "user") first)
                                            (some-> (eu/get-linked-resources event "credential") first :id)
                                            (some-> (eu/get-linked-resource-ids event "credential") first))]
-      (str user-name-or-credential " logged in."))
-    "Login attempt failed."))
+      (str user-name-or-credential " logged in"))
+    "Login attempt failed"))
 
 
 (defmethod ec/event-description "session.delete"
   [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
   (if success
     (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
-      (str user-name " logged out."))
-    "Logout attempt failed."))
+      (str user-name " logged out"))
+    "Logout attempt failed"))
 
 
 (defmethod ec/event-description "session.switch-group"
   [{:keys [success] {:keys [user-id]} :authn-info {:keys [linked-identifiers]} :content :as event} & _]
   (if success
     (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
-      (str user-name " switched to group "
-           (or (some-> (eu/get-linked-resources event) first :name)
-               (first linked-identifiers))
-           "."))
-    "Switch group attempt failed."))
+      (let [target-id (or (some-> (eu/get-linked-resources event) first :id)
+                          (first linked-identifiers))]
+        (if (= target-id user-id)
+          (str user-name " switched back to " user-name)
+          (str user-name " switched to group "
+               (or (some-> (eu/get-linked-resources event) first :name)
+                   (first linked-identifiers))))))
+    "Switch group attempt failed"))
 
 
 ;;
