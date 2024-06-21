@@ -147,7 +147,7 @@
             (ltu/is-status 403))
 
         (ltu/is-last-event credential-id {:name               "session.add"
-                                          :description        "Login attempt failed."
+                                          :description        "Login attempt failed"
                                           :category           "add"
                                           :success            false
                                           :linked-identifiers [credential-id]
@@ -164,7 +164,7 @@
                               (ltu/is-status 201))
               id          (ltu/body-resource-id resp)
               _           (ltu/is-last-event id {:name               "session.add"
-                                                 :description        (str (:id valid-api-key) " logged in.")
+                                                 :description        (str (:id valid-api-key) " logged in")
                                                  :category           "add"
                                                  :success            true
                                                  :linked-identifiers [credential-id]

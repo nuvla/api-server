@@ -163,7 +163,7 @@
             credential-id    (:credential-password (auth-password/user-id->user jane-user-id))
             _                (ltu/is-last-event id
                                                 {:name               "session.add"
-                                                 :description        (str username " logged in.")
+                                                 :description        (str username " logged in")
                                                  :category           "add"
                                                  :success            true
                                                  :linked-identifiers [jane-user-id credential-id]
@@ -262,7 +262,7 @@
 
         (ltu/is-last-event id
                            {:name               "session.delete"
-                            :description        (str "user/user logged out.")
+                            :description        (str "user/user logged out")
                             :category           "delete"
                             :success            true
                             :linked-identifiers []
@@ -343,7 +343,7 @@
         credential-id      (:credential-password (auth-password/user-id->user user-id))
         _                  (ltu/is-last-event session-user-id
                                               {:name               "session.add"
-                                               :description        (str username " logged in.")
+                                               :description        (str username " logged in")
                                                :category           "add"
                                                :success            true
                                                :linked-identifiers [user-id credential-id]
@@ -378,12 +378,12 @@
           (ltu/is-status 403)
           (ltu/message-matches #"Switch group cannot be done to requested group:.*"))
       (ltu/is-last-event session-user-id {:name               "session.switch-group"
-                                          :description        "Switch group attempt failed."
+                                          :description        "Switch group attempt failed"
                                           :category           "action"
                                           :success            false
                                           :linked-identifiers [group-b]
                                           :authn-info         event-authn-info
-                                          :acl                {:owners ["group/nuvla-admin" group-b]}}))
+                                          :acl                {:owners ["group/nuvla-admin" group-b user-id]}}))
 
     (testing "User can switch to a group that he is part of."
       (-> session-admin

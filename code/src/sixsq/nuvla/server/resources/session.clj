@@ -304,11 +304,6 @@ status, a 'set-cookie' header, and a 'location' header with the created
         cookies  (delete-cookie response)]
     (merge response cookies)))
 
-(defn set-event-context
-  [{{:keys [claim]} :body :as _request}]
-  (ectx/add-linked-identifier claim)
-  (ectx/add-to-visible-to claim))
-
 
 (defn add-session-filter [{:keys [nuvla/authn] :as request}]
   (->> (or (:session authn) "")
@@ -465,9 +460,11 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 
 (defmethod crud/do-action [resource-type "switch-group"]
-  [{{uuid :uuid} :params :as request}]
+  [{{uuid :uuid} :params {:keys [claim]} :body :as request}]
   (try
-    (set-event-context request)
+    (ectx/add-linked-identifier claim)
+    (ectx/add-to-visible-to (auth/current-user-id request))
+    (ectx/add-to-visible-to claim)
     (-> (str resource-type "/" uuid)
         db/retrieve
         (a/throw-cannot-edit request)
