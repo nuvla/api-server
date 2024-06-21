@@ -170,10 +170,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 (defmethod crud/add-acl resource-type
   [{:keys [id acl] :as resource} _request]
-  (assoc
-    resource
-    :acl
-    (or acl (create-acl id))))
+  (assoc resource :acl (or acl (create-acl id))))
 
 
 (defn dispatch-conversion

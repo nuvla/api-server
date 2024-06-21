@@ -85,12 +85,14 @@
   (let [[secret digest] (key-utils/generate)
         [_ bad-digest] (key-utils/generate)
         uuid                (u/rand-uuid)
-        valid-api-key       {:id      (str "credential/" uuid)
+        credential-id       (str "credential/" uuid)
+        user-id             "user/abcdef01-abcd-abcd-abcd-abcdef012345"
+        valid-api-key       {:id      credential-id
                              :subtype api-key-tpl/credential-subtype
                              :method  api-key-tpl/method
                              :expiry  (time/to-str (time/from-now 1 :hours))
                              :digest  digest
-                             :claims  {:identity "user/abcdef01-abcd-abcd-abcd-abcdef012345"
+                             :claims  {:identity user-id
                                        :roles    ["group/nuvla-user" "group/nuvla-anon"]}}
         mock-retrieve-by-id {(:id valid-api-key) valid-api-key
                              uuid                valid-api-key}]
@@ -144,13 +146,13 @@
             (ltu/body->edn)
             (ltu/is-status 403))
 
-        (ltu/is-last-event uuid {:name               "session.add"
-                                 :description        "Login attempt failed."
-                                 :category           "add"
-                                 :success            false
-                                 :linked-identifiers [(str "credential/" uuid)]
-                                 :authn-info         event-authn-info
-                                 :acl                {:owners ["group/nuvla-admin"]}})
+        (ltu/is-last-event credential-id {:name               "session.add"
+                                          :description        "Login attempt failed."
+                                          :category           "add"
+                                          :success            false
+                                          :linked-identifiers [credential-id]
+                                          :authn-info         event-authn-info
+                                          :acl                {:owners ["group/nuvla-admin" user-id]}})
 
         ;; anonymous create must succeed; also with redirect
         (let [resp        (-> session-anon
@@ -165,9 +167,9 @@
                                                  :description        (str (:id valid-api-key) " logged in.")
                                                  :category           "add"
                                                  :success            true
-                                                 :linked-identifiers [(str "credential/" uuid)]
+                                                 :linked-identifiers [credential-id]
                                                  :authn-info         event-authn-info
-                                                 :acl                {:owners ["group/nuvla-admin" id]}})
+                                                 :acl                {:owners ["group/nuvla-admin" user-id]}})
 
               token       (get-in resp [:response :cookies authn-cookie :value])
               cookie-info (if token (sign/unsign-cookie-info token) {})
