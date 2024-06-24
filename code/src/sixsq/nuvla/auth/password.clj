@@ -7,6 +7,7 @@
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.event-context :as ec]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]))
 
 
@@ -74,6 +75,9 @@
                               :credential-password
                               credential-id->credential
                               :hash)]
+    (ec/add-to-context :visible-to [(:id user)])
+    (ec/add-linked-identifier (:id user))
+    (ec/add-linked-identifier (:credential-password user))
     (when (valid-password? password password-hash)
       user)))
 

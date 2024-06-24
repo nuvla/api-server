@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.server.middleware.eventer
-  (:require [sixsq.nuvla.server.resources.common.event-config :as config]
+  (:require [clojure.tools.logging :as log]
+            [sixsq.nuvla.server.resources.common.event-config :as config]
             [sixsq.nuvla.server.resources.common.event-context :as ec]
             [sixsq.nuvla.server.resources.event.utils :as eu]))
 
