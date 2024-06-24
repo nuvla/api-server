@@ -514,14 +514,17 @@ status, a 'set-cookie' header, and a 'location' header with the created
   true)
 
 
-(defmethod ec/log-event? "session.get-peers"
+(defmethod ec/log-event? "session.add"
   [_event _response]
-  false)
+  true)
 
-
-(defmethod ec/log-event? "session.get-groups"
+(defmethod ec/log-event? "session.delete"
   [_event _response]
-  false)
+  true)
+
+(defmethod ec/log-event? "session.switch-group"
+  [_event _response]
+  true)
 
 
 (defmethod ec/event-description "session.add"

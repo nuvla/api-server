@@ -38,9 +38,8 @@
 
 
 (defmethod log-event? :default
-  [{event-name :name :as _event} {:keys [status] :as _response}]
-  (and (not= 405 status)
-       (some? event-name)))
+  [_ _]
+  false)
 
 
 ;;
