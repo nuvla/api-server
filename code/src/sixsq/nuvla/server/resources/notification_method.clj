@@ -41,7 +41,7 @@ Collection for holding notification method configurations.
   [_event _response]
   true)
 
-(defmethod ec/log-event? (str resource-type "test")
+(defmethod ec/log-event? (str resource-type ".test")
   [_event _response]
   true)
 
