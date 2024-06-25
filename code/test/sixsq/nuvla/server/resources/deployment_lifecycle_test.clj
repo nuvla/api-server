@@ -165,7 +165,7 @@
 
         (ltu/is-last-event deployment-id
                            {:name               "deployment.add"
-                            :description        (str "user/jane added deployment " deployment-id ".")
+                            :description        (str "user/jane added deployment " deployment-id)
                             :category           "add"
                             :success            true
                             :linked-identifiers []
@@ -212,7 +212,7 @@
 
           (ltu/is-last-event deployment-id
                              {:name               "deployment.edit"
-                              :description        (str "user/jane edited deployment " deployment-id ".")
+                              :description        (str "user/jane edited deployment " deployment-id)
                               :category           "edit"
                               :success            true
                               :linked-identifiers []
@@ -230,7 +230,7 @@
                 (ltu/is-status 403))
             (ltu/is-last-event deployment-id
                                {:name               "deployment.edit"
-                                :description        "deployment.edit attempt failed."
+                                :description        "deployment.edit attempt failed"
                                 :category           "edit"
                                 :success            false
                                 :linked-identifiers []
@@ -271,7 +271,7 @@
                   job-url (ltu/href->url job-id)]
               (ltu/is-last-event deployment-id
                                  {:name               "deployment.start"
-                                  :description        "user/jane started deployment."
+                                  :description        "user/jane started deployment"
                                   :category           "action"
                                   :success            true
                                   :linked-identifiers [job-id]
@@ -474,7 +474,7 @@
                             job-url (ltu/href->url job-id)]
                         (ltu/is-last-event deployment-id
                                            {:name               "deployment.stop"
-                                            :description        "user/jane stopped deployment."
+                                            :description        "user/jane stopped deployment"
                                             :category           "action"
                                             :success            true
                                             :linked-identifiers [job-id]
@@ -565,7 +565,7 @@
                                                 (ltu/get-op-url :stop))]
                         (ltu/is-last-event deployment-id
                                            {:name               "deployment.clone"
-                                            :description        "user/jane cloned deployment."
+                                            :description        "user/jane cloned deployment"
                                             :category           "action"
                                             :success            true
                                             :linked-identifiers [cloned-dep-id]
@@ -1067,8 +1067,7 @@
                             :category   "action"
                             :success    true
                             :authn-info authn-info-jane
-                            :acl        {:owners event-owners-jane}})
-        )
+                            :acl        {:owners event-owners-jane}}))
 
       (-> session-user
           (request (str p/service-context module-id)

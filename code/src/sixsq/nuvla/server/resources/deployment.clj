@@ -508,53 +508,67 @@ a container orchestration engine.
   [_resource-type]
   true)
 
-
-(defmethod ec/log-event? "deployment.start"
+(defmethod ec/log-event? (str resource-type ".add")
   [_event _response]
   true)
 
-(defmethod ec/log-event? "deployment.update"
+(defmethod ec/log-event? (str resource-type ".edit")
   [_event _response]
   true)
 
-(defmethod ec/log-event? "deployment.stop"
+(defmethod ec/log-event? (str resource-type ".delete")
   [_event _response]
   true)
 
-(defmethod ec/log-event? "deployment.clone"
+(defmethod ec/log-event? (str resource-type ".start")
   [_event _response]
   true)
 
+(defmethod ec/log-event? (str resource-type ".update")
+  [_event _response]
+  true)
 
-(defmethod ec/event-description "deployment.start"
+(defmethod ec/log-event? (str resource-type ".stop")
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? (str resource-type ".clone")
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? (str resource-type ".force-delete")
+  [_event _response]
+  true)
+
+(defmethod ec/event-description (str resource-type ".start")
   [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
   (if success
     (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
-      (str user-name " started deployment."))
-    "Deployment start attempt failed."))
+      (str user-name " started deployment"))
+    "Deployment start attempt failed"))
 
-(defmethod ec/event-description "deployment.update"
+(defmethod ec/event-description (str resource-type ".update")
   [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
   (if success
     (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
-      (str user-name " updated deployment."))
-    "Deployment update attempt failed."))
+      (str user-name " updated deployment"))
+    "Deployment update attempt failed"))
 
 
-(defmethod ec/event-description "deployment.stop"
+(defmethod ec/event-description (str resource-type ".stop")
   [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
   (if success
     (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
-      (str user-name " stopped deployment."))
-    "Deployment stop attempt failed."))
+      (str user-name " stopped deployment"))
+    "Deployment stop attempt failed"))
 
 
-(defmethod ec/event-description "deployment.clone"
+(defmethod ec/event-description (str resource-type ".clone")
   [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
   (if success
     (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
-      (str user-name " cloned deployment."))
-    "Deployment clone attempt failed."))
+      (str user-name " cloned deployment"))
+    "Deployment clone attempt failed"))
 
 (def resource-metadata (gen-md/generate-metadata ::ns ::deployment-spec/deployment))
 
