@@ -36,13 +36,19 @@ Collection for holding notification method configurations.
   [_resource-type]
   true)
 
-(defmethod ec/log-event? (str resource-type ".add")
-  [_event _response]
-  false)
 
-(defmethod ec/log-event? (str resource-type ".delete")
+(defmethod ec/log-event? (str resource-type ".edit")
   [_event _response]
-  false)
+  true)
+
+(defmethod ec/log-event? (str resource-type ".test")
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? "test.notification"
+  [_event _response]
+  true)
+
 
 ;;
 ;; initialization
