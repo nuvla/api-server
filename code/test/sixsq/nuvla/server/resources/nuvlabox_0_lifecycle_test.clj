@@ -81,6 +81,7 @@
                                    :owners    ["group/nuvla-admin"]
                                    }})
 
+(def admin-group-name "Nuvla Administrator Group")
 
 (deftest check-metadata
   (mdtu/check-metadata-exists nb/resource-type
@@ -93,7 +94,10 @@
                             session
                             (content-type "application/json"))
 
-          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")]
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          authn-info    {:user-id      "user/alpha"
+                         :active-claim "user/alpha"
+                         :claims       ["group/nuvla-anon" "user/alpha" "group/nuvla-user"]}]
 
       (let [nuvlabox-id  (-> session-owner
                              (request base-uri
@@ -103,6 +107,15 @@
                              (ltu/is-status 201)
                              (ltu/location))
             nuvlabox-url (str p/service-context nuvlabox-id)
+
+            _            (ltu/is-last-event nuvlabox-id
+                                            {:name               "nuvlabox.add"
+                                             :description        (str "user/alpha added nuvlabox " nuvlabox-id)
+                                             :category           "add"
+                                             :success            true
+                                             :linked-identifiers []
+                                             :authn-info         authn-info
+                                             :acl                {:owners ["group/nuvla-admin" "user/alpha"]}})
 
             {:keys [id acl owner]} (-> session-owner
                                        (request nuvlabox-url)
@@ -139,10 +152,29 @@
               (ltu/is-key-value :edit-acl :acl (conj (:edit-acl acl) new-owner))
               (ltu/body)))
 
+        (ltu/is-last-event nuvlabox-id
+                           {:name               "nuvlabox.edit"
+                            :description        "user/alpha edited nuvlabox name NB changed"
+                            :category           "edit"
+                            :success            true
+                            :linked-identifiers []
+                            :authn-info         authn-info
+                            :acl                {:owners ["group/nuvla-admin" "user/alpha" "user/beta"]}})
+
         (-> session-owner
             (request nuvlabox-url
                      :request-method :delete)
-            (ltu/is-status 200)))
+            (ltu/is-status 200))
+
+        (ltu/is-last-event nuvlabox-id
+                           {:name               "nuvlabox.delete"
+                            :description        "user/alpha deleted nuvlabox name NB changed"
+                            :category           "delete"
+                            :success            true
+                            :linked-identifiers []
+                            :authn-info         authn-info
+                            :acl                {:owners ["group/nuvla-admin" "user/alpha" "user/beta"]}}))
+
 
       ;; create nuvlabox with inexistent vpn id will fail
       (-> session-owner
@@ -157,15 +189,26 @@
 
 (deftest create-activate-decommission-delete-lifecycle
   (binding [config-nuvla/*stripe-api-key* nil]
-    (let [session       (-> (ltu/ring-app)
-                            session
-                            (content-type "application/json"))
-          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+    (let [session          (-> (ltu/ring-app)
+                               session
+                               (content-type "application/json"))
+          session-admin    (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
-          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
-          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
+          session-owner    (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          session-anon     (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")
+          authn-info-admin {:user-id      "group/nuvla-admin"
+                            :active-claim "group/nuvla-admin"
+                            :claims       ["group/nuvla-admin" "group/nuvla-anon" "group/nuvla-user"]}
+          authn-info-owner {:user-id      "user/alpha"
+                            :active-claim "user/alpha"
+                            :claims       ["group/nuvla-anon" "user/alpha" "group/nuvla-user"]}
+          authn-info-anon  {:user-id      "user/unknown"
+                            :active-claim "user/unknown"
+                            :claims       #{"user/unknown" "group/nuvla-anon"}}]
 
-      (doseq [session [session-admin session-owner]]
+      (doseq [[session authn-info user-name-or-id]
+              [[session-admin authn-info-admin admin-group-name]
+               [session-owner authn-info-owner "user/alpha"]]]
         (let [nuvlabox-id  (-> session
                                (request base-uri
                                         :request-method :post
@@ -174,6 +217,14 @@
                                (ltu/is-status 201)
                                (ltu/location))
               nuvlabox-url (str p/service-context nuvlabox-id)
+              _            (ltu/is-last-event nuvlabox-id
+                                              {:name               "nuvlabox.add"
+                                               :description        (str user-name-or-id " added nuvlabox " nuvlabox-id)
+                                               :category           "add"
+                                               :success            true
+                                               :linked-identifiers []
+                                               :authn-info         authn-info
+                                               :acl                {:owners ["group/nuvla-admin" "user/alpha"]}})
 
               activate-url (-> session
                                (request nuvlabox-url)
@@ -198,6 +249,15 @@
                                         (ltu/body)
                                         :api-key
                                         (ltu/href->url))
+
+                _                   (ltu/is-last-event nuvlabox-id
+                                                       {:name               "nuvlabox.activate"
+                                                        :description        "user/unknown activated nuvlabox"
+                                                        :category           "action"
+                                                        :success            true
+                                                        :linked-identifiers []
+                                                        :authn-info         authn-info-anon
+                                                        :acl                {:owners ["group/nuvla-admin" "user/alpha"]}})
 
                 credential-nuvlabox (-> session-admin
                                         (request credential-url)
@@ -258,11 +318,21 @@
                                      (ltu/is-key-value :state "ACTIVATED")
                                      (ltu/get-op-url :decommission))]
 
-            (-> session
-                (request decommission-url
-                         :request-method :post)
-                (ltu/body->edn)
-                (ltu/is-status 202))
+            (let [job-id (-> session
+                             (request decommission-url
+                                      :request-method :post)
+                             (ltu/body->edn)
+                             (ltu/is-status 202)
+                             (ltu/location))]
+
+              (ltu/is-last-event nuvlabox-id
+                                 {:name               "nuvlabox.decommission"
+                                  :description        (str user-name-or-id " decommissioned nuvlabox")
+                                  :category           "action"
+                                  :success            true
+                                  :linked-identifiers [job-id]
+                                  :authn-info         authn-info
+                                  :acl                {:owners ["group/nuvla-admin"]}}))
 
             ;; verify state of the resource and that ACL has been updated
             (let [{:keys [owner acl]} (-> session
@@ -312,6 +382,15 @@
               (ltu/body->edn)
               (ltu/is-status 200))
 
+          (ltu/is-last-event nuvlabox-id
+                             {:name               "nuvlabox.delete"
+                              :description        (str user-name-or-id " deleted nuvlabox " nuvlabox-id)
+                              :category           "delete"
+                              :success            true
+                              :linked-identifiers []
+                              :authn-info         authn-info
+                              :acl                {:owners ["group/nuvla-admin"]}})
+
           ;; verify that the nuvlabox has been removed
           (-> session
               (request nuvlabox-url)
@@ -321,15 +400,26 @@
 
 (deftest create-activate-commission-decommission-error-delete-lifecycle
   (binding [config-nuvla/*stripe-api-key* nil]
-    (let [session       (-> (ltu/ring-app)
-                            session
-                            (content-type "application/json"))
-          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+    (let [session          (-> (ltu/ring-app)
+                               session
+                               (content-type "application/json"))
+          session-admin    (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
-          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
-          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
+          session-owner    (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          session-anon     (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")
+          authn-info-admin {:user-id      "group/nuvla-admin"
+                            :active-claim "group/nuvla-admin"
+                            :claims       ["group/nuvla-admin" "group/nuvla-anon" "group/nuvla-user"]}
+          authn-info-owner {:user-id      "user/alpha"
+                            :active-claim "user/alpha"
+                            :claims       ["group/nuvla-anon" "user/alpha" "group/nuvla-user"]}
+          authn-info-anon  {:user-id      "user/unknown"
+                            :active-claim "user/unknown"
+                            :claims       #{"user/unknown" "group/nuvla-anon"}}]
 
-      (doseq [session [session-admin session-owner]]
+      (doseq [[session authn-info user-name-or-id]
+              [[session-admin authn-info-admin admin-group-name]
+               [session-owner authn-info-owner "user/alpha"]]]
         (let [nuvlabox-id  (-> session
                                (request base-uri
                                         :request-method :post
@@ -338,6 +428,16 @@
                                (ltu/is-status 201)
                                (ltu/location))
               nuvlabox-url (str p/service-context nuvlabox-id)
+
+              _            (ltu/is-last-event nuvlabox-id
+                                              {:name               "nuvlabox.add"
+                                               :description        (str user-name-or-id " added nuvlabox " nuvlabox-id)
+                                               :category           "add"
+                                               :success            true
+                                               :linked-identifiers []
+                                               :authn-info         authn-info
+                                               :acl                {:owners ["group/nuvla-admin" "user/alpha"]}})
+
 
               activate-url (-> session
                                (request nuvlabox-url)
@@ -361,6 +461,15 @@
               (ltu/body)
               :api-key
               (ltu/href->url))
+
+          (ltu/is-last-event nuvlabox-id
+                             {:name               "nuvlabox.activate"
+                              :description        "user/unknown activated nuvlabox"
+                              :category           "action"
+                              :success            true
+                              :linked-identifiers []
+                              :authn-info         authn-info-anon
+                              :acl                {:owners ["group/nuvla-admin" "user/alpha"]}})
 
           (let [{isg-id :id} (-> session-admin
                                  (content-type "application/x-www-form-urlencoded")
@@ -400,6 +509,15 @@
                                                 :minio-endpoint      "https://minio.example.com"}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
+
+            (ltu/is-last-event nuvlabox-id
+                               {:name               "nuvlabox.commission"
+                                :description        (str user-name-or-id " commissioned nuvlabox")
+                                :category           "action"
+                                :success            true
+                                :linked-identifiers []
+                                :authn-info         authn-info
+                                :acl                {:owners ["group/nuvla-admin" "user/alpha"]}})
 
             ;; verify state of the resource
             (-> session
@@ -556,7 +674,33 @@
                                        (ltu/body->edn)
                                        (ltu/is-status 201)
                                        (ltu/body)
-                                       :resource-id)]
+                                       :resource-id)
+                  action           (fn [action-url action-id method body event-description]
+                                     (let [job-id (-> (case method
+                                                        :get
+                                                        (request session action-url)
+                                                        :post
+                                                        (request session
+                                                                 action-url
+                                                                 :request-method :post
+                                                                 :body (json/write-str body))
+                                                        nil)
+                                                      (ltu/body->edn)
+                                                      (ltu/is-status 202)
+                                                      (ltu/location))]
+
+                                       (ltu/is-last-event nuvlabox-id
+                                                          {:name               (str "nuvlabox." action-id)
+                                                           :description        (str user-name-or-id " " event-description)
+                                                           :category           "action"
+                                                           :success            true
+                                                           :linked-identifiers [job-id]
+                                                           :authn-info         authn-info
+                                                           :acl                {:owners ["group/nuvla-admin" "user/alpha"]}})))
+                  action-get       (fn [action-url action-id event-description]
+                                     (action action-url action-id :get nil event-description))
+                  action-post      (fn [action-url action-id body event-description]
+                                     (action action-url action-id :post body event-description))]
 
               ;; check-api action
               (-> session
@@ -565,32 +709,18 @@
                   (ltu/is-status 202))
 
               ;; reboot action
-              (-> session
-                  (request reboot)
-                  (ltu/body->edn)
-                  (ltu/is-status 202))
+              (action-get reboot "reboot" "rebooted nuvlabox")
 
               ;; add-ssh-key action
-              (-> session
-                  (request add-ssh-key)
-                  (ltu/body->edn)
-                  (ltu/is-status 202))
+              (action-get add-ssh-key "add-ssh-key" "added ssh key to nuvlabox")
 
               ;; revoke-ssh-key action
-              (-> session
-                  (request revoke-ssh-key
-                           :request-method :post
-                           :body (json/write-str {:credential aux-ssh-cred}))
-                  (ltu/body->edn)
-                  (ltu/is-status 202))
+              (action-post revoke-ssh-key "revoke-ssh-key"
+                           {:credential aux-ssh-cred} "revoked ssh key from nuvlabox")
 
               ;; update-nuvlabox-action
-              (-> session
-                  (request update-nuvlabox
-                           :request-method :post
-                           :body (json/write-str {:nuvlabox-release nuvlabox-release}))
-                  (ltu/body->edn)
-                  (ltu/is-status 202)))
+              (action-post update-nuvlabox "update-nuvlabox"
+                           {:nuvlabox-release nuvlabox-release} "updated nuvlabox"))
 
             ;; second commissioning of the resource (with swarm credentials)
             (-> session

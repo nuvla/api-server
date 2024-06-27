@@ -77,4 +77,3 @@
         event-name                                          ;; FIXME: improve description in this case
         event-name))
     (str event-name " attempt failed")))
-
