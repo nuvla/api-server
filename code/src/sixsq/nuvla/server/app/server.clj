@@ -121,6 +121,23 @@
 
 
 (comment
+  ;; start the server
   (do
     (require '[sixsq.nuvla.server.ring :as ring])
-    (ring/start 'sixsq.nuvla.server.app.server/init)))
+    (defonce server-stop-fn (atom nil))
+    (if @server-stop-fn
+      (println "Server already started")
+      (do
+        (print "Starting the server..")
+        (let [stop-fn (ring/start 'sixsq.nuvla.server.app.server/init)]
+          (reset! server-stop-fn stop-fn)
+          (println "..started")))))
+
+  ;; stop the server
+  (if-let [stop @server-stop-fn]
+    (do
+      (print "Stopping the server..")
+      (stop)
+      (reset! server-stop-fn nil)
+      (println "stopped"))
+    (println "Server not started")))
