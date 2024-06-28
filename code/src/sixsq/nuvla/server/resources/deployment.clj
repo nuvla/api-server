@@ -376,7 +376,9 @@ a container orchestration engine.
                       (a/throw-cannot-manage request)
                       (utils/throw-can-not-do-action-invalid-state
                         utils/can-update? "update_deployment")
-                      (utils/throw-when-payment-required request))
+                      (utils/throw-when-payment-required request)
+                      (utils/throw-can-not-access-registries-creds request)
+                      (utils/throw-can-not-access-helm-repo-cred request))
           new     (-> current
                       (assoc :state "UPDATING")
                       (edit-deployment request))]

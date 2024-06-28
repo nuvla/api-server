@@ -115,6 +115,12 @@ component, or application.
       (throw (r/ex-response "Registries credentials can't be resolved!" 403))
       request)))
 
+(defn throw-can-not-access-helm-repo-cred
+  [{{{:keys [helm-repo-cred]} :content} :body :as request}]
+  (if helm-repo-cred
+    (crud/retrieve-by-id helm-repo-cred request)
+    request))
+
 (defn throw-application-requires-compatibility
   [{{:keys [compatibility] :as resource} :body :as request}]
   (if (and (utils/is-application? resource)
@@ -205,7 +211,8 @@ component, or application.
   [request]
   (-> request
       throw-cannot-access-private-registries
-      throw-cannot-access-registries-credentials))
+      throw-cannot-access-registries-credentials
+      throw-can-not-access-helm-repo-cred))
 
 (defn throw-compatibility-required-for-application
   [{{:keys [compatibility] :as resource} :body :as request}]
