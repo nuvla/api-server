@@ -210,24 +210,11 @@
       resource)))
 
 
-(defn throw-can-not-access-helm-repo-creds
-  [{:keys [id helm-repo-creds] :as resource} request]
-  (let [preselected-creds   (-> resource
-                                (get-in [:module :content :helm-repo-creds] [])
-                                set)
-        creds-to-be-checked (set/difference (set helm-repo-creds) preselected-creds)]
-    (if (seq creds-to-be-checked)
-      (let [filter-cred (str "subtype='" cred-helm-repo/credential-subtype "' and "
-                             (u/filter-eq-vals "id" creds-to-be-checked))
-            {:keys [body]} (crud/query {:params      {:resource-name credential/resource-type}
-                                        :cimi-params {:filter (parser/parse-cimi-filter filter-cred)
-                                                      :last   0}
-                                        :nuvla/authn (:nuvla/authn request)})]
-        (if (< (get body :count 0)
-               (count creds-to-be-checked))
-          (throw (r/ex-response (format "some helm repo credentials for %s can't be accessed" id)
-                                403 id))
-          resource))
+(defn throw-can-not-access-helm-repo-cred
+  [resource request]
+  (let [cred (get-in resource [:module :content :helm-repo-cred])]
+    (if cred
+      (crud/retrieve-by-id cred request)
       resource)))
 
 
@@ -260,8 +247,11 @@
                                     (map crud/retrieve-by-id-as-admin)))
         registries-infra (when full
                            (map (comp crud/retrieve-by-id-as-admin :parent) registries-creds))
-        helm-repo-cred   (some-> deployment :module :content :helm-repo-creds
-                                 crud/retrieve-by-id-as-admin)]
+        module-content (some-> deployment :module :content)
+        helm-repo-cred   (some-> module-content :helm-repo-cred
+                                 crud/retrieve-by-id-as-admin)
+        helm-repo-url (some-> module-content :helm-repo-url
+                              crud/retrieve-by-id-as-admin)]
     (job-interface/get-context->response
       deployment
       credential
@@ -270,7 +260,8 @@
       nuvlaedge-status
       registries-creds
       registries-infra
-      helm-repo-cred)))
+      helm-repo-cred
+      helm-repo-url)))
 
 (defn on-cancel
   [{:keys [target-resource] :as _job}]

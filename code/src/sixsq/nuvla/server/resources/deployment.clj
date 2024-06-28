@@ -294,7 +294,7 @@ a container orchestration engine.
                              (utils/throw-can-not-do-action-invalid-state utils/can-start? "start")
                              (utils/throw-when-payment-required request)
                              (utils/throw-can-not-access-registries-creds request)
-                             (utils/throw-can-not-access-helm-repo-creds request))
+                             (utils/throw-can-not-access-helm-repo-cred request))
           stopped?       (= (:state deployment) "STOPPED")
           user-rights?   (get-in deployment [:module :content :requires-user-rights])
           data?          (some? (:data deployment))

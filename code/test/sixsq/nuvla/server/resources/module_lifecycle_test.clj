@@ -651,7 +651,7 @@
   (let [valid-application {:author          "someone",
                            :commit          "wip",
                            :helm-chart-name "hello-world",
-                           :helm-repo-url   "https://helm.github.com/examples",
+                           :helm-repo-url   "infrastructure-service/uuid",
                            :urls            [["hello-world" "https://${hostname}:${Service.hello-world.tcp.80}/"]]}]
     (lifecycle-test-module module-spec/subtype-app-helm valid-application)))
 
