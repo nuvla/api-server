@@ -246,11 +246,18 @@
                   (ltu/is-operation-absent :get-context))
 
 
-              (-> session-admin
-                  (request job-url)
-                  (ltu/body->edn)
-                  (ltu/is-status 200)
-                  (ltu/is-operation-present :get-context))))
+              (testing "start job get-context action can be called by admin"
+                (let [job-get-context-op (-> session-admin
+                                             (request job-url)
+                                             (ltu/body->edn)
+                                             (ltu/is-status 200)
+                                             (ltu/is-operation-present :get-context)
+                                             (ltu/get-op-url :get-context))]
+                  (-> session-admin
+                      (request job-get-context-op)
+                      (ltu/body->edn)
+                      (ltu/is-status 200)
+                      (ltu/is-key-value map? (keyword deployment-id) true))))))
 
           (let [deployment     (-> session-user
                                    (request deployment-url
