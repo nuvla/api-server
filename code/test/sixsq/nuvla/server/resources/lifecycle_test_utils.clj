@@ -19,6 +19,7 @@
     [sixsq.nuvla.db.es.binding :as esb]
     [sixsq.nuvla.db.es.common.utils :as escu]
     [sixsq.nuvla.db.es.utils :as esu]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.app.routes :as routes]
@@ -28,7 +29,9 @@
     [sixsq.nuvla.server.middleware.eventer :refer [wrap-eventer]]
     [sixsq.nuvla.server.middleware.exception-handler :refer [wrap-exceptions]]
     [sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
+    [sixsq.nuvla.server.resources.event :as event]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.util.kafka :as ka]
     [sixsq.nuvla.server.util.zookeeper :as uzk]
@@ -605,17 +608,40 @@
      (when (some? (:acl ~expected-event))
        (is-acl (:acl ~expected-event) (:acl ~actual-event)))))
 
+(defn query-events
+  ([resource-href opts]
+   (query-events (assoc opts :resource-href resource-href)))
+  ([{:keys [resource-href linked-identifier category state start end orderby last] event-name :name :as opts}]
+   (refresh-es-indices)
+   (some-> event/resource-type
+           (crud/query-as-admin
+             {:cimi-params
+              (cond->
+                {:filter (parser/parse-cimi-filter
+                           (str/join " and "
+                                     (cond-> []
+                                             resource-href (conj (str "content/resource/href='" resource-href "'"))
+                                             (and (contains? opts :resource-href) (nil? resource-href)) (conj (str "content/resource/href=null"))
+                                             event-name (conj (str "name='" event-name "'"))
+                                             category (conj (str "category='" category "'"))
+                                             state (conj (str "content/state='" state "'"))
+                                             linked-identifier (conj (str "content/linked-identifiers='" linked-identifier "'"))
+                                             start (conj (str "timestamp>='" start "'"))
+                                             end (conj (str "timestamp<'" end "'")))))}
+                orderby (assoc :orderby orderby)
+                last (assoc :last last))})
+           second)))
 
 (defmacro is-last-event
   [resource-id expected-event]
-  `(let [event# (last (event-utils/query-events ~resource-id {:orderby [["timestamp" :desc]] :last 1}))]
+  `(let [event# (last (query-events ~resource-id {:orderby [["timestamp" :desc]] :last 1}))]
      (is-event ~expected-event event#)))
 
 
 (defmacro are-last-events
   [resource-id expected-events]
-  `(let [events# (take (count ~expected-events) (event-utils/query-events ~resource-id {:orderby [["timestamp" :desc]]
-                                                                                        :last    (count ~expected-events)}))]
+  `(let [events# (take (count ~expected-events) (query-events ~resource-id {:orderby [["timestamp" :desc]]
+                                                                            :last    (count ~expected-events)}))]
      (is (= (count ~expected-events) (count events#)))
      (doall (map (fn [expected-event# actual-event#]
                    (is-event expected-event# actual-event#))

@@ -13,7 +13,8 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.deployment.utils :as utils]
-    [sixsq.nuvla.server.resources.event.utils :as event-utils]
+    [sixsq.nuvla.server.resources.common.event-config :as ec]
+    [sixsq.nuvla.server.resources.common.event-context :as ectx]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.job.utils :as job-utils]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
@@ -163,24 +164,16 @@ a container orchestration engine.
 (defn create-deployment
   [{:keys [parent] :as deployment} {:keys [base-uri] :as request}]
   (some-> parent (crud/get-resource-throw-nok request))
-  (let [authn-info      (auth/current-authentication request)
+  (let [
         ;; FIXME: Correct the value passed to the python API.
-        deployment      (-> deployment
-                            (assoc :resource-type resource-type
-                                   :state "CREATED"
-                                   :api-endpoint (str/replace-first base-uri #"/api/" "")
-                                   :owner (auth/current-active-claim request))
-                            (utils/throw-when-payment-required request)
-                            (pre-validate-hook (dissoc request :body)))
-        create-response (add-impl (assoc request :body deployment))
-
-        deployment-id   (get-in create-response [:body :resource-id])
-
-        msg             (get-in create-response [:body :message])]
-
-    (event-utils/create-event deployment-id msg (a/default-acl authn-info))
-
-    create-response))
+        body (-> deployment
+                 (assoc :resource-type resource-type
+                        :state "CREATED"
+                        :api-endpoint (str/replace-first base-uri #"/api/" "")
+                        :owner (auth/current-active-claim request))
+                 (utils/throw-when-payment-required request)
+                 (pre-validate-hook (dissoc request :body)))]
+    (add-impl (assoc request :body body))))
 
 (defmethod crud/add resource-type
   [{{:keys [parent execution-mode deployment-set app-set]} :body :as request}]
@@ -222,6 +215,8 @@ a container orchestration engine.
                              (cond-> (not force-delete)
                                      (utils/throw-can-not-do-action-invalid-state
                                        utils/can-delete? "delete")))]
+       (ectx/add-to-context :acl (:acl deployment))
+       (ectx/add-to-context :resource deployment)
        (utils/delete-all-child-resources deployment-id)
        (db/delete deployment))
      (catch Exception e
@@ -357,9 +352,11 @@ a container orchestration engine.
   [request]
   (try
     (a/throw-cannot-add collection-acl request)
-    (-> (crud/get-resource-throw-nok request)
-        (select-keys [:module :data :name :description :tags])
-        (create-deployment request))
+    (let [response (-> (crud/get-resource-throw-nok request)
+                       (select-keys [:module :data :name :description :tags])
+                       (create-deployment request))]
+      (ectx/add-linked-identifier (get-in response [:body :resource-id]))
+      response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -502,6 +499,76 @@ a container orchestration engine.
                               :resource-name resource-type}
                 :body        (assoc-in deployment [:module :href] module-href)
                 :nuvla/authn (auth/current-authentication request)})))
+
+;;
+;; Events
+;;
+
+(defmethod ec/events-enabled? resource-type
+  [_resource-type]
+  true)
+
+(defmethod ec/log-event? (str resource-type ".add")
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? (str resource-type ".edit")
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? (str resource-type ".delete")
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? (str resource-type ".start")
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? (str resource-type ".update")
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? (str resource-type ".stop")
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? (str resource-type ".clone")
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? (str resource-type ".force-delete")
+  [_event _response]
+  true)
+
+(defmethod ec/event-description (str resource-type ".start")
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " started deployment"))
+    "Deployment start attempt failed"))
+
+(defmethod ec/event-description (str resource-type ".update")
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " updated deployment"))
+    "Deployment update attempt failed"))
+
+
+(defmethod ec/event-description (str resource-type ".stop")
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " stopped deployment"))
+    "Deployment stop attempt failed"))
+
+
+(defmethod ec/event-description (str resource-type ".clone")
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " cloned deployment"))
+    "Deployment clone attempt failed"))
 
 (def resource-metadata (gen-md/generate-metadata ::ns ::deployment-spec/deployment))
 

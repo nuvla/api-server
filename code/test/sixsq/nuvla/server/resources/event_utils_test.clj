@@ -34,7 +34,7 @@
         (let [event (t/build-event context request {:status 201 :body {:resource-id id}})]
           (is (= {:name          "resource.add"
                   :category      "add"
-                  :description   (str "An anonymous user added resource " id ".")
+                  :description   (str "An anonymous user added resource " id)
                   :content       {:resource           {:href id}
                                   :linked-identifiers []}
                   :authn-info    {}
@@ -51,7 +51,7 @@
               event   (t/build-event context request {:status 201 :body {:resource-id id}})]
           (is (= {:name          "resource.add"
                   :category      "add"
-                  :description   (str "An anonymous user added resource " (-> context :resource :name) ".")
+                  :description   (str "An anonymous user added resource " (-> context :resource :name))
                   :content       {:resource           {:href    id
                                                        :content (:resource context)}
                                   :linked-identifiers []}
@@ -66,7 +66,7 @@
         (let [event (t/build-event context request {:status 400})]
           (is (= {:name          "resource.add"
                   :category      "add"
-                  :description   "resource.add attempt failed."
+                  :description   "resource.add attempt failed"
                   :content       {:resource           {:href nil}
                                   :linked-identifiers []}
                   :authn-info    {}

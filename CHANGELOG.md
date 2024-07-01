@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Audit log
+
 ## Released
 
 ## [6.7.0] - 2024-06-17
