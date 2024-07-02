@@ -370,13 +370,19 @@
 (def is-not-in-state? (complement is-state?))
 
 
-(defn throw-can-not-do-action
-  [{:keys [id] :as resource} pred action]
+(defn throw-can-not-do
+  [{:keys [id] :as resource} pred error-msg]
   (if (pred resource)
     resource
-    (throw (r/ex-response
-             (format "operation '%s' not allowed on %s" action id)
-             409 id))))
+    (throw (r/ex-response error-msg 409 id))))
+
+(defn throw-can-not-do-action
+  [{:keys [id] :as resource} pred action]
+  (throw-can-not-do resource pred (format "operation '%s' not allowed on %s" action id)))
+
+(defn throw-can-not-do-action-invalid-state
+  [{:keys [id state] :as resource} pred action]
+  (throw-can-not-do resource pred (format "invalid state (%s) for %s on %s" state action id)))
 
 (defn filter-eq-vals
   [attribute vals]

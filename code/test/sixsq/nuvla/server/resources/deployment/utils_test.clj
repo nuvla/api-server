@@ -112,3 +112,6 @@
       [m-a m-b] {:arg1 [m-a m-b] :arg2 [{:name "a" :description "a-d"} m-b]}
       [(assoc m-a :description "a-d-changed") m-b] {:arg1 [m-a m-b] :arg2 [{:name "a" :description "a-d-changed"} m-b]}
       [m-a m-b] {:arg1 [m-a m-b] :arg2 [m-a (assoc m-b :value "any")]})))
+
+(deftest throw-can-not-access-helm-repo-cred
+  (is (= (t/throw-can-not-access-helm-repo-cred {} {}) {})))

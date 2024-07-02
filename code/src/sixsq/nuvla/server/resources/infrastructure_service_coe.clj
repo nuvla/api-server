@@ -24,13 +24,6 @@ manage it.
 ;; Utils
 ;;
 
-(defn throw-can-not-do-action
-  [{:keys [id state] :as resource} pred action]
-  (if (pred resource)
-    resource
-    (throw (r/ex-response (format "invalid state (%s) for %s on %s" state action id) 409 id))))
-
-
 (defn can-start?
   [{:keys [state] :as _resource}]
   (#{"STOPPED"} state))
@@ -190,7 +183,7 @@ manage it.
 ;; Delete resource itself only if it's TERMINATED.
 (defmethod infra-service/delete "coe"
   [resource request]
-  (throw-can-not-do-action resource can-delete? "delete")
+  (u/throw-can-not-do-action-invalid-state resource can-delete? "delete")
   (infra-service/delete-impl request))
 
 
@@ -199,7 +192,7 @@ manage it.
   [resource request]
   (try
     (-> resource
-        (throw-can-not-do-action can-stop? "stop")
+        (u/throw-can-not-do-action-invalid-state can-stop? "stop")
         (create-job request "stop_infrastructure_service_coe" "STOPPING"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -210,7 +203,7 @@ manage it.
   [resource request]
   (try
     (-> resource
-        (throw-can-not-do-action can-start? "start")
+        (u/throw-can-not-do-action-invalid-state can-start? "start")
         (create-job request "start_infrastructure_service_coe" "STARTING"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -221,7 +214,7 @@ manage it.
   [resource request]
   (try
     (-> resource
-        (throw-can-not-do-action can-terminate? "terminate")
+        (u/throw-can-not-do-action-invalid-state can-terminate? "terminate")
         (create-job request "terminate_infrastructure_service_coe" "TERMINATING"))
     (catch Exception e
       (or (ex-data e) (throw e)))))

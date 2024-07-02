@@ -34,7 +34,7 @@
 
 (def valid-entry-helm-repo
   (assoc invalid-entry-no-mandatory
-    :helm-repo-url "https://helm.github.io/examples"
+    :helm-repo-url "infrastructure-service/uuid-helm-repo"
     :helm-chart-name "hello-world"))
 
 
@@ -45,7 +45,7 @@
 
 (def invalid-entry-chart-url-and-repo
   (assoc invalid-entry-no-mandatory
-    :helm-repo-url "https://helm.github.io/examples"
+    :helm-repo-url "infrastructure-service/uuid-helm-repo"
     :helm-absolute-url "https://helm.github.io/examples/hello-world-0.1.0.tgz"))
 
 

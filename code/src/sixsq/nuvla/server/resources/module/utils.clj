@@ -10,6 +10,8 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.credential.utils :as cred-utils]
+    [sixsq.nuvla.server.resources.infrastructure-service.utils :as infra-service-utils]
     [sixsq.nuvla.server.resources.spec.module :as module-spec]
     [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.log :as logu]
@@ -333,3 +335,44 @@
   (->> versions
        (map-indexed vector)
        (some (fn [[idx elm]] (when (= (:href elm) id) idx)))))
+
+(defn throw-cannot-access-private-registries
+  [private-registries request]
+  (if (infra-service-utils/missing-registries? private-registries request)
+    (throw (r/ex-response "Private registries can't be resolved!" 403))
+    request))
+
+(defn throw-cannot-access-private-registries-for-request
+  [{{{:keys [private-registries]} :content} :body :as request}]
+  (throw-cannot-access-private-registries private-registries request))
+
+(defn throw-cannot-access-registries-credentials
+  [registries-credentials request]
+  (let [creds (remove str/blank? registries-credentials)]
+    (if (cred-utils/missing-registries-creds? creds request)
+      (throw (r/ex-response "Registries credentials can't be resolved!" 403))
+      request)))
+
+(defn throw-cannot-access-registries-credentials-for-request
+  [{{{:keys [registries-credentials]} :content} :body :as request}]
+  (throw-cannot-access-registries-credentials registries-credentials request))
+
+(defn throw-can-not-access-helm-repo-url
+  [helm-repo-url request]
+  (if (some-> helm-repo-url (infra-service-utils/missing-helm-repo-url? request))
+    (throw (r/ex-response "Helm repo can't be resolved!" 403))
+    request))
+
+(defn throw-can-not-access-helm-repo-url-for-request
+  [{{{:keys [helm-repo-url]} :content} :body :as request}]
+  (throw-can-not-access-helm-repo-url helm-repo-url request))
+
+(defn throw-can-not-access-helm-repo-cred
+  [helm-repo-cred request]
+  (if (some-> helm-repo-cred (cred-utils/missing-helm-repo-cred? request))
+    (throw (r/ex-response "Helm repo cred can't be resolved!" 403))
+    request))
+
+(defn throw-can-not-access-helm-repo-cred-for-request
+  [{{{:keys [helm-repo-cred]} :content} :body :as request}]
+  (throw-can-not-access-helm-repo-cred helm-repo-cred request))
