@@ -586,6 +586,7 @@
               midnight-today     (time/truncated-to-days now)
               midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
               metrics-request    (fn [{:keys [datasets from from-str to to-str granularity custom-es-aggregations accept-header] #_:or #_{accept-header "application/json"}}]
+                                   (ltu/refresh-es-indices)
                                    (-> session-nb
                                        (content-type "application/x-www-form-urlencoded")
                                        (cond-> accept-header (header "accept" accept-header))
