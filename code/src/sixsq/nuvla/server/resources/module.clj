@@ -15,8 +15,6 @@ component, or application.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.resources.credential.utils :as cred-utils]
-    [sixsq.nuvla.server.resources.infrastructure-service.utils :as infra-service-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.module-application :as module-application]
     [sixsq.nuvla.server.resources.module-application-helm :as module-application-helm]
@@ -100,25 +98,6 @@ component, or application.
   [{{:keys [content] :as resource} :body :as request}]
   (if (and (utils/is-project? resource) content)
     (throw (r/ex-response "Project should not have content attribute!" 400))
-    request))
-
-(defn throw-cannot-access-private-registries
-  [{{{:keys [private-registries]} :content} :body :as request}]
-  (if (infra-service-utils/all-registries-exist private-registries request)
-    (throw (r/ex-response "Private registries can't be resolved!" 403))
-    request))
-
-(defn throw-cannot-access-registries-credentials
-  [{{{:keys [registries-credentials]} :content} :body :as request}]
-  (let [creds (remove str/blank? registries-credentials)]
-    (if (cred-utils/all-registry-creds-exist creds request)
-      (throw (r/ex-response "Registries credentials can't be resolved!" 403))
-      request)))
-
-(defn throw-can-not-access-helm-repo-cred
-  [{{{:keys [helm-repo-cred]} :content} :body :as request}]
-  (if helm-repo-cred
-    (crud/retrieve-by-id helm-repo-cred request)
     request))
 
 (defn throw-application-requires-compatibility
@@ -210,16 +189,10 @@ component, or application.
 (defn throw-cannot-access-registries-or-creds
   [request]
   (-> request
-      throw-cannot-access-private-registries
-      throw-cannot-access-registries-credentials
-      throw-can-not-access-helm-repo-cred))
-
-(defn throw-compatibility-required-for-application
-  [{{:keys [compatibility] :as resource} :body :as request}]
-  (if (and (utils/is-application? resource)
-           (nil? compatibility))
-    (throw (r/ex-response "Application subtype should have compatibility attribute set!" 400))
-    request))
+      utils/throw-cannot-access-private-registries-for-request
+      utils/throw-cannot-access-registries-credentials-for-request
+      utils/throw-can-not-access-helm-repo-url-for-request
+      utils/throw-can-not-access-helm-repo-cred-for-request))
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 

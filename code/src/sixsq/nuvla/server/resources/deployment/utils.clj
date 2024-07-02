@@ -6,7 +6,6 @@
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.pricing.payment :as payment]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -17,10 +16,9 @@
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
+    [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nuvlabox-utils]
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-registry :as cred-docker-registry]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-helm-repo :as cred-helm-repo]
     [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -175,47 +173,27 @@
                                         (a/acl-append :manage nuvlabox)))]
     (resource-log/create-log id components acl opts)))
 
-
-(defn throw-can-not-do-action-invalid-state
-  [{:keys [id state] :as resource} pred action]
-  (if (pred resource)
-    resource
-    (throw (r/ex-response (format "invalid state (%s) for %s on %s" state action id) 409 id))))
-
-(defn throw-can-not-do-action
-  [{:keys [id] :as resource} pred action]
-  (if (pred resource)
-    resource
-    (throw (r/ex-response (format "cannot do action %s on %s" action id) 409 id))))
-
-
 (defn throw-can-not-access-registries-creds
-  [{:keys [id registries-credentials] :as resource} request]
+  [{:keys [registries-credentials] :as resource} request]
   (let [preselected-creds   (-> resource
                                 (get-in [:module :content :registries-credentials] [])
                                 set)
         creds-to-be-checked (set/difference (set registries-credentials) preselected-creds)]
-    (if (seq creds-to-be-checked)
-      (let [filter-cred (str "subtype='" cred-docker-registry/credential-subtype "' and "
-                             (u/filter-eq-vals "id" creds-to-be-checked))
-            {:keys [body]} (crud/query {:params      {:resource-name credential/resource-type}
-                                        :cimi-params {:filter (parser/parse-cimi-filter filter-cred)
-                                                      :last   0}
-                                        :nuvla/authn (:nuvla/authn request)})]
-        (if (< (get body :count 0)
-               (count creds-to-be-checked))
-          (throw (r/ex-response (format "some registries credentials for %s can't be accessed" id)
-                                403 id))
-          resource))
-      resource)))
+    (module-utils/throw-cannot-access-registries-credentials creds-to-be-checked request)
+    resource))
 
+
+(defn throw-can-not-access-helm-repo-url
+  [resource request]
+  (let [helm-repo-url (get-in resource [:module :content :helm-repo-url])]
+    (module-utils/throw-can-not-access-helm-repo-url helm-repo-url request)
+    resource))
 
 (defn throw-can-not-access-helm-repo-cred
   [resource request]
   (let [cred (get-in resource [:module :content :helm-repo-cred])]
-    (if cred
-      (crud/retrieve-by-id cred request)
-      resource)))
+    (module-utils/throw-can-not-access-helm-repo-cred cred request)
+    resource))
 
 
 (defn remove-delete
