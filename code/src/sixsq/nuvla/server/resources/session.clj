@@ -299,7 +299,9 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 (defmethod crud/delete resource-type
   [request]
-  (ectx/add-to-visible-to (auth/current-user-id request))
+  (let [current-user-id (auth/current-user-id request)]
+    (ectx/add-linked-identifier current-user-id)
+    (ectx/add-to-visible-to current-user-id))
   (let [response (delete-impl request)
         cookies  (delete-cookie response)]
     (merge response cookies)))
