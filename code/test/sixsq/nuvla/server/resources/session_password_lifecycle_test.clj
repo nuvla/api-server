@@ -265,7 +265,7 @@
                             :description        (str "user/user logged out")
                             :category           "delete"
                             :success            true
-                            :linked-identifiers []
+                            :linked-identifiers ["user/user"]
                             :authn-info         event-authn-info
                             :acl                {:owners ["group/nuvla-admin"
                                                           "user/user"]}})

@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.event-test
   (:require
-    [clojure.test :refer [deftest]]
+    [clojure.test :refer [deftest testing]]
     [sixsq.nuvla.server.resources.event :as t]
     [sixsq.nuvla.server.resources.spec.event :as event]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
@@ -57,3 +57,13 @@
   ;; optional keywords
   (doseq [k #{}]
     (stu/is-valid ::event/schema (dissoc valid-event k))))
+
+(deftest blackbox-event
+  (testing "Make sure events sent by Blackbox app are accepted"
+    (let [blackbox-event (merge (select-keys valid-event [:id :resource-type :created :updated :acl :timestamp])
+                                {:category "user"
+                                 :content  {:resource {:href "data_record/1234"}
+                                            :state    "created"}
+                                 :severity "medium"
+                                 :tags     ["application/blackbox"]})]
+      (stu/is-valid ::event/schema blackbox-event))))
