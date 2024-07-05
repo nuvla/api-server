@@ -13,10 +13,12 @@ existing `infrastructure-service-template` resource.
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.event-config :as ec]
+    [sixsq.nuvla.server.resources.common.event-context :as ectx]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-template-generic :as infra-srvc-gen]
@@ -34,6 +36,28 @@ existing `infrastructure-service-template` resource.
 
 (def collection-acl {:query ["group/nuvla-user"]
                      :add   ["group/nuvla-user"]})
+
+;;
+;; Events
+;;
+
+
+(defmethod ec/events-enabled? resource-type
+  [_resource-type]
+  true)
+
+(defmethod ec/log-event? "infrastructure-service.add"
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? "infrastructure-service.edit"
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? "infrastructure-service.delete"
+  [_event _response]
+  true)
+
 
 ;;
 ;; initialization
@@ -183,8 +207,9 @@ existing `infrastructure-service-template` resource.
 
 
 (defn event-state-change
-  [{current-state :state id :id} {{new-state :state} :body :as request}]
-  (when (and new-state (not (= current-state new-state)))
+  [{_current-state :state _id :id} {{_new-state :state} :body :as _request}]
+  ;; legacy events
+  #_(when (and new-state (not (= current-state new-state)))
     (event-utils/create-event id new-state
                               (a/default-acl (auth/current-authentication request))
                               :severity "low"
@@ -207,8 +232,9 @@ existing `infrastructure-service-template` resource.
     ret))
 
 (defn post-delete-hooks
-  [{{uuid :uuid} :params :as request} delete-resp]
-  (let [id (str resource-type "/" uuid)]
+  [{{_uuid :uuid} :params :as _request} _delete-resp]
+  ;; legacy events
+  #_(let [id (str resource-type "/" uuid)]
     (when (= 200 (:status delete-resp))
       (event-utils/create-event id "DELETED"
                                 (a/default-acl (auth/current-authentication request))
@@ -218,8 +244,11 @@ existing `infrastructure-service-template` resource.
 (def delete-impl (std-crud/delete-fn resource-type))
 
 (defmethod crud/delete resource-type
-  [request]
-  (let [delete-resp (delete-impl request)]
+  [{{uuid :uuid} :params :as request}]
+  (let [resource    (db/retrieve (str resource-type "/" uuid) request)
+        delete-resp (delete-impl request)]
+    (ectx/add-to-context :resource resource)
+    (ectx/add-to-context :acl (:acl resource))
     (post-delete-hooks request delete-resp)
     delete-resp))
 
