@@ -9,7 +9,8 @@
 
 (s/def ::method
   (-> (st/spec #{"email"
-                 "slack"})
+                 "slack"
+                 "mqtt"})
       (assoc :name "method"
              :json-schema/type "string"
              :json-schema/description "notification method"

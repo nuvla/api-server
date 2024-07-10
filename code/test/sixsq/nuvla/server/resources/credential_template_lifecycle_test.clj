@@ -10,14 +10,9 @@
     [sixsq.nuvla.server.resources.credential-template-api-key :as akey]
     [sixsq.nuvla.server.resources.credential-template-gpg-key :as gpgkey]
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as hashed-password]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-amazonec2 :as srvc-aws]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-azure :as srvc-azure]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-exoscale :as srvc]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-google :as srvc-gce]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-helm-repo :as srvc-helm-repo]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-kubernetes :as srvc-kubernetes]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as srvc-minio]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-openstack :as srvc-openstack]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-registry :as srvc-registry]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as srvc-swarm]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
@@ -39,12 +34,7 @@
                                gpgkey/method
                                sshkey/method
                                hashed-password/method
-                               srvc-aws/method
-                               srvc-azure/method
-                               srvc/method
-                               srvc-gce/method
                                srvc-minio/method
-                               srvc-openstack/method
                                srvc-swarm/method
                                swarm-token/method]]
     (let [id  (str ct/resource-type "/" registration-method)
@@ -62,12 +52,7 @@
                         gpgkey/resource-url
                         sshkey/resource-url
                         hashed-password/resource-url
-                        srvc-aws/credential-subtype
-                        srvc-azure/credential-subtype
-                        srvc/credential-subtype
-                        srvc-gce/credential-subtype
                         srvc-minio/credential-subtype
-                        srvc-openstack/credential-subtype
                         srvc-swarm/credential-subtype
                         swarm-token/credential-subtype]]
     (mdtu/check-metadata-exists (str ct/resource-type "-" resource-url)
@@ -97,13 +82,8 @@
              (str ct/resource-type "/" sshkey/method)
              (str ct/resource-type "/" hashed-password/method)
              (str ct/resource-type "/" srvc-minio/method)
-             (str ct/resource-type "/" srvc-openstack/method)
              (str ct/resource-type "/" srvc-swarm/method)
              (str ct/resource-type "/" srvc-kubernetes/method)
-             (str ct/resource-type "/" srvc-aws/method)
-             (str ct/resource-type "/" srvc-azure/method)
-             (str ct/resource-type "/" srvc/method)
-             (str ct/resource-type "/" srvc-gce/method)
              (str ct/resource-type "/" swarm-token/method)
              (str ct/resource-type "/" srvc-vpn/method)
              (str ct/resource-type "/" srvc-registry/method)
@@ -114,15 +94,10 @@
              sshkey/method
              hashed-password/method
              srvc-minio/method
-             srvc-openstack/method
              srvc-registry/method
              srvc-helm-repo/method
              srvc-swarm/method
              srvc-kubernetes/method
-             srvc-aws/method
-             srvc-azure/method
-             srvc/method
-             srvc-gce/method
              srvc-vpn/method
              swarm-token/method} methods))
     (is (= #{akey/credential-subtype
@@ -130,15 +105,10 @@
              sshkey/credential-subtype
              hashed-password/credential-subtype
              srvc-minio/credential-subtype
-             srvc-openstack/credential-subtype
              srvc-registry/credential-subtype
              srvc-helm-repo/credential-subtype
              srvc-swarm/credential-subtype
              srvc-kubernetes/credential-subtype
-             srvc-aws/credential-subtype
-             srvc-azure/credential-subtype
-             srvc/credential-subtype
-             srvc-gce/credential-subtype
              srvc-vpn/credential-subtype
              swarm-token/credential-subtype} types))
 

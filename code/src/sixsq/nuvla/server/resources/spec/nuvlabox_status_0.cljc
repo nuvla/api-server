@@ -275,7 +275,7 @@
     :json-schema/description "available and consumed disk space for device"))
 
 (s/def ::disks
-  (assoc (st/spec (s/coll-of ::disk-info :min-count 1 :kind vector?))
+  (assoc (st/spec (s/coll-of ::disk-info :min-count 0 :kind vector?))
     :name "disks"
     :json-schema/type "array"
     :json-schema/description "available and consumed disk space for devices"
@@ -372,6 +372,68 @@
     :json-schema/description "Container restart count"
     :json-schema/order 94))
 
+(s/def ::cpu-usage
+  (assoc (st/spec (s/and number? #(not (neg? %))))
+    :name "cpu-usage"
+    :json-schema/description "CPU usage in percent"
+    :json-schema/type "double"))
+
+(s/def ::cpu-limit
+  (assoc (st/spec (s/and number? #(not (neg? %))))
+    :name "cpu-limit"
+    :json-schema/description "CPU limit in (partial) number of cores"
+    :json-schema/type "double"))
+
+(s/def ::mem-usage
+  (assoc (st/spec nat-int?)
+    :name "mem-usage"
+    :json-schema/description "Memory usage in bytes"))
+
+(s/def ::mem-limit
+  (assoc (st/spec nat-int?)
+    :name "mem-limit"
+    :json-schema/description "Memory limit in bytes"))
+
+(s/def ::disk-in
+  (assoc (st/spec nat-int?)
+    :name "disk-in"
+    :json-schema/description "Disk write in bytes"))
+
+(s/def ::disk-out
+  (assoc (st/spec nat-int?)
+    :name "disk-out"
+    :json-schema/description "Disk read in bytes"))
+
+(s/def ::net-in
+  (assoc (st/spec nat-int?)
+    :name "net-in"
+    :json-schema/description "Network download in bytes"))
+
+(s/def ::net-out
+  (assoc (st/spec nat-int?)
+    :name "net-out"
+    :json-schema/description "Network upload in bytes"))
+
+(s/def ::image
+  (assoc (st/spec string?)
+    :name "image"
+    :json-schema/description "Full image name (ie: registry.com/org/repo:tag)"))
+
+(s/def ::state
+  (assoc (st/spec string?)
+    :name "state"
+    :json-schema/description "Container state (ie: running)"))
+
+(s/def :container/status
+  (assoc (st/spec string?)
+    :name "status"
+    :json-schema/description "Text describing status of the container (ie: Up 7 days)"))
+
+(s/def ::created-at
+  (assoc (st/spec ::core/timestamp)
+    :name "created-at"
+    :json-schema/description "Creation date of the container in ISO format UTC"))
+
 (s/def ::cstat
   (assoc (st/spec (su/only-keys
                     :req-un [::id
@@ -382,7 +444,19 @@
                              ::mem-percent
                              ::mem-usage-limit
                              ::net-in-out
-                             ::blk-in-out]))
+                             ::blk-in-out
+                             ::cpu-usage
+                             ::cpu-limit
+                             ::mem-usage
+                             ::mem-limit
+                             ::disk-in
+                             ::disk-out
+                             ::net-in
+                             ::net-out
+                             ::image
+                             ::state
+                             :container/status
+                             ::created-at]))
     :name "cstat"
     :json-schema/type "map"
     :json-schema/display-name "Single Container Stats"

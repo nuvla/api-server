@@ -139,66 +139,14 @@ existing `infrastructure-service-template` resource.
 ;;
 
 
-(defmulti set-crud-operations
-          (fn [resource _request]
-            (:method resource)))
-
-
-(defmethod set-crud-operations :default
-  [resource request]
-  (crud/set-standard-operations resource request))
-
-
 (defmethod crud/set-operations resource-type
   [resource request]
-  (set-crud-operations resource request))
+  (crud/set-standard-operations resource request))
 
 
 (defmulti do-action-stop
           (fn [resource _request]
             (:method resource)))
-
-
-(defmethod do-action-stop :default
-  [_ _])
-
-
-(defmethod crud/do-action [resource-type "stop"]
-  [{{uuid :uuid} :params :as request}]
-  (let [resource (crud/retrieve-by-id-as-admin (str resource-type "/" uuid))]
-    (do-action-stop resource request)))
-
-
-
-(defmulti do-action-start
-          (fn [resource _request]
-            (:method resource)))
-
-
-(defmethod do-action-start :default
-  [_ _])
-
-
-(defmethod crud/do-action [resource-type "start"]
-  [{{uuid :uuid} :params :as request}]
-  (let [resource (crud/retrieve-by-id-as-admin (str resource-type "/" uuid))]
-    (do-action-start resource request)))
-
-
-(defmulti do-action-terminate
-          (fn [resource _request]
-            (:method resource)))
-
-
-(defmethod do-action-terminate :default
-  [_ _])
-
-
-(defmethod crud/do-action [resource-type "terminate"]
-  [{{uuid :uuid} :params :as request}]
-  (let [resource (crud/retrieve-by-id-as-admin (str resource-type "/" uuid))]
-    (do-action-terminate resource request)))
-
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
@@ -219,7 +167,6 @@ existing `infrastructure-service-template` resource.
                        crud/validate
                        :template
                        tpl->service)
-
         response   (add-impl (assoc request :body service))
         id         (-> response :body :resource-id)
         service    (assoc service :id id)]
@@ -259,20 +206,6 @@ existing `infrastructure-service-template` resource.
         (log/errorf "Failed creating event on state change of %s with %s" id e)))
     ret))
 
-
-(def delete-impl (std-crud/delete-fn resource-type))
-
-
-(defmulti delete
-          (fn [resource _request]
-            (:method resource)))
-
-
-(defmethod delete :default
-  [_resource request]
-  (delete-impl request))
-
-
 (defn post-delete-hooks
   [{{uuid :uuid} :params :as request} delete-resp]
   (let [id (str resource-type "/" uuid)]
@@ -282,10 +215,11 @@ existing `infrastructure-service-template` resource.
                                 :severity "low"
                                 :category "state"))))
 
+(def delete-impl (std-crud/delete-fn resource-type))
+
 (defmethod crud/delete resource-type
-  [{{uuid :uuid} :params :as request}]
-  (let [resource    (crud/retrieve-by-id-as-admin (str resource-type "/" uuid))
-        delete-resp (delete resource request)]
+  [request]
+  (let [delete-resp (delete-impl request)]
     (post-delete-hooks request delete-resp)
     delete-resp))
 
