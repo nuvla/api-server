@@ -4,17 +4,18 @@
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.container :as container]
     [sixsq.nuvla.server.resources.spec.core :as core]
+    [sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment]
-    [sixsq.nuvla.server.resources.spec.module-component :as module-component]
     [sixsq.nuvla.server.resources.spec.module-application :as module-app]
+    [sixsq.nuvla.server.resources.spec.module-component :as module-component]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
 (s/def ::helm-repo-url
-  (-> (st/spec ::core/url)
-      (assoc :name "helm-repo-url"
-             :json-schema/description "Helm repo URL (http, https, oci)")))
+  (assoc (st/spec ::container/infrastructure-service-id)
+    :name "helm-repo-url"
+    :json-schema/description "Helm repo URL infrastructure service"))
 
 
 (s/def ::helm-chart-name
@@ -35,10 +36,10 @@
              :json-schema/description "Helm chart version to deploy, latest (if empty)")))
 
 
-(s/def ::helm-repo-creds
-  (-> (st/spec ::core/url)
-      (assoc :name "helm-repo-creds"
-             :json-schema/description "Helm repo credentials")))
+(s/def ::helm-repo-cred
+  (assoc cred-spec/credential-id-spec
+    :name "helm-repo-cred"
+    :json-schema/description "Helm repo credential"))
 
 
 (s/def ::helm-chart-values
@@ -49,25 +50,25 @@
 
 (def module-application-helm-keys-spec (su/merge-keys-specs
                                          [common/common-attrs
-                                     {:req-un [::module-component/author]
-                                      :opt-un [::module-component/commit
-                                               ::module-component/urls
-                                               ::module-component/output-parameters
-                                               ::container/environmental-variables
-                                               ::container/private-registries
-                                               ::deployment/registries-credentials
-                                               ::module-app/files
-                                               ::module-app/requires-user-rights
+                                          {:req-un [::module-component/author]
+                                           :opt-un [::module-component/commit
+                                                    ::module-component/urls
+                                                    ::module-component/output-parameters
+                                                    ::container/environmental-variables
+                                                    ::container/private-registries
+                                                    ::deployment/registries-credentials
+                                                    ::module-app/files
+                                                    ::module-app/requires-user-rights
 
-                                               ;; mandatory Helm fields
-                                               ::helm-repo-url
-                                               ::helm-chart-name
-                                               ::helm-absolute-url
+                                                    ;; mandatory Helm fields
+                                                    ::helm-repo-url
+                                                    ::helm-chart-name
+                                                    ::helm-absolute-url
 
-                                               ;; optional Helm fields
-                                               ::helm-chart-version
-                                               ::helm-repo-creds
-                                               ::helm-chart-values]}]))
+                                                    ;; optional Helm fields
+                                                    ::helm-chart-version
+                                                    ::helm-repo-cred
+                                                    ::helm-chart-values]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-application-helm-keys-spec))

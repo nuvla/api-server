@@ -1,8 +1,8 @@
-(ns sixsq.nuvla.server.resources.spec.module-application-test
+(ns sixsq.nuvla.server.resources.spec.module-application-helm-test
   (:require
     [clojure.test :refer [deftest]]
-    [sixsq.nuvla.server.resources.module-application :as t]
-    [sixsq.nuvla.server.resources.spec.module-application :as module-application]
+    [sixsq.nuvla.server.resources.module-application-helm :as t]
+    [sixsq.nuvla.server.resources.spec.module-application-helm :as module-application-helm]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
@@ -12,7 +12,7 @@
 
 (deftest test-schema-check
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        root      {:id                      (str t/resource-type "/module-application-uuid")
+        root      {:id                      (str t/resource-type "/module-application-helm-uuid")
                    :resource-type           t/resource-type
                    :created                 timestamp
                    :updated                 timestamp
@@ -45,18 +45,19 @@
                                              {:file-name    "file_1"
                                               :file-content "file content example"}]
 
-                   :unsupported-options     []
+                   :helm-absolute-url       "http://x"
+                   :helm-chart-name         "some-name"
+                   :helm-chart-version      "some-version"
+                   :helm-repo-cred          "credential/a"}]
 
-                   :docker-compose          "version: \"3.3\"\nservices:\n  web:\n    ..."}]
-
-    (stu/is-valid ::module-application/schema root)
-    (stu/is-invalid ::module-application/schema (assoc root :badKey "badValue"))
+    (stu/is-valid ::module-application-helm/schema root)
+    (stu/is-invalid ::module-application-helm/schema (assoc root :badKey "badValue"))
 
     ;; required attributes
-    (doseq [k #{:id :resource-type :created :updated :acl :author :docker-compose}]
-      (stu/is-invalid ::module-application/schema (dissoc root k)))
+    (doseq [k #{:id :resource-type :created :updated :acl :author}]
+      (stu/is-invalid ::module-application-helm/schema (dissoc root k)))
 
     ;; optional attributes
-    (doseq [k #{:commit :urls :output-parameters :environmental-variables :files
-                :private-registries :unsupported-options}]
-      (stu/is-valid ::module-application/schema (dissoc root k)))))
+    (doseq [k #{:commit :urls :output-parameters :environmental-variables :files :private-registries :helm-absolute-url
+                :helm-chart-name :helm-chart-version :helm-repo-cred}]
+      (stu/is-valid ::module-application-helm/schema (dissoc root k)))))

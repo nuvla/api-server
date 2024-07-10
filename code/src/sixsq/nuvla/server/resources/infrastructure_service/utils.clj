@@ -5,11 +5,22 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]))
 
-(defn all-registries-exist
-  [registries request]
+(def subtype-registry "registry")
+(def subtype-helm-repo "helm-repo")
+
+(defn missing-infra?
+  [subtype registries request]
   (and (seq registries)
        (< (crud/query-count infra-service/resource-type
-                         (str "subtype='registry' and "
-                              (u/filter-eq-vals "id" registries))
-                         request)
+                            (str "subtype='" subtype "' and "
+                                 (u/filter-eq-vals "id" registries))
+                            request)
           (count registries))))
+
+(defn missing-registries?
+  [registries request]
+  (missing-infra? subtype-registry registries request))
+
+(defn missing-helm-repo-url?
+  [helm-repo-url request]
+  (missing-infra? subtype-helm-repo [helm-repo-url] request))

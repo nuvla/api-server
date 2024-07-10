@@ -586,6 +586,7 @@
               midnight-today     (time/truncated-to-days now)
               midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
               metrics-request    (fn [{:keys [datasets from from-str to to-str granularity custom-es-aggregations accept-header] #_:or #_{accept-header "application/json"}}]
+                                   (ltu/refresh-es-indices)
                                    (-> session-nb
                                        (content-type "application/x-www-form-urlencoded")
                                        (cond-> accept-header (header "accept" accept-header))
@@ -1018,6 +1019,7 @@
               midnight-today     (time/truncated-to-days now)
               midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
               metrics-request    (fn [{:keys [datasets from from-str to to-str granularity custom-es-aggregations accept-header]}]
+                                   (ltu/refresh-es-indices)
                                    (-> session-nb
                                        (cond-> accept-header (header "accept" accept-header))
                                        (request nuvlabox-data-url
@@ -1035,7 +1037,6 @@
                                                           granularity (assoc :granularity granularity)
                                                           custom-es-aggregations (assoc :custom-es-aggregations custom-es-aggregations))))))]
           (testing "new metrics data is added to ts-nuvlaedge time-serie"
-            (ltu/refresh-es-indices)
             (let [from        (time/minus (time/now) (time/duration-unit 1 :days))
                   to          now
                   metric-data (-> (metrics-request {:datasets    ["cpu-stats"
@@ -1113,7 +1114,6 @@
                                                         #_:unit                 #_"A"}}]}}
                         (set (:power-consumption-stats metric-data))))))
           (testing "raw metrics data query"
-            (ltu/refresh-es-indices)
             (let [from            (time/minus (time/now) (time/duration-unit 1 :days))
                   to              now
                   raw-metric-data (-> (metrics-request {:datasets    ["cpu-stats"
@@ -1573,6 +1573,7 @@
         (testing "availability data on a single nuvlabox"
           (let [nuvlabox-data-url (str nuvlabox-url "/data")
                 metrics-request   (fn [{:keys [datasets from from-str to to-str granularity accept-header] #_:or #_{accept-header "application/json"}}]
+                                    (ltu/refresh-es-indices)
                                     (-> session-nb
                                         (content-type "application/x-www-form-urlencoded")
                                         (cond-> accept-header (header "accept" accept-header))
@@ -1692,6 +1693,7 @@
                 midnight-today     (time/truncated-to-days now)
                 midnight-yesterday (time/truncated-to-days (time/minus now (time/duration-unit 1 :days)))
                 metrics-request    (fn [{:keys [datasets from from-str to to-str granularity accept-header]}]
+                                     (ltu/refresh-es-indices)
                                      (-> session-nb
                                          (cond-> accept-header (header "accept" accept-header))
                                          (request nuvlabox-data-url
@@ -1707,7 +1709,6 @@
                                                            :to          (if to (time/to-str to) to-str)
                                                            :granularity granularity}))))]
             (testing "new metrics data is added to ts-nuvlaedge time-serie"
-              (ltu/refresh-es-indices)
               (let [from        midnight-yesterday
                     to          now
                     metric-data (-> (metrics-request {:datasets    ["availability-stats"
