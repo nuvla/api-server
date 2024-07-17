@@ -258,6 +258,7 @@
                            (assoc :name "nuvlabox-name"
                                   :json-schema/type "string"
                                   :json-schema/description "nuvlabox name"
+                                  :json-schema/fulltext true
 
                                   :json-schema/section "meta"
                                   :json-schema/editable false
