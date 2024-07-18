@@ -71,12 +71,14 @@ configuration option.
 
 
 (defmethod crud/add resource-type
-  [{{:keys [parent name value acl]} :body :as request}]
+  [{{:keys [parent]} :body :as request}]
   (crud/retrieve-by-id parent request)
-  (when (= name "ss:state")
-    (event-utils/create-event parent value acl
-                              :severity "medium"
-                              :category "state"))
+  ;; 2024-07-18: commenting out event creation on deployment parameter "ss:state" as no usages were identified.
+  ;; Leaving it commented out for the moment, for easy reversal, in case any problems arise
+  ;(when (= name "ss:state")
+  ;  (event-utils/create-event parent value acl
+  ;                            :severity "medium"
+  ;                            :category "state"))
   (add-impl request))
 
 
