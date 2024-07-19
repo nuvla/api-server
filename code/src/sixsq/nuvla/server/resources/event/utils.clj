@@ -95,10 +95,9 @@
 
 (defn get-resource
   [context response]
-  (if (contains? context :resource)
-    {:href (get-resource-href context response)
-     :content (:resource context)}
-    {:href (get-resource-href context response)}))
+  (cond-> {:href (get-resource-href context response)}
+          (contains? context :resource)
+          (assoc :content (:resource context))))
 
 
 (defn get-linked-identifiers
@@ -155,26 +154,20 @@
 (def topic event/resource-type)
 
 
-;; FIXME: duplicated
 (defn create-event
   [resource-href state acl & {:keys [severity category timestamp]
                               :or   {severity "medium"
                                      category "action"}}]
-  (let [event-map      {:name          "legacy"
-                        :success       true
-                        :resource-type event/resource-type
-                        :content       {:resource {:href resource-href}
-                                        :state    state}
-                        :severity      severity
-                        :category      category
-                        :timestamp     (or timestamp (time/now-str))
-                        :acl           acl
-                        :authn-info    {}}
-        create-request {:params      {:resource-name event/resource-type}
-                        :body        event-map
-                        :nuvla/authn auth/internal-identity}]
-    (crud/add create-request)))
-
+  (add-event {:name          "legacy"
+              :success       true
+              :resource-type event/resource-type
+              :content       {:resource {:href resource-href}
+                              :state    state}
+              :severity      severity
+              :category      category
+              :timestamp     (or timestamp (time/now-str))
+              :acl           acl
+              :authn-info    {}}))
 
 (defn query-events
   ([resource-href opts]
@@ -198,18 +191,3 @@
                 orderby (assoc :orderby orderby)
                 last (assoc :last last))})
            second)))
-
-;; FIXME: duplicated
-(defn search-event
-  [resource-href {:keys [category state start end]}]
-  (some-> event/resource-type
-          (crud/query-as-admin
-            {:cimi-params
-             {:filter (parser/parse-cimi-filter
-                        (str/join " and "
-                                  (cond-> [(str "content/resource/href='" resource-href "'")]
-                                          category (conj (str "category='" category "'"))
-                                          state (conj (str "content/state='" state "'"))
-                                          start (conj (str "timestamp>='" start "'"))
-                                          end (conj (str "timestamp<'" end "'")))))}})
-          second))

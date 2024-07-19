@@ -38,9 +38,8 @@
 
 
 (defmethod log-event? :default
-  [{event-name :name :as _event} {:keys [status] :as _response}]
-  (and (not= 405 status)
-       (some? event-name)))
+  [_ _]
+  false)
 
 
 ;;
@@ -73,10 +72,8 @@
                "delete" (str " deleted " resource-type " " resource-name-or-id)
                "action" (let [action (some->> event-name (re-matches #".*\.(.*)") second)]
                           (str " executed action " action " on " resource-type " " resource-name-or-id))
-               nil)
-             ".")
+               nil))
         ("state" "alarm" "email" "user")
         event-name                                          ;; FIXME: improve description in this case
         event-name))
-    (str event-name " attempt failed.")))
-
+    (str event-name " attempt failed")))

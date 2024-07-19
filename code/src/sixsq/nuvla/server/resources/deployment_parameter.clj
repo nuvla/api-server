@@ -10,7 +10,6 @@ configuration option.
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment-parameter :as deployment-parameter]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
@@ -71,12 +70,14 @@ configuration option.
 
 
 (defmethod crud/add resource-type
-  [{{:keys [parent name value acl]} :body :as request}]
+  [{{:keys [parent]} :body :as request}]
   (crud/retrieve-by-id parent request)
-  (when (= name "ss:state")
-    (event-utils/create-event parent value acl
-                              :severity "medium"
-                              :category "state"))
+  ;; 2024-07-18: commenting out event creation on deployment parameter "ss:state" as no usages were identified.
+  ;; Leaving it commented out for the moment, for easy reversal, in case any problems arise
+  ;(when (= name "ss:state")
+  ;  (event-utils/create-event parent value acl
+  ;                            :severity "medium"
+  ;                            :category "state"))
   (add-impl request))
 
 

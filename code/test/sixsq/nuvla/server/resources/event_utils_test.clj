@@ -34,7 +34,7 @@
         (let [event (t/build-event context request {:status 201 :body {:resource-id id}})]
           (is (= {:name          "resource.add"
                   :category      "add"
-                  :description   (str "An anonymous user added resource " id ".")
+                  :description   (str "An anonymous user added resource " id)
                   :content       {:resource           {:href id}
                                   :linked-identifiers []}
                   :authn-info    {}
@@ -51,7 +51,7 @@
               event   (t/build-event context request {:status 201 :body {:resource-id id}})]
           (is (= {:name          "resource.add"
                   :category      "add"
-                  :description   (str "An anonymous user added resource " (-> context :resource :name) ".")
+                  :description   (str "An anonymous user added resource " (-> context :resource :name))
                   :content       {:resource           {:href    id
                                                        :content (:resource context)}
                                   :linked-identifiers []}
@@ -66,7 +66,7 @@
         (let [event (t/build-event context request {:status 400})]
           (is (= {:name          "resource.add"
                   :category      "add"
-                  :description   "resource.add attempt failed."
+                  :description   "resource.add attempt failed"
                   :content       {:resource           {:href nil}
                                   :linked-identifiers []}
                   :authn-info    {}
@@ -89,18 +89,17 @@
       (is (= 201 status)))))
 
 
-(deftest search-event
+(deftest query-events
   (doseq [category  ["action" "add"]
           timestamp ["2015-01-16T08:05:00.000Z" "2015-01-17T08:05:00.000Z" (time/now-str)]]
     (t/create-event "user/1" "hello" {:owners ["group/nuvla-admin"]}
                     :category category
                     :timestamp timestamp))
   (ltu/refresh-es-indices)
-  (is (= 6 (count (t/search-event "user/1" {}))))
-  (is (= 0 (count (t/search-event "user/2" {}))))
-  (is (= 3 (count (t/search-event "user/1" {:category "action"}))))
-  (is (= 6 (count (t/search-event "user/1" {:start "2015-01-16T08:05:00.000Z"}))))
-  (is (= 2 (count (t/search-event "user/1" {:end "2015-01-16T08:06:00.000Z"}))))
-  (is (= 1 (count (t/search-event "user/1" {:category "action"
+  (is (= 6 (count (t/query-events "user/1" {}))))
+  (is (= 0 (count (t/query-events "user/2" {}))))
+  (is (= 3 (count (t/query-events "user/1" {:category "action"}))))
+  (is (= 6 (count (t/query-events "user/1" {:start "2015-01-16T08:05:00.000Z"}))))
+  (is (= 2 (count (t/query-events "user/1" {:end "2015-01-16T08:06:00.000Z"}))))
+  (is (= 1 (count (t/query-events "user/1" {:category "action"
                                             :start    "now/d" :end "now+1d/d"})))))
-

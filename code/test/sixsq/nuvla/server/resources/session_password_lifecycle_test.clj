@@ -5,6 +5,7 @@
     [clojure.test :refer [deftest is testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
+    [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as p]
@@ -150,20 +151,35 @@
                                           :email "jane@example.org")]
 
       ; anonymous create must succeed
-      (let [resp       (-> session-anon
-                           (request base-uri
-                                    :request-method :post
-                                    :body (json/write-str valid-create))
-                           (ltu/body->edn)
-                           (ltu/is-set-cookie)
-                           (ltu/is-status 201))
-            id         (ltu/body-resource-id resp)
+      (let [resp             (-> session-anon
+                                 (request base-uri
+                                          :request-method :post
+                                          :body (json/write-str valid-create))
+                                 (ltu/body->edn)
+                                 (ltu/is-set-cookie)
+                                 (ltu/is-status 201))
+            id               (ltu/body-resource-id resp)
 
-            token      (get-in resp [:response :cookies authn-cookie :value])
-            authn-info (if token (sign/unsign-cookie-info token) {})
+            credential-id    (:credential-password (auth-password/user-id->user jane-user-id))
+            _                (ltu/is-last-event id
+                                                {:name               "session.add"
+                                                 :description        (str username " logged in")
+                                                 :category           "add"
+                                                 :success            true
+                                                 :linked-identifiers [jane-user-id credential-id]
+                                                 :authn-info         {:user-id      "user/unknown"
+                                                                      :active-claim "user/unknown"
+                                                                      :claims       ["user/unknown" "group/nuvla-anon"]}
+                                                 :acl                {:owners ["group/nuvla-admin" jane-user-id]}})
 
-            uri        (ltu/location resp)
-            abs-uri    (str p/service-context uri)]
+            token            (get-in resp [:response :cookies authn-cookie :value])
+            authn-info       (if token (sign/unsign-cookie-info token) {})
+            event-authn-info {:user-id      "user/user"
+                              :active-claim "group/nuvla-user"
+                              :claims       ["group/nuvla-anon" id "user/user"]}
+
+            uri              (ltu/location resp)
+            abs-uri          (str p/service-context uri)]
 
         ; check claims in cookie
         (is (= jane-user-id (:user-id authn-info)))
@@ -244,6 +260,16 @@
             (ltu/body->edn)
             (ltu/is-status 200))
 
+        (ltu/is-last-event id
+                           {:name               "session.delete"
+                            :description        (str "user/user logged out")
+                            :category           "delete"
+                            :success            true
+                            :linked-identifiers ["user/user"]
+                            :authn-info         event-authn-info
+                            :acl                {:owners ["group/nuvla-admin"
+                                                          "user/user"]}})
+
         ; create with invalid template fails
         (-> session-anon
             (request base-uri
@@ -314,6 +340,17 @@
                                (ltu/is-status 201))
         session-user-id    (ltu/body-resource-id session-user)
         sesssion-user-url  (ltu/location-url session-user)
+        credential-id      (:credential-password (auth-password/user-id->user user-id))
+        _                  (ltu/is-last-event session-user-id
+                                              {:name               "session.add"
+                                               :description        (str username " logged in")
+                                               :category           "add"
+                                               :success            true
+                                               :linked-identifiers [user-id credential-id]
+                                               :authn-info         {:user-id      "user/unknown"
+                                                                    :active-claim "user/unknown"
+                                                                    :claims       ["user/unknown" "group/nuvla-anon"]}
+                                               :acl                {:owners ["group/nuvla-admin" user-id]}})
         handler            (wrap-authn-info identity)
         authn-session-user (-> session-user
                                :response
@@ -328,7 +365,10 @@
         switch-op-url      (-> (apply request session-json (concat [sesssion-user-url] authn-session-user))
                                (ltu/body->edn)
                                (ltu/is-status 200)
-                               (ltu/get-op-url :switch-group))]
+                               (ltu/get-op-url :switch-group))
+        event-authn-info   {:user-id      user-id
+                            :active-claim user-id
+                            :claims       ["group/nuvla-anon" "group/nuvla-user" session-user-id user-id]}]
 
     (testing "User cannot switch to a group that he is not part of."
       (-> (apply request session-json
@@ -336,7 +376,14 @@
                           :request-method :post] authn-session-user))
           (ltu/body->edn)
           (ltu/is-status 403)
-          (ltu/message-matches #"Switch group cannot be done to requested group:.*")))
+          (ltu/message-matches #"Switch group cannot be done to requested group:.*"))
+      (ltu/is-last-event session-user-id {:name               "session.switch-group"
+                                          :description        "Switch group attempt failed"
+                                          :category           "action"
+                                          :success            false
+                                          :linked-identifiers [group-b]
+                                          :authn-info         event-authn-info
+                                          :acl                {:owners ["group/nuvla-admin" group-b user-id]}}))
 
     (testing "User can switch to a group that he is part of."
       (-> session-admin

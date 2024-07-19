@@ -605,17 +605,22 @@
      (when (some? (:acl ~expected-event))
        (is-acl (:acl ~expected-event) (:acl ~actual-event)))))
 
+(defn refresh-index-query-events
+  [resource-id opts]
+  (refresh-es-indices)
+  (event-utils/query-events resource-id opts))
 
 (defmacro is-last-event
   [resource-id expected-event]
-  `(let [event# (last (event-utils/query-events ~resource-id {:orderby [["timestamp" :desc]] :last 1}))]
+  `(let [event# (last (refresh-index-query-events ~resource-id {:orderby [["timestamp" :desc]] :last 1}))]
      (is-event ~expected-event event#)))
 
 
 (defmacro are-last-events
   [resource-id expected-events]
-  `(let [events# (take (count ~expected-events) (event-utils/query-events ~resource-id {:orderby [["timestamp" :desc]]
-                                                                                        :last    (count ~expected-events)}))]
+  `(let [events# (take (count ~expected-events)
+                       (refresh-index-query-events ~resource-id {:orderby [["timestamp" :desc]]
+                                                               :last    (count ~expected-events)}))]
      (is (= (count ~expected-events) (count events#)))
      (doall (map (fn [expected-event# actual-event#]
                    (is-event expected-event# actual-event#))
