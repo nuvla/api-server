@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.util.time
   (:require [java-time.api :as t])
-  (:import (java.time Instant LocalTime OffsetDateTime ZoneOffset Clock)
-           (java.time.temporal ChronoUnit)
+  (:import (java.time Clock Instant LocalTime OffsetDateTime ZoneOffset)
            (java.time.format DateTimeFormatter DateTimeFormatterBuilder ResolverStyle SignStyle)
+           (java.time.temporal ChronoUnit)
            (java.time.temporal ChronoField ChronoUnit)
            (java.util Date)))
 
