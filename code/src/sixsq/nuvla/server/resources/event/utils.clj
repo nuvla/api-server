@@ -154,37 +154,40 @@
 (def topic event/resource-type)
 
 
-;; FIXME: duplicated
 (defn create-event
   [resource-href state acl & {:keys [severity category timestamp]
                               :or   {severity "medium"
                                      category "action"}}]
-  (let [event-map      {:name          "legacy"
-                        :success       true
-                        :resource-type event/resource-type
-                        :content       {:resource {:href resource-href}
-                                        :state    state}
-                        :severity      severity
-                        :category      category
-                        :timestamp     (or timestamp (time/now-str))
-                        :acl           acl
-                        :authn-info    {}}
-        create-request {:params      {:resource-name event/resource-type}
-                        :body        event-map
-                        :nuvla/authn auth/internal-identity}]
-    (crud/add create-request)))
+  (add-event {:name          "legacy"
+              :success       true
+              :resource-type event/resource-type
+              :content       {:resource {:href resource-href}
+                              :state    state}
+              :severity      severity
+              :category      category
+              :timestamp     (or timestamp (time/now-str))
+              :acl           acl
+              :authn-info    {}}))
 
-;; FIXME: duplicated
-(defn search-event
-  [resource-href {:keys [category state start end]}]
-  (some-> event/resource-type
-          (crud/query-as-admin
-            {:cimi-params
-             {:filter (parser/parse-cimi-filter
-                        (str/join " and "
-                                  (cond-> [(str "content/resource/href='" resource-href "'")]
-                                          category (conj (str "category='" category "'"))
-                                          state (conj (str "content/state='" state "'"))
-                                          start (conj (str "timestamp>='" start "'"))
-                                          end (conj (str "timestamp<'" end "'")))))}})
-          second))
+(defn query-events
+  ([resource-href opts]
+   (query-events (assoc opts :resource-href resource-href)))
+  ([{:keys [resource-href linked-identifier category state start end orderby last] event-name :name :as opts}]
+   (some-> event/resource-type
+           (crud/query-as-admin
+             {:cimi-params
+              (cond->
+                {:filter (parser/parse-cimi-filter
+                           (str/join " and "
+                                     (cond-> []
+                                             resource-href (conj (str "content/resource/href='" resource-href "'"))
+                                             (and (contains? opts :resource-href) (nil? resource-href)) (conj (str "content/resource/href=null"))
+                                             event-name (conj (str "name='" event-name "'"))
+                                             category (conj (str "category='" category "'"))
+                                             state (conj (str "content/state='" state "'"))
+                                             linked-identifier (conj (str "content/linked-identifiers='" linked-identifier "'"))
+                                             start (conj (str "timestamp>='" start "'"))
+                                             end (conj (str "timestamp<'" end "'")))))}
+                orderby (assoc :orderby orderby)
+                last (assoc :last last))})
+           second)))
