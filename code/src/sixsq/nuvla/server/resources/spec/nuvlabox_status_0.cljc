@@ -384,6 +384,11 @@
     :json-schema/description "CPU limit in (partial) number of cores"
     :json-schema/type "double"))
 
+(s/def ::cpu-capacity
+  (assoc (st/spec nat-int?)
+    :name "cpu-capacity"
+    :json-schema/description "CPU capacity in number of cores"))
+
 (s/def ::mem-usage
   (assoc (st/spec nat-int?)
     :name "mem-usage"
@@ -434,6 +439,11 @@
     :name "created-at"
     :json-schema/description "Creation date of the container in ISO format UTC"))
 
+(s/def ::started-at
+  (assoc (st/spec ::core/timestamp)
+    :name "started-at"
+    :json-schema/description "Start date of the container in ISO format UTC"))
+
 (s/def ::cstat
   (assoc (st/spec (su/only-keys
                     :req-un [::id
@@ -447,6 +457,7 @@
                              ::blk-in-out
                              ::cpu-usage
                              ::cpu-limit
+                             ::cpu-capacity
                              ::mem-usage
                              ::mem-limit
                              ::disk-in
@@ -456,6 +467,7 @@
                              ::image
                              ::state
                              :container/status
+                             ::started-at
                              ::created-at]))
     :name "cstat"
     :json-schema/type "map"
