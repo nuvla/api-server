@@ -1468,16 +1468,19 @@
                                  (request heartbeat-op-2)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)))
+        _                  (ltu/refresh-es-indices)
         _                  (with-redefs [time/now (constantly yesterday-2am)]
                              (-> session-admin
                                  (request set-offline-op-2)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)))
+        _                  (ltu/refresh-es-indices)
         _                  (with-redefs [time/now (constantly yesterday-10am)]
                              (-> session-nb
                                  (request heartbeat-op-2)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)))
+        _                  (ltu/refresh-es-indices)
         ;; and another nuvlabox in state COMMISSIONED, first online 1 day ago
         nuvlabox-id-3      (create-commissioned-nuvlabox session-user valid-nuvlabox3 now-5d)
         nuvlabox-url-3     (str p/service-context nuvlabox-id-3)
@@ -1491,6 +1494,7 @@
                                  (request heartbeat-op-3)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)))
+        _                  (ltu/refresh-es-indices)
         ;; add yet another nuvlabox with created date 1 day ago, in state COMMISSIONED, but for which we send no metrics
         ;; as such it should be considered as always COMMISSIONED and always offline since creation
         nuvlabox-id-4      (create-commissioned-nuvlabox session-user valid-nuvlabox4 midnight-today)
@@ -1543,6 +1547,7 @@
             (request heartbeat-op)
             (ltu/body->edn)
             (ltu/is-status 200)))
+      (ltu/refresh-es-indices)
 
       ;; went offline 1 day ago
       (with-redefs [time/now (constantly now-1d)]
@@ -1550,6 +1555,7 @@
             (request set-offline-op)
             (ltu/body->edn)
             (ltu/is-status 200)))
+      (ltu/refresh-es-indices)
 
       ;; back online 12 hours ago
       (with-redefs [time/now (constantly now-12h)]
@@ -1557,6 +1563,7 @@
             (request heartbeat-op)
             (ltu/body->edn)
             (ltu/is-status 200)))
+      (ltu/refresh-es-indices)
 
       ;; offline again 1 second ago
       (with-redefs [time/now (constantly now-1s)]
@@ -1564,7 +1571,6 @@
             (request set-offline-op)
             (ltu/body->edn)
             (ltu/is-status 200)))
-
       (ltu/refresh-es-indices)
 
       (same.core/with-comparator
@@ -1612,7 +1618,7 @@
                                             :doc-count    1
                                             :aggregations {:avg-online {:value (double (/ (if (time/after? now-12h midnight-today)
                                                                                             (* 3600 12)
-                                                                                            (time/time-between midnight-today to :seconds))
+                                                                                            (time/time-between midnight-today now-1s :seconds))
                                                                                           (time/time-between midnight-today to :seconds)))}}}])}]
                           (:availability-stats metric-data)))))
 
@@ -1667,7 +1673,7 @@
                                [(time/to-str midnight-today)
                                 1 (double (/ (if (time/after? now-12h midnight-today)
                                                (* 3600 12)
-                                               (time/time-between midnight-today to :seconds))
+                                               (time/time-between midnight-today now-1s :seconds))
                                              (time/time-between midnight-today to :seconds)))]])
                             (->> (csv-request "availability-stats" "1-days")
                                  str/split-lines
@@ -1834,6 +1840,23 @@
                               "\n")
                          (csv-request "availability-stats" "raw"))))))))))))
 
+(comment
+  ;; stress test availability-data test to find corner cases
+  (let [random-offset (rand-int (* 3600 24)) #_65328 #_535 #_10430 #_3815 #_[8967 3815]]
+    (with-redefs [time/now (constantly (time/plus (time/parse-date "2024-07-18T00:00:00.000Z")
+                                                  (time/duration-unit random-offset :seconds)))]
+      #_(availability-data)
+      (let [failure? (atom false)]
+        (defmethod clojure.test/report :fail [m]
+          (reset! failure? true))
+        (loop [n 100]
+          (when (pos? n)
+            (availability-data)
+            (if @failure?
+              :failure-detected
+              (recur (dec n))))))))
+  )
+
 (deftest issue-tasklist-3132-non-regression-test
   (let [nuvlaboxes [{:id      "nuvlabox/3e93cdc3-341e-46d4-a811-f4db791d7296"
                      :created "2024-05-18T16:37:02.291Z"}
@@ -1947,7 +1970,7 @@
                                                                   :sort    [(time/unix-timestamp-from-date (time/parse-date timestamp))
                                                                             nuvlaedge-id]})
                                                                raw-data)
-                                                         (loop [date start
+                                                         (loop [date  start
                                                                 dates [start]]
                                                            (if (time/before? date end)
                                                              (recur (time/plus date (time/duration-unit 1 :hours))

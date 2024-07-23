@@ -284,7 +284,7 @@
 
 (defn build-availability-query [options]
   ;; return up to 10000 availability state updates
-  (build-ts-query (assoc options :last 10000)))
+  (build-ts-query (assoc options :last 10000 :orderby [["@timestamp" :desc]])))
 
 (defn query-availability
   [options]

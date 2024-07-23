@@ -89,10 +89,13 @@ status, a 'set-cookie' header, and a 'location' header with the created
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.event-config :as ec]
+    [sixsq.nuvla.server.resources.common.event-context :as ectx]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.email :as email]
+    [sixsq.nuvla.server.resources.event.utils :as eu]
     [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.session :as session]
@@ -167,10 +170,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 (defmethod crud/add-acl resource-type
   [{:keys [id acl] :as resource} _request]
-  (assoc
-    resource
-    :acl
-    (or acl (create-acl id))))
+  (assoc resource :acl (or acl (create-acl id))))
 
 
 (defn dispatch-conversion
@@ -299,6 +299,9 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 (defmethod crud/delete resource-type
   [request]
+  (let [current-user-id (auth/current-user-id request)]
+    (ectx/add-linked-identifier current-user-id)
+    (ectx/add-to-visible-to current-user-id))
   (let [response (delete-impl request)
         cookies  (delete-cookie response)]
     (merge response cookies)))
@@ -459,8 +462,11 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 
 (defmethod crud/do-action [resource-type "switch-group"]
-  [{{uuid :uuid} :params :as request}]
+  [{{uuid :uuid} :params {:keys [claim]} :body :as request}]
   (try
+    (ectx/add-linked-identifier claim)
+    (ectx/add-to-visible-to (auth/current-user-id request))
+    (ectx/add-to-visible-to claim)
     (-> (str resource-type "/" uuid)
         db/retrieve
         (a/throw-cannot-edit request)
@@ -480,14 +486,14 @@ status, a 'set-cookie' header, and a 'location' header with the created
                                               resolve-user-groups
                                               :user-groups)
           filter-validated "validated=true"
-          filter-emails (if (a/is-admin-request? request)
-                          filter-validated
-                          (some->> (concat root-groups subgroups)
-                                   (mapcat :users)
-                                   distinct
-                                   seq
-                                   (u/filter-eq-vals "parent")
-                                   (str filter-validated " and ")))]
+          filter-emails    (if (a/is-admin-request? request)
+                             filter-validated
+                             (some->> (concat root-groups subgroups)
+                                      (mapcat :users)
+                                      distinct
+                                      seq
+                                      (u/filter-eq-vals "parent")
+                                      (str filter-validated " and ")))]
       (r/json-response
         (if filter-emails
           (->> {:cimi-params {:filter (parser/parse-cimi-filter filter-emails)
@@ -500,6 +506,60 @@ status, a 'set-cookie' header, and a 'location' header with the created
           {})))
     (catch Exception e
       (or (ex-data e) (throw e)))))
+
+;;
+;; Events
+;;
+
+(defmethod ec/events-enabled? resource-type
+  [_resource-type]
+  true)
+
+
+(defmethod ec/log-event? "session.add"
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? "session.delete"
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? "session.switch-group"
+  [_event _response]
+  true)
+
+
+(defmethod ec/event-description "session.add"
+  [{:keys [success] :as event} & _]
+  (if success
+    (when-let [user-name-or-credential (or (some-> (eu/get-linked-resources event "user") first :name)
+                                           (some-> (eu/get-linked-resource-ids event "user") first)
+                                           (some-> (eu/get-linked-resources event "credential") first :id)
+                                           (some-> (eu/get-linked-resource-ids event "credential") first))]
+      (str user-name-or-credential " logged in"))
+    "Login attempt failed"))
+
+
+(defmethod ec/event-description "session.delete"
+  [{:keys [success] {:keys [user-id]} :authn-info :as _event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (str user-name " logged out"))
+    "Logout attempt failed"))
+
+
+(defmethod ec/event-description "session.switch-group"
+  [{:keys [success] {:keys [user-id]} :authn-info {:keys [linked-identifiers]} :content :as event} & _]
+  (if success
+    (when-let [user-name (or (some-> user-id crud/retrieve-by-id-as-admin1 :name) user-id)]
+      (let [target-id (or (some-> (eu/get-linked-resources event) first :id)
+                          (first linked-identifiers))]
+        (if (= target-id user-id)
+          (str user-name " switched back to " user-name)
+          (str user-name " switched to group "
+               (or (some-> (eu/get-linked-resources event) first :name)
+                   (first linked-identifiers))))))
+    "Switch group attempt failed"))
 
 
 ;;

@@ -9,11 +9,11 @@
     [sixsq.nuvla.pricing.payment :as payment]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.event-context :as ec]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
-    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
@@ -128,7 +128,7 @@
     (when (not= job-status 201)
       (throw (r/ex-response
                (format "unable to create async job to %s deployment" action) 500 id)))
-    (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))
+    (ec/add-linked-identifier job-id)
     (r/map-response job-msg 202 id job-id)))
 
 

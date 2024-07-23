@@ -462,9 +462,33 @@ component, or application.
   true)
 
 
-(defmethod ec/log-event? "module.validate-docker-compose"
+(defmethod ec/log-event? "module.add"
   [_event _response]
-  false)
+  true)
+
+(defmethod ec/log-event? "module.edit"
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? "module.delete"
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? "module.publish"
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? "module.unpublish"
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? "module.delete-version"
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? "module.deploy"
+  [_event _response]
+  true)
 
 
 ;;
