@@ -81,6 +81,11 @@
              :json-schema/type "boolean"
              :json-schema/description "nuvlabox release is published")))
 
+(s/def ::implementation (-> (st/spec #{"python" "go"})
+                            (assoc :name "implementation"
+                                   :json-schema/type "string"
+                                   :json-schema/description "implementation technology (python, go)")))
+
 ;;
 ;; -------
 ;;
@@ -93,4 +98,5 @@
                                ::release-date
                                ::compose-files]
                       :opt-un [::release-notes
-                               ::published]}))
+                               ::published
+                               ::implementation]}))
