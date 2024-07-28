@@ -15,10 +15,9 @@ component, or application.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.resources.credential.utils :as cred-utils]
-    [sixsq.nuvla.server.resources.infrastructure-service.utils :as infra-service-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.module-application :as module-application]
+    [sixsq.nuvla.server.resources.module-application-helm :as module-application-helm]
     [sixsq.nuvla.server.resources.module-applications-sets :as module-applications-sets]
     [sixsq.nuvla.server.resources.module-component :as module-component]
     [sixsq.nuvla.server.resources.module.utils :as utils]
@@ -62,11 +61,12 @@ component, or application.
 ;; CRUD operations
 ;;
 
-(defn subtype->resource-url
+(defn subtype->collection-uri
   [resource]
   (cond
     (utils/is-component? resource) module-component/resource-type
     (utils/is-application? resource) module-application/resource-type
+    (utils/is-application-helm? resource) module-application-helm/resource-type
     (utils/is-application-k8s? resource) module-application/resource-type
     (utils/is-applications-sets? resource) module-applications-sets/resource-type
     :else (throw (r/ex-bad-request (str "unknown module subtype: "
@@ -99,19 +99,6 @@ component, or application.
   (if (and (utils/is-project? resource) content)
     (throw (r/ex-response "Project should not have content attribute!" 400))
     request))
-
-(defn throw-cannot-access-private-registries
-  [{{{:keys [private-registries]} :content} :body :as request}]
-  (if (infra-service-utils/all-registries-exist private-registries request)
-    (throw (r/ex-response "Private registries can't be resolved!" 403))
-    request))
-
-(defn throw-cannot-access-registries-credentials
-  [{{{:keys [registries-credentials]} :content} :body :as request}]
-  (let [creds (remove str/blank? registries-credentials)]
-    (if (cred-utils/all-registry-creds-exist creds request)
-      (throw (r/ex-response "Registries credentials can't be resolved!" 403))
-      request)))
 
 (defn throw-application-requires-compatibility
   [{{:keys [compatibility] :as resource} :body :as request}]
@@ -189,9 +176,9 @@ component, or application.
 (defn create-content
   [module]
   (if-let [content (:content module)]
-    (let [content-url  (subtype->resource-url module)
-          content-body (merge content {:resource-type content-url})
-          content-href (-> (crud/add {:params      {:resource-name content-url}
+    (let [collection-uri  (subtype->collection-uri module)
+          content-body (merge content {:resource-type collection-uri})
+          content-href (-> (crud/add {:params      {:resource-name collection-uri}
                                       :body        content-body
                                       :nuvla/authn auth/internal-identity})
                            :body
@@ -202,15 +189,10 @@ component, or application.
 (defn throw-cannot-access-registries-or-creds
   [request]
   (-> request
-      throw-cannot-access-private-registries
-      throw-cannot-access-registries-credentials))
-
-(defn throw-compatibility-required-for-application
-  [{{:keys [compatibility] :as resource} :body :as request}]
-  (if (and (utils/is-application? resource)
-           (nil? compatibility))
-    (throw (r/ex-response "Application subtype should have compatibility attribute set!" 400))
-    request))
+      utils/throw-cannot-access-private-registries-for-request
+      utils/throw-cannot-access-registries-credentials-for-request
+      utils/throw-can-not-access-helm-repo-url-for-request
+      utils/throw-can-not-access-helm-repo-cred-for-request))
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
@@ -315,7 +297,7 @@ component, or application.
 (defn delete-content
   [module-meta content-id]
   (crud/delete
-    {:params      {:resource-name (subtype->resource-url module-meta)
+    {:params      {:resource-name (subtype->collection-uri module-meta)
                    :uuid          (u/id->uuid content-id)}
      :nuvla/authn auth/internal-identity}))
 

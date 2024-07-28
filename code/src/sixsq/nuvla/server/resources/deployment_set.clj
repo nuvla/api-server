@@ -17,9 +17,11 @@ These resources represent a deployment set that regroups deployments.
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.job.utils :as job-utils]
+    [sixsq.nuvla.server.resources.module :as module]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment-set :as spec]
+    [sixsq.nuvla.server.resources.spec.module :as module-spec]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -134,7 +136,7 @@ These resources represent a deployment set that regroups deployments.
 (defn retrieve-module
   [id request]
   (:body (crud/retrieve {:params         {:uuid          (u/id->uuid id)
-                                          :resource-name module-utils/resource-type}
+                                          :resource-name module/resource-type}
                          :request-method :get
                          :nuvla/authn    (auth/current-authentication request)})))
 
@@ -142,7 +144,7 @@ These resources represent a deployment set that regroups deployments.
   [{:keys [modules]} request]
   (create-module
     {:path    (str module-utils/project-apps-sets "/" (u/rand-uuid))
-     :subtype module-utils/subtype-apps-sets
+     :subtype module-spec/subtype-apps-sets
      :acl     {:owners [(auth/current-active-claim request)]}
      :content {:commit "no commit message"
                :author (auth/current-active-claim request)
