@@ -40,10 +40,10 @@
 
 
 (s/def ::value
-  (-> (st/spec ::core/nonblank-string)
+  (-> (st/spec (s/nilable string?))
       (assoc :name "value"
              :json-schema/description "value of the deployment parameter"
-
+             :json-schema/type "string"
              :json-schema/order 21)))
 
 

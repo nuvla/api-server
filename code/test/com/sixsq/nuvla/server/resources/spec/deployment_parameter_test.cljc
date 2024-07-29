@@ -25,7 +25,7 @@
 
     (stu/is-valid ::dp/deployment-parameter root)
     (stu/is-invalid ::dp/deployment-parameter (assoc root :badKey "badValue"))
-    (stu/is-invalid ::dp/deployment-parameter (assoc root :value "   "))
+    (stu/is-valid ::dp/deployment-parameter (assoc root :value "   "))
 
     ;; required attributes
     (doseq [k #{:id :resource-type :parent :created :updated :acl :name}]
