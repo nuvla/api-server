@@ -1,4 +1,4 @@
-FROM nuvla/ring:2.1.2
+FROM nuvla/ring:2.1.10
                 
 ARG GIT_BRANCH
 ARG GIT_COMMIT_ID

@@ -1,4 +1,4 @@
-(defproject com.sixsq.nuvla.server/api-test-jar "version-is-inherited"
+(defproject com.sixsq.nuvla/api-server-test "version-is-inherited"
 
             :description "core api server test"
 

@@ -127,6 +127,15 @@ jobs:
           CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
           CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
 
+      - name: Deploy test-jar to clojars
+        working-directory: code/test-jar
+        run: lein deploy clojars
+        if: ${{ inputs.PUSH_CLOJARS }}
+        shell: bash
+        env:
+          CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
+          CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
+
       - name: Build with lein
         working-directory: code
         shell: bash
@@ -140,7 +149,7 @@ jobs:
         run: |
           mkdir -p ../container/target/dependency
           cp -r target/lib/ ../container/target/dependency/
-          cp target/ring-$(lein project-version).jar ../container/target/dependency/lib/
+          cp target/api-server-$(lein project-version).jar ../container/target/dependency/lib/
 
       - name: Build time
         shell: bash
