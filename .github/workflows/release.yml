@@ -7,8 +7,7 @@ concurrency:
 on:
   push:
     branches:
-#      - master
-      - issue_tasklist_3234
+      - master
 
 jobs:
 

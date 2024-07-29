@@ -1,7 +1,6 @@
 *~
 target
 /repository
-slipstreamdb.*
 bin
 .classpath
 .settings
@@ -17,11 +16,7 @@ logs/
 *.log
 *.swp
 
-pom.xml.next
-pom.xml.releaseBackup
-pom.xml.tag
 release.properties
-versions.sh
 
 # Generated on dev mode by the UI part
 raw-metadata-str*.xml
@@ -30,11 +25,9 @@ raw-metadata-str*.xml
 scrap.jpage
 
 downloads/*
-ssclj/jar/testdb/
 /target
 /classes
 /checkouts
-pom.xml.asc
 *.jar
 *.class
 *.lein-*
