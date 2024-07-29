@@ -1,6 +1,7 @@
 # Nuvla API Server
 
-[![Build Status](https://github.com/nuvla/api-server/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/nuvla/api-server/actions/workflows/main.yml)
+[![Dev](https://github.com/nuvla/api-server/actions/workflows/dev.yml/badge.svg)](https://github.com/nuvla/api-server/actions/workflows/dev.yml)
+[![Release](https://github.com/nuvla/api-server/actions/workflows/release.yml/badge.svg)](https://github.com/nuvla/api-server/actions/workflows/release.yml)
 [![Docker Image Version (latest semver)](https://img.shields.io/docker/v/nuvla/api?label=image&sort=semver&style=flat-square)](https://hub.docker.com/repository/docker/nuvla/api/tags)
 
 This repository contains the code and configuration for the Nuvla API
