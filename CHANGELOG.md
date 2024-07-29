@@ -6,6 +6,22 @@
 
 ## Released
 
+## [6.8.0](https://github.com/nuvla/api-server/compare/v6.7.1-SNAPSHOT...6.8.0) (2024-07-29)
+
+
+### Features
+
+* **nuvlabox-status:** add new containers stats attributes ([28bbeba](https://github.com/nuvla/api-server/commit/28bbeba7c85611e1d0feda82a92acc60e50daebb))
+* **nuvlabox-status:** add new containers stats attributes started-at and cpu-capacity ([#921](https://github.com/nuvla/api-server/issues/921)) ([a362749](https://github.com/nuvla/api-server/commit/a362749bdefc6908e03ee21900ef751a01453757))
+
+
+### Continuous Integration
+
+* **ci:** build fix ([8c27e91](https://github.com/nuvla/api-server/commit/8c27e9152647be3a7aaeab85e0a7a4eb2ddfd9b5))
+* **ci:** rename and place artifact to com.sixsq.nuvla ([15f98b7](https://github.com/nuvla/api-server/commit/15f98b7a29bcf2e2a5e911d5629f62d4aeae79b9))
+* **ci:** rid of maven ([ea3ad21](https://github.com/nuvla/api-server/commit/ea3ad218aec3780126a2ef1c9d741d21688f0ef2))
+* **project.clj:** Fix repo url ([cd73e21](https://github.com/nuvla/api-server/commit/cd73e21fd62dadee02b0728021a64ad99771dd02))
+
 ## [6.7.0] - 2024-06-17
 
 - Notification method - Add mqtt as notif method option
