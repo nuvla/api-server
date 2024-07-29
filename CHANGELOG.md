@@ -6,6 +6,33 @@
 
 ## Released
 
+## [6.8.0](https://github.com/nuvla/api-server/compare/v6.7.1-SNAPSHOT...6.8.0) (2024-07-29)
+
+
+### Features
+
+* **module:** add helm repo creds and module application Helm ([50af1a8](https://github.com/nuvla/api-server/commit/50af1a8b23bc38fe5dabe84415539cd82418a51d))
+* **nuvlabox-status:** add new containers stats attributes ([28bbeba](https://github.com/nuvla/api-server/commit/28bbeba7c85611e1d0feda82a92acc60e50daebb))
+* **nuvlabox-status:** add new containers stats attributes started-at and cpu-capacity ([#921](https://github.com/nuvla/api-server/issues/921)) ([a362749](https://github.com/nuvla/api-server/commit/a362749bdefc6908e03ee21900ef751a01453757))
+
+
+### Bug Fixes
+
+* **data-object:** S3 create client bugfix ([50af1a8](https://github.com/nuvla/api-server/commit/50af1a8b23bc38fe5dabe84415539cd82418a51d))
+* **deployment:** Allow search Deployments by NuvlaEdge name (Migration is needed) ([50af1a8](https://github.com/nuvla/api-server/commit/50af1a8b23bc38fe5dabe84415539cd82418a51d))
+* **events:** Support creation of events usefull to create an audit log ([50af1a8](https://github.com/nuvla/api-server/commit/50af1a8b23bc38fe5dabe84415539cd82418a51d))
+* **test:** Flaky test nuvlabox status regarding availability fix ([50af1a8](https://github.com/nuvla/api-server/commit/50af1a8b23bc38fe5dabe84415539cd82418a51d))
+
+
+### Continuous Integration
+
+* **ci:** Remove maven ([#925](https://github.com/nuvla/api-server/issues/925)) ([50af1a8](https://github.com/nuvla/api-server/commit/50af1a8b23bc38fe5dabe84415539cd82418a51d))
+* **ci:** Remove unused version script ([043e5fd](https://github.com/nuvla/api-server/commit/043e5fdd1fb0642f00ca295f1dbf324003073504))
+* **github:** Github orchestrate build of ui docker image ([50af1a8](https://github.com/nuvla/api-server/commit/50af1a8b23bc38fe5dabe84415539cd82418a51d))
+* **github:** Upgrade plugins ([50af1a8](https://github.com/nuvla/api-server/commit/50af1a8b23bc38fe5dabe84415539cd82418a51d))
+* **release-please:** Release please control version based on commit messages ([50af1a8](https://github.com/nuvla/api-server/commit/50af1a8b23bc38fe5dabe84415539cd82418a51d))
+* **travis:** Remove reference to Travis ([50af1a8](https://github.com/nuvla/api-server/commit/50af1a8b23bc38fe5dabe84415539cd82418a51d))
+
 ## [6.7.0] - 2024-06-17
 
 - Notification method - Add mqtt as notif method option
