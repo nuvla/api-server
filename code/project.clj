@@ -1,8 +1,8 @@
 (def parent-version "6.8.0")
-(def nuvla-ring-version "2.1.2")
+(def nuvla-ring-version "2.1.10")
 (def kinsky-version "0.3.1")
 
-(defproject sixsq.nuvla.server/api-jar
+(defproject com.sixsq.nuvla/api-server
   ; x-release-please-start-version
   "6.7.1-SNAPSHOT"
   ; x-release-please-end
@@ -84,7 +84,7 @@
 
   :profiles
   {:provided {:dependencies [[org.clojure/clojure "1.11.2"]
-                             [sixsq.nuvla.ring/code ~nuvla-ring-version]
+                             [com.sixsq.nuvla/ring ~nuvla-ring-version]
                              [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
 
    :test     {:dependencies      [[me.raynes/fs "1.4.6"]
@@ -111,11 +111,11 @@
               :test-paths     ["test"]
               :resource-paths ["test-resources"]
               ;; linters
-              :eastwood       {:exclude-namespaces [sixsq.nuvla.server.resources.job.utils]}
+              :eastwood       {:exclude-namespaces [com.sixsq.nuvla.server.resources.job.utils]}
               :env            {:nuvla-session-key   "test-resources/session.key"
                                :nuvla-session-crt   "test-resources/session.crt"
                                :es-sniffer-init     "no"
                                :kafka-producer-init "no"}
               ;; code coverage
-              :cloverage      {:ns-exclude-regex [#"sixsq.nuvla.pricing.protocol"]}
+              :cloverage      {:ns-exclude-regex [#"com.sixsq.nuvla.pricing.protocol"]}
               }})

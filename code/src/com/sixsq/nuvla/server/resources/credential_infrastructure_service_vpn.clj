@@ -1,0 +1,97 @@
+(ns com.sixsq.nuvla.server.resources.credential-infrastructure-service-vpn
+  "
+This represents an VPN client credential that allows users to access the
+VPN service.
+"
+  (:require
+    [com.sixsq.nuvla.auth.utils :as auth]
+    [com.sixsq.nuvla.server.resources.common.utils :as u]
+    [com.sixsq.nuvla.server.resources.credential :as p]
+    [com.sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
+     :as tpl-customer]
+    [com.sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
+    [com.sixsq.nuvla.server.resources.resource-metadata :as md]
+    [com.sixsq.nuvla.server.resources.spec.credential-infrastructure-service-vpn :as ciso]
+    [com.sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-vpn :as ctiso]
+    [com.sixsq.nuvla.server.util.metadata :as gen-md]))
+
+
+;;
+;; initialization
+;;
+
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::ctiso/schema))
+
+
+(defn initialize
+  []
+  (md/register resource-metadata))
+
+
+;;
+;; convert template to credential: just copies the necessary keys from the provided template.
+;;
+
+(defmethod p/tpl->credential tpl-customer/credential-subtype
+  [{:keys [subtype method parent vpn-csr]} request]
+  (let [active-claim        (auth/current-active-claim request)
+        customer?      (= method tpl-customer/method)
+        expected-scope (if customer? "customer" "nuvlabox")
+        vpn-service    (vpn-utils/get-service parent)]
+    (vpn-utils/check-service-subtype vpn-service)
+    (vpn-utils/check-scope vpn-service expected-scope)
+    (vpn-utils/check-existing-credential parent active-claim)
+
+    (let [configuration-vpn (vpn-utils/get-configuration parent)
+          vpn-endpoint      (:endpoint configuration-vpn)]
+
+      (vpn-utils/check-vpn-endpoint parent vpn-endpoint)
+
+      ;; call vpn api
+      (let [response-vpn-api (vpn-utils/try-generate-credential
+                               vpn-endpoint active-claim parent vpn-csr)
+            intermediate-ca  (:intermediate-ca response-vpn-api)]
+        [response-vpn-api
+         (cond->
+           {:resource-type         p/resource-type
+            :subtype               subtype
+            :method                method
+            :vpn-certificate       (:certificate response-vpn-api)
+            :vpn-common-name       (:common-name response-vpn-api)
+            :vpn-certificate-owner active-claim
+            :acl                   {:owners   ["group/nuvla-admin"]
+                                    :view-acl [active-claim, parent]
+                                    :delete   [active-claim]}
+            :parent                parent}
+           intermediate-ca (assoc :vpn-intermediate-ca intermediate-ca))]))))
+
+
+(defmethod p/special-delete tpl-customer/credential-subtype
+  [{is-id :parent cred-id :id} request]
+  (let [configuration-vpn (vpn-utils/get-configuration is-id)
+        vpn-endpoint      (:endpoint configuration-vpn)]
+
+    (vpn-utils/check-vpn-endpoint is-id vpn-endpoint)
+
+    (vpn-utils/try-delete-credential vpn-endpoint cred-id))
+
+  (p/delete-impl request))
+
+;;
+;; multimethods for validation
+;;
+
+(def validate-fn (u/create-spec-validation-fn ::ciso/schema))
+
+
+(defmethod p/validate-subtype tpl-customer/credential-subtype
+  [resource]
+  (validate-fn resource))
+
+
+(def create-validate-fn (u/create-spec-validation-fn ::ctiso/schema-create))
+
+
+(defmethod p/create-validate-subtype tpl-customer/credential-subtype
+  [resource]
+  (create-validate-fn resource))

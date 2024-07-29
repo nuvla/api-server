@@ -19,9 +19,9 @@ COPY target/dependency/lib /opt/nuvla/server/lib.d/api
 COPY src/scripts/session-key-pair.sh /opt/nuvla/server/bin/
 COPY src/scripts/start-api.sh /opt/nuvla/server/bin/
 
-ENV NUVLA_SERVER_INIT=sixsq.nuvla.server.app.server/init
-ENV PERSISTENT_DB_BINDING=sixsq.nuvla.db.es.loader
-ENV EPHEMERAL_DB_BINDING=sixsq.nuvla.db.es.loader
+ENV NUVLA_SERVER_INIT=com.sixsq.nuvla.server.app.server/init
+ENV PERSISTENT_DB_BINDING=com.sixsq.nuvla.db.es.loader
+ENV EPHEMERAL_DB_BINDING=com.sixsq.nuvla.db.es.loader
 ENV ES_ENDPOINTS=localhost:9200
 
 RUN addgroup -S "$USER_GROUP"  \
