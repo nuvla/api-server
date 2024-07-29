@@ -2,12 +2,12 @@
 
 ## API resource namespace structure and initialisation
 
-A typical API resource must be located under `sixsq.nuvla.server.resources` namespace 
+A typical API resource must be located under `com.sixsq.nuvla.server.resources` namespace 
 and have the following structure
 
 ```clojure
 
-(ns sixsq.nuvla.server.resources.nuvla-resource
+(ns com.sixsq.nuvla.server.resources.nuvla-resource
   "Documentation"
   (:require
     [required.namespace :as n]))
@@ -65,4 +65,4 @@ public function called `initialize-data`. This approach facilitates creation and
 maintenance of the fixtures used in testing.
 
 For a good example of the namespace defining an API resource see
-[sixsq.nuvla.server.resources.cloud-entry-point](src/sixsq/nuvla/server/resources/cloud_entry_point.clj).
+[com.sixsq.nuvla.server.resources.cloud-entry-point](src/sixsq/nuvla/server/resources/cloud_entry_point.clj).
