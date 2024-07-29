@@ -9,7 +9,7 @@
 
   :description "core api server"
 
-  :url "https://github.com/nuvla/server"
+  :url "https://github.com/nuvla/api-server"
 
   :license {:name         "Apache 2.0"
             :url          "http://www.apache.org/licenses/LICENSE-2.0.txt"
