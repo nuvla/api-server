@@ -1,0 +1,171 @@
+name: Common
+
+on:
+  workflow_call:
+    inputs:
+      DOCKER_REPO:
+        required: true
+        type: string
+      DOCKER_TAG:
+        required: true
+        type: string
+      PUSH_CLOJARS:
+        required: true
+        type: boolean
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Disabling shallow clone is recommended for improving relevancy of reporting for sonar
+          fetch-depth: 0
+
+      - name: Cache local M2 repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-lein-${{ hashFiles('**/project.clj') }}
+          restore-keys: |
+            ${{ runner.os }}-lein-
+            - name: Cache local M2 repository
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      # Ubuntu Repos on Azure fail often. Attempt to install before other
+      # long-running operations.
+      # xmllinter for tests checks
+      # jq for SonarQube Quality Gate check
+      - name: Install xmllinter and jq (for "Fail on failed tests")
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxml2-utils jq
+
+      - name: Project version
+        working-directory: code
+        shell: bash
+        run: |
+          VERSION=$( lein project-version )
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        id: project_version
+
+#      - name: Setup Sonar Scanner
+#        uses: warchant/setup-sonar-scanner@v7
+#        with:
+#          version: 4.6.2.2472
+#
+#      - name: Run Sonar Scanner
+#        env:
+#          # provide GITHUB_TOKEN to get access to secrets.SONARQUBE_TOKEN
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        working-directory: code
+#        shell: bash
+#        run:  |
+#          export JAVA_OPTS="-Xms6g -Xmx6g"
+#          export ES_JAVA_OPTS="-Xms6g -Xmx6g"
+#          sonar-scanner -Dsonar.token=${{ secrets.SONARQUBE_TOKEN }} -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -Dsonar.projectVersion=${{ steps.project_version.outputs.version }}
+#
+#      - name: Get list of tests
+#        if: always()
+#        id: tests
+#        uses: Rishabh510/Path-lister-action@master
+#        with:
+#          path: "code/test-reports/xml"
+#          type: ".xml"
+#
+#      - name: Fail on failed tests
+#        if: always()
+#        run: |
+#          echo "Found ${{ steps.tests.outputs.path_count }} test report(s)"
+#          if [[ ${{ steps.tests.outputs.path_count }} < 1 ]]; then
+#             echo "ERROR: No unit test reports collected."
+#             exit 1
+#          fi
+#          for f in ${{ steps.tests.outputs.paths }}; do
+#            echo "=== $f ==="
+#            if [[ $(xmllint --xpath "string(//testsuite/@failures)" $f) > 1 ]]; then
+#               echo TEST FAILED: $f
+#               exit 1
+#            fi
+#            if [[ $(xmllint --xpath "string(//testsuite/@errors)" $f) > 1 ]]; then
+#               echo TEST ERRORED: $f
+#               exit 1
+#            fi
+#          done
+#
+#      - name: SonarQube Quality Gate check
+#        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
+#        with:
+#          scanMetadataReportFile: code/.scannerwork/report-task.txt
+#        env:
+#          SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
+#          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+#
+#      - name: Publish Unit Test Results
+#        uses: EnricoMi/publish-unit-test-result-action@v2
+#        if: always()
+#        with:
+#          files: code/test-reports/xml/TEST-*.xml
+
+      - name: Import GPG key
+        run: echo $GPG_KEY | base64 --decode | gpg --batch --import
+        env:
+          GPG_KEY: ${{ secrets.GPG_SIXSQ_RELEASE_KEY }}
+
+      - name: Deploy to clojars
+        working-directory: code
+        run: lein deploy clojars
+        if: ${{ inputs.PUSH_CLOJARS }}
+        shell: bash
+        env:
+          CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
+          CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
+
+      - name: Build with lein
+        working-directory: code
+        shell: bash
+        run: |
+          lein install
+          lein libdir
+
+      - name: Copy relevant files
+        working-directory: code
+        shell: bash
+        run: |
+          mkdir -p ../container/target/dependency
+          cp -r target/lib/ ../container/target/dependency/
+          cp target/ring-$(lein project-version).jar ../container/target/dependency/lib/
+
+      - name: Build time
+        shell: bash
+        run: echo "BUILD_TIME=$(date --utc +%FT%T.%3NZ)" >> $GITHUB_ENV
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.SIXSQ_DOCKER_USERNAME }}
+          password: ${{ secrets.SIXSQ_DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./container
+          file: container/Dockerfile
+          build-args: |
+            GIT_BRANCH=${{ github.head_ref || github.ref_name }}
+            GIT_BUILD_TIME=${{ env.BUILD_TIME }}
+            GIT_COMMIT_ID=${{ github.sha }}
+            PACKAGE_TAG=${{ steps.project_version.outputs.version }}
+            GITHUB_RUN_NUMBER=${{ github.run_number }}
+            GITHUB_RUN_ID=${{ github.run_id }}
+            PROJECT_URL=${{ github.server_url }}/${{ github.repository }}
+          push: true
+          tags: >
+            ${{ inputs.DOCKER_REPO }}/api:${{ inputs.DOCKER_TAG }},
+            ${{ inputs.DOCKER_REPO }}/api:latest

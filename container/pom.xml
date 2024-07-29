@@ -224,7 +224,7 @@
                         </goals>
                         <configuration>
                             <outputDirectory>${project.build.directory}/dependency/lib</outputDirectory>
-                            <prependGroupId>true</prependGroupId>
+                            <prependGroupId>false</prependGroupId>
                             <stripVersion>false</stripVersion>
                             <stripClassifier>true</stripClassifier>
                             <excludeTypes>pom</excludeTypes>

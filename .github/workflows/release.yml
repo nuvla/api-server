@@ -1,0 +1,54 @@
+name: Release
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+on:
+  push:
+    branches:
+#      - master
+      - issue_tasklist_3234
+
+jobs:
+
+  trigger-release:
+    name: "Trigger release"
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      major: ${{ steps.release.outputs.major }}
+      minor: ${{ steps.release.outputs.minor }}
+      patch: ${{ steps.release.outputs.patch }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target-branch: ${{ github.ref_name }}
+          config-file: .github/release-please-config.json
+          manifest-file: .github/release-please-manifest.json
+
+  build:
+    name: "Build and push"
+    uses: ./.github/workflows/build.yml
+    needs: [ trigger-release ]
+    if: needs.trigger-release.outputs.release_created
+    with:
+      DOCKER_REPO: nuvla
+      DOCKER_TAG: ${{ needs.trigger-release.outputs.tag_name }}
+      PUSH_CLOJARS: true
+    secrets: inherit
+
+  notify:
+    name: "Notify Slack"
+    needs: [build]
+    if: needs.trigger-release.outputs.release_created
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Gamesight/slack-workflow-status@master
+        with:
+          repo_token: ${{secrets.GITHUB_TOKEN}}
+          slack_webhook_url: ${{secrets.SLACK_WEBHOOK_URL}}
+          include_commit_message: true

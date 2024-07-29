@@ -2,7 +2,10 @@
 (def nuvla-ring-version "2.1.2")
 (def kinsky-version "0.3.1")
 
-(defproject sixsq.nuvla.server/api-jar "6.7.1-SNAPSHOT"
+(defproject sixsq.nuvla.server/api-jar
+  ; x-release-please-start-version
+  "6.7.1-SNAPSHOT"
+  ; x-release-please-end
 
   :description "core api server"
 
@@ -12,7 +15,10 @@
             :url          "http://www.apache.org/licenses/LICENSE-2.0.txt"
             :distribution :repo}
 
-  :plugins [[lein-parent "0.3.9"]]
+  :plugins [[lein-parent "0.3.9"]
+            [lein-libdir "0.1.1"]]
+
+  :libdir-path "target/lib"
 
   :parent-project {:coords  [sixsq.nuvla/parent ~parent-version]
                    :inherit [:plugins
@@ -26,29 +32,30 @@
   :pom-location "target/"
 
   :dependencies
-  [[cc.qbits/spandex "0.8.2"]
+  [[cc.qbits/spandex "0.8.2" :exclusions [[ring/ring-codec]]]
    [metosin/tilakone "0.0.4"]
    [zookeeper-clj "0.11.0"
     :exclusions [[potemkin]
-                 [commons-codec]
+                 [commons-io]
                  [io.netty/netty-handler]
                  [io.netty/netty-transport-native-epoll]]]
    [org.clojars.konstan/kinsky ~kinsky-version
     :exclusions [com.github.luben/zstd-jni]]
-   [compojure "1.7.1"]
+   [compojure "1.7.1" :exclusions [[ring/ring-core]]]
    [instaparse "1.4.14"]
    [metosin/spec-tools "0.10.6"]
    [expound "0.9.0"]
    [com.draines/postal "2.0.5"]
    [org.clojure/data.csv "1.1.0"]
    [org.clojure/data.json "2.5.0"]
-   [ring/ring-json "0.5.1"]
+   [ring/ring-json "0.5.1" :exclusions [[ring/ring-core]]]
    [ring-middleware-accept "2.0.3"]
    [buddy/buddy-core "1.11.423"]
    [buddy/buddy-hashers "2.0.167"]
    [buddy/buddy-sign "3.5.351"]
    [clj-http "3.12.3" :exclusions [[org.apache.httpcomponents/httpasyncclient]
-                                   [potemkin]]]
+                                   [potemkin]
+                                   [commons-io]]]
    [clj-stacktrace "0.2.8"]
    [clojure.java-time "1.4.2"]
    [com.amazonaws/aws-java-sdk-s3 "1.12.694"]
