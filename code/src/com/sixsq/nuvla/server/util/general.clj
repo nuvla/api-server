@@ -19,6 +19,13 @@
   [s r-map]
   (reduce-kv (fn [in re v] (str/replace in re v)) s r-map))
 
+(defn truncate
+  [s n]
+  (when-let [s-size (some-> s count)]
+    (if (> s-size n)
+      (str "<!!!Truncated!!!>\n" (subs s (- s-size n)))
+      s)))
+
 (defn encode-uri-component
   [^String s]
   (-> s

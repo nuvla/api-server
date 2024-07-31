@@ -76,6 +76,26 @@
                          (ltu/is-key-value :state "QUEUED")
                          (ltu/get-op-url ju/action-cancel))]
 
+      (testing "edit status-message is possible to admin"
+        (-> session-admin
+            (request abs-uri
+                     :request-method :put
+                     :body (json/write-str {:status-message "foobar"}))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :status-message "foobar")))
+
+      (testing "edit with too big status-message doesn't fail"
+        (let [xxx (apply str (take 50000 (repeat "x")))
+              big-status-msg (str "extra chars to be truncated" xxx)]
+          (-> session-admin
+             (request abs-uri
+                      :request-method :put
+                      :body (json/write-str {:status-message big-status-msg}))
+             (ltu/body->edn)
+             (ltu/is-status 200)
+             (ltu/is-key-value :status-message (str "<!!!Truncated!!!>\n" xxx)))))
+
       (testing "user can cancel a job"
         (-> session-user
             (request cancel-url)
