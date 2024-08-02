@@ -69,7 +69,10 @@
                                              {:name        "beta"
                                               :description "my-beta"}
                                              {:name        "gamma"
-                                              :description "my-gamma"}]}]
+                                              :description "my-gamma"}]
+                   :minimum-requirements    {:min-cpu  0.2
+                                             :min-ram  500
+                                             :min-disk 100}}]
 
     (stu/is-valid ::module-component/schema root)
     (stu/is-invalid ::module-component/schema (assoc root :badKey "badValue"))
