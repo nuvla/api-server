@@ -102,10 +102,6 @@
              :json-schema/description "list of output parameters"
              :json-schema/order 34)))
 
-(s/def ::architecture
-  (-> (st/spec ::core/nonblank-string)
-      (assoc :name "architecture"
-             :json-schema/type "string")))
 
 (s/def ::min-cpu
   (-> (st/spec (s/and number? pos?))
