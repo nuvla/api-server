@@ -102,6 +102,36 @@
              :json-schema/description "list of output parameters"
              :json-schema/order 34)))
 
+(s/def ::architecture
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "architecture"
+             :json-schema/type "string")))
+
+(s/def ::min-cpu
+  (-> (st/spec (s/and number? pos?))
+      (assoc :name "min-cpu"
+             :json-schema/type "double"
+             :json-schema/description "minimum required CPUs")))
+
+(s/def ::min-ram
+  (-> (st/spec pos-int?)
+      (assoc :name "min-ram"
+             :json-schema/type "integer"
+             :json-schema/description "minimum required memory in MiB")))
+
+(s/def ::min-disk
+  (-> (st/spec pos-int?)
+      (assoc :name "min-disk"
+             :json-schema/type "integer"
+             :json-schema/description "minimum required disk in MiB")))
+
+(s/def ::minimum-requirements
+  (-> (st/spec (su/only-keys
+                 :opt-un [::min-cpu
+                          ::min-ram
+                          ::min-disk]))
+      (assoc :name "minimum-requirements"
+             :json-schema/type "map")))
 
 (def module-component-keys-spec (su/merge-keys-specs [common/common-attrs
                                                       {:req-un [::author
@@ -117,7 +147,8 @@
                                                                 ::deployment/registries-credentials
                                                                 ::urls
                                                                 ::container/environmental-variables
-                                                                ::output-parameters]}]))
+                                                                ::output-parameters
+                                                                ::minimum-requirements]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-component-keys-spec))
