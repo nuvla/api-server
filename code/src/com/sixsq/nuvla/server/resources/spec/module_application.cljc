@@ -67,6 +67,8 @@
                                       :opt-un [::module-component/commit
                                                ::module-component/urls
                                                ::module-component/output-parameters
+                                               ::module-component/architectures
+                                               ::module-component/minimum-requirements
                                                ::container/environmental-variables
                                                ::container/private-registries
                                                ::deployment/registries-credentials
