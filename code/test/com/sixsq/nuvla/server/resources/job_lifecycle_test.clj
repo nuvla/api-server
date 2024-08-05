@@ -87,14 +87,14 @@
 
       (testing "edit with too big status-message doesn't fail"
         (let [xxx (apply str (take 50000 (repeat "x")))
-              big-status-msg (str "extra chars to be truncated" xxx)]
+              big-status-msg (str xxx "extra chars to be truncated" xxx)]
           (-> session-admin
              (request abs-uri
                       :request-method :put
                       :body (json/write-str {:status-message big-status-msg}))
              (ltu/body->edn)
              (ltu/is-status 200)
-             (ltu/is-key-value :status-message (str "<!!!Truncated!!!>\n" xxx)))))
+             (ltu/is-key-value :status-message (str xxx "\n...\n" xxx)))))
 
       (testing "user can cancel a job"
         (-> session-user

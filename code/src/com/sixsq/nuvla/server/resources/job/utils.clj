@@ -70,7 +70,7 @@
 
 (defn truncate-status-message
   [job]
-  (update job :status-message util-general/truncate 50000))
+  (update job :status-message util-general/truncate 100000))
 
 (defn job-cond->addition
   [{:keys [target-resource affected-resources progress status-message] :as job}]
