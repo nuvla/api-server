@@ -68,10 +68,12 @@
 
 
 (s/def ::status-message
-  (-> (st/spec ::core/nonblank-string)
+  (-> (st/spec string?)
       (assoc :name "status-message"
              :json-schema/display-name "status message"
              :json-schema/description "additional information about the job's current status"
+             :json-schema/type "free-text"
+             :json-schema/indexed false
 
              :json-schema/order 26)))
 

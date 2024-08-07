@@ -5,6 +5,7 @@
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.server.util.response :as r]
     [com.sixsq.nuvla.server.util.time :as time]
+    [com.sixsq.nuvla.server.util.general :as util-general]
     [com.sixsq.nuvla.server.util.zookeeper :as uzk]))
 
 (def state-queued "QUEUED")
@@ -67,10 +68,15 @@
   [job]
   (assoc job :time-of-status-change (time/now-str)))
 
+(defn truncate-status-message
+  [job]
+  (update job :status-message util-general/truncate 100000))
+
 (defn job-cond->addition
   [{:keys [target-resource affected-resources progress status-message] :as job}]
   (cond-> job
-          status-message update-time-of-status-change
+          status-message (-> update-time-of-status-change
+                             truncate-status-message)
           (not progress) (assoc :progress 0)
           (and target-resource
                (not-any?
@@ -85,7 +91,9 @@
     (cond-> (dissoc job :priority)
             (and (not started)
                  (= state state-running)) (assoc :started (time/now-str))
-            status-message (update-time-of-status-change)
+            status-message (-> update-time-of-status-change
+                               truncate-status-message)
+
             job-in-final-state? (assoc :progress 100)
             (and job-in-final-state?
                  started) (assoc :duration (time/time-between-date-now started :seconds)))))

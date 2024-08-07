@@ -48,3 +48,13 @@
     "a++b@gmail.com" "a%2B%2Bb%40gmail.com"
     "https://nuvla.io/api/callback/65b34372-6814-47aa-9869-510e38315db1/execute" "https%3A%2F%2Fnuvla.io%2Fapi%2Fcallback%2F65b34372-6814-47aa-9869-510e38315db1%2Fexecute"
     "!~+()'" "!~%2B()'"))
+
+(deftest truncate
+  (are [expect arg] (= expect (t/truncate (:s arg) (:n arg)))
+                    "12345" {:s "12345" :n 5}
+                    ;"<!!!Truncated!!!>\n23456" {:s "123456" :n 5}
+                    "12\n...\n56" {:s "123456" :n 5}
+                    "12\n...\n89" {:s "123456789" :n 5}
+                    "012\n...\n789" {:s "0123456789" :n 6}
+                    "" {:s "" :n 5}
+                    "" {:s "" :n 0}))
