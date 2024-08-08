@@ -6,6 +6,20 @@
 
 ## Released
 
+## [6.8.1](https://github.com/nuvla/api-server/compare/6.8.0...6.8.1) (2024-08-07)
+
+
+### Bug Fixes
+
+* **Deployment parameter:** Allow empty values ([48c1c1c](https://github.com/nuvla/api-server/commit/48c1c1c2f32d0a33aae91ca013d3fe986bc660a0))
+* **job:** Do not fail when status message is too big. Instead truncate it 100k chars ([#929](https://github.com/nuvla/api-server/issues/929)) ([aa7f821](https://github.com/nuvla/api-server/commit/aa7f821e9082bb1ebe41902951a8a55d02a4d790))
+* **README.md:** Fix build badges ([a4f33ef](https://github.com/nuvla/api-server/commit/a4f33ef37ef7025e580cb410b389cc99c25710ff))
+
+
+### Continuous Integration
+
+* **release-please:** Remove bootstrap-sha ([a4f33ef](https://github.com/nuvla/api-server/commit/a4f33ef37ef7025e580cb410b389cc99c25710ff))
+
 ## [6.8.0](https://github.com/nuvla/api-server/compare/v6.7.1-SNAPSHOT...6.8.0) (2024-07-29)
 
 
