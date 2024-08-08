@@ -27,7 +27,7 @@
 
 ;; list from https://github.com/containerd/containerd/blob/1ac546b3c4a3331a9997427052d1cb9888a2f3ef/platforms/database.go#L63
 ;; arm variants added
-(def valid-architectures #{"386" "amd64" "amd64p32"
+(def valid-architectures #{"386" "x86_64" "amd64" "amd64p32"
                            "arm" "armbe" "arm64" "arm64/v8" "arm64be"
                            "arm/v5" "arm/v6" "arm/v7"
                            "ppc" "ppc64" "ppc64le"
