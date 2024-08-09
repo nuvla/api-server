@@ -27,7 +27,7 @@
 
 ;; list from https://github.com/containerd/containerd/blob/1ac546b3c4a3331a9997427052d1cb9888a2f3ef/platforms/database.go#L63
 ;; arm variants added
-(def valid-architectures #{"386" "amd64" "amd64p32"
+(def valid-architectures #{"386" "x86_64" "amd64" "amd64p32"
                            "arm" "armbe" "arm64" "arm64/v8" "arm64be"
                            "arm/v5" "arm/v6" "arm/v7"
                            "ppc" "ppc64" "ppc64le"
@@ -103,6 +103,32 @@
              :json-schema/order 34)))
 
 
+(s/def ::min-cpu
+  (-> (st/spec (s/and number? pos?))
+      (assoc :name "min-cpu"
+             :json-schema/type "double"
+             :json-schema/description "minimum required CPUs")))
+
+(s/def ::min-ram
+  (-> (st/spec pos-int?)
+      (assoc :name "min-ram"
+             :json-schema/type "integer"
+             :json-schema/description "minimum required memory in MiB")))
+
+(s/def ::min-disk
+  (-> (st/spec pos-int?)
+      (assoc :name "min-disk"
+             :json-schema/type "integer"
+             :json-schema/description "minimum required disk in MiB")))
+
+(s/def ::minimum-requirements
+  (-> (st/spec (su/only-keys
+                 :opt-un [::min-cpu
+                          ::min-ram
+                          ::min-disk]))
+      (assoc :name "minimum-requirements"
+             :json-schema/type "map")))
+
 (def module-component-keys-spec (su/merge-keys-specs [common/common-attrs
                                                       {:req-un [::author
                                                                 ::architectures
@@ -117,7 +143,8 @@
                                                                 ::deployment/registries-credentials
                                                                 ::urls
                                                                 ::container/environmental-variables
-                                                                ::output-parameters]}]))
+                                                                ::output-parameters
+                                                                ::minimum-requirements]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-component-keys-spec))
