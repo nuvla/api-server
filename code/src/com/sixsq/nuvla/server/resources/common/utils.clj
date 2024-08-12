@@ -148,6 +148,10 @@
        (secure-rand-int)
        (+ min))))
 
+(defn secure-rand-nth
+  [coll]
+  (nth coll (secure-rand-int (count coll))))
+
 
 ;;
 ;; utilities for handling common attributes
