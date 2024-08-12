@@ -1109,6 +1109,12 @@ particular NuvlaBox release.
   [request]
   (bulk-data request bulk-data-impl))
 
+(def bulk-action-impl (std-crud/bulk-action-fn resource-type collection-acl collection-type))
+
+(defmethod crud/bulk-action [resource-type "bulk-update"]
+  [request]
+  (bulk-action-impl request))
+
 
 ;;
 ;; Set operation
