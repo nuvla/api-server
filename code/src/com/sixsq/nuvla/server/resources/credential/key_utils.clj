@@ -1,6 +1,7 @@
 (ns com.sixsq.nuvla.server.resources.credential.key-utils
   (:require
     [buddy.hashers :as hashers]
+    [com.sixsq.nuvla.server.resources.common.utils :as u]
     [clojure.string :as str])
   (:import (java.io ByteArrayOutputStream DataOutputStream StringWriter)
            (java.security KeyPairGenerator)
@@ -50,7 +51,7 @@
   "Generates a random string to act as a secret API key and then returns a
    tuple with that string and its digest value."
   []
-  (let [secret (->> (repeatedly #(rand-nth secret-chars))
+  (let [secret (->> (repeatedly #(u/secure-rand-nth secret-chars))
                     (sequence secret-xform)
                     (str/join "."))]
     [secret (digest secret)]))
