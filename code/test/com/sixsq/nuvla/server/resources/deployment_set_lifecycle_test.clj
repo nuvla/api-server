@@ -31,13 +31,21 @@
 
 (def dep-set-name "deployment set for testing")
 
-(def dep-apps-sets [{:id      "module/ff0e0e39-4c22-411b-8c39-868aa50da1f5",
+(def app1-id "module/fcc71f74-1898-4e38-a284-5997141801a7")
+(def app2-id "module/770f5090-be33-42a3-b9fe-0de4622f12ea")
+(def app3-id "module/188555b1-2006-4766-b287-f60e5e908197")
+(def app4-id "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8")
+(def app5-id "module/ff0e0e39-4c22-411b-8c39-868aa50da1f5")
+(def app6-id "module/64e8d02d-1b40-46d0-b1d8-2093024fc1d2")
+(def app7-id "module/1cefb94b-c527-4b8a-be5f-802b131c1a9e")
+
+(def dep-apps-sets [{:id      app5-id,
                      :version 11,
                      :overwrites
                      [{:targets ["credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"
                                  "credential/bc258c46-4771-45d3-9b38-97afdf185f44"]
                        :applications
-                       [{:id      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8",
+                       [{:id      app4-id,
                          :version 1,
                          :environmental-variables
                          [{:name  "var_1_value",
@@ -61,10 +69,10 @@
     :applications-sets
     [{:name "set-1",
       :applications
-      [{:id "module/fcc71f74-1898-4e38-a284-5997141801a7", :version 0}
-       {:id "module/770f5090-be33-42a3-b9fe-0de4622f12ea", :version 0}
-       {:id "module/188555b1-2006-4766-b287-f60e5e908197", :version 0}
-       {:id      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8",
+      [{:id app1-id, :version 0}
+       {:id app2-id, :version 0}
+       {:id app3-id, :version 0}
+       {:id      app4-id,
         :version 1,
         :environmental-variables
         [{:name "var_1_value", :value "overwritten var1"}]
@@ -73,11 +81,11 @@
      {:name        "set-2",
       :description "set 2 nginx pro only",
       :applications
-      [{:id "module/64e8d02d-1b40-46d0-b1d8-2093024fc1d2", :version 5}]}
+      [{:id app6-id, :version 5}]}
      {:name        "set-3",
       :description "k8s",
       :applications
-      [{:id      "module/1cefb94b-c527-4b8a-be5f-802b131c1a9e",
+      [{:id      app7-id,
         :version 0}]}],
     :created    "2023-02-28T12:40:32.887Z",
     :author     "jane@example.com",
@@ -91,7 +99,7 @@
    :data-accept-content-types [],
    :updated-by                "user/jane",
    :created-by                "user/jane",
-   :id                        "module/ff0e0e39-4c22-411b-8c39-868aa50da1f5",
+   :id                        app5-id,
    :resource-type             "module",
    :acl
    {:edit-data ["group/nuvla-admin"],
@@ -104,17 +112,16 @@
     :manage    ["group/nuvla-admin"],
     :edit-meta ["group/nuvla-admin"]},
    :operations
-   [{:rel "edit", :href "module/ff0e0e39-4c22-411b-8c39-868aa50da1f5"}
-    {:rel "delete", :href "module/ff0e0e39-4c22-411b-8c39-868aa50da1f5"}
+   [{:rel "edit", :href app5-id}
+    {:rel "delete", :href app5-id}
     {:rel  "publish",
-     :href "module/ff0e0e39-4c22-411b-8c39-868aa50da1f5/publish"}
+     :href (str app5-id "/publish")}
     {:rel  "unpublish",
-     :href "module/ff0e0e39-4c22-411b-8c39-868aa50da1f5/unpublish"}
+     :href (str app5-id "/unpublish")}
     {:rel  "deploy",
-     :href "module/ff0e0e39-4c22-411b-8c39-868aa50da1f5/deploy"}
-    {:rel "delete-version",
-     :href
-     "module/ff0e0e39-4c22-411b-8c39-868aa50da1f5/delete-version"}],
+     :href (str app5-id "/deploy")}
+    {:rel  "delete-version",
+     :href (str app5-id "/delete-version")}],
    :logo-url                  "https://icon-library.com/images/sed-02-512_42024.png",
    :versions
    [{:href
@@ -133,7 +140,7 @@
 (def app-set-dep-set {:targets ["credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"
                                 "credential/bc258c46-4771-45d3-9b38-97afdf185f44"]
                       :applications
-                      [{:id      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8",
+                      [{:id      app4-id,
                         :version 1,
                         :environmental-variables
                         [{:name  "var_1_value",
@@ -146,7 +153,7 @@
    :name          "New dep set",
    :start         false,
    :applications-sets
-   [{:id      "module/ff0e0e39-4c22-411b-8c39-868aa50da1f5",
+   [{:id      app5-id,
      :version 11,
      :overwrites
      [app-set-dep-set
@@ -178,7 +185,7 @@
                           :files                   [{:file-name "file1", :file-content "overwritten file1 content"}
                                                     {:file-content "overwritten in deployment set"
                                                      :file-name    "file2"}]
-                          :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
+                          :id                      app4-id
                           :version                 1}
             :target      "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
            {:app-set     "set-1"
@@ -189,53 +196,53 @@
                           :files                   [{:file-name "file1", :file-content "overwritten file1 content"}
                                                     {:file-content "overwritten in deployment set"
                                                      :file-name    "file2"}]
-                          :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
+                          :id                      app4-id
                           :version                 1}
             :target      "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
            {:app-set     "set-1"
-            :application {:id      "module/188555b1-2006-4766-b287-f60e5e908197"
+            :application {:id      app3-id
                           :version 0}
             :target      "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
            {:app-set     "set-1"
-            :application {:id      "module/188555b1-2006-4766-b287-f60e5e908197"
+            :application {:id      app3-id
                           :version 0}
             :target      "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
            {:app-set     "set-1"
-            :application {:id      "module/770f5090-be33-42a3-b9fe-0de4622f12ea"
+            :application {:id      app2-id
                           :version 0}
             :target      "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
            {:app-set     "set-1"
-            :application {:id      "module/770f5090-be33-42a3-b9fe-0de4622f12ea"
+            :application {:id      app2-id
                           :version 0}
             :target      "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
            {:app-set     "set-1"
-            :application {:id      "module/fcc71f74-1898-4e38-a284-5997141801a7"
+            :application {:id      app1-id
                           :version 0}
             :target      "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
            {:app-set     "set-1"
-            :application {:id      "module/fcc71f74-1898-4e38-a284-5997141801a7"
+            :application {:id      app1-id
                           :version 0}
             :target      "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}})))
 
 (deftest module-utils_get-applications-sets
   (is (= (module-utils/get-applications-sets u-applications-sets-v11)
-         [{:applications [{:id      "module/fcc71f74-1898-4e38-a284-5997141801a7"
+         [{:applications [{:id      app1-id
                            :version 0}
-                          {:id      "module/770f5090-be33-42a3-b9fe-0de4622f12ea"
+                          {:id      app2-id
                            :version 0}
-                          {:id      "module/188555b1-2006-4766-b287-f60e5e908197"
+                          {:id      app3-id
                            :version 0}
                           {:environmental-variables [{:name  "var_1_value"
                                                       :value "overwritten var1"}]
                            :files                   [{:file-name "file1", :file-content "overwritten file1 content"}]
-                           :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
+                           :id                      app4-id
                            :version                 1}]
            :name         "set-1"}
-          {:applications [{:id      "module/64e8d02d-1b40-46d0-b1d8-2093024fc1d2"
+          {:applications [{:id      app6-id
                            :version 5}]
            :description  "set 2 nginx pro only"
            :name         "set-2"}
-          {:applications [{:id      "module/1cefb94b-c527-4b8a-be5f-802b131c1a9e"
+          {:applications [{:id      app7-id
                            :version 0}]
            :description  "k8s"
            :name         "set-3"}])))
@@ -247,7 +254,7 @@
                                                      {:name  "var_2"
                                                       :value "overwritten in deployment set"}]
                            :files                   [{:file-name "file2", :file-content "overwritten in deployment set"}]
-                           :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
+                           :id                      app4-id
                            :version                 1}]
            :targets      ["credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"
                           "credential/bc258c46-4771-45d3-9b38-97afdf185f44"]}
@@ -266,7 +273,7 @@
                                      {:name  "var_2"
                                       :value "overwritten in deployment set"}]
            :files                   [{:file-name "file2", :file-content "overwritten in deployment set"}]
-           :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
+           :id                      app4-id
            :version                 1}])))
 
 
@@ -341,6 +348,7 @@
               (ltu/is-key-value :state utils/state-new)
               (ltu/is-operation-present utils/action-start)
               (ltu/is-operation-present utils/action-plan)
+              (ltu/is-operation-present utils/action-check-requirements)
               (ltu/is-operation-present utils/action-operational-status)
               (ltu/is-operation-present crud/action-delete)
               (ltu/is-operation-absent utils/action-force-delete)
@@ -1335,6 +1343,93 @@
               ltu/body->edn
               (ltu/is-status 404)
               (ltu/message-matches "no running operation found that can be cancelled")))))))
+
+
+(deftest lifecycle-check-requirements
+  (let [session-anon (-> (ltu/ring-app)
+                         session
+                         (content-type "application/json"))
+        session-user (header session-anon authn-info-header
+                             (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))]
+
+    (testing "create must be possible for user"
+      (let [module-id   (resource-creation/create-module session-user "a" "a/b")
+            _           (module/initialize)
+            _           (-> session-user
+                            (request (str p/service-context module-id)
+                                     :request-method :put
+                                     :body (json/write-str {:content {:docker-compose       "a"
+                                                                      :architectures        ["x86_64"]
+                                                                      :minimum-requirements {:min-cpu  2.0
+                                                                                             :min-ram  200
+                                                                                             :min-disk 10}
+                                                                      :author               "user/jane"}}))
+                            ltu/body->edn
+                            (ltu/is-status 200))
+            module-id-2 (resource-creation/create-module session-user "c" "c/d")
+            _           (-> session-user
+                            (request (str p/service-context module-id-2)
+                                     :request-method :put
+                                     :body (json/write-str {:content {:docker-compose       "a"
+                                                                      :architectures        ["x86_64" "sparc"]
+                                                                      :minimum-requirements {:min-cpu  0.5
+                                                                                             :min-ram  100
+                                                                                             :min-disk 100}
+                                                                      :author               "user/jane"}}))
+                            ltu/body->edn
+                            (ltu/is-status 200))
+            fleet       ["nuvlabox/1"]
+            dep-set-url (with-redefs [utils/get-missing-edges (constantly #{})]
+                          (-> session-user
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str {:name    dep-set-name
+                                                              :modules [module-id module-id-2]
+                                                              :fleet   fleet}))
+                              ltu/body->edn
+                              (ltu/is-status 201)
+                              ltu/location-url))]
+
+        (testing "check deployment set requirements"
+          (let [check-requirements-op-url    (-> session-user
+                                                 (request dep-set-url)
+                                                 ltu/body->edn
+                                                 (ltu/is-status 200)
+                                                 (ltu/get-op-url utils/action-check-requirements))
+                retrieve-by-id-as-admin-orig crud/retrieve-by-id-as-admin
+                check-req-results            (with-redefs [crud/retrieve-by-id-as-admin
+                                                           (fn [id]
+                                                             (cond
+                                                               (= "nuvlabox/1" id)
+                                                               {:id              "nuvlabox/1"
+                                                                :name            "NuvlaBox 01"
+                                                                :nuvlabox-status "nuvlabox-status/1"}
+                                                               (= "nuvlabox-status/1" id)
+                                                               {:architecture "x86_64"
+                                                                :resources    {:cpu   {:capacity 2}
+                                                                               :ram   {:capacity 1024}
+                                                                               :disks [{:capacity 20}
+                                                                                       {:capacity 200}]}}
+                                                               :else
+                                                               (retrieve-by-id-as-admin-orig id)))]
+                                               (-> session-user
+                                                   (request check-requirements-op-url)
+                                                   ltu/body->edn
+                                                   (ltu/is-status 200)
+                                                   ltu/body))]
+            (is (= {:minimum-requirements {:architectures ["x86_64"]
+                                           :min-cpu       2.5
+                                           :min-ram       300
+                                           :min-disk      110}
+                    :status               "ok"
+                    :unmet-requirements   {:first-mismatches [{:cpu       {:available 2
+                                                                           :min       2.5}
+                                                               :disk      {:available 20
+                                                                           :min       110}
+                                                               :edge-id   "nuvlabox/1"
+                                                               :edge-name "NuvlaBox 01"}]
+                                           :n-edges          1}}
+                   check-req-results))))))))
 
 
 (deftest bad-methods
