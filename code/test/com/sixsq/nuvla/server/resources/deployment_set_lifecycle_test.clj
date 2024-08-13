@@ -1421,13 +1421,12 @@
                                            :min-cpu       2.5
                                            :min-ram       300
                                            :min-disk      110}
-                    :status               "ok"
-                    :unmet-requirements   {:first-mismatches [{:cpu       {:available 2
+                    :unmet-requirements   {:first-mismatches [{:edge-id   "nuvlabox/1"
+                                                               :edge-name "NuvlaBox 01"
+                                                               :cpu       {:available 2
                                                                            :min       2.5}
                                                                :disk      {:available 20
-                                                                           :min       110}
-                                                               :edge-id   "nuvlabox/1"
-                                                               :edge-name "NuvlaBox 01"}]
+                                                                           :min       110}}]
                                            :n-edges          1}}
                    check-req-results))))))))
 
