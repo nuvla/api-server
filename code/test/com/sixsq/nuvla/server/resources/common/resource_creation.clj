@@ -77,23 +77,25 @@
 
 
 (defn create-module
-  [session]
-  (binding [config-nuvla/*stripe-api-key* nil]
-    (-> session
-        (request (str p/service-context module/resource-type)
-                 :request-method :post
-                 :body (json/write-str
-                         {:subtype "project"
-                          :path    "a"}))
-        (ltu/body->edn)
-        (ltu/is-status 201))
-    (-> session
-        (request (str p/service-context module/resource-type)
-                 :request-method :post
-                 :body (json/write-str valid-module))
-        (ltu/body->edn)
-        (ltu/is-status 201)
-        (ltu/location))))
+  ([session]
+   (create-module session "a" "a/b"))
+  ([session project-path module-path]
+   (binding [config-nuvla/*stripe-api-key* nil]
+     (-> session
+         (request (str p/service-context module/resource-type)
+                  :request-method :post
+                  :body (json/write-str
+                          {:subtype "project"
+                           :path    project-path}))
+         (ltu/body->edn)
+         (ltu/is-status 201))
+     (-> session
+         (request (str p/service-context module/resource-type)
+                  :request-method :post
+                  :body (json/write-str (assoc valid-module :path module-path)))
+         (ltu/body->edn)
+         (ltu/is-status 201)
+         (ltu/location)))))
 
 
 (defn create-deployment

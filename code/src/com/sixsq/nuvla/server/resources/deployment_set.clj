@@ -67,6 +67,13 @@ These resources represent a deployment set that regroups deployments.
                :description    "get an action plan for deployment set"
                :method         "POST"
                :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           utils/action-check-requirements
+               :uri            utils/action-check-requirements
+               :description    "check whether the edges in the deployment set satisfy the apps requirements"
+               :method         "POST"
+               :input-message  "application/json"
                :output-message "application/json"}])
 
 (defmethod sm/state-machine resource-type
@@ -234,6 +241,14 @@ These resources represent a deployment set that regroups deployments.
                               utils/get-applications-sets-href
                               (crud/get-resource-throw-nok request))]
     (r/json-response (utils/plan deployment-set applications-sets))))
+
+(defmethod crud/do-action [resource-type utils/action-check-requirements]
+  [request]
+  (let [deployment-set    (load-resource-throw-not-allowed-action request)
+        applications-sets (-> deployment-set
+                              utils/get-applications-sets-href
+                              (crud/get-resource-throw-nok request))]
+    (r/json-response (utils/check-requirements deployment-set applications-sets))))
 
 (defn operationnal-status-content
   [resource _request]
