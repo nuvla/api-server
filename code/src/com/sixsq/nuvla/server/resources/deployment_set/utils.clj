@@ -468,7 +468,6 @@
   (let [min-req      (minimum-requirements deployment-set applications-sets)
         av-resources (available-resources deployment-set)
         unmet-req    (unmet-requirements av-resources min-req)]
-    {:status               :ok
-     :minimum-requirements min-req
+    {:minimum-requirements min-req
      :unmet-requirements   {:n-edges          (count unmet-req)
                             :first-mismatches (take 10 unmet-req)}}))
