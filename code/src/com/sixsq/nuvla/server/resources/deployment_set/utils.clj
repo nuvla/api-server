@@ -428,6 +428,7 @@
   [deployment-set]
   (let [apps-set-overwrites (get-applications-sets deployment-set)
         edge-ids            (vec (mapcat :fleet apps-set-overwrites))]
+    ;; FIXME: avoid doing N*2 queries; use crud/retrieve with cimi filter instead to only have 2 queries
     (->> edge-ids
          (map crud/retrieve-by-id-as-admin)
          (map (fn [{:keys [id name nuvlabox-status]}]
@@ -446,7 +447,7 @@
   [av-resources {:keys [architectures min-cpu min-ram min-disk] :as _min-req}]
   (for [{:keys [edge-id edge-name architecture cpu ram disk]} av-resources
         :let [unmet (cond-> {}
-                            (and architecture (seq architectures) (not ((set architectures) architecture)))
+                            (and architecture (some? architectures) (not ((set architectures) architecture)))
                             (assoc :architecture {:supported         architectures
                                                   :edge-architecture architecture})
 
