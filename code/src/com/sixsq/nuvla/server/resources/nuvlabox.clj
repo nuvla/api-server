@@ -854,44 +854,38 @@ particular NuvlaBox release.
 ;;
 
 (defn update-nuvlabox
-  [{:keys [id acl] :as nuvlabox} nb-release-id payload]
-  (if (nil? nb-release-id)
+  [{:keys [id acl] :as nuvlabox}
+   {{:keys [nuvlabox-release payload parent-job]} :body :as request}]
+  (if (nil? nuvlabox-release)
     (logu/log-and-throw-400 "Target NuvlaBox release is missing")
-    (do
-      (log/warn "Updating NuvlaBox " id)
-      (try
-        (let [{{job-id     :resource-id
-                job-status :status} :body} (job/create-job
-                                             id "nuvlabox_update"
-                                             (-> acl
-                                                 (a/acl-append :edit-data id)
-                                                 (a/acl-append :manage id))
-                                             :affected-resources [{:href nb-release-id}]
-                                             :priority 50
-                                             :execution-mode (utils/get-execution-mode nuvlabox)
-                                             :payload (when-not (str/blank? payload) payload))
-              job-msg (str "updating NuvlaBox " id " with target release " nb-release-id
-                           ", with async " job-id)]
-          (when (not= job-status 201)
-            (throw (r/ex-response "unable to create async job to update NuvlaBox" 500 id)))
-          (ectx/add-linked-identifier job-id)
-          ;; Legacy event
-          ;; (event-utils/create-event id job-msg acl)
-          (r/map-response job-msg 202 id job-id))
-        (catch Exception e
-          (or (ex-data e) (throw e)))))))
+    (crud/retrieve-by-id nuvlabox-release request))
+  (let [{{job-id     :resource-id
+          job-status :status} :body} (job/create-job
+                                       id "nuvlabox_update"
+                                       (-> acl
+                                           (a/acl-append :edit-data id)
+                                           (a/acl-append :manage id))
+                                       :affected-resources [{:href nuvlabox-release}]
+                                       :priority 50
+                                       :execution-mode (utils/get-execution-mode nuvlabox)
+                                       :payload (when-not (str/blank? payload) payload)
+                                       :parent-job parent-job)
+        job-msg (str "updating NuvlaBox " id " with target release " nuvlabox-release
+                     ", with async " job-id)]
+    (when (not= job-status 201)
+      (throw (r/ex-response "unable to create async job to update NuvlaBox" 500 id)))
+    (ectx/add-linked-identifier job-id)
+    (r/map-response job-msg 202 id job-id)))
 
 
 (defmethod crud/do-action [resource-type "update-nuvlabox"]
-  [{{uuid :uuid} :params {:keys [nuvlabox-release payload]} :body :as request}]
+  [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)]
-      (crud/retrieve-by-id nuvlabox-release request)
-      (-> (crud/retrieve-by-id-as-admin id)
-          (a/throw-cannot-manage request)
-          (u/throw-can-not-do-action
-            utils/can-update-nuvlabox? "update-nuvlabox")
-          (update-nuvlabox nuvlabox-release payload)))
+    (-> (str resource-type "/" uuid)
+        crud/retrieve-by-id-as-admin
+        (a/throw-cannot-manage request)
+        (u/throw-can-not-do-action utils/can-update-nuvlabox? "update-nuvlabox")
+        (update-nuvlabox request))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
