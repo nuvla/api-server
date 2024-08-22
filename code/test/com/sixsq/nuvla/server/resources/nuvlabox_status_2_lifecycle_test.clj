@@ -3,10 +3,6 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is testing use-fixtures]]
-    [peridot.core :refer [content-type header request session]]
-    [ring.util.codec :as rc]
-    [same.compare :refer [compare-ulp]]
-    [same.core :refer [ish?]]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -21,7 +17,11 @@
     [com.sixsq.nuvla.server.resources.ts-nuvlaedge-availability :as ts-ne-availability]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
     [com.sixsq.nuvla.server.util.time :as time]
-    [com.sixsq.nuvla.utils.log-time :as logt])
+    [com.sixsq.nuvla.utils.log-time :as logt]
+    [peridot.core :refer [content-type header request session]]
+    [ring.util.codec :as rc]
+    [same.compare :refer [compare-ulp]]
+    [same.core :refer [ish?]])
   (:import (java.text DecimalFormat DecimalFormatSymbols)
            (java.util Locale)))
 

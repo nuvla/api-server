@@ -1,13 +1,13 @@
 (ns com.sixsq.nuvla.server.resources.infrastructure-service-template-test
   (:require
     [clojure.test :refer [deftest use-fixtures]]
-    [peridot.core :refer [content-type header request session]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.infrastructure-service-template :as tpl]
     [com.sixsq.nuvla.server.resources.infrastructure-service-template-generic :as tpl-generic]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [peridot.core :refer [content-type header request session]]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)

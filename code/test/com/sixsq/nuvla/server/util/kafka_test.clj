@@ -1,10 +1,10 @@
 (ns com.sixsq.nuvla.server.util.kafka-test
   (:require
     [clojure.test :refer [deftest is use-fixtures]]
-    [kinsky.client :as kc]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.util.kafka :as k]
-    [com.sixsq.nuvla.server.util.kafka-base-test :refer [cleanup]]))
+    [com.sixsq.nuvla.server.util.kafka-base-test :refer [cleanup]]
+    [kinsky.client :as kc]))
 
 
 (use-fixtures :each ltu/with-test-kafka-fixture cleanup)

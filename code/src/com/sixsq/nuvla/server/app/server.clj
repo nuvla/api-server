@@ -1,15 +1,6 @@
 (ns com.sixsq.nuvla.server.app.server
   (:require
     [clojure.tools.logging :as log]
-    [compojure.core :as compojure]
-    [environ.core :as env]
-    [nrepl.server :as nrepl]
-    [nrepl.transport :as transport]
-    [ring.middleware.cookies :refer [wrap-cookies]]
-    [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
-    [ring.middleware.keyword-params :refer [wrap-keyword-params]]
-    [ring.middleware.nested-params :refer [wrap-nested-params]]
-    [ring.middleware.params :refer [wrap-params]]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.db.loader :as db-loader]
     [com.sixsq.nuvla.server.app.routes :as routes]
@@ -24,7 +15,16 @@
     [com.sixsq.nuvla.server.middleware.redirect-cep :refer [redirect-cep]]
     [com.sixsq.nuvla.server.resources.common.dynamic-load :as resources]
     [com.sixsq.nuvla.server.util.kafka :as kafka]
-    [com.sixsq.nuvla.server.util.zookeeper :as zku]))
+    [com.sixsq.nuvla.server.util.zookeeper :as zku]
+    [compojure.core :as compojure]
+    [environ.core :as env]
+    [nrepl.server :as nrepl]
+    [nrepl.transport :as transport]
+    [ring.middleware.cookies :refer [wrap-cookies]]
+    [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
+    [ring.middleware.keyword-params :refer [wrap-keyword-params]]
+    [ring.middleware.nested-params :refer [wrap-nested-params]]
+    [ring.middleware.params :refer [wrap-params]]))
 
 
 (def default-db-binding-ns "com.sixsq.nuvla.db.es.loader")

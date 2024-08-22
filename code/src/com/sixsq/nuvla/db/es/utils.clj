@@ -2,9 +2,9 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
+    [com.sixsq.nuvla.utils.env :as eu]
     [environ.core :as env]
-    [qbits.spandex :as spandex]
-    [com.sixsq.nuvla.utils.env :as eu]))
+    [qbits.spandex :as spandex]))
 
 (def ^:const status-yellow "yellow")
 (def ^:const status-green "green")

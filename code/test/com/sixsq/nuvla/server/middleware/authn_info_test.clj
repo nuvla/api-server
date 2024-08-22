@@ -1,10 +1,10 @@
 (ns com.sixsq.nuvla.server.middleware.authn-info-test
   (:require
     [clojure.test :refer [are deftest]]
-    [ring.util.codec :as codec]
     [com.sixsq.nuvla.auth.cookies :as cookies]
     [com.sixsq.nuvla.auth.utils :as auth]
-    [com.sixsq.nuvla.server.middleware.authn-info :as t]))
+    [com.sixsq.nuvla.server.middleware.authn-info :as t]
+    [ring.util.codec :as codec]))
 
 
 (defn serialize-cookie-value

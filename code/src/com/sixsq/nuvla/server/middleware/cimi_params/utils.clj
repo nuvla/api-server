@@ -3,8 +3,8 @@
    formatted values for further processing."
   (:require
     [clojure.string :as str]
-    [instaparse.core :as insta]
-    [com.sixsq.nuvla.server.util.response :as r]))
+    [com.sixsq.nuvla.server.util.response :as r]
+    [instaparse.core :as insta]))
 
 (defn as-vector
   "Ensures that the given argument is a vector, coercing the given value if

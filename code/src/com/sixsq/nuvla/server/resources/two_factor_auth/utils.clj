@@ -1,10 +1,10 @@
 (ns com.sixsq.nuvla.server.resources.two-factor-auth.utils
   (:require [clojure.string :as str]
-            [one-time.core :as ot]
             [com.sixsq.nuvla.auth.password :as auth-password]
             [com.sixsq.nuvla.server.resources.common.utils :as u]
             [com.sixsq.nuvla.server.resources.email.utils :as email-utils]
-            [com.sixsq.nuvla.server.util.log :as logu]))
+            [com.sixsq.nuvla.server.util.log :as logu]
+            [one-time.core :as ot]))
 
 
 (def ^:const msg-wrong-2fa-token "Wrong 2FA token")

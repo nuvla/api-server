@@ -2,8 +2,8 @@
   "Utilities for creating expiration times for token claims and for formatting
    them correctly for the cookie 'expires' field."
   (:require
-    [java-time.api :as t]
-    [com.sixsq.nuvla.server.util.time :as time]))
+    [com.sixsq.nuvla.server.util.time :as time]
+    [java-time.api :as t]))
 
 
 (def default-ttl-minutes 10080)                             ;; 1 week

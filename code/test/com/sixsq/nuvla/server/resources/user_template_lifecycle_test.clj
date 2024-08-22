@@ -1,7 +1,6 @@
 (ns com.sixsq.nuvla.server.resources.user-template-lifecycle-test
   (:require
     [clojure.test :refer [deftest is use-fixtures]]
-    [peridot.core :refer [content-type header request session]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
@@ -13,7 +12,8 @@
     [com.sixsq.nuvla.server.resources.user-template-github :as github]
     [com.sixsq.nuvla.server.resources.user-template-minimum :as minimum]
     [com.sixsq.nuvla.server.resources.user-template-username-password :as username-password]
-    [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [peridot.core :refer [content-type header request session]]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)

@@ -1,10 +1,10 @@
 (ns com.sixsq.nuvla.server.resources.email.sending-test
   (:require
     [clojure.test :refer [deftest is testing]]
-    [postal.core :as postal]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.email.content :as content]
-    [com.sixsq.nuvla.server.resources.email.sending :as t])
+    [com.sixsq.nuvla.server.resources.email.sending :as t]
+    [postal.core :as postal])
   (:import (clojure.lang ExceptionInfo)))
 
 (deftest send-email

@@ -2,12 +2,12 @@
   (:require
     [clojure.java.io :as io]
     [clojure.tools.logging :as log]
-    [java-time :as t]
-    [postal.core :as postal]
-    [selmer.parser :as tmpl]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [com.sixsq.nuvla.server.util.response :as r]))
+    [com.sixsq.nuvla.server.util.response :as r]
+    [java-time :as t]
+    [postal.core :as postal]
+    [selmer.parser :as tmpl]))
 
 (def base-html (slurp (io/resource "sixsq/nuvla/html-template/base.html")))
 (def trial-html (slurp (io/resource "sixsq/nuvla/html-template/trial.html")))

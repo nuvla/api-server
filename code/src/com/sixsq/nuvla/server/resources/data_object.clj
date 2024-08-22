@@ -6,7 +6,6 @@ how the object can be accessed.
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
-    [ring.util.response :as ru]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.db.impl :as db]
@@ -16,7 +15,8 @@ how the object can be accessed.
     [com.sixsq.nuvla.server.resources.data-object-template :as dot]
     [com.sixsq.nuvla.server.resources.data.utils :as s3]
     [com.sixsq.nuvla.server.util.log :as logu]
-    [com.sixsq.nuvla.server.util.response :as r]))
+    [com.sixsq.nuvla.server.util.response :as r]
+    [ring.util.response :as ru]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

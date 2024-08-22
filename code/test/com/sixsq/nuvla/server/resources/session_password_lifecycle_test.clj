@@ -3,8 +3,6 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is testing use-fixtures]]
-    [peridot.core :refer [content-type header request session]]
-    [postal.core :as postal]
     [com.sixsq.nuvla.auth.password :as auth-password]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.auth.utils.sign :as sign]
@@ -21,7 +19,9 @@
     [com.sixsq.nuvla.server.resources.session-template :as st]
     [com.sixsq.nuvla.server.resources.user :as user]
     [com.sixsq.nuvla.server.resources.user-template :as user-tpl]
-    [com.sixsq.nuvla.server.resources.user-template-email-password :as email-password]))
+    [com.sixsq.nuvla.server.resources.user-template-email-password :as email-password]
+    [peridot.core :refer [content-type header request session]]
+    [postal.core :as postal]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)

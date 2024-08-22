@@ -2,14 +2,14 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is join-fixtures use-fixtures]]
-    [peridot.core :refer [content-type header request session]]
-    [ring.util.codec :as rc]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
     [com.sixsq.nuvla.server.resources.evidence-record :as t]
-    [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [peridot.core :refer [content-type header request session]]
+    [ring.util.codec :as rc]))
 
 
 (def base-uri (str p/service-context t/resource-type))

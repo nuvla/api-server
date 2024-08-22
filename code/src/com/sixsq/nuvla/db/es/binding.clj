@@ -2,7 +2,6 @@
   "Binding protocol implemented for an Elasticsearch database that makes use
    of the Elasticsearch REST API."
   (:require [clojure.tools.logging :as log]
-            [qbits.spandex :as spandex]
             [com.sixsq.nuvla.auth.utils.acl :as acl-utils]
             [com.sixsq.nuvla.db.binding :refer [Binding]]
             [com.sixsq.nuvla.db.es.acl :as acl]
@@ -16,7 +15,8 @@
             [com.sixsq.nuvla.db.es.select :as select]
             [com.sixsq.nuvla.db.es.utils :as esu]
             [com.sixsq.nuvla.db.utils.common :as cu]
-            [com.sixsq.nuvla.server.util.response :as r])
+            [com.sixsq.nuvla.server.util.response :as r]
+            [qbits.spandex :as spandex])
   (:import (java.io Closeable)))
 
 (defn create-index

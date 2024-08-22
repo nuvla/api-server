@@ -1,8 +1,8 @@
 (ns com.sixsq.nuvla.server.middleware.gzip-test
   (:require
     [clojure.test :refer [deftest is]]
-    [peridot.request :as pr]
-    [com.sixsq.nuvla.server.middleware.gzip :as t]))
+    [com.sixsq.nuvla.server.middleware.gzip :as t]
+    [peridot.request :as pr]))
 
 
 (defn request

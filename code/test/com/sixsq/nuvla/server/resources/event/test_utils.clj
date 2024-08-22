@@ -2,11 +2,11 @@
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [peridot.core :refer [content-type header request session]]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.util.general :as gen-util]
-    [com.sixsq.nuvla.server.util.time :as time]))
+    [com.sixsq.nuvla.server.util.time :as time]
+    [peridot.core :refer [content-type header request session]]))
 
 
 (defn- urlencode-param

@@ -25,9 +25,9 @@
     [clojure.core.async :as a :refer [<! chan put!]]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
+    [com.sixsq.nuvla.utils.env :as eu]
     [environ.core :as env]
-    [kinsky.client :as kc]
-    [com.sixsq.nuvla.utils.env :as eu]))
+    [kinsky.client :as kc]))
 
 
 ; Number of producers to Kafka.

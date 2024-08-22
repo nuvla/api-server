@@ -3,9 +3,9 @@
     [clojure.string :as str]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
+    [com.sixsq.nuvla.server.util.general :as util-general]
     [com.sixsq.nuvla.server.util.response :as r]
     [com.sixsq.nuvla.server.util.time :as time]
-    [com.sixsq.nuvla.server.util.general :as util-general]
     [com.sixsq.nuvla.server.util.zookeeper :as uzk]))
 
 (def state-queued "QUEUED")

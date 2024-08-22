@@ -293,8 +293,6 @@ include aggregating values over a collection of resources.
 "
   (:require
     [clojure.tools.logging :as log]
-    [compojure.core :refer [ANY defroutes GET PUT]]
-    [ring.util.response :as r]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.app.params :as p]
@@ -305,7 +303,9 @@ include aggregating values over a collection of resources.
     [com.sixsq.nuvla.server.resources.resource-metadata :as md]
     [com.sixsq.nuvla.server.resources.spec.cloud-entry-point :as cep]
     [com.sixsq.nuvla.server.util.metadata :as gen-md]
-    [com.sixsq.nuvla.server.util.response :as sr]))
+    [com.sixsq.nuvla.server.util.response :as sr]
+    [compojure.core :refer [ANY defroutes GET PUT]]
+    [ring.util.response :as r]))
 
 ;;
 ;; utilities
