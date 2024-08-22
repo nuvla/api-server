@@ -2,8 +2,6 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
-    [peridot.core :refer [content-type header request session]]
-    [ring.util.codec :as rc]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -14,7 +12,9 @@
     [com.sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [com.sixsq.nuvla.server.resources.nuvlabox-status-1 :as nb-status-1]
     [com.sixsq.nuvla.server.resources.nuvlabox-status-2-lifecycle-test :as nslt]
-    [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [peridot.core :refer [content-type header request session]]
+    [ring.util.codec :as rc]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)

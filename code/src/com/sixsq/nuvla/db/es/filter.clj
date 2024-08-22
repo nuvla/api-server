@@ -3,11 +3,11 @@
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [geo.io :as gio]
-    [instaparse.transform :as insta-transform]
     [com.sixsq.nuvla.db.es.query :as query]
     [com.sixsq.nuvla.server.util.log :as logu]
-    [com.sixsq.nuvla.server.util.time :as time]))
+    [com.sixsq.nuvla.server.util.time :as time]
+    [geo.io :as gio]
+    [instaparse.transform :as insta-transform]))
 
 (defn- strip-quotes
   [s]

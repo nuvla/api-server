@@ -1,8 +1,8 @@
 (ns com.sixsq.nuvla.server.resources.credential.key-utils
   (:require
     [buddy.hashers :as hashers]
-    [com.sixsq.nuvla.server.resources.common.utils :as u]
-    [clojure.string :as str])
+    [clojure.string :as str]
+    [com.sixsq.nuvla.server.resources.common.utils :as u])
   (:import (java.io ByteArrayOutputStream DataOutputStream StringWriter)
            (java.security KeyPairGenerator)
            (java.util Base64)

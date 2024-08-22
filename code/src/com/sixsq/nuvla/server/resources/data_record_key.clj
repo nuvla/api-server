@@ -8,7 +8,6 @@ information that helps humans understand the information provided in a
 The `name` and `description` attributes are required for this resource.
 "
   (:require
-    [ring.util.response :as r]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -17,7 +16,8 @@ The `name` and `description` attributes are required for this resource.
     [com.sixsq.nuvla.server.resources.resource-metadata :as md]
     [com.sixsq.nuvla.server.resources.spec.data-record-key :as data-record-key]
     [com.sixsq.nuvla.server.util.metadata :as gen-md]
-    [com.sixsq.nuvla.server.util.response :as sr])
+    [com.sixsq.nuvla.server.util.response :as sr]
+    [ring.util.response :as r])
   (:import
     [java.math BigInteger]
     [java.net URI URISyntaxException]

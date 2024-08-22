@@ -2,13 +2,13 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [is]]
-    [peridot.core :refer [content-type header request session]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.configuration :as cfg]
     [com.sixsq.nuvla.server.resources.configuration-template :as ct]
-    [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [peridot.core :refer [content-type header request session]]))
 
 (def base-uri (str p/service-context cfg/resource-type))
 

@@ -3,7 +3,6 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [is]]
-    [peridot.core :refer [content-type header request session]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.credential :as credential]
@@ -15,7 +14,8 @@
     [com.sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
     [com.sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
     [com.sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
-    [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
+    [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [peridot.core :refer [content-type header request session]])
   (:import
     (com.amazonaws AmazonServiceException)))
 

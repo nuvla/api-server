@@ -5,10 +5,6 @@
     [clojure.set :as set]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
-    [environ.core :as env]
-    [promesa.core :as p]
-    [promesa.exec :as px]
-    [ring.middleware.accept :refer [wrap-accept]]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.db.filter.parser :as parser]
     [com.sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
@@ -19,7 +15,11 @@
     [com.sixsq.nuvla.server.resources.ts-nuvlaedge-telemetry :as ts-nuvlaedge-telemetry]
     [com.sixsq.nuvla.server.util.log :as logu]
     [com.sixsq.nuvla.server.util.response :as r]
-    [com.sixsq.nuvla.server.util.time :as time])
+    [com.sixsq.nuvla.server.util.time :as time]
+    [environ.core :as env]
+    [promesa.core :as p]
+    [promesa.exec :as px]
+    [ring.middleware.accept :refer [wrap-accept]])
   (:import
     (java.io StringWriter)
     (java.text DecimalFormat DecimalFormatSymbols)

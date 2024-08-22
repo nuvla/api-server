@@ -4,7 +4,6 @@
     [clojure.string :as str]
     [clojure.test :refer [are deftest is use-fixtures]]
     [clojure.tools.logging :as log]
-    [peridot.core :refer [content-type header request session]]
     [com.sixsq.nuvla.auth.cookies :as cookies]
     [com.sixsq.nuvla.auth.utils.sign :as sign]
     [com.sixsq.nuvla.server.app.params :as p]
@@ -17,7 +16,8 @@
     [com.sixsq.nuvla.server.resources.session-api-key :as t]
     [com.sixsq.nuvla.server.resources.session-template :as st]
     [com.sixsq.nuvla.server.resources.session-template-api-key :as api-key]
-    [com.sixsq.nuvla.server.util.time :as time]))
+    [com.sixsq.nuvla.server.util.time :as time]
+    [peridot.core :refer [content-type header request session]]))
 
 (use-fixtures :once ltu/with-test-server-fixture)
 

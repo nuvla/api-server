@@ -1,7 +1,6 @@
 (ns com.sixsq.nuvla.db.es.binding-test
   (:require
     [clojure.test :refer [deftest is testing use-fixtures]]
-    [qbits.spandex :as spandex]
     [com.sixsq.nuvla.db.binding-lifecycle :as lifecycle]
     [com.sixsq.nuvla.db.binding-queries :as queries]
     [com.sixsq.nuvla.db.es.binding :as t]
@@ -10,7 +9,8 @@
     [com.sixsq.nuvla.db.es.utils :as esu]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.spec.ts-nuvlaedge-telemetry :as ts-nuvlaedge]
-    [com.sixsq.nuvla.server.util.time :as time]))
+    [com.sixsq.nuvla.server.util.time :as time]
+    [qbits.spandex :as spandex]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 

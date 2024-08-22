@@ -2,8 +2,8 @@
   (:require
     [clojure.string :as str]
     [clojure.test :refer [are deftest is]]
-    [instaparse.core :as insta]
-    [com.sixsq.nuvla.db.filter.parser :as t]))
+    [com.sixsq.nuvla.db.filter.parser :as t]
+    [instaparse.core :as insta]))
 
 
 (defn fails-fn

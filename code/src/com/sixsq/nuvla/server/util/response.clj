@@ -2,8 +2,8 @@
   "Utilities for creating ring responses and exceptions with embedded ring
    responses."
   (:require
-    [ring.util.response :as r]
-    [com.sixsq.nuvla.server.util.general :as gen-util]))
+    [com.sixsq.nuvla.server.util.general :as gen-util]
+    [ring.util.response :as r]))
 
 
 (defn response-created

@@ -1,14 +1,14 @@
 (ns com.sixsq.nuvla.server.resources.data-object-template-lifecycle-test
   (:require
     [clojure.test :refer [deftest is use-fixtures]]
-    [peridot.core :refer [content-type header request session]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.data-object-template :as dot]
     [com.sixsq.nuvla.server.resources.data-object-template-alpha-example :as dotae]
     [com.sixsq.nuvla.server.resources.data-object-template-generic :as dotg]
-    [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [peridot.core :refer [content-type header request session]]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)

@@ -1,13 +1,13 @@
 (ns com.sixsq.nuvla.server.app.routes
   (:require
-    [compojure.core :refer [ANY DELETE GET let-routes OPTIONS PATCH POST PUT routes]]
-    [compojure.route :as route]
-    [ring.middleware.head :refer [wrap-head]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
     [com.sixsq.nuvla.server.resources.common.event-context :as ec]
-    [com.sixsq.nuvla.server.util.response :as r]))
+    [com.sixsq.nuvla.server.util.response :as r]
+    [compojure.core :refer [ANY DELETE GET let-routes OPTIONS PATCH POST PUT routes]]
+    [compojure.route :as route]
+    [ring.middleware.head :refer [wrap-head]]))
 
 
 (def collection-routes

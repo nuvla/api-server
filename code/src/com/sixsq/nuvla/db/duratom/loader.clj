@@ -1,9 +1,9 @@
 (ns com.sixsq.nuvla.db.duratom.loader
   (:refer-clojure :exclude [load])
   (:require
+    [com.sixsq.nuvla.db.atom.binding :as atom]
     [duratom.core :as duratom]
-    [environ.core :as env]
-    [com.sixsq.nuvla.db.atom.binding :as atom]))
+    [environ.core :as env]))
 
 
 (defn load

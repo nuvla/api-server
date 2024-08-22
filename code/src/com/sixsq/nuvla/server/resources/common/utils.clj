@@ -4,12 +4,12 @@
     [clojure.spec.alpha :as s]
     [clojure.string :as str]
     [clojure.walk :as walk]
-    [expound.alpha :as expound]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.server.util.log :as logu]
     [com.sixsq.nuvla.server.util.response :as r]
-    [com.sixsq.nuvla.server.util.time :as time])
+    [com.sixsq.nuvla.server.util.time :as time]
+    [expound.alpha :as expound])
   (:import
     (java.security MessageDigest SecureRandom)
     (java.util UUID)))

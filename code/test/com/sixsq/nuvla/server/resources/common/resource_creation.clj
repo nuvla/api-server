@@ -1,9 +1,6 @@
 (ns com.sixsq.nuvla.server.resources.common.resource-creation
   (:require
     [clojure.data.json :as json]
-    [peridot.core :refer [content-type header request session]
-     :rename {session session-base}]
-    [postal.core :as postal]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
@@ -18,7 +15,10 @@
     [com.sixsq.nuvla.server.resources.nuvlabox :as nuvlabox]
     [com.sixsq.nuvla.server.resources.user :as user]
     [com.sixsq.nuvla.server.resources.user-template :as user-tpl]
-    [com.sixsq.nuvla.server.resources.user-template-minimum :as minimum]))
+    [com.sixsq.nuvla.server.resources.user-template-minimum :as minimum]
+    [peridot.core :refer [content-type header request session]
+     :rename {session session-base}]
+    [postal.core :as postal]))
 
 
 (defn create-user [user-email]

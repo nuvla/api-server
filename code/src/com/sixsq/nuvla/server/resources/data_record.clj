@@ -11,7 +11,6 @@ resource and the key itself **may** be described in a `data-record-key`
 resource.
 "
   (:require
-    [ring.util.response :as r]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
@@ -21,7 +20,8 @@ resource.
     [com.sixsq.nuvla.server.resources.resource-metadata :as md]
     [com.sixsq.nuvla.server.resources.spec.data-record :as data-record]
     [com.sixsq.nuvla.server.util.metadata :as gen-md]
-    [com.sixsq.nuvla.server.util.response :as sr]))
+    [com.sixsq.nuvla.server.util.response :as sr]
+    [ring.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

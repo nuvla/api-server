@@ -2,13 +2,13 @@
   (:refer-clojure :exclude [update])
   (:require
     [clojure.test :refer [deftest is use-fixtures]]
-    [environ.core :as environ]
-    [ring.util.codec :as codec]
     [com.sixsq.nuvla.auth.cookies :as t]
     [com.sixsq.nuvla.auth.env-fixture :as env-fixture]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.resources.group :as group]
-    [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [environ.core :as environ]
+    [ring.util.codec :as codec]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)

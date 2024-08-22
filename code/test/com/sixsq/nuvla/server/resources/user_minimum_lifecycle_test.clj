@@ -2,8 +2,6 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
-    [peridot.core :refer [content-type header request session]]
-    [ring.util.codec :as rc]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
@@ -11,7 +9,9 @@
     [com.sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [com.sixsq.nuvla.server.resources.user-template :as user-tpl]
     [com.sixsq.nuvla.server.resources.user-template-minimum :as minimum]
-    [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [peridot.core :refer [content-type header request session]]
+    [ring.util.codec :as rc]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)

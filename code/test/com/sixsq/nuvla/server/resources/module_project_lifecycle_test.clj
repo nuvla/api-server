@@ -2,14 +2,14 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
-    [peridot.core :refer [content-type header request session]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.module :as module]
     [com.sixsq.nuvla.server.resources.module.utils :as utils]
-    [com.sixsq.nuvla.server.resources.spec.module :as module-spec]))
+    [com.sixsq.nuvla.server.resources.spec.module :as module-spec]
+    [peridot.core :refer [content-type header request session]]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)

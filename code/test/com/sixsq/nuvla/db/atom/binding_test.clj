@@ -1,9 +1,9 @@
 (ns com.sixsq.nuvla.db.atom.binding-test
   (:require
     [clojure.test :refer [deftest]]
-    [duratom.core :as duratom]
     [com.sixsq.nuvla.db.atom.binding :as t]
-    [com.sixsq.nuvla.db.binding-lifecycle :as lifecycle]))
+    [com.sixsq.nuvla.db.binding-lifecycle :as lifecycle]
+    [duratom.core :as duratom]))
 
 
 (deftest check-standard-atom

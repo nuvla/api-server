@@ -7,7 +7,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
-    [environ.core :as env]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.password :as password]
     [com.sixsq.nuvla.auth.utils :as auth]
@@ -34,7 +33,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [com.sixsq.nuvla.server.resources.user-template-username-password :as username-password]
     [com.sixsq.nuvla.server.resources.user-username-password]
     [com.sixsq.nuvla.server.util.metadata :as gen-md]
-    [com.sixsq.nuvla.server.util.response :as r]))
+    [com.sixsq.nuvla.server.util.response :as r]
+    [environ.core :as env]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

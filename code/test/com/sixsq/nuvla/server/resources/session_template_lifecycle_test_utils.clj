@@ -2,12 +2,12 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [is]]
-    [peridot.core :refer [content-type header request session]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [com.sixsq.nuvla.server.resources.session-template :as st]))
+    [com.sixsq.nuvla.server.resources.session-template :as st]
+    [peridot.core :refer [content-type header request session]]))
 
 
 (defn check-existing-session-template [base-uri valid-template]

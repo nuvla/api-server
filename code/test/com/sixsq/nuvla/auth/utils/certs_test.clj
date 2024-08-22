@@ -3,9 +3,9 @@
   (:require
     [buddy.core.keys :as ks]
     [clojure.test :refer [deftest is]]
-    [environ.core :as environ]
     [com.sixsq.nuvla.auth.env-fixture :as env-fixture]
-    [com.sixsq.nuvla.auth.utils.certs :as t]))
+    [com.sixsq.nuvla.auth.utils.certs :as t]
+    [environ.core :as environ]))
 
 (def test-rsa-key "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAosD2Dkf0aa44Q5ur6RNOhVlUbF/kWzQq4UR6nm4cjX1BbnJ+gJdlPYMvg7iu+YCDHPZXERDMXLc4jk3Is9IVtSB2DLbrRYSQGRkHbdo7RF9RZclL1kXlxQUOyU9bvxtbc6oFNuL9WpohEOuPedLvbb5gSNrJaH9gnKkESoMmfViA8O2U4MXcuZ3bbS8spL5LCIPXYDPcpDBjFFvQgFKNvCChb+i6KuU07923T6O0HBkJVmuJ7pRPW6atYADIJ3xYkC5CGE5xqc6KOUibl07DhWP4C8cjN00DdyDazogsKqTXWlFzMOknwlz0fWOtDCvDdvD8AwOsrpU2QAzuLmXDWQIDAQAB")
 

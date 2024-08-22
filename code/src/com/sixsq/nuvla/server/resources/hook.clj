@@ -4,13 +4,13 @@ The `hook` resource is a non standard cimi resource that provides an access
 for events driven workflows.
 "
   (:require
-    [compojure.core :refer [ANY defroutes let-routes]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.hook-oidc-session :as oidc-session]
     [com.sixsq.nuvla.server.resources.hook-oidc-user :as oidc-user]
     [com.sixsq.nuvla.server.resources.hook-reset-password :as reset-password]
-    [com.sixsq.nuvla.server.resources.hook-stripe-oauth :as stripe-oauth]))
+    [com.sixsq.nuvla.server.resources.hook-stripe-oauth :as stripe-oauth]
+    [compojure.core :refer [ANY defroutes let-routes]]))
 
 ;;
 ;; utilities

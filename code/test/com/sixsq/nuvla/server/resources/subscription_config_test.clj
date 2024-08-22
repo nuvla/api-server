@@ -2,11 +2,11 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
-    [peridot.core :refer [content-type header request session]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [com.sixsq.nuvla.server.resources.subscription-config :as t])
+    [com.sixsq.nuvla.server.resources.subscription-config :as t]
+    [peridot.core :refer [content-type header request session]])
   (:import
     [java.util UUID]))
 
