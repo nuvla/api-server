@@ -6,12 +6,11 @@ These resources represent the logs of a deployment or of a nuvlabox.
     [clojure.string :as str]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
-    [com.sixsq.nuvla.db.filter.parser :as parser]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
-    [com.sixsq.nuvla.server.resources.job :as job]
     [com.sixsq.nuvla.server.resources.job.interface :as job-interface]
+    [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [com.sixsq.nuvla.server.resources.resource-metadata :as md]
     [com.sixsq.nuvla.server.resources.spec.resource-log :as rl]
@@ -140,12 +139,13 @@ These resources represent the logs of a deployment or of a nuvlabox.
   [{log-id :id :as _resource-log}
    {:keys [id] :as parent-resource}
    request]
-  (job/create-job
+  (job-utils/create-job
     log-id fetch-nuvlabox-log
     {:owners    ["group/nuvla-admin"]
      :edit-data [id]
      :manage    [id]
      :view-acl  [(auth/current-session-id request)]}
+    (auth/current-user-id request)
     :priority 50
     :execution-mode (nb-utils/get-execution-mode parent-resource)))
 
@@ -154,13 +154,14 @@ These resources represent the logs of a deployment or of a nuvlabox.
   [{log-id :id :as _resource-log}
    {:keys [execution-mode nuvlabox] :as _parent-resource}
    request]
-  (job/create-job log-id fetch-deployment-log
-                  (cond-> {:owners   ["group/nuvla-admin"]
-                           :view-acl [(auth/current-session-id request)]}
-                          nuvlabox (-> (a/acl-append :edit-data nuvlabox)
-                                       (a/acl-append :manage nuvlabox)))
-                  :priority 50
-                  :execution-mode execution-mode))
+  (job-utils/create-job log-id fetch-deployment-log
+                        (cond-> {:owners   ["group/nuvla-admin"]
+                                 :view-acl [(auth/current-session-id request)]}
+                                nuvlabox (-> (a/acl-append :edit-data nuvlabox)
+                                             (a/acl-append :manage nuvlabox)))
+                        (auth/current-user-id request)
+                        :priority 50
+                        :execution-mode execution-mode))
 
 
 (defn create-job
@@ -185,23 +186,11 @@ These resources represent the logs of a deployment or of a nuvlabox.
 (defn already-job-exist
   [{log-id :id :as resource-log} _request]
   (try
-    (let [action-name      (parent->action-name resource-log)
-          filter           (format
-                             "action='%s' and target-resource/href='%s' and %s"
-                             action-name
-                             log-id
-                             "(state='QUEUED' or state='RUNNING')")
-          entries          (second
-                             (crud/query-as-admin
-                               job/resource-type
-                               {:cimi-params
-                                {:filter (parser/parse-cimi-filter filter)}}))
-          alive-jobs-count (count entries)]
-      (when (pos? alive-jobs-count)
-        (let [job-id (-> entries first :id)]
-          (r/map-response
-            (format "existing async %s for %s" job-id log-id)
-            202 log-id job-id))))
+    (when-let [job-id (job-utils/existing-job-id-not-in-final-state
+                        log-id (parent->action-name resource-log))]
+      (r/map-response
+        (format "existing async %s for %s" job-id log-id)
+        202 log-id job-id))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

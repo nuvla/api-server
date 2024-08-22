@@ -14,8 +14,8 @@
     [com.sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [com.sixsq.nuvla.server.resources.credential :as credential]
     [com.sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
-    [com.sixsq.nuvla.server.resources.job :as job]
     [com.sixsq.nuvla.server.resources.job.interface :as job-interface]
+    [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.module.utils :as module-utils]
     [com.sixsq.nuvla.server.resources.nuvlabox.utils :as nuvlabox-utils]
     [com.sixsq.nuvla.server.resources.resource-log :as resource-log]
@@ -113,13 +113,14 @@
         low-priority (get-in request [:body :low-priority] false)
         parent-job   (get-in request [:body :parent-job])
         {{job-id     :resource-id
-          job-status :status} :body} (job/create-job
+          job-status :status} :body} (job-utils/create-job
                                        id action
                                        (-> {:owners ["group/nuvla-admin"]}
                                            (a/acl-append :edit-data nuvlabox)
                                            (a/acl-append :manage nuvlabox)
                                            (a/acl-append :view-data active-claim)
                                            (a/acl-append :manage active-claim))
+                                       (auth/current-user-id request)
                                        :parent-job parent-job
                                        :priority (if low-priority 999 50)
                                        :execution-mode execution-mode
@@ -225,11 +226,11 @@
                                     (map crud/retrieve-by-id-as-admin)))
         registries-infra (when full
                            (map (comp crud/retrieve-by-id-as-admin :parent) registries-creds))
-        module-content (some-> deployment :module :content)
+        module-content   (some-> deployment :module :content)
         helm-repo-cred   (some-> module-content :helm-repo-cred
                                  crud/retrieve-by-id-as-admin)
-        helm-repo-url (some-> module-content :helm-repo-url
-                              crud/retrieve-by-id-as-admin)]
+        helm-repo-url    (some-> module-content :helm-repo-url
+                                 crud/retrieve-by-id-as-admin)]
     (job-interface/get-context->response
       deployment
       credential

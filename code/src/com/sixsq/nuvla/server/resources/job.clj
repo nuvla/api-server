@@ -25,7 +25,7 @@ request.
     [com.sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const resource-type (u/ns->type *ns*))
+(def ^:const resource-type utils/resource-type)
 
 
 (def ^:const collection-type (u/ns->collection-type *ns*))
@@ -77,9 +77,10 @@ request.
 ;; CRUD operations
 ;;
 
-(defn add-impl [{{:keys [priority execution-mode version]
-                  :or {priority 999 execution-mode "push"
-                       version  latest-version} :as body} :body :as request}]
+(defn add-impl [{{:keys [priority execution-mode version created-by]
+                  :or {priority 999
+                       execution-mode "push"
+                       version latest-version} :as body} :body :as request}]
   (a/throw-cannot-add collection-acl request)
   (let [id      (u/new-resource-id resource-type)
         zk-path (when (#{"push" "mixed"} execution-mode)
@@ -94,7 +95,7 @@ request.
         (assoc :execution-mode execution-mode)
         (assoc :version version)
         u/update-timestamps
-        (u/set-created-by request)
+        (cond-> (nil? created-by) (u/set-created-by request))
         utils/job-cond->addition
         (crud/add-acl request)
         (cond-> zk-path (assoc :tags [zk-path]))
@@ -173,13 +174,15 @@ request.
             (utils/can-timeout? resource request) (update :operations conj timeout-op)
             (utils/can-get-context? resource request) (update :operations conj get-context-op))))
 
+(defn create-cancel-children-jobs-job
+  [{:keys [acl] parent-job-id :id :as _parent-job} request]
+  (utils/create-job parent-job-id "cancel_children_jobs" acl
+                       (auth/current-user-id request)
+                       :priority 10))
 
-(declare create-cancel-children-jobs-job)
-
-
-(defn cancel-children-jobs-async [{action :action :as job}]
+(defn cancel-children-jobs-async [{action :action :as job} request]
   (when (str/starts-with? action "bulk")
-    (create-cancel-children-jobs-job job)))
+    (create-cancel-children-jobs-job job request)))
 
 
 (defmethod crud/do-action [resource-type utils/action-cancel]
@@ -195,7 +198,7 @@ request.
                        (crud/validate)
                        (db/edit {:refresh false}))
           job      (:body response)]
-      (cancel-children-jobs-async job)
+      (cancel-children-jobs-async job (auth/current-active-claim request))
       (log/warn "Canceled job : " id)
       (interface/on-cancel job)
       response)
@@ -229,31 +232,3 @@ request.
       response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
-
-;;
-;; internal crud
-;;
-
-(defn create-job
-  [target-resource action acl & {:keys [priority affected-resources
-                                        execution-mode payload
-                                        parent-job]}]
-  (let [job-map        (cond-> {:action          action
-                                :target-resource {:href target-resource}
-                                :acl             acl}
-                               priority (assoc :priority priority)
-                               parent-job (assoc :parent-job parent-job)
-                               affected-resources (assoc :affected-resources affected-resources)
-                               execution-mode (assoc :execution-mode execution-mode)
-                               payload (assoc :payload payload))
-        create-request {:params      {:resource-name resource-type}
-                        :body        job-map
-                        :nuvla/authn auth/internal-identity}]
-    (crud/add create-request)))
-
-
-(defn create-cancel-children-jobs-job
-  [{:keys [acl] parent-job-id :id :as _parent-job}]
-  (create-job parent-job-id "cancel_children_jobs" acl
-              :priority 10))
-

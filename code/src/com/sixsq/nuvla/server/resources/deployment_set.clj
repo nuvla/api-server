@@ -6,7 +6,6 @@ These resources represent a deployment set that regroups deployments.
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
-    [com.sixsq.nuvla.db.filter.parser :as parser]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.state-machine :as sm]
@@ -14,7 +13,6 @@ These resources represent a deployment set that regroups deployments.
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.deployment-set.operational-status :as os]
     [com.sixsq.nuvla.server.resources.deployment-set.utils :as utils]
-    [com.sixsq.nuvla.server.resources.job :as job]
     [com.sixsq.nuvla.server.resources.job.interface :as job-interface]
     [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.module :as module]
@@ -192,19 +190,19 @@ These resources represent a deployment set that regroups deployments.
 
 (defn action-bulk
   [{:keys [id] :as _resource} {{:keys [action]} :params :as request}]
-  (let [authn-info (auth/current-authentication request)
-        acl        {:owners   ["group/nuvla-admin"]
-                    :view-acl [(auth/current-active-claim request)]}]
-    (std-crud/create-bulk-job
-      (utils/bulk-action-job-name action) id authn-info acl {})))
+  (let [acl {:owners   ["group/nuvla-admin"]
+             :view-acl [(auth/current-active-claim request)]}]
+    (job-utils/create-bulk-job
+      (utils/bulk-action-job-name action) id request acl {})))
 
 (defn action-simple
   [{:keys [id] :as _resource} {{:keys [action]} :params :as request}]
   (let [job-action (utils/action-job-name action)
         {{job-id     :resource-id
-          job-status :status} :body} (job/create-job id (utils/action-job-name action)
-                                                     {:owners   ["group/nuvla-admin"]
-                                                      :view-acl [(auth/current-active-claim request)]})
+          job-status :status} :body} (job-utils/create-job id (utils/action-job-name action)
+                                                           {:owners   ["group/nuvla-admin"]
+                                                            :view-acl [(auth/current-active-claim request)]}
+                                                           (auth/current-user-id request))
         job-msg    (str action " on " id " with async " job-id)]
     (if (not= job-status 201)
       (throw (r/ex-response (format "unable to create async job to %s" job-action) 500 id))
@@ -352,18 +350,10 @@ These resources represent a deployment set that regroups deployments.
 
 (defn cancel-latest-job
   [{:keys [id] :as _resource} _request]
-  (let [filter-str (format "target-resource/href='%s' and (state='%s' or state='%s')" id
-                           job-utils/state-queued job-utils/state-running)
-        [_ [{job-id :id}]]
-        (crud/query-as-admin
-          job/resource-type
-          {:cimi-params {:filter  (parser/parse-cimi-filter filter-str)
-                         :orderby [["created" :desc]]
-                         :last    1}})]
-    (if job-id
-      (do (crud/do-action-as-admin job-id job-utils/action-cancel)
-          (r/map-response "operation cancelled" 200))
-      (r/map-response "no running operation found that can be cancelled" 404))))
+  (if-let [job-id (job-utils/existing-job-id-not-in-final-state id)]
+    (do (crud/do-action-as-admin job-id job-utils/action-cancel)
+        (r/map-response "operation cancelled" 200))
+    (r/map-response "no running operation found that can be cancelled" 404)))
 
 (defmethod crud/do-action [resource-type utils/action-cancel]
   [request]

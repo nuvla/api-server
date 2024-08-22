@@ -1,12 +1,18 @@
 (ns com.sixsq.nuvla.server.resources.job.utils
   (:require
+    [clojure.data.json :as json]
     [clojure.string :as str]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
+    [com.sixsq.nuvla.db.filter.parser :as parser]
+    [com.sixsq.nuvla.server.resources.common.crud :as crud]
+    [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.util.general :as util-general]
     [com.sixsq.nuvla.server.util.response :as r]
     [com.sixsq.nuvla.server.util.time :as time]
     [com.sixsq.nuvla.server.util.zookeeper :as uzk]))
+
+(def resource-type "job")
 
 (def state-queued "QUEUED")
 (def state-running "RUNNING")
@@ -116,3 +122,66 @@
   (if (is-final-state? job)
     (throw (r/ex-response "edit is not allowed in final state" 409 id))
     job))
+
+(defn create-job
+  [target-resource action acl created-by & {:keys [priority affected-resources
+                                                   execution-mode payload
+                                                   parent-job]}]
+  (let [job-map        (cond-> {:action          action
+                                :target-resource {:href target-resource}
+                                :acl             acl
+                                :created-by      created-by}
+                               priority (assoc :priority priority)
+                               parent-job (assoc :parent-job parent-job)
+                               affected-resources (assoc :affected-resources affected-resources)
+                               execution-mode (assoc :execution-mode execution-mode)
+                               payload (assoc :payload payload))
+        create-request {:params      {:resource-name "job"}
+                        :body        job-map
+                        :nuvla/authn auth/internal-identity}]
+    (crud/add create-request)))
+
+(defn create-bulk-job
+  [action-name target-resource request acl payload]
+  (let [json-payload (-> payload
+                         (assoc :authn-info (auth/current-authentication request))
+                         (json/write-str))
+        {{job-id     :resource-id
+          job-status :status} :body} (create-job target-resource action-name acl
+                                                 (auth/current-user-id request)
+                                                 :payload json-payload)]
+    (when (not= job-status 201)
+      (throw (r/ex-response
+               (str "unable to create async job for " action-name)
+               500 target-resource)))
+    (r/map-response (str "starting " action-name " with async " job-id)
+                    202 target-resource job-id)))
+
+(defn query-jobs
+  [{:keys [orderby last select action target-resource states]}]
+  (->> (cond-> {:filter (parser/parse-cimi-filter
+                          (str/join " and "
+                                    (cond-> []
+                                            action (conj (str "action='" action "'"))
+                                            target-resource (conj (str "target-resource/href='" target-resource "'"))
+                                            (seq states) (conj (u/filter-eq-vals "state" states)))))}
+               orderby (assoc :orderby orderby)
+               last (assoc :last last)
+               select (assoc :select select))
+       (assoc {} :cimi-params)
+       (crud/query-as-admin resource-type)
+       second))
+
+(defn existing-job-id-not-in-final-state
+  ([target-resource]
+   (existing-job-id-not-in-final-state target-resource nil))
+  ([target-resource action]
+   (-> {:target-resource target-resource
+        :action          action
+        :states          [state-queued state-running]
+        :last            1
+        :orderby         [["created" :desc]]
+        :select          ["id"]}
+       query-jobs
+       first
+       :id)))
