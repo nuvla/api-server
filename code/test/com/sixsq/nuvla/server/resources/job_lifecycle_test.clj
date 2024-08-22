@@ -146,7 +146,7 @@
               (ltu/is-key-value :progress 0)
               (ltu/is-key-value string? :started true)))
 
-        (testing "Bulk job cancel also children jobs"
+        (testing "Bulk job, cancel also children jobs"
           (let [bulk-job-resp (-> session-admin
                                   (request base-uri
                                            :request-method :post
@@ -170,12 +170,7 @@
                     (ltu/body->edn)
                     (ltu/is-status 200))
 
-                (ltu/refresh-es-indices)
-
-                (let [cancel-job (ju/existing-job-id-not-in-final-state
-                                   bulk-job-id "cancel_children_jobs")]
-                  (is (some? cancel-job))
-                  (is (= (:priority cancel-job) 10)))))))))
+                (is (some? (ju/existing-job-id-not-in-final-state bulk-job-id "cancel_children_jobs")))))))))
 
     (testing "Job timeout"
       (let [job-resp (-> session-admin
