@@ -184,12 +184,14 @@
     (throw-bulk-header-missing request)
     (throw-bulk-require-cimi-filter request)
     (a/throw-cannot-bulk-action collection-acl request)
-    (let [acl         {:owners   ["group/nuvla-admin"]
-                       :view-acl [(auth/current-active-claim request)]}
-          action-name (-> params
-                          :action
-                          (str/replace #"-" "_")
-                          (str "_" resource-name))]
+    (let [active-claim (auth/current-active-claim request)
+          acl          {:owners   ["group/nuvla-admin"]
+                        :view-acl [active-claim]
+                        :manage   [active-claim]}
+          action-name  (-> params
+                           :action
+                           (str/replace #"-" "_")
+                           (str "_" resource-name))]
       (job-utils/create-bulk-job action-name resource-name request acl body))))
 
 (defn add-metric-fn
@@ -207,8 +209,8 @@
     (throw-bulk-header-missing request)
     (a/throw-cannot-add collection-acl request)
     (a/throw-cannot-bulk-action collection-acl request)
-    (let [options    (select-keys request [:nuvla/authn :body])
-          response   (db/bulk-insert-metrics resource-name body options)]
+    (let [options  (select-keys request [:nuvla/authn :body])
+          response (db/bulk-insert-metrics resource-name body options)]
       (r/json-response response))))
 
 (defn generic-bulk-operation-fn
