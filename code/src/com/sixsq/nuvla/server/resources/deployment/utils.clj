@@ -135,7 +135,7 @@
 
 (defn can-delete?
   [{:keys [state] :as _resource}]
-  (#{"CREATED" "STOPPED" "ERROR"} state))
+  (#{"CREATED" "STOPPED"} state))
 
 
 (defn can-start?

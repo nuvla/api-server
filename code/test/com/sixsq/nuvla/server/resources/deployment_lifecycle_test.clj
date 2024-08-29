@@ -763,15 +763,13 @@
           valid-deployment {:module {:href module-id}}]
 
       ;; check deployment creation
-      (let [deployment-id  (-> session-user
+      (let [deployment-url (-> session-user
                                (request base-uri
                                         :request-method :post
                                         :body (json/write-str valid-deployment))
                                (ltu/body->edn)
                                (ltu/is-status 201)
-                               (ltu/location))
-
-            deployment-url (str p/service-context deployment-id)]
+                               (ltu/location-url))]
 
         ;; admin/user should see one deployment
         (doseq [session [session-user session-admin]]
@@ -791,18 +789,23 @@
             (ltu/body->edn)
             (ltu/is-status 200))
 
-        ;; verify that the user can delete the deployment
-        (-> session-user
-            (request deployment-url
-                     :request-method :delete)
-            (ltu/body->edn)
-            (ltu/is-status 200))
+        (testing "verify that the user cannot delete the deployment"
+          (-> session-user
+              (request deployment-url
+                       :request-method :delete)
+              (ltu/body->edn)
+              (ltu/is-status 409)))
 
-        ;; verify that the deployment has disappeared
-        (-> session-user
-            (request deployment-url)
-            (ltu/body->edn)
-            (ltu/is-status 404)))
+        (let [force-delete-url (-> session-user
+                                   (request deployment-url)
+                                   (ltu/body->edn)
+                                   (ltu/is-status 200)
+                                   (ltu/get-op-url :force-delete))]
+          (testing "verify that the user can force delete the deployment"
+            (-> session-user
+                (request force-delete-url)
+                (ltu/body->edn)
+                (ltu/is-status 200)))))
 
       (-> session-user
           (request (str p/service-context module-id)

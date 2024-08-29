@@ -482,6 +482,10 @@ a container orchestration engine.
   [request]
   (bulk-action-impl request))
 
+(defmethod crud/bulk-action [resource-type "bulk-delete"]
+  [request]
+  (bulk-action-impl request))
+
 (defmethod crud/bulk-action [resource-type "bulk-force-delete"]
   [request]
   (bulk-action-impl request))
