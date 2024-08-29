@@ -10,7 +10,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
-    [com.sixsq.nuvla.server.resources.job :as job]
+    [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.resource-metadata :as md]
     [com.sixsq.nuvla.server.resources.spec.credential :as credential]
     [com.sixsq.nuvla.server.util.log :as logu]
@@ -138,10 +138,11 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
       (if-let [active-claim (auth/current-active-claim request)]
         (let [job-type "credential_check"
               {{job-id     :resource-id
-                job-status :status} :body} (job/create-job id job-type
-                                                           {:owners   ["group/nuvla-admin"]
-                                                            :view-acl [active-claim]}
-                                                           :priority 50)
+                job-status :status} :body} (job-utils/create-job id job-type
+                                                                 {:owners   ["group/nuvla-admin"]
+                                                                  :view-acl [active-claim]}
+                                                                 (auth/current-user-id request)
+                                                                 :priority 50)
               job-msg  (str "starting " id " with async " job-id)]
           (when (not= job-status 201)
             (throw (r/ex-response (format "unable to create async job to %s" job-type) 500 id)))

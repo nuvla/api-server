@@ -23,9 +23,6 @@
 (def service-group-base-uri (str p/service-context service-group/resource-type))
 
 
-(def credential-base-uri (str p/service-context credential/resource-type))
-
-
 (def valid-acl {:owners   ["group/nuvla-admin"]
                 :view-acl ["group/nuvla-user"]})
 

@@ -9,7 +9,7 @@ nuvlabox.
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
-    [com.sixsq.nuvla.server.resources.job :as job]
+    [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [com.sixsq.nuvla.server.resources.resource-metadata :as md]
     [com.sixsq.nuvla.server.resources.spec.nuvlabox-peripheral :as nb-peripheral]
@@ -38,12 +38,13 @@ nuvlabox.
   (try
     (let [authn-info (auth/current-authentication request)
           {{job-id     :resource-id
-            job-status :status} :body} (job/create-job
+            job-status :status} :body} (job-utils/create-job
                                          id action
                                          (if (a/is-admin? authn-info)
                                            {:owners ["group/nuvla-admin"]}
                                            {:owners   ["group/nuvla-admin"]
                                             :edit-acl [(auth/current-active-claim request)]})
+                                         (auth/current-user-id request)
                                          :priority 50
                                          :affected-resources [{:href id}
                                                               {:href parent}])

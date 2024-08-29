@@ -15,7 +15,7 @@ component, or application.
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [com.sixsq.nuvla.server.resources.job :as job]
+    [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.module-application :as module-application]
     [com.sixsq.nuvla.server.resources.module-application-helm :as module-application-helm]
     [com.sixsq.nuvla.server.resources.module-applications-sets :as module-applications-sets]
@@ -176,13 +176,13 @@ component, or application.
 (defn create-content
   [module]
   (if-let [content (:content module)]
-    (let [collection-uri  (subtype->collection-uri module)
-          content-body (merge content {:resource-type collection-uri})
-          content-href (-> (crud/add {:params      {:resource-name collection-uri}
-                                      :body        content-body
-                                      :nuvla/authn auth/internal-identity})
-                           :body
-                           :resource-id)]
+    (let [collection-uri (subtype->collection-uri module)
+          content-body   (merge content {:resource-type collection-uri})
+          content-href   (-> (crud/add {:params      {:resource-name collection-uri}
+                                        :body        content-body
+                                        :nuvla/authn auth/internal-identity})
+                             :body
+                             :resource-id)]
       (add-version module content-href))
     module))
 
@@ -360,12 +360,12 @@ component, or application.
 
 
 (defn create-validate-docker-compose-job
-  [{:keys [id acl] :as _resource}]
+  [{:keys [id acl] :as _resource} request]
   (try
     (let [{{job-id     :resource-id
-            job-status :status} :body} (job/create-job id "validate-docker-compose"
-                                                       acl
-                                                       :priority 50)
+            job-status :status} :body} (job-utils/create-job id "validate-docker-compose"
+                                                             acl (auth/current-user-id request)
+                                                             :priority 50)
           job-msg (str "validating application docker-compose " id " with async " job-id)]
       (when (not= job-status 201)
         (throw (r/ex-response
@@ -381,7 +381,7 @@ component, or application.
                      crud/retrieve-by-id-as-admin
                      (a/throw-cannot-manage request))]
     (if (utils/is-application? resource)
-      (create-validate-docker-compose-job resource)
+      (create-validate-docker-compose-job resource request)
       (throw (r/ex-response "invalid subtype" 400)))))
 
 

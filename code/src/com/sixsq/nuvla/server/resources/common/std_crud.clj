@@ -1,7 +1,6 @@
 (ns com.sixsq.nuvla.server.resources.common.std-crud
   "Standard CRUD functions for resources."
   (:require
-    [clojure.data.json :as json]
     [clojure.stacktrace :as st]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
@@ -13,6 +12,7 @@
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.state-machine :as sm]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
+    [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
     [com.sixsq.nuvla.server.util.response :as r]))
 
@@ -177,26 +177,6 @@
           result  (db/bulk-delete resource-name options)]
       (r/json-response result))))
 
-(defn create-bulk-job
-  [action-name target-resource authn-info acl payload]
-  (let [json-payload   (-> payload
-                           (assoc :authn-info authn-info)
-                           (json/write-str))
-        create-request {:params      {:resource-name "job"}
-                        :body        {:action          action-name
-                                      :target-resource {:href target-resource}
-                                      :payload         json-payload
-                                      :acl             acl}
-                        :nuvla/authn auth/internal-identity}
-        {{job-id     :resource-id
-          job-status :status} :body} (crud/add create-request)]
-    (when (not= job-status 201)
-      (throw (r/ex-response
-               (str "unable to create async job for " action-name)
-               500 target-resource)))
-    (r/map-response (str "starting " action-name " with async " job-id)
-                    202 target-resource job-id)))
-
 (defn bulk-action-fn
   [resource-name collection-acl _collection-uri]
   (validate-collection-acl collection-acl)
@@ -204,14 +184,15 @@
     (throw-bulk-header-missing request)
     (throw-bulk-require-cimi-filter request)
     (a/throw-cannot-bulk-action collection-acl request)
-    (let [authn-info  (auth/current-authentication request)
-          acl         {:owners   ["group/nuvla-admin"]
-                       :view-acl [(auth/current-active-claim request)]}
-          action-name (-> params
-                          :action
-                          (str/replace #"-" "_")
-                          (str "_" resource-name))]
-      (create-bulk-job action-name resource-name authn-info acl body))))
+    (let [active-claim (auth/current-active-claim request)
+          acl          {:owners   ["group/nuvla-admin"]
+                        :view-acl [active-claim]
+                        :manage   [active-claim]}
+          action-name  (-> params
+                           :action
+                           (str/replace #"-" "_")
+                           (str "_" resource-name))]
+      (job-utils/create-bulk-job action-name resource-name request acl body))))
 
 (defn add-metric-fn
   [resource-name collection-acl _resource-uri & {:keys [validate-fn options]}]
@@ -228,8 +209,8 @@
     (throw-bulk-header-missing request)
     (a/throw-cannot-add collection-acl request)
     (a/throw-cannot-bulk-action collection-acl request)
-    (let [options    (select-keys request [:nuvla/authn :body])
-          response   (db/bulk-insert-metrics resource-name body options)]
+    (let [options  (select-keys request [:nuvla/authn :body])
+          response (db/bulk-insert-metrics resource-name body options)]
       (r/json-response response))))
 
 (defn generic-bulk-operation-fn

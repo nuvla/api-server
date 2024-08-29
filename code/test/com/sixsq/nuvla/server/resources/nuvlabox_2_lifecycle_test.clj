@@ -2002,18 +2002,22 @@
     true {} {:nuvlabox-status "nuvlabox-status"}
     false {:acl 1, :online true} {:acl 1, :online false}))
 
+(defn create-ne
+  [session-owner nb-name]
+  (-> session-owner
+      (request base-uri
+               :request-method :post
+               :body (json/write-str (assoc valid-nuvlabox :name nb-name)))
+      (ltu/body->edn)
+      (ltu/is-status 201)
+      ltu/location-url))
+
 (defn- create-edit-nb-bulk-edit-tags-lifecycle-test
   [session-owner {nb-name :name
                   nb-tags :tags}]
-  (let [ne-url (-> session-owner
-                   (request base-uri
-                            :request-method :post
-                            :body (json/write-str (assoc valid-nuvlabox :name nb-name)))
-                   (ltu/body->edn)
-                   (ltu/is-status 201)
-                   ((juxt ltu/location-url ltu/location)))]
+  (let [ne-url (create-ne session-owner nb-name)]
     (-> session-owner
-        (request (first ne-url)
+        (request ne-url
                  :request-method :put
                  :body (json/write-str {:tags nb-tags}))
         (ltu/body->edn)
@@ -2047,7 +2051,7 @@
                                                  filter (assoc :filter filter))))
           (ltu/is-status 200))
       (run!
-        (fn [[url]]
+        (fn [url]
           (let [ne (-> session-owner
                        (request url)
                        (ltu/body->edn))]
@@ -2103,6 +2107,19 @@
                                        (case (:name ne)
                                          "NE1" ["bar" "baz"]
                                          ["foo" "bar" "baz"]))}))
+
+(deftest bulk-update
+  (let [session         (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+        session-owner   (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+        bulk-update-url (str base-uri "/" "bulk-update")]
+    (-> session-owner
+        (header "bulk" "yes")
+        (request bulk-update-url
+                 :request-method :patch
+                 :body (json/write-str {:filter "tag='foobar'"}))
+        (ltu/is-status 202))))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id nb/resource-type))]

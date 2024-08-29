@@ -6,7 +6,6 @@
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.job :as t]
-    [com.sixsq.nuvla.server.resources.job.test-utils :as test-utils]
     [com.sixsq.nuvla.server.resources.job.utils :as ju]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
@@ -36,8 +35,8 @@
   (let [session-anon  (-> (ltu/ring-app)
                           session
                           (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user  (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")]
+        session-admin (header session-anon authn-info-header "internal group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user  (header session-anon authn-info-header "user/jane user/jane user/jane group/nuvla-user group/nuvla-anon")]
 
     (t/initialize)
 
@@ -59,14 +58,13 @@
           (ltu/body->edn)
           (ltu/is-status 403)))
 
-    (let [uri        (-> session-admin
+    (let [abs-uri    (-> session-admin
                          (request base-uri
                                   :request-method :post
                                   :body (json/write-str valid-job))
                          (ltu/body->edn)
                          (ltu/is-status 201)
-                         (ltu/location))
-          abs-uri    (str p/service-context uri)
+                         (ltu/location-url))
           cancel-url (-> session-user
                          (request abs-uri)
                          (ltu/body->edn)
@@ -74,6 +72,7 @@
                          (ltu/is-operation-present ju/action-cancel)
                          (ltu/is-key-value (fn [job] (some #(str/starts-with? % "/job/entries") job)) :tags true)
                          (ltu/is-key-value :state "QUEUED")
+                         (ltu/is-key-value :created-by "internal")
                          (ltu/get-op-url ju/action-cancel))]
 
       (testing "edit status-message is possible to admin"
@@ -86,15 +85,15 @@
             (ltu/is-key-value :status-message "foobar")))
 
       (testing "edit with too big status-message doesn't fail"
-        (let [xxx (apply str (take 50000 (repeat "x")))
+        (let [xxx            (apply str (take 50000 (repeat "x")))
               big-status-msg (str xxx "extra chars to be truncated" xxx)]
           (-> session-admin
-             (request abs-uri
-                      :request-method :put
-                      :body (json/write-str {:status-message big-status-msg}))
-             (ltu/body->edn)
-             (ltu/is-status 200)
-             (ltu/is-key-value :status-message (str xxx "\n...\n" xxx)))))
+              (request abs-uri
+                       :request-method :put
+                       :body (json/write-str {:status-message big-status-msg}))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :status-message (str xxx "\n...\n" xxx)))))
 
       (testing "user can cancel a job"
         (-> session-user
@@ -120,15 +119,22 @@
           (ltu/body->edn)
           (ltu/is-status 200)))
 
-    (testing "Admin is able to create a job and set his priority"
-      (let [job-id  (-> session-admin
+    (testing "Admin is able to create a job and set his priority and created-by"
+      (let [job-url (-> session-admin
                         (request base-uri
                                  :request-method :post
-                                 :body (json/write-str (assoc valid-job :priority 50)))
+                                 :body (json/write-str (assoc valid-job :priority 50
+                                                                        :created-by "user/alpha")))
                         (ltu/body->edn)
                         (ltu/is-status 201)
-                        (ltu/location))
-            job-url (ltu/href->url job-id)]
+                        (ltu/location-url))]
+        (-> session-admin
+            (request job-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :priority 50)
+            (ltu/is-key-value :created-by "user/alpha"))
+
         (testing "Setting state to running will also set the started timestamp"
           (-> session-admin
               (request job-url :request-method :put
@@ -140,7 +146,7 @@
               (ltu/is-key-value :progress 0)
               (ltu/is-key-value string? :started true)))
 
-        (testing "Bulk job cancel also children jobs"
+        (testing "Bulk job, cancel also children jobs"
           (let [bulk-job-resp (-> session-admin
                                   (request base-uri
                                            :request-method :post
@@ -164,15 +170,7 @@
                     (ltu/body->edn)
                     (ltu/is-status 200))
 
-                (ltu/refresh-es-indices)
-
-                (let [cancel-job (first (test-utils/query-jobs
-                                          {:target-resource bulk-job-id
-                                           :action          "cancel_children_jobs"
-                                           :orderby         [["created" :desc]]
-                                           :last            1}))]
-                  (is (some? cancel-job))
-                  (is (= (:priority cancel-job) 10)))))))))
+                (is (some? (ju/existing-job-id-not-in-final-state bulk-job-id "cancel_children_jobs")))))))))
 
     (testing "Job timeout"
       (let [job-resp (-> session-admin
