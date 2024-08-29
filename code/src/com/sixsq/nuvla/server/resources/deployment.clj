@@ -213,7 +213,7 @@ a container orchestration engine.
            deployment    (-> (crud/retrieve-by-id-as-admin deployment-id)
                              (a/throw-cannot-delete request)
                              (cond-> (not force-delete)
-                                     (u/throw-can-not-do-action-invalid-state
+                                     (u/throw-cannot-do-action-invalid-state
                                        utils/can-delete? "delete")))]
        (ectx/add-to-context :acl (:acl deployment))
        (ectx/add-to-context :resource deployment)
@@ -286,7 +286,7 @@ a container orchestration engine.
   (try
     (let [id             (str resource-type "/" uuid)
           deployment     (-> (crud/retrieve-by-id-as-admin id)
-                             (u/throw-can-not-do-action-invalid-state utils/can-start? "start")
+                             (u/throw-cannot-do-action-invalid-state utils/can-start? "start")
                              (utils/throw-when-payment-required request)
                              (utils/throw-can-not-access-registries-creds request)
                              (utils/throw-can-not-access-helm-repo-cred request)
@@ -316,7 +316,7 @@ a container orchestration engine.
   (try
     (let [deployment     (-> (str resource-type "/" uuid)
                              (crud/retrieve-by-id-as-admin)
-                             (u/throw-can-not-do-action-invalid-state utils/can-stop? "stop"))
+                             (u/throw-cannot-do-action-invalid-state utils/can-stop? "stop"))
           execution-mode (:execution-mode deployment)]
       (-> deployment
           (assoc :state "STOPPING")
@@ -334,7 +334,7 @@ a container orchestration engine.
     (-> (str resource-type "/" uuid)
         (crud/retrieve-by-id-as-admin)
         (a/throw-cannot-manage request)
-        (u/throw-can-not-do-action-invalid-state utils/can-create-log? "create-log")
+        (u/throw-cannot-do-action-invalid-state utils/can-create-log? "create-log")
         (utils/throw-when-payment-required request)
         (utils/create-log request))
     (catch Exception e
@@ -372,7 +372,7 @@ a container orchestration engine.
     (let [current (-> (str resource-type "/" uuid)
                       (crud/retrieve-by-id-as-admin)
                       (a/throw-cannot-manage request)
-                      (u/throw-can-not-do-action-invalid-state
+                      (u/throw-cannot-do-action-invalid-state
                         utils/can-update? "update_deployment")
                       (utils/throw-when-payment-required request)
                       (utils/throw-can-not-access-registries-creds request)
@@ -394,7 +394,7 @@ a container orchestration engine.
   (try
     (-> (str resource-type "/" uuid)
         (crud/retrieve-by-id-as-admin)
-        (u/throw-can-not-do-action utils/can-detach? "detach")
+        (u/throw-cannot-do-action utils/can-detach? "detach")
         (dissoc :deployment-set :deployment-set-name)
         u/update-timestamps
         db/edit)
