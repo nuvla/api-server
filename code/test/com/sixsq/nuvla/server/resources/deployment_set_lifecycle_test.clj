@@ -1397,21 +1397,22 @@
                                                  (ltu/is-status 200)
                                                  (ltu/get-op-url utils/action-check-requirements))
                 retrieve-by-id-as-admin-orig crud/retrieve-by-id-as-admin
-                check-req-results            (with-redefs [crud/retrieve-by-id-as-admin
-                                                           (fn [id]
-                                                             (cond
-                                                               (= "nuvlabox/1" id)
-                                                               {:id              "nuvlabox/1"
-                                                                :name            "NuvlaBox 01"
-                                                                :nuvlabox-status "nuvlabox-status/1"}
-                                                               (= "nuvlabox-status/1" id)
-                                                               {:architecture "x86_64"
-                                                                :resources    {:cpu   {:capacity 2}
-                                                                               :ram   {:capacity 1024}
-                                                                               :disks [{:capacity 20}
-                                                                                       {:capacity 200}]}}
-                                                               :else
-                                                               (retrieve-by-id-as-admin-orig id)))]
+                check-req-results            (with-redefs [crud/query-as-admin
+                                                           (fn [collection-id options]
+                                                             (case collection-id
+                                                               "nuvlabox"
+                                                               [{:count 1}
+                                                                '({:id              "nuvlabox/1"
+                                                                   :name            "NuvlaBox 01"
+                                                                   :nuvlabox-status "nuvlabox-status/1"})]
+                                                               "nuvlabox-status"
+                                                               [{:count 1}
+                                                                '({:id           "nuvlabox-status/1"
+                                                                   :architecture "x86_64"
+                                                                   :resources    {:cpu   {:capacity 2}
+                                                                                  :ram   {:capacity 1024}
+                                                                                  :disks [{:capacity 20}
+                                                                                          {:capacity 200}]}})]))]
                                                (-> session-user
                                                    (request check-requirements-op-url)
                                                    ltu/body->edn

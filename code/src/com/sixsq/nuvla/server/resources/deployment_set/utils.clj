@@ -11,6 +11,7 @@
             [com.sixsq.nuvla.server.resources.module :as m]
             [com.sixsq.nuvla.server.resources.module.utils :as module-utils]
             [com.sixsq.nuvla.server.resources.nuvlabox :as nuvlabox]
+            [com.sixsq.nuvla.server.resources.nuvlabox-status :as nuvlabox-status]
             [tilakone.core :as tk]))
 
 (def action-start "start")
@@ -424,24 +425,40 @@
                 :min-ram       0
                 :min-disk      0})))
 
+(defn retrieve-edges
+  [edge-ids]
+  (let [filter-req (str "id=['" (str/join "','" edge-ids) "']")
+        options    {:cimi-params {:filter (parser/parse-cimi-filter filter-req)
+                                  :select ["id" "name" "nuvlabox-status"]
+                                  :last   10000}}]
+    (second (crud/query-as-admin nuvlabox/resource-type options))))
+
+(defn retrieve-edges-status
+  [edge-status-ids]
+  (let [filter-req (str "id=['" (str/join "','" edge-status-ids) "']")
+        options    {:cimi-params {:filter (parser/parse-cimi-filter filter-req)
+                                  :select ["id" "architecture" "resources"]
+                                  :last   10000}}]
+    (second (crud/query-as-admin nuvlabox-status/resource-type options))))
+
 (defn available-resources
   [deployment-set]
   (let [apps-set-overwrites (get-applications-sets deployment-set)
-        edge-ids            (vec (mapcat :fleet apps-set-overwrites))]
-    ;; FIXME: avoid doing N*2 queries; use crud/retrieve with cimi filter instead to only have 2 queries
-    (->> edge-ids
-         (map crud/retrieve-by-id-as-admin)
-         (map (fn [{:keys [id name nuvlabox-status]}]
-                (let [{:keys [architecture resources]} (crud/retrieve-by-id-as-admin nuvlabox-status)
-                      {{cpu-capacity :capacity}                                 :cpu
-                       {ram-capacity :capacity}                                 :ram
-                       [{first-disk-capacity :capacity, first-disk-used :used}] :disks} resources]
-                  {:edge-id      id
-                   :edge-name    name
-                   :architecture architecture
-                   :cpu          (or cpu-capacity 0)
-                   :ram          (or ram-capacity 0)
-                   :disk         (- (or first-disk-capacity 0) (or first-disk-used 0))}))))))
+        edge-ids            (vec (mapcat :fleet apps-set-overwrites))
+        edges               (retrieve-edges edge-ids)
+        edges-status-by-id  (group-by :id (retrieve-edges-status (map :nuvlabox-status edges)))]
+    (map (fn [{:keys [id name nuvlabox-status]}]
+           (let [{:keys [architecture resources]} (first (get edges-status-by-id nuvlabox-status))
+                 {{cpu-capacity :capacity}                                 :cpu
+                  {ram-capacity :capacity}                                 :ram
+                  [{first-disk-capacity :capacity, first-disk-used :used}] :disks} resources]
+             {:edge-id      id
+              :edge-name    name
+              :architecture architecture
+              :cpu          (or cpu-capacity 0)
+              :ram          (or ram-capacity 0)
+              :disk         (- (or first-disk-capacity 0) (or first-disk-used 0))}))
+         edges)))
 
 (defn unmet-requirements
   [av-resources {:keys [architectures min-cpu min-ram min-disk] :as _min-req}]
