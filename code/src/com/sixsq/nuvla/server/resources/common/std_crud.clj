@@ -7,6 +7,7 @@
     [clojure.walk :as w]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
+    [clj-json-pointer.core :as jp]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.middleware.cimi-params.impl :as impl]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
@@ -62,6 +63,25 @@
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
+(defn json-safe-patch
+  [obj patches]
+  (try
+    (jp/patch obj patches)
+    (catch Exception e
+      (throw (r/ex-bad-request (str "Json patch exception: " (ex-message e)))))))
+
+(defn- json-patch-request? [request]
+  (= (get-in request [:headers "content-type"]) "application/json-patch+json"))
+
+(defn json-patch
+  [resource {:keys [json-patch body] :as request}]
+  (if (json-patch-request? request)
+    (->> (w/stringify-keys body)
+         (json-safe-patch (w/stringify-keys resource))
+         w/keywordize-keys
+         (assoc request :body))
+    request))
+
 
 (defn edit-fn
   [resource-name & {:keys [pre-validate-hook
@@ -73,19 +93,21 @@
                            immutable-keys        []}}]
   (fn [{{uuid :uuid} :params :as request}]
     (try
-      (-> (str resource-name "/" uuid)
-          db/retrieve
-          (a/throw-cannot-edit request)
-          (sm/throw-can-not-do-action request)
-          (pre-delete-attrs-hook request)
-          (u/delete-attributes request immutable-keys)
-          u/update-timestamps
-          (u/set-updated-by request)
-          (pre-validate-hook request)
-          (dissoc :operations)
-          crud/validate
-          (db/edit options)
-          (update :body crud/set-operations request))
+      (let [resource (-> (str resource-name "/" uuid)
+                         db/retrieve
+                         (a/throw-cannot-edit request)
+                         (sm/throw-can-not-do-action request))
+            request  (json-patch resource request)]
+        (-> resource
+            (pre-delete-attrs-hook request)
+            (u/delete-attributes request immutable-keys)
+            u/update-timestamps
+            (u/set-updated-by request)
+            (pre-validate-hook request)
+            (dissoc :operations)
+            crud/validate
+            (db/edit options)
+            (update :body crud/set-operations request)))
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
