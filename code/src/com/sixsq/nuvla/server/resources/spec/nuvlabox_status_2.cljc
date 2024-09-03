@@ -217,6 +217,12 @@
 
              :json-schema/order 88)))
 
+(s/def ::docker
+  (assoc (st/spec map?)
+    :name "docker"
+    :json-schema/type "map"
+    :json-schema/description "Docker resources info"))
+
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
@@ -260,5 +266,6 @@
                                ::orchestrator
                                ::nb-status-0/temperatures
                                ::components
-                               ::network]}))
+                               ::network
+                               ::docker]}))
 
