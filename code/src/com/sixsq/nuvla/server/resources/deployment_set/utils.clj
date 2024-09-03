@@ -1,14 +1,17 @@
 (ns com.sixsq.nuvla.server.resources.deployment-set.utils
   (:require [clojure.set :as set]
             [clojure.string :as str]
+            [com.sixsq.nuvla.auth.utils :as auth]
             [com.sixsq.nuvla.db.filter.parser :as parser]
             [com.sixsq.nuvla.db.impl :as db]
             [com.sixsq.nuvla.server.resources.common.crud :as crud]
             [com.sixsq.nuvla.server.resources.common.state-machine :as sm]
             [com.sixsq.nuvla.server.resources.common.utils :as u]
             [com.sixsq.nuvla.server.resources.deployment-set.operational-status :as op-status]
+            [com.sixsq.nuvla.server.resources.module :as m]
             [com.sixsq.nuvla.server.resources.module.utils :as module-utils]
             [com.sixsq.nuvla.server.resources.nuvlabox :as nuvlabox]
+            [com.sixsq.nuvla.server.resources.nuvlabox-status :as nuvlabox-status]
             [tilakone.core :as tk]))
 
 (def action-start "start")
@@ -21,6 +24,7 @@
 (def action-plan "plan")
 (def action-operational-status "operational-status")
 (def action-recompute-fleet "recompute-fleet")
+(def action-check-requirements "check-requirements")
 
 (def actions [crud/action-edit
               crud/action-delete
@@ -29,6 +33,7 @@
               action-update
               action-cancel
               action-force-delete
+              action-check-requirements
               action-plan
               action-operational-status
               action-recompute-fleet])
@@ -89,6 +94,7 @@
 (def transition-edit-admin {::tk/on crud/action-edit ::tk/guards [sm/guard-is-admin?]})
 (def transition-delete {::tk/on crud/action-delete ::tk/guards [sm/guard-can-delete?]})
 (def transition-force-delete {::tk/on action-force-delete ::tk/guards [sm/guard-can-delete?]})
+(def transition-check-requirements {::tk/on action-check-requirements ::tk/guards [sm/guard-can-manage?]})
 (def transition-plan {::tk/on action-plan ::tk/guards [sm/guard-can-manage?]})
 (def transition-operational-status {::tk/on action-operational-status ::tk/guards [sm/guard-can-manage?]})
 (def transition-recompute-fleet {::tk/on action-recompute-fleet ::tk/guards [sm/guard-can-edit?
@@ -106,6 +112,7 @@
   {::tk/states [{::tk/name        state-new
                  ::tk/transitions [transition-start
                                    transition-edit
+                                   transition-check-requirements
                                    transition-plan
                                    transition-operational-status
                                    transition-delete
@@ -114,6 +121,7 @@
                  ::tk/transitions [(transition-cancel state-partially-started)
                                    (transition-nok state-partially-started)
                                    (transition-ok state-started)
+                                   transition-check-requirements
                                    transition-plan
                                    transition-operational-status
                                    transition-edit-admin]}
@@ -121,6 +129,7 @@
                  ::tk/transitions [transition-edit
                                    transition-update
                                    transition-stop
+                                   transition-check-requirements
                                    transition-plan
                                    transition-operational-status
                                    transition-force-delete
@@ -129,6 +138,7 @@
                  ::tk/transitions [transition-edit
                                    transition-update
                                    transition-stop
+                                   transition-check-requirements
                                    transition-plan
                                    transition-operational-status
                                    transition-force-delete
@@ -137,12 +147,14 @@
                  ::tk/transitions [(transition-cancel state-partially-stopped)
                                    (transition-nok state-partially-stopped)
                                    (transition-ok state-stopped)
+                                   transition-check-requirements
                                    transition-plan
                                    transition-operational-status
                                    transition-edit-admin]}
                 {::tk/name        state-stopped
                  ::tk/transitions [transition-start
                                    transition-edit
+                                   transition-check-requirements
                                    transition-plan
                                    transition-operational-status
                                    transition-delete
@@ -151,6 +163,7 @@
                  ::tk/transitions [transition-edit
                                    transition-start
                                    transition-stop
+                                   transition-check-requirements
                                    transition-plan
                                    transition-operational-status
                                    transition-force-delete
@@ -159,6 +172,7 @@
                  ::tk/transitions [(transition-cancel state-partially-updated)
                                    (transition-nok state-partially-updated)
                                    (transition-ok state-updated)
+                                   transition-check-requirements
                                    transition-plan
                                    transition-operational-status
                                    transition-edit-admin]}
@@ -166,6 +180,7 @@
                  ::tk/transitions [transition-edit
                                    transition-update
                                    transition-stop
+                                   transition-check-requirements
                                    transition-plan
                                    transition-operational-status
                                    transition-force-delete
@@ -174,6 +189,7 @@
                  ::tk/transitions [transition-edit
                                    transition-update
                                    transition-stop
+                                   transition-check-requirements
                                    transition-plan
                                    transition-operational-status
                                    transition-force-delete
@@ -386,3 +402,90 @@
                                  set)]
     (set/difference (set edges) existing-edges)))
 
+(defn minimum-requirements
+  [deployment-set applications-sets]
+  (->> (get-applications-sets deployment-set)
+       (mapcat merge-apps (module-utils/get-applications-sets applications-sets))
+       (map #(crud/retrieve {:params         {:uuid          (str (u/id->uuid (:id %)) "_" (:version %))
+                                              :resource-name m/resource-type}
+                             :request-method :get
+                             :nuvla/authn    auth/internal-identity}))
+       (reduce (fn [{:keys [architectures min-cpu min-ram min-disk]}
+                    {{{module-architectures :architectures
+                       module-min-req       :minimum-requirements} :content} :body}]
+                 {:architectures (if (some? module-architectures)
+                                   (cond-> (set module-architectures)
+                                           (some? architectures) (set/intersection architectures))
+                                   architectures)
+                  :min-cpu       (+ min-cpu (or (:min-cpu module-min-req) 0))
+                  :min-ram       (+ min-ram (or (:min-ram module-min-req) 0))
+                  :min-disk      (+ min-disk (or (:min-disk module-min-req) 0))})
+               {:architectures nil
+                :min-cpu       0.0
+                :min-ram       0
+                :min-disk      0})))
+
+(defn retrieve-edges
+  [edge-ids]
+  (let [filter-req (str "id=['" (str/join "','" edge-ids) "']")
+        options    {:cimi-params {:filter (parser/parse-cimi-filter filter-req)
+                                  :select ["id" "name" "nuvlabox-status"]
+                                  :last   10000}}]
+    (second (crud/query-as-admin nuvlabox/resource-type options))))
+
+(defn retrieve-edges-status
+  [edge-status-ids]
+  (let [filter-req (str "id=['" (str/join "','" edge-status-ids) "']")
+        options    {:cimi-params {:filter (parser/parse-cimi-filter filter-req)
+                                  :select ["id" "architecture" "resources"]
+                                  :last   10000}}]
+    (second (crud/query-as-admin nuvlabox-status/resource-type options))))
+
+(defn available-resources
+  [deployment-set]
+  (let [apps-set-overwrites (get-applications-sets deployment-set)
+        edge-ids            (vec (mapcat :fleet apps-set-overwrites))
+        edges               (retrieve-edges edge-ids)
+        edges-status-by-id  (group-by :id (retrieve-edges-status (map :nuvlabox-status edges)))]
+    (map (fn [{:keys [id name nuvlabox-status]}]
+           (let [{:keys [architecture resources]} (first (get edges-status-by-id nuvlabox-status))
+                 {{cpu-capacity :capacity}                                 :cpu
+                  {ram-capacity :capacity}                                 :ram
+                  [{first-disk-capacity :capacity, first-disk-used :used}] :disks} resources]
+             {:edge-id      id
+              :edge-name    name
+              :architecture architecture
+              :cpu          (or cpu-capacity 0)
+              :ram          (or ram-capacity 0)
+              :disk         (- (or first-disk-capacity 0) (or first-disk-used 0))}))
+         edges)))
+
+(defn unmet-requirements
+  [av-resources {:keys [architectures min-cpu min-ram min-disk] :as _min-req}]
+  (for [{:keys [edge-id edge-name architecture cpu ram disk]} av-resources
+        :let [unmet (cond-> {}
+                            (and architecture (some? architectures) (not ((set architectures) architecture)))
+                            (assoc :architecture {:supported         architectures
+                                                  :edge-architecture architecture})
+
+                            (and cpu min-cpu (< cpu min-cpu))
+                            (assoc :cpu {:min min-cpu, :available cpu})
+
+                            (and ram min-ram (< ram min-ram))
+                            (assoc :ram {:min min-ram, :available ram})
+
+                            (and disk min-disk (< disk min-disk))
+                            (assoc :disk {:min min-disk, :available disk}))]
+        :when (seq unmet)]
+    (merge {:edge-id   edge-id
+            :edge-name edge-name}
+           unmet)))
+
+(defn check-requirements
+  [deployment-set applications-sets]
+  (let [min-req      (minimum-requirements deployment-set applications-sets)
+        av-resources (available-resources deployment-set)
+        unmet-req    (unmet-requirements av-resources min-req)]
+    {:minimum-requirements min-req
+     :unmet-requirements   {:n-edges          (count unmet-req)
+                            :first-mismatches (take 10 unmet-req)}}))
