@@ -248,13 +248,13 @@ These resources represent a deployment set that regroups deployments.
                               (crud/get-resource-throw-nok request))]
     (r/json-response (utils/check-requirements deployment-set applications-sets))))
 
-(defn operationnal-status-content
+(defn operational-status-content
   [resource _request]
   (-> resource :operational-status r/json-response))
 
 (defmethod crud/do-action [resource-type utils/action-operational-status]
   [request]
-  (standard-action request operationnal-status-content))
+  (standard-action request operational-status-content))
 
 (defmethod crud/do-action [resource-type utils/action-start]
   [request]
