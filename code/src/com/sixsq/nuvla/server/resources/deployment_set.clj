@@ -32,6 +32,48 @@ These resources represent a deployment set that regroups deployments.
 (def collection-acl {:query ["group/nuvla-user"]
                      :add   ["group/nuvla-user"]})
 
+(def actions [{:name           utils/action-start
+               :uri            utils/action-start
+               :description    "start deployment set"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           utils/action-stop
+               :uri            utils/action-stop
+               :description    "stop deployment set"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           utils/action-cancel
+               :uri            utils/action-cancel
+               :description    "cancel running action on deployment set"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           utils/action-update
+               :uri            utils/action-update
+               :description    "cancel running action on deployment set"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           utils/action-plan
+               :uri            utils/action-plan
+               :description    "get an action plan for deployment set"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           utils/action-check-requirements
+               :uri            utils/action-check-requirements
+               :description    "check whether the edges in the deployment set satisfy the apps requirements"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}])
+
 (defmethod sm/state-machine resource-type
   [_resource]
   utils/state-machine)
