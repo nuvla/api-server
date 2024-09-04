@@ -217,11 +217,11 @@
 
              :json-schema/order 88)))
 
-(s/def ::docker
+(s/def ::coe-resources
   (assoc (st/spec map?)
-    :name "docker"
+    :name "coe-resources"
     :json-schema/type "map"
-    :json-schema/description "Docker resources info"))
+    :json-schema/description "coe resources info"))
 
 
 (s/def ::schema
@@ -267,5 +267,5 @@
                                ::nb-status-0/temperatures
                                ::components
                                ::network
-                               ::docker]}))
+                               ::coe-resources]}))
 

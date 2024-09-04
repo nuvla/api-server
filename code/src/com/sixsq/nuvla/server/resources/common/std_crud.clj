@@ -7,7 +7,7 @@
     [clojure.walk :as w]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
-    [clj-json-pointer.core :as jp]
+    [clj-json-patch.core :as json-patch]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.middleware.cimi-params.impl :as impl]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
@@ -66,7 +66,9 @@
 (defn json-safe-patch
   [obj patches]
   (try
-    (jp/patch obj patches)
+    (if-let [result (json-patch/patch obj patches)]
+      result
+      (throw (Exception. "Patch interpretation failed!")))
     (catch Exception e
       (throw (r/ex-bad-request (str "Json patch exception: " (ex-message e)))))))
 
@@ -74,7 +76,7 @@
   (= (get-in request [:headers "content-type"]) "application/json-patch+json"))
 
 (defn json-patch
-  [resource {:keys [json-patch body] :as request}]
+  [resource {:keys [body] :as request}]
   (if (json-patch-request? request)
     (->> (w/stringify-keys body)
          (json-safe-patch (w/stringify-keys resource))

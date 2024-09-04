@@ -128,7 +128,8 @@
                                                         :ips       [{:address "3.4.5.6"}]}
                                                        {:interface "enp3s0"
                                                         :ips       []}
-                                                       {:interface "abc"}]}})
+                                                       {:interface "abc"}]}
+            :coe-resources               {:docker {}}})
 
 
 (deftest check-nuvlabox-status
@@ -149,5 +150,5 @@
                  :power-consumption ::jobs :swarm-node-cert-expiry-date :online :host-user-home
                  :cluster-id :cluster-node-labels :cluster-node-role :status-notes :cluster-nodes
                  :cluster-managers :orchestrator :cluster-join-address :temperatures :components
-                 :network}]
+                 :network :coe-resources}]
     (stu/is-valid ::nb-status-2/schema (dissoc state attr))))
