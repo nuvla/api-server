@@ -1352,84 +1352,271 @@
         session-user (header session-anon authn-info-header
                              (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))]
 
-    (testing "create must be possible for user"
-      (let [module-id   (resource-creation/create-module session-user "a" "a/b")
-            _           (module/initialize)
-            _           (-> session-user
-                            (request (str p/service-context module-id)
-                                     :request-method :put
-                                     :body (json/write-str {:content {:docker-compose       "a"
-                                                                      :architectures        ["x86_64"]
-                                                                      :minimum-requirements {:min-cpu  2.0
-                                                                                             :min-ram  200
-                                                                                             :min-disk 10}
-                                                                      :author               "user/jane"}}))
-                            ltu/body->edn
-                            (ltu/is-status 200))
-            module-id-2 (resource-creation/create-module session-user "c" "c/d")
-            _           (-> session-user
-                            (request (str p/service-context module-id-2)
-                                     :request-method :put
-                                     :body (json/write-str {:content {:docker-compose       "a"
-                                                                      :architectures        ["x86_64" "sparc"]
-                                                                      :minimum-requirements {:min-cpu  0.5
-                                                                                             :min-ram  100
-                                                                                             :min-disk 100}
-                                                                      :author               "user/jane"}}))
-                            ltu/body->edn
-                            (ltu/is-status 200))
-            fleet       ["nuvlabox/1"]
-            dep-set-url (with-redefs [utils/get-missing-edges (constantly #{})]
-                          (-> session-user
-                              (request base-uri
-                                       :request-method :post
-                                       :body (json/write-str {:name    dep-set-name
-                                                              :modules [module-id module-id-2]
-                                                              :fleet   fleet}))
-                              ltu/body->edn
-                              (ltu/is-status 201)
-                              ltu/location-url))]
+    (let [module-id   (resource-creation/create-module session-user "a" "a/b")
+          _           (module/initialize)
+          module-id-2 (resource-creation/create-module session-user "c" "c/d")
+          fleet       ["nuvlabox/1"]]
 
-        (testing "check deployment set requirements"
-          (let [check-requirements-op-url    (-> session-user
-                                                 (request dep-set-url)
-                                                 ltu/body->edn
-                                                 (ltu/is-status 200)
-                                                 (ltu/get-op-url utils/action-check-requirements))
-                retrieve-by-id-as-admin-orig crud/retrieve-by-id-as-admin
-                check-req-results            (with-redefs [crud/query-as-admin
-                                                           (fn [collection-id options]
-                                                             (case collection-id
-                                                               "nuvlabox"
-                                                               [{:count 1}
-                                                                '({:id              "nuvlabox/1"
-                                                                   :name            "NuvlaBox 01"
-                                                                   :nuvlabox-status "nuvlabox-status/1"})]
-                                                               "nuvlabox-status"
-                                                               [{:count 1}
-                                                                '({:id           "nuvlabox-status/1"
-                                                                   :architecture "x86_64"
-                                                                   :resources    {:cpu   {:capacity 2}
-                                                                                  :ram   {:capacity 1024}
-                                                                                  :disks [{:capacity 20}
-                                                                                          {:capacity 200}]}})]))]
-                                               (-> session-user
-                                                   (request check-requirements-op-url)
-                                                   ltu/body->edn
-                                                   (ltu/is-status 200)
-                                                   ltu/body))]
+      (testing "check deployment set requirements"
+        (let [check-req-results (fn [module1-req module2-req status]
+                                  (-> session-user
+                                      (request (str p/service-context module-id)
+                                               :request-method :put
+                                               :body (json/write-str {:content (merge {:docker-compose "a"
+                                                                                       :author         "user/jane"}
+                                                                                      module1-req)}))
+                                      ltu/body->edn
+                                      (ltu/is-status 200))
+                                  (-> session-user
+                                      (request (str p/service-context module-id-2)
+                                               :request-method :put
+                                               :body (json/write-str {:content (merge {:docker-compose "a"
+                                                                                       :author         "user/jane"}
+                                                                                      module2-req)}))
+                                      ltu/body->edn
+                                      (ltu/is-status 200))
+                                  (let [dep-set-url               (with-redefs [utils/get-missing-edges (constantly #{})]
+                                                                    (-> session-user
+                                                                        (request base-uri
+                                                                                 :request-method :post
+                                                                                 :body (json/write-str {:name    dep-set-name
+                                                                                                        :modules [module-id module-id-2]
+                                                                                                        :fleet   fleet}))
+                                                                        ltu/body->edn
+                                                                        (ltu/is-status 201)
+                                                                        ltu/location-url))
+                                        check-requirements-op-url (-> session-user
+                                                                      (request dep-set-url)
+                                                                      ltu/body->edn
+                                                                      (ltu/is-status 200)
+                                                                      (ltu/get-op-url utils/action-check-requirements))]
+                                    (with-redefs [crud/query-as-admin
+                                                  (fn [collection-id _options]
+                                                    (case collection-id
+                                                      "nuvlabox"
+                                                      [{:count 1}
+                                                       '({:id              "nuvlabox/1"
+                                                          :name            "NuvlaBox 01"
+                                                          :nuvlabox-status "nuvlabox-status/1"})]
+                                                      "nuvlabox-status"
+                                                      [{:count 1}
+                                                       [(merge {:id "nuvlabox-status/1"} status)]]))]
+                                      (-> session-user
+                                          (request check-requirements-op-url)
+                                          ltu/body->edn
+                                          (ltu/is-status 200)
+                                          ltu/body))))]
+          (is (= {:minimum-requirements {:architectures ["x86_64"]
+                                         :min-cpu       2.5
+                                         :min-ram       300
+                                         :min-disk      110}
+                  :unmet-requirements   {:first-mismatches []
+                                         :n-edges          0}}
+                 (check-req-results {:architectures        ["x86_64"]
+                                     :minimum-requirements {:min-cpu  2.0
+                                                            :min-ram  200
+                                                            :min-disk 10}}
+                                    {:architectures        ["x86_64" "sparc"]
+                                     :minimum-requirements {:min-cpu  0.5
+                                                            :min-ram  100
+                                                            :min-disk 100}}
+                                    {:architecture "x86_64"
+                                     :resources    {:cpu   {:capacity 3}
+                                                    :ram   {:capacity 1024}
+                                                    :disks [{:capacity 200}]}})))
+          (is (= {:minimum-requirements {:architectures ["x86_64"]
+                                         :min-cpu       2.5
+                                         :min-ram       300
+                                         :min-disk      110}
+                  :unmet-requirements   {:first-mismatches [{:edge-id   "nuvlabox/1"
+                                                             :edge-name "NuvlaBox 01"
+                                                             :cpu       {:available 2
+                                                                         :min       2.5}
+                                                             :disk      {:available 20
+                                                                         :min       110}}]
+                                         :n-edges          1}}
+                 (check-req-results {:architectures        ["x86_64"]
+                                     :minimum-requirements {:min-cpu  2.0
+                                                            :min-ram  200
+                                                            :min-disk 10}}
+                                    {:architectures        ["x86_64" "sparc"]
+                                     :minimum-requirements {:min-cpu  0.5
+                                                            :min-ram  100
+                                                            :min-disk 100}}
+                                    {:architecture "x86_64"
+                                     :resources    {:cpu   {:capacity 2}
+                                                    :ram   {:capacity 1024}
+                                                    :disks [{:capacity 20}
+                                                            {:capacity 200}]}})))
+          (is (= {:minimum-requirements {:architectures ["x86_64"]
+                                         :min-cpu       2.5
+                                         :min-ram       300
+                                         :min-disk      110}
+                  :unmet-requirements   {:first-mismatches [{:edge-id      "nuvlabox/1"
+                                                             :edge-name    "NuvlaBox 01"
+                                                             :architecture {:edge-architecture "sparc"
+                                                                            :supported         ["x86_64"]}}]
+                                         :n-edges          1}}
+                 (check-req-results {:architectures        ["x86_64"]
+                                     :minimum-requirements {:min-cpu  2.0
+                                                            :min-ram  200
+                                                            :min-disk 10}}
+                                    {:architectures        ["x86_64" "sparc"]
+                                     :minimum-requirements {:min-cpu  0.5
+                                                            :min-ram  100
+                                                            :min-disk 100}}
+                                    {:architecture "sparc"
+                                     :resources    {:cpu   {:capacity 3}
+                                                    :ram   {:capacity 1024}
+                                                    :disks [{:capacity 200}]}})))
+          (testing "The check should pass if required architecture is not specified"
+            (is (= {:minimum-requirements {:architectures nil
+                                           :min-cpu       2.5
+                                           :min-ram       300
+                                           :min-disk      110}
+                    :unmet-requirements   {:first-mismatches []
+                                           :n-edges          0}}
+                   (check-req-results {:minimum-requirements {:min-cpu  2.0
+                                                              :min-ram  200
+                                                              :min-disk 10}}
+                                      {:minimum-requirements {:min-cpu  0.5
+                                                              :min-ram  100
+                                                              :min-disk 100}}
+                                      {:architecture ["x86_64"]
+                                       :resources    {:cpu   {:capacity 3}
+                                                      :ram   {:capacity 1024}
+                                                      :disks [{:capacity 200}]}}))))
+          (testing "The check should pass if required cpu is not specified"
+            (is (= {:minimum-requirements {:architectures ["x86_64"]
+                                           :min-cpu       0.0
+                                           :min-ram       300
+                                           :min-disk      110}
+                    :unmet-requirements   {:first-mismatches []
+                                           :n-edges          0}}
+                   (check-req-results {:architectures        ["x86_64"]
+                                       :minimum-requirements {:min-ram  200
+                                                              :min-disk 10}}
+                                      {:architectures        ["x86_64" "sparc"]
+                                       :minimum-requirements {:min-ram  100
+                                                              :min-disk 100}}
+                                      {:architecture "x86_64"
+                                       :resources    {:cpu   {:capacity 1}
+                                                      :ram   {:capacity 1024}
+                                                      :disks [{:capacity 200}]}}))))
+          (testing "The check should pass if required ram is not specified"
+            (is (= {:minimum-requirements {:architectures ["x86_64"]
+                                           :min-cpu       2.5
+                                           :min-ram       0
+                                           :min-disk      110}
+                    :unmet-requirements   {:first-mismatches []
+                                           :n-edges          0}}
+                   (check-req-results {:architectures        ["x86_64"]
+                                       :minimum-requirements {:min-cpu  2.0
+                                                              :min-disk 10}}
+                                      {:architectures        ["x86_64" "sparc"]
+                                       :minimum-requirements {:min-cpu  0.5
+                                                              :min-disk 100}}
+                                      {:architecture "x86_64"
+                                       :resources    {:cpu   {:capacity 3}
+                                                      :ram   {:capacity 40}
+                                                      :disks [{:capacity 200}]}}))))
+          (testing "The check should pass if required disk space is not specified"
+            (is (= {:minimum-requirements {:architectures ["x86_64"]
+                                           :min-cpu       2.5
+                                           :min-ram       300
+                                           :min-disk      0}
+                    :unmet-requirements   {:first-mismatches []
+                                           :n-edges          0}}
+                   (check-req-results {:architectures        ["x86_64"]
+                                       :minimum-requirements {:min-cpu 2.0
+                                                              :min-ram 200}}
+                                      {:architectures        ["x86_64" "sparc"]
+                                       :minimum-requirements {:min-cpu 0.5
+                                                              :min-ram 100}}
+                                      {:architecture "x86_64"
+                                       :resources    {:cpu   {:capacity 3}
+                                                      :ram   {:capacity 1024}
+                                                      :disks [{:capacity 10}]}}))))
+          (testing "The check should pass if the edge does not provide supported architecture"
+            (is (= {:minimum-requirements {:architectures ["x86_64"]
+                                           :min-cpu       2.5
+                                           :min-ram       300
+                                           :min-disk      110}
+                    :unmet-requirements   {:first-mismatches []
+                                           :n-edges          0}}
+                   (check-req-results {:architectures        ["x86_64"]
+                                       :minimum-requirements {:min-cpu  2.0
+                                                              :min-ram  200
+                                                              :min-disk 10}}
+                                      {:architectures        ["x86_64" "sparc"]
+                                       :minimum-requirements {:min-cpu  0.5
+                                                              :min-ram  100
+                                                              :min-disk 100}}
+                                      {:architecture nil
+                                       :resources    {:cpu   {:capacity 3}
+                                                      :ram   {:capacity 1024}
+                                                      :disks [{:capacity 200}]}}))))
+          (testing "The check should NOT pass if the edge does not provide available resources"
+            (is (= {:minimum-requirements {:architectures ["x86_64"]
+                                           :min-cpu       2.5
+                                           :min-ram       300
+                                           :min-disk      110}
+                    :unmet-requirements   {:first-mismatches [{:cpu       {:available 0
+                                                                           :min       2.5}
+                                                               :edge-id   "nuvlabox/1"
+                                                               :edge-name "NuvlaBox 01"}]
+                                           :n-edges          1}}
+                   (check-req-results {:architectures        ["x86_64"]
+                                       :minimum-requirements {:min-cpu  2.0
+                                                              :min-ram  200
+                                                              :min-disk 10}}
+                                      {:architectures        ["x86_64" "sparc"]
+                                       :minimum-requirements {:min-cpu  0.5
+                                                              :min-ram  100
+                                                              :min-disk 100}}
+                                      {:architecture "x86_64"
+                                       :resources    {:ram   {:capacity 1024}
+                                                      :disks [{:capacity 200}]}})))
             (is (= {:minimum-requirements {:architectures ["x86_64"]
                                            :min-cpu       2.5
                                            :min-ram       300
                                            :min-disk      110}
                     :unmet-requirements   {:first-mismatches [{:edge-id   "nuvlabox/1"
                                                                :edge-name "NuvlaBox 01"
-                                                               :cpu       {:available 2
-                                                                           :min       2.5}
-                                                               :disk      {:available 20
-                                                                           :min       110}}]
+                                                               :ram       {:available 0
+                                                                           :min       300}}]
                                            :n-edges          1}}
-                   check-req-results))))))))
+                   (check-req-results {:architectures        ["x86_64"]
+                                       :minimum-requirements {:min-cpu  2.0
+                                                              :min-ram  200
+                                                              :min-disk 10}}
+                                      {:architectures        ["x86_64" "sparc"]
+                                       :minimum-requirements {:min-cpu  0.5
+                                                              :min-ram  100
+                                                              :min-disk 100}}
+                                      {:architecture "x86_64"
+                                       :resources    {:cpu   {:capacity 3}
+                                                      :disks [{:capacity 200}]}})))
+            (is (= {:minimum-requirements {:architectures ["x86_64"]
+                                           :min-cpu       2.5
+                                           :min-ram       300
+                                           :min-disk      110}
+                    :unmet-requirements   {:first-mismatches [{:disk      {:available 0
+                                                                           :min       110}
+                                                               :edge-id   "nuvlabox/1"
+                                                               :edge-name "NuvlaBox 01"}]
+                                           :n-edges          1}}
+                   (check-req-results {:architectures        ["x86_64"]
+                                       :minimum-requirements {:min-cpu  2.0
+                                                              :min-ram  200
+                                                              :min-disk 10}}
+                                      {:architectures        ["x86_64" "sparc"]
+                                       :minimum-requirements {:min-cpu  0.5
+                                                              :min-ram  100
+                                                              :min-disk 100}}
+                                      {:architecture "x86_64"
+                                       :resources    {:cpu   {:capacity 3}
+                                                      :ram   {:capacity 1024}}})))))))))
 
 
 (deftest bad-methods

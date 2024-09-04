@@ -71,8 +71,6 @@
 
 (def guard-fleet-filter-defined? :fleet-filter-defined)
 
-(def guard-admin? :fleet-filter-defined)
-
 (defn transition-ok
   [to-state]
   {::tk/on action-ok ::tk/to to-state ::tk/guards [sm/guard-is-admin?]})

@@ -32,48 +32,6 @@ These resources represent a deployment set that regroups deployments.
 (def collection-acl {:query ["group/nuvla-user"]
                      :add   ["group/nuvla-user"]})
 
-(def actions [{:name           utils/action-start
-               :uri            utils/action-start
-               :description    "start deployment set"
-               :method         "POST"
-               :input-message  "application/json"
-               :output-message "application/json"}
-
-              {:name           utils/action-stop
-               :uri            utils/action-stop
-               :description    "stop deployment set"
-               :method         "POST"
-               :input-message  "application/json"
-               :output-message "application/json"}
-
-              {:name           utils/action-cancel
-               :uri            utils/action-cancel
-               :description    "cancel running action on deployment set"
-               :method         "POST"
-               :input-message  "application/json"
-               :output-message "application/json"}
-
-              {:name           utils/action-update
-               :uri            utils/action-update
-               :description    "cancel running action on deployment set"
-               :method         "POST"
-               :input-message  "application/json"
-               :output-message "application/json"}
-
-              {:name           utils/action-plan
-               :uri            utils/action-plan
-               :description    "get an action plan for deployment set"
-               :method         "POST"
-               :input-message  "application/json"
-               :output-message "application/json"}
-
-              {:name           utils/action-check-requirements
-               :uri            utils/action-check-requirements
-               :description    "check whether the edges in the deployment set satisfy the apps requirements"
-               :method         "POST"
-               :input-message  "application/json"
-               :output-message "application/json"}])
-
 (defmethod sm/state-machine resource-type
   [_resource]
   utils/state-machine)
@@ -248,13 +206,13 @@ These resources represent a deployment set that regroups deployments.
                               (crud/get-resource-throw-nok request))]
     (r/json-response (utils/check-requirements deployment-set applications-sets))))
 
-(defn operationnal-status-content
+(defn operational-status-content
   [resource _request]
   (-> resource :operational-status r/json-response))
 
 (defmethod crud/do-action [resource-type utils/action-operational-status]
   [request]
-  (standard-action request operationnal-status-content))
+  (standard-action request operational-status-content))
 
 (defmethod crud/do-action [resource-type utils/action-start]
   [request]
