@@ -447,15 +447,16 @@
         edges-status-by-id  (group-by :id (retrieve-edges-status (map :nuvlabox-status edges)))]
     (map (fn [{:keys [id name nuvlabox-status]}]
            (let [{:keys [architecture resources]} (first (get edges-status-by-id nuvlabox-status))
-                 {{cpu-capacity :capacity}                                 :cpu
-                  {ram-capacity :capacity}                                 :ram
-                  [{first-disk-capacity :capacity, first-disk-used :used}] :disks} resources]
+                 {{cpu-capacity :capacity} :cpu
+                  {ram-capacity :capacity} :ram
+                  disks                    :disks} resources
+                 max-disk-av (apply max (cons 0 (map #(- (or (:capacity %) 0) (or (:used %) 0)) disks)))]
              {:edge-id      id
               :edge-name    name
               :architecture architecture
               :cpu          (or cpu-capacity 0)
               :ram          (or ram-capacity 0)
-              :disk         (- (or first-disk-capacity 0) (or first-disk-used 0))}))
+              :disk         max-disk-av}))
          edges)))
 
 (defn unmet-requirements
