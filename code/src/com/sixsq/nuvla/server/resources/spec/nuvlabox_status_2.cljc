@@ -221,6 +221,7 @@
   (assoc (st/spec map?)
     :name "coe-resources"
     :json-schema/type "map"
+    :json-schema/indexed false
     :json-schema/description "coe resources info"))
 
 
