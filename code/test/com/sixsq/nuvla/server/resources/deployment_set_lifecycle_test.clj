@@ -1446,8 +1446,27 @@
                                     {:architecture "x86_64"
                                      :resources    {:cpu   {:capacity 2}
                                                     :ram   {:capacity 1024}
+                                                    :disks [{:capacity 200 :used 180}]}})))
+          (is (= {:minimum-requirements {:architectures ["x86_64"]
+                                         :min-cpu       2.5
+                                         :min-ram       300
+                                         :min-disk      110}
+                  :unmet-requirements   {:first-mismatches []
+                                         :n-edges          0}}
+                 (check-req-results {:architectures        ["x86_64"]
+                                     :minimum-requirements {:min-cpu  2.0
+                                                            :min-ram  200
+                                                            :min-disk 10}}
+                                    {:architectures        ["x86_64" "sparc"]
+                                     :minimum-requirements {:min-cpu  0.5
+                                                            :min-ram  100
+                                                            :min-disk 100}}
+                                    {:architecture "x86_64"
+                                     :resources    {:cpu   {:capacity 3}
+                                                    :ram   {:capacity 1024}
                                                     :disks [{:capacity 20}
-                                                            {:capacity 200}]}})))
+                                                            {:capacity 200 :used 20}
+                                                            {:capacity 40}]}})))
           (is (= {:minimum-requirements {:architectures ["x86_64"]
                                          :min-cpu       2.5
                                          :min-ram       300
