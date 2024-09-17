@@ -70,6 +70,7 @@
       result
       (throw (Exception. "Patch interpretation failed!")))
     (catch Exception e
+      (log/error "ex-message:" (ex-message e) "ex-data:" (ex-data e) "exception:" e "resource:" obj "patches:" patches)
       (throw (r/ex-bad-request (str "Json patch exception: " (ex-message e)))))))
 
 (defn- json-patch-request? [request]
