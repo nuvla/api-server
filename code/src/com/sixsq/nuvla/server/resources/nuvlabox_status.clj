@@ -123,7 +123,10 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                       ex))]
     (if exception
       (do
-        (crud/edit (dissoc request :body))
+        (-> request
+            (assoc-in [:headers "content-type"] "application/json")
+            (dissoc request :body)
+            crud/edit)
         (throw exception))
       resource)))
 

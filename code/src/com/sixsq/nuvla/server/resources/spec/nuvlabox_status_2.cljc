@@ -217,6 +217,13 @@
 
              :json-schema/order 88)))
 
+(s/def ::coe-resources
+  (assoc (st/spec map?)
+    :name "coe-resources"
+    :json-schema/type "map"
+    :json-schema/indexed false
+    :json-schema/description "coe resources info"))
+
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
@@ -260,5 +267,6 @@
                                ::orchestrator
                                ::nb-status-0/temperatures
                                ::components
-                               ::network]}))
+                               ::network
+                               ::coe-resources]}))
 

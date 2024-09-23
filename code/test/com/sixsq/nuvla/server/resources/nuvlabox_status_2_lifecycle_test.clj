@@ -264,6 +264,50 @@
                 (doseq [k nb-status/blacklist-response-keys]
                   (is (not (contains? r k)))))))
 
+          (let [new-tags ["foo"]]
+            (testing "nuvlabox user is able to patch update nuvlabox-status"
+              (-> session-nb
+                  (request status-url
+                           :content-type "application/json-patch+json"
+                           :request-method :put
+                           :body (json/write-str [{"op" "add" "path" "/tags" "value" new-tags}
+                                                  {"op" "test" "path" "/tags" "value" new-tags}]))
+                  (ltu/body->edn)
+                  (ltu/is-status 200))
+              (testing "spec error are returned to the user"
+                (-> session-nb
+                    (request status-url
+                             :content-type "application/json-patch+json"
+                             :request-method :put
+                             :body (json/write-str [{"op" "add" "path" "/foo" "value" "x"}]))
+                    (ltu/body->edn)
+                    (ltu/is-status 400)))
+              (testing "patch error are returned to the user"
+                (-> session-nb
+                    (request status-url
+                             :content-type "application/json-patch+json"
+                             :request-method :put
+                             :body (json/write-str [{"op" "test" "path" "/tags" "value" []}]))
+                    (ltu/body->edn)
+                    (ltu/is-status 400)
+                    (ltu/message-matches "Json patch exception: The test failed. [] is not found at /tags"))
+                (-> session-nb
+                    (request status-url
+                             :content-type "application/json-patch+json"
+                             :request-method :put
+                             :body (json/write-str [{"op" "remove" "path" "/wrong/1" "value" "x"}]))
+                    (ltu/body->edn)
+                    (ltu/is-status 400)
+                    (ltu/message-matches "Json patch exception: There is no value at '/wrong/1' to remove."))
+                (-> session-nb
+                    (request status-url
+                             :content-type "application/json-patch+json"
+                             :request-method :put
+                             :body (json/write-str "plain text"))
+                    (ltu/body->edn)
+                    (ltu/is-status 400)
+                    (ltu/message-matches "Json patch exception: Patch interpretation failed!")))))
+
           (testing "nuvlabox identity cannot delete the state"
             (-> session-nb
                 (request status-url
