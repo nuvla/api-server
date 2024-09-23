@@ -6,6 +6,30 @@
 
 ## Released
 
+## [6.9.0](https://github.com/nuvla/api-server/compare/6.8.1...6.9.0) (2024-09-23)
+
+
+### Features
+
+* **dg-min-req:** cleanup, additional tests ([a5bc70b](https://github.com/nuvla/api-server/commit/a5bc70b36486fd9764c8b10aaf6cde660180b02f))
+* **Module:** App minimum requirements + resource check at deployment time ([#931](https://github.com/nuvla/api-server/issues/931)) ([6cf45c4](https://github.com/nuvla/api-server/commit/6cf45c4e53500e0b3334f7affb7e846451a05cda))
+* **Nuvlabox:** Bulk update support ([#935](https://github.com/nuvla/api-server/issues/935)) ([7ca78d2](https://github.com/nuvla/api-server/commit/7ca78d2141602385593197c00e0406ef3bea78e3))
+* **Std-crud:** Support json patch edit format ([#938](https://github.com/nuvla/api-server/issues/938)) ([2432009](https://github.com/nuvla/api-server/commit/24320094c22b9c13a1d9f164237cfbe1535b5f32))
+
+
+### Bug Fixes
+
+* **Common utils:** Enhance cannot do action because of state error message ([7ca78d2](https://github.com/nuvla/api-server/commit/7ca78d2141602385593197c00e0406ef3bea78e3))
+* **Deployment:** Bulk delete support([#937](https://github.com/nuvla/api-server/issues/937)) ([08a58ab](https://github.com/nuvla/api-server/commit/08a58ab0ecbcac49a2d99f715b39c46623efe39c))
+* **Deployment:** Delete operation should not be available to deployment in ERROR state ([08a58ab](https://github.com/nuvla/api-server/commit/08a58ab0ecbcac49a2d99f715b39c46623efe39c))
+* **dg-min-req:** add back action map, used to generate resource-metadata ([745c951](https://github.com/nuvla/api-server/commit/745c951b5b3991d1a6b48e17baec0bddbb6dbc63))
+* **dg-min-req:** check disk with maximum available space ([2028b27](https://github.com/nuvla/api-server/commit/2028b27b65d7512608239eb77f7aae1231293abd))
+* **Job:** Allow user to cancel created bulk jobs ([7ca78d2](https://github.com/nuvla/api-server/commit/7ca78d2141602385593197c00e0406ef3bea78e3))
+* **Job:** Move job utils and create new utils namespace and refactor to reuse code ([7ca78d2](https://github.com/nuvla/api-server/commit/7ca78d2141602385593197c00e0406ef3bea78e3))
+* **Job:** Set created-by attribute as user at the origin of the creation of the job ([7ca78d2](https://github.com/nuvla/api-server/commit/7ca78d2141602385593197c00e0406ef3bea78e3))
+* **nsorg:** Namespace ordering ([c52e86f](https://github.com/nuvla/api-server/commit/c52e86f9090e5ecb10cc32ebe0d6d25a9a489ca0))
+* **utils:** Add Secure rand nth function ([#933](https://github.com/nuvla/api-server/issues/933)) ([0a2623b](https://github.com/nuvla/api-server/commit/0a2623b1b578fdd023d22548113122811aba97d8))
+
 ## [6.8.1](https://github.com/nuvla/api-server/compare/6.8.0...6.8.1) (2024-08-07)
 
 
