@@ -6,6 +6,13 @@
 
 ## Released
 
+## [6.9.1](https://github.com/nuvla/api-server/compare/6.9.0...6.9.1) (2024-10-03)
+
+
+### Bug Fixes
+
+* **Deployment:** Get context return minimal nuvlabox status ([#942](https://github.com/nuvla/api-server/issues/942)) ([6d85102](https://github.com/nuvla/api-server/commit/6d851023a32841597841d221bbc39bdd66b353ea))
+
 ## [6.9.0](https://github.com/nuvla/api-server/compare/6.8.1...6.9.0) (2024-09-23)
 
 
