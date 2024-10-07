@@ -1365,6 +1365,57 @@
                                     :manage    [nuvlabox-id "user/alpha"],
                                     :edit-meta [nuvlabox-id "user/alpha"]}))))))
 
+(deftest coe-resource-action-lifecycle
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session       (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+
+          nuvlabox-id   (-> session-owner
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-nuvlabox))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
+          nuvlabox-url  (str p/service-context nuvlabox-id)]
+
+      (-> session-admin
+          (request nuvlabox-url)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-operation-absent utils/action-coe-resource-actions))
+
+      (-> session-admin
+          (request nuvlabox-url
+                   :request-method :put
+                   :body (json/write-str {:state "COMMISSIONED"}))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      (let [coe-actions-url (-> session-owner
+                                (request nuvlabox-url)
+                                (ltu/body->edn)
+                                (ltu/is-status 200)
+                                (ltu/is-operation-present utils/action-coe-resource-actions)
+                                (ltu/get-op-url utils/action-coe-resource-actions))
+            job-url         (-> session-owner
+                                (request coe-actions-url
+                                         :request-method :post
+                                         :body (json/write-str {:foo "bar"}))
+                                (ltu/body->edn)
+                                (ltu/is-status 202)
+                                (ltu/location-url))]
+        (-> session-admin
+            (request job-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :action "coe_resource_actions")
+            (ltu/is-key-value :payload "{\"foo\":\"bar\"}"))))))
+
 
 (deftest create-activate-assemble-playbooks-emergency-lifecycle
   (binding [config-nuvla/*stripe-api-key* nil]
