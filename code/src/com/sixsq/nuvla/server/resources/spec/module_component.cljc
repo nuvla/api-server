@@ -24,28 +24,24 @@
 
              :json-schema/order 31)))
 
-
 ;; list from https://github.com/containerd/containerd/blob/1ac546b3c4a3331a9997427052d1cb9888a2f3ef/platforms/database.go#L63
+;; and from https://github.com/moby/moby/blob/2d32d7504104e88ad8c40d843be1e3d75cdfec0e/profiles/seccomp/seccomp_linux.go#L29-L64
 ;; arm variants added
-(def valid-architectures #{"386" "x86_64" "amd64" "amd64p32"
-                           "arm" "armbe" "arm64" "arm64/v8" "arm64be"
-                           "arm/v5" "arm/v6" "arm/v7"
-                           "ppc" "ppc64" "ppc64le"
-                           "mips" "mipsle" "mips64" "mips64le" "mips64p32" "mips64p32le"
-                           "s390" "s390x" "sparc" "sparc64"})
+(def valid-architectures ["386" "x86" "x86_64" "amd64" "amd64p32" "arch64"
+                          "arm" "armbe" "arm64" "arm64/v8" "arm64be"
+                          "arm/v5" "arm/v6" "arm/v7" "armv7l"
+                          "mips" "mipsel" "mipsel64" "mipsle" "mips64" "mips64le" "mips64n32" "mips64p32" "mips64p32le"
+                          "mips3l64n32"
+                          "ppc" "ppc64" "ppc64le"
+                          "riscv64" "s390" "s390x" "sparc" "sparc64"])
 
 (s/def ::architecture
-  (-> (st/spec (s/and string? valid-architectures))
+  (-> (st/spec (s/and string? (set valid-architectures)))
       (assoc :name "architecture"
              :json-schema/type "string"
              :json-schema/description "CPU architecture"
 
-             :json-schema/value-scope {:values  ["386" "amd64" "amd64p32"
-                                                 "arm" "armbe" "arm64" "arm64/v8" "arm64be"
-                                                 "arm/v5" "arm/v6" "arm/v7"
-                                                 "ppc" "ppc64" "ppc64le"
-                                                 "mips" "mipsle" "mips64" "mips64le" "mips64p32" "mips64p32le"
-                                                 "s390" "s390x" "sparc" "sparc64"]
+             :json-schema/value-scope {:values  valid-architectures
                                        :default "amd64"})))
 
 
