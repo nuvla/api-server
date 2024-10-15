@@ -110,3 +110,16 @@
                                             :opt-un [::filter
                                                      ::granularity
                                                      ::custom-es-aggregations]}))
+
+(s/def :coe-resource-actions/resource #{"container" "volume" "image" "network"})
+(s/def :coe-resource-actions/action #{"pull" "remove"})
+(s/def :coe-resource-actions/id string?)
+
+(s/def :coe-resource-actions/action-info
+  (su/only-keys-maps {:req-un [:coe-resource-actions/resource
+                               :coe-resource-actions/action
+                               :coe-resource-actions/id]}))
+
+(s/def :coe-resource-actions/docker (s/coll-of :coe-resource-actions/action-info))
+
+(s/def ::coe-resource-actions-body (su/only-keys-maps {:req-un [:coe-resource-actions/docker]}))

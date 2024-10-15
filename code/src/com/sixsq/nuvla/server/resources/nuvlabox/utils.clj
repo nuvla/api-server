@@ -29,6 +29,7 @@
 (def ^:const action-commission "commission")
 (def ^:const action-heartbeat "heartbeat")
 (def ^:const action-set-offline "set-offline")
+(def ^:const action-coe-resource-actions "coe-resource-actions")
 
 (def ^:const default-refresh-interval 60)
 (def ^:const default-heartbeat-interval 20)
@@ -113,6 +114,8 @@
 (defn can-set-offline?
   [nuvlabox]
   (u/is-state-within? #{state-commissioned state-suspended} nuvlabox))
+
+(def can-coe-resource-actions? is-state-commissioned?)
 
 (defn throw-nuvlabox-is-suspended
   [{:keys [id] :as nuvlabox}]

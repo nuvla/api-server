@@ -55,35 +55,30 @@ particular NuvlaBox release.
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
-
               {:name           "commission"
                :uri            "commission"
                :description    "commission the nuvlabox"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
-
               {:name           "decommission"
                :uri            "decommission"
                :description    "decommission the nuvlabox"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
-
               {:name           "check-api"
                :uri            "check-api"
                :description    "check nuvlabox api"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
-
               {:name           "reboot"
                :uri            "reboot"
                :description    "reboot the nuvlabox"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
-
               {:name             "add-ssh-key"
                :uri              "add-ssh-key"
                :description      "add an ssh key to the nuvlabox"
@@ -93,7 +88,6 @@ particular NuvlaBox release.
                :input-parameters [{:name        "credential"
                                    :type        "string"
                                    :description "credential id to be added"}]}
-
               {:name             "revoke-ssh-key"
                :uri              "revoke-ssh-key"
                :description      "revoke an ssh key to the nuvlabox"
@@ -103,7 +97,6 @@ particular NuvlaBox release.
                :input-parameters [{:name        "credential"
                                    :type        "string"
                                    :description "credential id to be added"}]}
-
               {:name             "update-nuvlabox"
                :uri              "update-nuvlabox"
                :description      "update nuvlabox engine"
@@ -114,48 +107,49 @@ particular NuvlaBox release.
                                    :type "string"}
                                   {:name "payload"
                                    :type "string"}]}
-
               {:name           "assemble-playbooks"
                :uri            "assemble-playbooks"
                :description    "assemble the nuvlabox playbooks for execution"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
-
               {:name           "enable-host-level-management"
                :uri            "enable-host-level-management"
                :description    "enables the use of nuvlabox playbooks for host level management"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
-
               {:name           "disable-host-level-management"
                :uri            "disable-host-level-management"
                :description    "disables the use of nuvlabox playbooks for host level management"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
-
               {:name           "unsuspend"
                :uri            "unsuspend"
                :description    "unsuspend the nuvlabox"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
-
               {:name           utils/action-heartbeat
                :uri            utils/action-heartbeat
                :description    "allow to receive heartbeat from nuvlabox"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
-
               {:name           utils/action-set-offline
                :uri            utils/action-set-offline
                :description    "allow to job executor as admin to set nuvlabox as offline"
                :method         "POST"
                :input-message  "application/json"
-               :output-message "application/json"}])
+               :output-message "application/json"}
+              {:name           utils/action-coe-resource-actions
+               :uri            utils/action-coe-resource-actions
+               :description    "allow to job executor execute actions at coe level"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+              ])
 
 
 ;;
@@ -674,6 +668,42 @@ particular NuvlaBox release.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
+(defn coe-resource-actions
+  [{:keys [id acl] :as nuvlabox} {:keys [body] :as request}]
+  (try
+    (let [{{job-id     :resource-id
+            job-status :status} :body} (job-utils/create-job id "coe_resource_actions"
+                                                             (-> acl
+                                                                 (a/acl-append :edit-data id)
+                                                                 (a/acl-append :manage id))
+                                                             (auth/current-user-id request)
+                                                             :priority 50
+                                                             :payload (json/write-str body)
+                                                             :execution-mode (utils/get-execution-mode nuvlabox))
+          job-msg (str "sending request to NuvlaBox " id " with async " job-id)]
+      (when (not= job-status 201)
+        (throw (r/ex-response
+                 "unable to create async job" 500 id)))
+      (ectx/add-linked-identifier job-id)
+      (r/map-response job-msg 202 id job-id))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+(def validate-coe-resource-actions-body (u/create-spec-validation-request-body-fn
+                                          ::nuvlabox/coe-resource-actions-body))
+
+(defmethod crud/do-action [resource-type utils/action-coe-resource-actions]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (validate-coe-resource-actions-body request)
+    (-> (str resource-type "/" uuid)
+        crud/retrieve-by-id-as-admin
+        (a/throw-cannot-manage request)
+        (u/throw-cannot-do-action utils/can-coe-resource-actions? utils/action-coe-resource-actions)
+        (coe-resource-actions request))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
 
 ;;
 ;; Cluster action
@@ -1124,10 +1154,10 @@ particular NuvlaBox release.
 ;;
 ;; operations for states for owner are:
 ;;
-;;                edit delete activate commission decommission unsuspend heartbeat set-offline
+;;                edit delete activate commission decommission unsuspend heartbeat set-offline coe-resource-actions
 ;; NEW             Y     Y       Y
 ;; ACTIVATED       Y                       Y           Y
-;; COMMISSIONED    Y                       Y           Y                     Y          Y
+;; COMMISSIONED    Y                       Y           Y                     Y          Y                Y
 ;; DECOMMISSIONING Y                                   Y
 ;; DECOMMISSIONED  Y     Y
 ;; ERROR           Y     Y                             Y
@@ -1155,6 +1185,7 @@ particular NuvlaBox release.
         unsuspend-op         (u/action-map id :unsuspend)
         heartbeat-op         (u/action-map id utils/action-heartbeat)
         set-offline-op       (u/action-map id utils/action-set-offline)
+        coe-actions-op       (u/action-map id utils/action-coe-resource-actions)
         can-manage?          (a/can-manage? resource request)]
     (assoc resource
       :operations
@@ -1182,7 +1213,8 @@ particular NuvlaBox release.
                       (utils/can-create-log? resource) (conj create-log-op)
                       (utils/can-generate-new-api-key? resource) (conj generate-new-key-op)
                       (utils/can-unsuspend? resource) (conj unsuspend-op)
-                      (utils/can-heartbeat? resource) (conj heartbeat-op))))))
+                      (utils/can-heartbeat? resource) (conj heartbeat-op)
+                      (utils/can-coe-resource-actions? resource) (conj coe-actions-op))))))
 
 
 ;;
@@ -1243,6 +1275,10 @@ particular NuvlaBox release.
   true)
 
 (defmethod ec/log-event? "nuvlabox.unsuspend"
+  [_event _response]
+  true)
+
+(defmethod ec/log-event? (str "nuvlabox." utils/action-coe-resource-actions)
   [_event _response]
   true)
 
