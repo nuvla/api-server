@@ -689,9 +689,13 @@ particular NuvlaBox release.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
+(def validate-coe-resource-actions-body (u/create-spec-validation-request-body-fn
+                                          ::nuvlabox/coe-resource-actions-body))
+
 (defmethod crud/do-action [resource-type utils/action-coe-resource-actions]
   [{{uuid :uuid} :params :as request}]
   (try
+    (validate-coe-resource-actions-body request)
     (-> (str resource-type "/" uuid)
         crud/retrieve-by-id-as-admin
         (a/throw-cannot-manage request)

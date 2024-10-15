@@ -1405,7 +1405,7 @@
             job-url         (-> session-owner
                                 (request coe-actions-url
                                          :request-method :post
-                                         :body (json/write-str {:foo "bar"}))
+                                         :body (json/write-str {:docker [{:action "remove" :id "xyz" :resource "image"}]}))
                                 (ltu/body->edn)
                                 (ltu/is-status 202)
                                 (ltu/location-url))]
@@ -1414,7 +1414,7 @@
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-key-value :action "coe_resource_actions")
-            (ltu/is-key-value :payload "{\"foo\":\"bar\"}"))))))
+            (ltu/is-key-value :payload "{\"docker\":[{\"action\":\"remove\",\"id\":\"xyz\",\"resource\":\"image\"}]}"))))))
 
 
 (deftest create-activate-assemble-playbooks-emergency-lifecycle
