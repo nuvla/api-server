@@ -27,7 +27,7 @@
 ;; list from https://github.com/containerd/containerd/blob/1ac546b3c4a3331a9997427052d1cb9888a2f3ef/platforms/database.go#L63
 ;; and from https://github.com/moby/moby/blob/2d32d7504104e88ad8c40d843be1e3d75cdfec0e/profiles/seccomp/seccomp_linux.go#L29-L64
 ;; arm variants added
-(def valid-architectures ["386" "x86" "x86_64" "amd64" "amd64p32" "arch64"
+(def valid-architectures ["386" "x86" "x86_64" "amd64" "amd64p32" "aarch64"
                           "arm" "armbe" "arm64" "arm64/v8" "arm64be"
                           "arm/v5" "arm/v6" "arm/v7" "armv7l"
                           "mips" "mipsel" "mipsel64" "mipsle" "mips64" "mips64le" "mips64n32" "mips64p32" "mips64p32le"
