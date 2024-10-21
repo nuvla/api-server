@@ -17,7 +17,8 @@
     [com.sixsq.nuvla.server.resources.module.utils :as module-utils]
     [com.sixsq.nuvla.server.resources.nuvlabox :as nuvlabox]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [peridot.core :refer [content-type header request session]]))
+    [peridot.core :refer [content-type header request session]]
+    [com.sixsq.nuvla.server.util.time :as time]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
@@ -1637,6 +1638,49 @@
                                        :resources    {:cpu   {:capacity 3}
                                                       :ram   {:capacity 1024}}})))))))))
 
+(deftest lifecycle-auto-update
+  (let [session-anon (-> (ltu/ring-app)
+                         session
+                         (content-type "application/json"))
+        session-user (header session-anon authn-info-header
+                             (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
+        module-id    (resource-creation/create-module session-user)
+        fleet        ["nuvlabox/1"]
+        fleet-filter "resource:type='nuvlabox'"]
+
+    (module/initialize)
+
+    (-> session-user
+        (request (str p/service-context module-id)
+                 :request-method :put
+                 :body (json/write-str {:content {:docker-compose "a"
+                                                  :author         "user/jane"}}))
+        ltu/body->edn
+        (ltu/is-status 200))
+
+    (doseq [[expected-version m-id] [[1 module-id] [0 (str module-id "_0")]]]
+      (let [dep-set-url (-> session-user
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str {:name         dep-set-name,
+                                                            :start        false,
+                                                            :modules      [m-id]
+                                                            :fleet        fleet
+                                                            :fleet-filter fleet-filter
+                                                            :auto-update  true}))
+                            ltu/body->edn
+                            (ltu/is-status 201)
+                            ltu/location-url)]
+        (testing
+          "Check that next-refresh is set to now + 1 minute."
+          (-> session-user
+              (request dep-set-url)
+              ltu/body->edn
+              (ltu/is-status 200)
+              (ltu/is-key-value :auto-update true)
+              (ltu/is-key-value
+                (comp #(time/time-between (time/now) % :seconds) time/parse-date)
+                :next-refresh 59)))))))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]

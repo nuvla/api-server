@@ -33,7 +33,9 @@
                                                                                   :file-content "file content example"}]}]
                                        :targets      ["credential/a2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
                                                       "credential/b2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]}]}]
-   :operational-status {:status "OK"}})
+   :operational-status {:status "OK"}
+   :auto-update        true
+   :next-refresh       "2024-10-21T09:37:02.291Z"})
 
 
 (deftest test-schema-check
@@ -54,5 +56,5 @@
     (stu/is-invalid ::t/deployment-set (dissoc valid-deployment-set k)))
 
   ;; optional attributes
-  (doseq [k #{:operational-status}]
+  (doseq [k #{:operational-status :auto-update :next-refresh}]
     (stu/is-valid ::t/deployment-set (dissoc valid-deployment-set k))))

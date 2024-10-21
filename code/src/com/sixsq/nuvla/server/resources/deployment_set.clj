@@ -21,7 +21,8 @@ These resources represent a deployment set that regroups deployments.
     [com.sixsq.nuvla.server.resources.spec.deployment-set :as spec]
     [com.sixsq.nuvla.server.resources.spec.module :as module-spec]
     [com.sixsq.nuvla.server.util.metadata :as gen-md]
-    [com.sixsq.nuvla.server.util.response :as r]))
+    [com.sixsq.nuvla.server.util.response :as r]
+    [com.sixsq.nuvla.server.util.time :as t]))
 
 (def ^:const resource-type (u/ns->type *ns*))
 
@@ -185,9 +186,20 @@ These resources represent a deployment set that regroups deployments.
     (replace-modules-by-apps-set resource request)
     resource))
 
-(defn pre-validate-hook
+(defn assoc-operational-status
   [resource request]
   (assoc resource :operational-status (divergence-map resource request)))
+
+(defn compute-next-refresh
+  [{:keys [auto-update] :as resource}]
+  (cond-> resource
+          auto-update (assoc :next-refresh (t/to-str (t/plus (t/now) (t/duration-unit 1 :minutes))))))
+
+(defn pre-validate-hook
+  [resource request]
+  (-> resource
+      (assoc-operational-status request)
+      (compute-next-refresh)))
 
 (defn add-edit-pre-validate-hook
   [resource request]
