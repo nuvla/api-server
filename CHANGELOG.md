@@ -6,6 +6,20 @@
 
 ## Released
 
+## [6.10.0](https://github.com/nuvla/api-server/compare/6.9.1...6.10.0) (2024-10-15)
+
+
+### Features
+
+* **Nuvlabox resource:** Support for coe resource actions operation ([ecc4135](https://github.com/nuvla/api-server/commit/ecc41354beeb1cde0223aa33320f9bce82aa2062))
+
+
+### Bug Fixes
+
+* **Github workflow:** Install lein missing in ubuntu 24 ([#947](https://github.com/nuvla/api-server/issues/947)) ([5a08748](https://github.com/nuvla/api-server/commit/5a08748907d462ef3b48b3e061a80315c91023f9))
+* **min-req-archs:** arch64 -&gt; aarch64 ([#949](https://github.com/nuvla/api-server/issues/949)) ([459bc15](https://github.com/nuvla/api-server/commit/459bc150f4286a2005bbf4b22c309b94492b6662))
+* **module spec:** add missing architectures ([0eb0522](https://github.com/nuvla/api-server/commit/0eb0522fb1d897b0fe4b2340327aa61f1db6c6b1))
+
 ## [6.9.1](https://github.com/nuvla/api-server/compare/6.9.0...6.9.1) (2024-10-03)
 
 
