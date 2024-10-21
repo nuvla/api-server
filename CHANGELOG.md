@@ -1,9 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Audit log
-
 ## Released
 
 ## [6.10.0](https://github.com/nuvla/api-server/compare/6.9.1...6.10.0) (2024-10-15)
