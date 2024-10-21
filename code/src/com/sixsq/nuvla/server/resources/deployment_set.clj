@@ -22,7 +22,8 @@ These resources represent a deployment set that regroups deployments.
     [com.sixsq.nuvla.server.resources.spec.deployment-set :as spec]
     [com.sixsq.nuvla.server.resources.spec.module :as module-spec]
     [com.sixsq.nuvla.server.util.metadata :as gen-md]
-    [com.sixsq.nuvla.server.util.response :as r]))
+    [com.sixsq.nuvla.server.util.response :as r]
+    [com.sixsq.nuvla.server.util.time :as t]))
 
 (def ^:const resource-type (u/ns->type *ns*))
 
@@ -190,6 +191,17 @@ These resources represent a deployment set that regroups deployments.
   [resource request]
   (assoc resource :operational-status (divergence-map resource request)))
 
+(defn compute-next-refresh
+  [{:keys [auto-update] :as resource}]
+  (cond-> resource
+          auto-update (assoc :next-refresh (t/to-str (t/plus (t/now) (t/duration-unit 1 :minutes))))))
+
+(defn pre-validate-hook
+  [resource request]
+  (-> resource
+      (update-operational-status request)
+      (compute-next-refresh)))
+
 (defn add-edit-pre-validate-hook
   [resource request]
   (-> resource
@@ -223,7 +235,7 @@ These resources represent a deployment set that regroups deployments.
   ([request f]
    (let [current (load-resource-throw-not-allowed-action request)]
      (-> current
-         (update-operational-status request)
+         (pre-validate-hook request)
          (sm/transition request)
          (utils/save-deployment-set current)
          (f request)))))
@@ -277,7 +289,7 @@ These resources represent a deployment set that regroups deployments.
           admin-request {:params      (u/id->request-params id)
                          :nuvla/authn auth/internal-identity}
           current       (crud/retrieve-by-id-as-admin id)
-          next          (update-operational-status current admin-request)
+          next          (pre-validate-hook current admin-request)
           action        (action-selector next admin-request)]
       (-> next
           (sm/transition (assoc-in admin-request [:params :action] action))
@@ -360,7 +372,7 @@ These resources represent a deployment set that regroups deployments.
         (sm/transition request)
         u/update-timestamps
         (u/set-updated-by request)
-        (update-operational-status request)
+        (pre-validate-hook request)
         crud/validate
         (crud/set-operations request)
         db/edit)))
