@@ -343,5 +343,5 @@
 
 
 (defn add-api-endpoint
-  [resource {:keys [base-uri] :as request}]
-  (assoc resource :api-endpoint (str/replace-first base-uri #"/api/" "")))
+  [{:keys [api-endpoint] :as resource} {:keys [base-uri] :as _request}]
+  (assoc resource :api-endpoint (or api-endpoint (str/replace-first base-uri #"/api/" ""))))

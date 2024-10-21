@@ -176,7 +176,7 @@ a container orchestration engine.
     (add-impl (assoc request :body body))))
 
 (defmethod crud/add resource-type
-  [{{:keys [parent execution-mode deployment-set app-set]} :body :as request}]
+  [{{:keys [parent execution-mode deployment-set app-set api-endpoint]} :body :as request}]
   ;; TODO only allow creation with specific version to always have a version without needing to check versions map
   (a/throw-cannot-add collection-acl request)
   (-> request
@@ -184,7 +184,8 @@ a container orchestration engine.
       (cond-> deployment-set (assoc :deployment-set deployment-set)
               app-set (assoc :app-set app-set)
               parent (assoc :parent parent)
-              execution-mode (assoc :execution-mode execution-mode))
+              execution-mode (assoc :execution-mode execution-mode)
+              api-endpoint (assoc :api-endpoint api-endpoint))
       (create-deployment request)))
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
