@@ -7,6 +7,7 @@
     [com.sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
     [com.sixsq.nuvla.server.resources.spec.deployment-set-operational-status :as os]
     [com.sixsq.nuvla.server.resources.spec.module-applications-sets :as module-sets]
+    [com.sixsq.nuvla.server.resources.spec.deployment :as deployment]
     [com.sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -79,7 +80,8 @@
                         {:req-un [::state
                                   ::applications-sets]
                          :opt-un [::start
-                                  ::os/operational-status]}]))
+                                  ::os/operational-status
+                                  ::deployment/api-endpoint]}]))
 
 
 (s/def ::deployment-set (su/only-keys-maps deployment-set-keys-spec))

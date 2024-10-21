@@ -340,3 +340,8 @@
         (and (some? nuvlabox)
              (not= nb-id nuvlabox))
         (a/acl-remove nuvlabox))))
+
+
+(defn add-api-endpoint
+  [resource {:keys [base-uri] :as request}]
+  (assoc resource :api-endpoint (str/replace-first base-uri #"/api/" "")))

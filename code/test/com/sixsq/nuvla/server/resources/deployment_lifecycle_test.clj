@@ -192,22 +192,25 @@
                                       (ltu/is-operation-present :check-dct)
                                       (ltu/is-key-value :execution-mode nil)
                                       (ltu/is-key-value :state "CREATED")
-                                      (ltu/is-key-value :owner "user/jane"))
+                                      (ltu/is-key-value :owner "user/jane")
+                                      (ltu/is-key-value :api-endpoint "http://localhost"))
 
               start-url           (ltu/get-op-url deployment-response "start")
 
               check-dct-url       (ltu/get-op-url deployment-response "check-dct")]
 
-          (testing "user can't change deployment owner"
+          (testing "user can't change deployment owner but can change api-endpoint"
             (-> session-user
                 (request deployment-url
                          :request-method :put
                          :body (json/write-str {:owner "user/tarzan"
-                                                :acl   {:owners ["user/tarzan"]}}))
+                                                :acl   {:owners ["user/tarzan"]}
+                                                :api-endpoint "http://blah"}))
                 (ltu/body->edn)
                 (ltu/is-status 200)
                 (ltu/is-key-value :owner "user/jane")
-                (ltu/is-key-value :owners :acl ["user/jane" "user/tarzan"])))
+                (ltu/is-key-value :owners :acl ["user/jane" "user/tarzan"])
+                (ltu/is-key-value :api-endpoint "http://blah")))
 
 
           (ltu/is-last-event deployment-id

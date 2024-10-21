@@ -169,8 +169,8 @@ a container orchestration engine.
         body (-> deployment
                  (assoc :resource-type resource-type
                         :state "CREATED"
-                        :api-endpoint (str/replace-first base-uri #"/api/" "")
                         :owner (auth/current-active-claim request))
+                 (utils/add-api-endpoint request)
                  (utils/throw-when-payment-required request)
                  (pre-validate-hook (dissoc request :body)))]
     (add-impl (assoc request :body body))))
