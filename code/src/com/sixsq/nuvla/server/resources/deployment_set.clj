@@ -187,27 +187,28 @@ These resources represent a deployment set that regroups deployments.
     (replace-modules-by-apps-set resource request)
     resource))
 
-(defn update-operational-status
-  [resource request]
-  (assoc resource :operational-status (divergence-map resource request)))
+(defn assoc-next-refresh
+  [resource]
+  (assoc resource :next-refresh (t/to-str (t/plus (t/now) (t/duration-unit 1 :minutes)))))
 
-(defn compute-next-refresh
-  [{:keys [auto-update] :as resource}]
+(defn assoc-auto-update
+  [{:keys [auto-update next-refresh] :as resource}]
   (cond-> resource
-          auto-update (assoc :next-refresh (t/to-str (t/plus (t/now) (t/duration-unit 1 :minutes))))))
+          (nil? auto-update) (assoc :auto-update false)
+          (and auto-update (not next-refresh)) (assoc-next-refresh)))
 
 (defn pre-validate-hook
   [resource request]
   (-> resource
-      (update-operational-status request)
-      (compute-next-refresh)))
+      (assoc-operational-status request)
+      (assoc-auto-update)))
 
 (defn add-edit-pre-validate-hook
   [resource request]
   (-> resource
       (dep-utils/add-api-endpoint request)
       (create-app-set request)
-      (update-operational-status request)))
+      (pre-validate-hook request)))
 
 (defn action-bulk
   [{:keys [id] :as _resource} {{:keys [action]} :params :as request}]
@@ -376,6 +377,17 @@ These resources represent a deployment set that regroups deployments.
         crud/validate
         (crud/set-operations request)
         db/edit)))
+
+(defmethod crud/do-action [resource-type utils/action-auto-update]
+  [request]
+  (let [current (load-resource-throw-not-allowed-action request)]
+    (-> current
+        (pre-validate-hook request)
+        (sm/transition request)
+        (recompute-fleet request)
+        assoc-next-refresh
+        (utils/save-deployment-set current)
+        (action-bulk (assoc-in request [:params :action] utils/action-update)))))
 
 (defn cancel-latest-job
   [{:keys [id] :as _resource} _request]
