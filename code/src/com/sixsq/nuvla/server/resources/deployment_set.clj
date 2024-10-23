@@ -187,6 +187,10 @@ These resources represent a deployment set that regroups deployments.
     (replace-modules-by-apps-set resource request)
     resource))
 
+(defn assoc-operational-status
+  [resource request]
+  (assoc resource :operational-status (divergence-map resource request)))
+
 (defn assoc-next-refresh
   [resource]
   (assoc resource :next-refresh (t/to-str (t/plus (t/now) (t/duration-unit 1 :minutes)))))
