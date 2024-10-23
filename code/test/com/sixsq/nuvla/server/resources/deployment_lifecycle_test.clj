@@ -192,22 +192,25 @@
                                       (ltu/is-operation-present :check-dct)
                                       (ltu/is-key-value :execution-mode nil)
                                       (ltu/is-key-value :state "CREATED")
-                                      (ltu/is-key-value :owner "user/jane"))
+                                      (ltu/is-key-value :owner "user/jane")
+                                      (ltu/is-key-value :api-endpoint "http://localhost"))
 
               start-url           (ltu/get-op-url deployment-response "start")
 
               check-dct-url       (ltu/get-op-url deployment-response "check-dct")]
 
-          (testing "user can't change deployment owner"
+          (testing "user can't change deployment owner but can change api-endpoint"
             (-> session-user
                 (request deployment-url
                          :request-method :put
-                         :body (json/write-str {:owner "user/tarzan"
-                                                :acl   {:owners ["user/tarzan"]}}))
+                         :body (json/write-str {:owner        "user/tarzan"
+                                                :acl          {:owners ["user/tarzan"]}
+                                                :api-endpoint "http://blah"}))
                 (ltu/body->edn)
                 (ltu/is-status 200)
                 (ltu/is-key-value :owner "user/jane")
-                (ltu/is-key-value :owners :acl ["user/jane" "user/tarzan"])))
+                (ltu/is-key-value :owners :acl ["user/jane" "user/tarzan"])
+                (ltu/is-key-value :api-endpoint "http://blah")))
 
 
           (ltu/is-last-event deployment-id
@@ -666,8 +669,22 @@
                        :body (json/write-str invalid-deployment))
               (ltu/body->edn)
               (ltu/is-status 404)
-              (ltu/message-matches "module/doesnt-exist not found"))
-          ))
+              (ltu/message-matches "module/doesnt-exist not found"))))
+
+      (testing "create deployment with custom api-endpoint"
+        (let [nuvla-custom-url "https://some-nuvla-url"
+              dep-url          (-> session-user
+                                   (request base-uri
+                                            :request-method :post
+                                            :body (json/write-str (assoc valid-deployment :api-endpoint nuvla-custom-url)))
+                                   (ltu/body->edn)
+                                   (ltu/is-status 201)
+                                   (ltu/location-url))]
+          (-> session-user
+              (request dep-url)
+              ltu/body->edn
+              (ltu/is-status 200)
+              (ltu/is-key-value :api-endpoint nuvla-custom-url))))
 
       (-> session-user
           (request (str p/service-context module-id)

@@ -93,7 +93,6 @@
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "api-endpoint"
              :json-schema/type "string"
-             :json-schema/editable false
              :json-schema/indexed false
 
              :json-schema/display-name "Nuvla endpoint"

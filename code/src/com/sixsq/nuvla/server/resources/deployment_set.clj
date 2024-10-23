@@ -3,6 +3,7 @@
 These resources represent a deployment set that regroups deployments.
 "
   (:require
+    [com.sixsq.nuvla.server.resources.deployment.utils :as dep-utils]
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
@@ -185,15 +186,16 @@ These resources represent a deployment set that regroups deployments.
     (replace-modules-by-apps-set resource request)
     resource))
 
-(defn pre-validate-hook
+(defn update-operational-status
   [resource request]
   (assoc resource :operational-status (divergence-map resource request)))
 
 (defn add-edit-pre-validate-hook
   [resource request]
   (-> resource
+      (dep-utils/add-api-endpoint request)
       (create-app-set request)
-      (pre-validate-hook request)))
+      (update-operational-status request)))
 
 (defn action-bulk
   [{:keys [id] :as _resource} {{:keys [action]} :params :as request}]
@@ -221,7 +223,7 @@ These resources represent a deployment set that regroups deployments.
   ([request f]
    (let [current (load-resource-throw-not-allowed-action request)]
      (-> current
-         (pre-validate-hook request)
+         (update-operational-status request)
          (sm/transition request)
          (utils/save-deployment-set current)
          (f request)))))
@@ -275,7 +277,7 @@ These resources represent a deployment set that regroups deployments.
           admin-request {:params      (u/id->request-params id)
                          :nuvla/authn auth/internal-identity}
           current       (crud/retrieve-by-id-as-admin id)
-          next          (pre-validate-hook current admin-request)
+          next          (update-operational-status current admin-request)
           action        (action-selector next admin-request)]
       (-> next
           (sm/transition (assoc-in admin-request [:params :action] action))
@@ -358,7 +360,7 @@ These resources represent a deployment set that regroups deployments.
         (sm/transition request)
         u/update-timestamps
         (u/set-updated-by request)
-        (pre-validate-hook request)
+        (update-operational-status request)
         crud/validate
         (crud/set-operations request)
         db/edit)))
