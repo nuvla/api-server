@@ -2,6 +2,14 @@
 
 ## Released
 
+## [6.10.1](https://github.com/nuvla/api-server/compare/6.10.0...6.10.1) (2024-10-23)
+
+
+### Bug Fixes
+
+* **Deployment group:** Add api-endpoint attribute ([02455f7](https://github.com/nuvla/api-server/commit/02455f705058ca713d4a4caa9b8bf1aac79cea1d))
+* **Deployment:** Allow user to edit api-endpoint attribute ([02455f7](https://github.com/nuvla/api-server/commit/02455f705058ca713d4a4caa9b8bf1aac79cea1d))
+
 ## [6.10.0](https://github.com/nuvla/api-server/compare/6.9.1...6.10.0) (2024-10-15)
 
 
