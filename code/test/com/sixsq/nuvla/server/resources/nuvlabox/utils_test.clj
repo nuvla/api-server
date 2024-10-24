@@ -1,6 +1,6 @@
 (ns com.sixsq.nuvla.server.resources.nuvlabox.utils-test
   (:require
-    [clojure.test :refer [deftest is testing]]
+    [clojure.test :refer [deftest is are testing]]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.pricing.payment :as payment]
     [com.sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
@@ -28,16 +28,16 @@
   (is (false? (t/can-heartbeat? {:state t/state-suspended})))
   (is (true? (t/can-heartbeat? {:state t/state-commissioned})))
   (is (true? (t/can-heartbeat? {:state        t/state-commissioned
-                                 :capabilities ["A"]})))
+                                :capabilities ["A"]})))
   (is (true? (t/can-heartbeat? {:state        t/state-commissioned
                                 :capabilities [t/capability-heartbeat]}))))
 
 (deftest compute-next-heartbeat
   (with-redefs [time/now #(time/parse-date "2023-08-24T13:14:39.121Z")]
     (let [tolerance-fn #(-> % (* 2) (+ 10))]
-     (is (nil? (t/compute-next-report nil tolerance-fn)))
-     (is (= (t/compute-next-report 10 tolerance-fn) "2023-08-24T13:15:09.121Z"))
-     (is (= (t/compute-next-report 20 tolerance-fn) "2023-08-24T13:15:29.121Z")))
+      (is (nil? (t/compute-next-report nil tolerance-fn)))
+      (is (= (t/compute-next-report 10 tolerance-fn) "2023-08-24T13:15:09.121Z"))
+      (is (= (t/compute-next-report 20 tolerance-fn) "2023-08-24T13:15:29.121Z")))
     (is (= (t/compute-next-report 10 #(+ % 10)) "2023-08-24T13:14:59.121Z"))))
 
 (deftest throw-when-payment-required
@@ -83,3 +83,13 @@
       (is (true? (:online (t/legacy-heartbeat nb-status {} #(hash-map :id %))))))
     (with-redefs [t/nuvlabox-request? (constantly false)]
       (is (nil? (:online (t/legacy-heartbeat nb-status {} #(hash-map :id %))))))))
+
+(deftest is-older
+  (are [result v] (= result (t/is-version-older? {:nuvlabox-engine-version v} "2.17.0"))
+                  true "1.0.1",
+                  true "2.16.1",
+                  false "main",
+                  false nil,
+                  false "2.17.0",
+                  false "2.17.1",
+                  false "3.16.1"))

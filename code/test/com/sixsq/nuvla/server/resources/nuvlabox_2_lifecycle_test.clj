@@ -1389,10 +1389,20 @@
           (ltu/is-status 200)
           (ltu/is-operation-absent utils/action-coe-resource-actions))
 
+      (testing "coe resource action is not available for nuvlabox engine version 1.0.0"
+        (-> session-admin
+           (request nuvlabox-url
+                    :request-method :put
+                    :body (json/write-str {:state                   "COMMISSIONED"
+                                           :nuvlabox-engine-version "1.0.0"}))
+           (ltu/body->edn)
+           (ltu/is-status 200)
+           (ltu/is-operation-absent utils/action-coe-resource-actions)))
+
       (-> session-admin
           (request nuvlabox-url
                    :request-method :put
-                   :body (json/write-str {:state "COMMISSIONED"}))
+                   :body (json/write-str {:nuvlabox-engine-version "2.17.0"}))
           (ltu/body->edn)
           (ltu/is-status 200))
 
