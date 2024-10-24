@@ -82,6 +82,13 @@
     :json-schema/display-name "auto update"
     :json-schema/description "Auto update deployment group automatically at regular intervals"))
 
+(s/def ::auto-update-interval
+  (assoc (st/spec pos-int?)
+    :name "auto-update-interval"
+    :json-schema/type "integer"
+    :json-schema/display-name "auto update interval"
+    :json-schema/description "Auto update interval in minutes"))
+
 (s/def ::next-refresh
   (assoc (st/spec ::core/timestamp)
     :name "next-refresh"
@@ -97,6 +104,7 @@
                                   ::os/operational-status
                                   ::deployment/api-endpoint
                                   ::auto-update
+                                  ::auto-update-interval
                                   ::next-refresh]}]))
 
 

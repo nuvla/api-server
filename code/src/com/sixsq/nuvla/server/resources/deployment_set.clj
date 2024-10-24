@@ -192,8 +192,11 @@ These resources represent a deployment set that regroups deployments.
   (assoc resource :operational-status (divergence-map resource request)))
 
 (defn assoc-next-refresh
-  [resource]
-  (assoc resource :next-refresh (t/to-str (t/plus (t/now) (t/duration-unit 1 :minutes)))))
+  [{:keys [auto-update-interval] :as resource}]
+  (assoc resource :next-refresh
+                  (-> (t/now)
+                      (t/plus (t/duration-unit (or auto-update-interval 1) :minutes))
+                      t/to-str)))
 
 (defn assoc-auto-update
   [{:keys [auto-update next-refresh] :as resource}]
