@@ -13,6 +13,7 @@
     [com.sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.util.response :as r]
+    [semver.core :as semver]
     [com.sixsq.nuvla.server.util.time :as time]))
 
 (def ^:const state-new "NEW")
@@ -47,6 +48,12 @@
 (def has-heartbeat-support? (partial has-capability? capability-heartbeat))
 
 (def is-state-commissioned? (partial u/is-state? state-commissioned))
+
+(defn is-version-older?
+  [{:keys [nuvlabox-engine-version] :as _nuvlabox} version]
+  (and (some? nuvlabox-engine-version)
+       (semver/valid? nuvlabox-engine-version)
+       (semver/older? nuvlabox-engine-version version)))
 
 (def can-delete? (partial u/is-state-within?
                           #{state-new
@@ -115,7 +122,10 @@
   [nuvlabox]
   (u/is-state-within? #{state-commissioned state-suspended} nuvlabox))
 
-(def can-coe-resource-actions? is-state-commissioned?)
+(defn can-coe-resource-actions?
+  [nuvlabox]
+  (and (is-state-commissioned? nuvlabox)
+       (not (is-version-older? nuvlabox "2.17.0"))))
 
 (defn throw-nuvlabox-is-suspended
   [{:keys [id] :as nuvlabox}]
