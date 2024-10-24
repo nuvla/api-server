@@ -73,6 +73,8 @@
 
 (def guard-fleet-filter-defined? :fleet-filter-defined)
 
+(def guard-auto-update-enabled? :auto-update-enabled)
+
 (defn transition-ok
   [to-state]
   {::tk/on action-ok ::tk/to to-state ::tk/guards [sm/guard-is-admin?]})
@@ -99,7 +101,8 @@
 (def transition-operational-status {::tk/on action-operational-status ::tk/guards [sm/guard-can-manage?]})
 (def transition-recompute-fleet {::tk/on action-recompute-fleet ::tk/guards [sm/guard-can-edit?
                                                                              guard-fleet-filter-defined?]})
-(def transition-auto-update {::tk/on action-auto-update ::tk/guards [sm/guard-can-manage?]})
+(def transition-auto-update {::tk/on action-auto-update ::tk/guards [sm/guard-is-admin?
+                                                                     guard-auto-update-enabled?]})
 
 (defn operational-status-nok?
   [{{:keys [status]} :operational-status :as _resource}]
@@ -108,6 +111,10 @@
 (defn fleet-filter-defined?
   [resource]
   (some? (get-in resource [:applications-sets 0 :overwrites 0 :fleet-filter])))
+
+(defn auto-update-enabled?
+  [resource]
+  (true? (:auto-update resource)))
 
 (def state-machine
   {::tk/states [{::tk/name        state-new
@@ -205,6 +212,7 @@
                      (condp = guard
                        guard-operational-status-nok? (operational-status-nok? resource)
                        guard-fleet-filter-defined? (fleet-filter-defined? resource)
+                       guard-auto-update-enabled? (auto-update-enabled? resource)
                        false)))
    ::tk/state  state-new})
 

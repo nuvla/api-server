@@ -96,7 +96,6 @@
                          :opt-un [::start
                                   ::os/operational-status
                                   ::deployment/api-endpoint
-                                  ::os/operational-status
                                   ::auto-update
                                   ::next-refresh]}]))
 
