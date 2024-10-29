@@ -1681,7 +1681,7 @@
                           (ltu/is-key-value :auto-update true)
                           (ltu/is-key-value
                             (comp #(time/time-between (time/now) % :seconds) time/parse-date)
-                            :next-refresh 59)
+                            :next-refresh 299)
                           ltu/body)]
           (testing "Check that updating auto-update-interval also updates next-refresh."
             (-> session-user

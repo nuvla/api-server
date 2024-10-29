@@ -195,7 +195,7 @@ These resources represent a deployment set that regroups deployments.
   [{:keys [auto-update-interval] :as resource}]
   (assoc resource :next-refresh
                   (-> (t/now)
-                      (t/plus (t/duration-unit (or auto-update-interval 1) :minutes))
+                      (t/plus (t/duration-unit (or auto-update-interval 5) :minutes))
                       t/to-str)))
 
 (defn assoc-auto-update-flag
