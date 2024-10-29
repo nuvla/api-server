@@ -201,7 +201,9 @@ These resources represent a deployment set that regroups deployments.
 (defn assoc-auto-update-flag
   [{:keys [auto-update next-refresh] :as resource}
    {{:keys [uuid]} :params :as request}]
-  (let [current                  (when uuid (load-resource-throw-not-allowed-action request))
+  (let [current                  (when (and auto-update uuid)
+                                   (-> (str resource-type "/" uuid)
+                                       crud/retrieve-by-id-as-admin))
         new-auto-update-interval (-> request :body :auto-update-interval)]
     (cond-> resource
 
@@ -217,8 +219,7 @@ These resources represent a deployment set that regroups deployments.
   [resource request]
   (-> resource
       (assoc-operational-status request)
-      (assoc-auto-update-flag request)
-      assoc-next-refresh))
+      (assoc-auto-update-flag request)))
 
 (defn add-edit-pre-validate-hook
   [resource request]
