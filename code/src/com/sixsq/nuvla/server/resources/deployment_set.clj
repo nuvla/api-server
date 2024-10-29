@@ -191,30 +191,34 @@ These resources represent a deployment set that regroups deployments.
   [resource request]
   (assoc resource :operational-status (divergence-map resource request)))
 
-(defn assoc-auto-update-flag
-  [{:keys [auto-update] :as resource}]
-  (cond-> resource (nil? auto-update) (assoc :auto-update false)))
-
 (defn assoc-next-refresh
-  [{:keys [auto-update next-refresh auto-update-interval] :as resource}
+  [{:keys [auto-update-interval] :as resource}]
+  (assoc resource :next-refresh
+                  (-> (t/now)
+                      (t/plus (t/duration-unit (or auto-update-interval 1) :minutes))
+                      t/to-str)))
+
+(defn assoc-auto-update-flag
+  [{:keys [auto-update next-refresh] :as resource}
    {{:keys [uuid]} :params :as request}]
   (let [current                  (when uuid (load-resource-throw-not-allowed-action request))
         new-auto-update-interval (-> request :body :auto-update-interval)]
     (cond-> resource
+
+            (nil? auto-update)
+            (assoc :auto-update false)
+
             (and auto-update (or (not next-refresh)
                                  (and (some? new-auto-update-interval)
                                       (not= (:auto-update-interval current) new-auto-update-interval))))
-            (assoc :next-refresh
-                   (-> (t/now)
-                       (t/plus (t/duration-unit (or auto-update-interval 1) :minutes))
-                       t/to-str)))))
+            (assoc-next-refresh))))
 
 (defn pre-validate-hook
   [resource request]
   (-> resource
       (assoc-operational-status request)
-      (assoc-auto-update-flag)
-      (assoc-next-refresh request)))
+      (assoc-auto-update-flag request)
+      assoc-next-refresh))
 
 (defn add-edit-pre-validate-hook
   [resource request]
@@ -398,6 +402,7 @@ These resources represent a deployment set that regroups deployments.
         (pre-validate-hook request)
         (sm/transition request)
         (recompute-fleet request)
+        assoc-next-refresh
         (utils/save-deployment-set current)
         (action-bulk (assoc-in request [:params :action] utils/action-update)))))
 
