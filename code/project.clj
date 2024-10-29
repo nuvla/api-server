@@ -81,7 +81,8 @@
                                   [com.google.zxing/javase]]]
    [funcool/promesa "11.0.678"]
    [nrepl "1.1.1"]
-   [clj-json-patch "0.1.7"]]
+   [clj-json-patch "0.1.7"]
+   [io.forward/semver "0.1.0"]]
 
   :profiles
   {:provided {:dependencies [[org.clojure/clojure "1.11.2"]
