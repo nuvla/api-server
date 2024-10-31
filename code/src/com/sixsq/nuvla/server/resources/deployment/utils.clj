@@ -345,3 +345,55 @@
 (defn add-api-endpoint
   [{:keys [api-endpoint] :as resource} {:keys [base-uri] :as _request}]
   (assoc resource :api-endpoint (or api-endpoint (str/replace-first base-uri #"/api/" ""))))
+;
+;(defn docker-has-nuvla-deployment-label?
+;  [container]
+;  (prn container)
+;  (some? (get-in container [:Labels :nuvla.deployment])))
+;
+;(defn parse-coe-resources
+;  [nb-status]
+;  (filter docker-has-nuvla-deployment-label? (get-in nb-status [:coe-resources :docker :containers]))
+;  )
+
+
+(defn deployment-state-docker-compose
+  [deployment nb-status]
+  (let [deployment-id (:id deployment)]
+    (when-let [container (some #(when (= (get-in % [:Labels :com.docker.compose.project]) (u/id->uuid deployment-id)) %) (get-in nb-status [:coe-resources :docker :containers]))]
+      (let [node-id (get-in container [:Labels :com.docker.compose.service])]
+        [{:parent  deployment-id,
+          :name    (str node-id ".image"),
+          :value   (:Image container),
+          :node-id node-id}
+         {:parent  deployment-id,
+          :name    (str node-id ".node-id"),
+          :value   node-id,
+          :node-id node-id}
+         {:parent  deployment-id,
+          :name    (str node-id ".service-id"),
+          :value   (:Id container),
+          :node-id node-id}
+         {:parent deployment-id,
+          :name   "hostname",
+          :value  (:ip nb-status)}
+         {:parent deployment-id,
+          :name   "ip.local",
+          :value  (get-in nb-status [:network :ips :local] "")}
+         {:parent deployment-id,
+          :name   "ip.public",
+          :value  (get-in nb-status [:network :ips :public] "")}
+         {:parent deployment-id,
+          :name   "ip.swarm",
+          :value  (get-in nb-status [:network :ips :swarm] "")}
+         {:parent deployment-id,
+          :name   "ip.vpn",
+          :value  (get-in nb-status [:network :ips :vpn] "")}])
+      ))
+  )
+
+(defn get-deployment-state
+  [deployment nb-status]
+  (cond
+    (and (= (:subtype (:module deployment)) "application")
+         (= (:compatibility (:module deployment)) "docker-compose")) (deployment-state-docker-compose deployment nb-status)))

@@ -1,5 +1,6 @@
 (ns com.sixsq.nuvla.server.resources.deployment.utils-test
   (:require
+    [clojure.data.json :as json]
     [clojure.test :refer [are deftest is testing]]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.pricing.payment :as payment]
@@ -115,3 +116,63 @@
 
 (deftest throw-can-not-access-helm-repo-cred
   (is (= (t/throw-can-not-access-helm-repo-cred {} {}) {})))
+
+(def minimal-nb-status {:id            "nuvlabox-status/fb4da83b-e911-4f01-8bed-82a8473ac8e3",
+                        :ip            "178.194.193.87",
+                        :network       {:ips
+                                        {:public "178.194.193.87",
+                                         :swarm  "192.168.64.4",
+                                         :vpn    "",
+                                         :local  ""}}
+                        :coe-resources {:docker
+                                        {:containers [{:Id "f271e2566489ab4beca2ac193935076f8cf89b5ab768c78962a4ea028c9ab51c"},
+                                                      {:Image  "nuvladev/nuvlaedge:detect-nuvla-coe-resources-slim-docker",
+                                                       :Labels {:com.docker.compose.service "agent",
+                                                                :com.docker.compose.project "b3b70820-2de4-4a11-b00c-a79661c3d433"},
+                                                       :Id     "cd377e4afc0843f6f964d7f4f1d79f368a7096234ed29310cbbc054af7178eef"}]}}})
+
+(deftest get-deployment-state
+  (is (= [{:parent  "deployment/b3b70820-2de4-4a11-b00c-a79661c3d433",
+           :name    "agent.image",
+           :value   "nuvladev/nuvlaedge:detect-nuvla-coe-resources-slim-docker",
+           :node-id "agent"}
+          {:parent  "deployment/b3b70820-2de4-4a11-b00c-a79661c3d433",
+           :name    "agent.node-id",
+           :value   "agent",
+           :node-id "agent"}
+          {:parent  "deployment/b3b70820-2de4-4a11-b00c-a79661c3d433",
+           :name    "agent.service-id",
+           :value
+           "cd377e4afc0843f6f964d7f4f1d79f368a7096234ed29310cbbc054af7178eef",
+           :node-id "agent"}
+          {:parent "deployment/b3b70820-2de4-4a11-b00c-a79661c3d433",
+           :name   "hostname",
+           :value  "178.194.193.87"}
+          {:parent "deployment/b3b70820-2de4-4a11-b00c-a79661c3d433",
+           :name   "ip.local",
+           :value  ""}
+          {:parent "deployment/b3b70820-2de4-4a11-b00c-a79661c3d433",
+           :name   "ip.public",
+           :value  "178.194.193.87"}
+          {:parent "deployment/b3b70820-2de4-4a11-b00c-a79661c3d433",
+           :name   "ip.swarm",
+           :value  "192.168.64.4"}
+          {:parent "deployment/b3b70820-2de4-4a11-b00c-a79661c3d433",
+           :name   "ip.vpn",
+           :value  ""}]
+         (t/get-deployment-state {:id     "deployment/b3b70820-2de4-4a11-b00c-a79661c3d433"
+                                  :module {:compatibility "docker-compose"
+                                           :subtype       "application"}}
+                                 minimal-nb-status)
+         )))
+
+
+;; to build a list of deployments states to be updated
+;; do not start from coe-resources but from deployment
+;; because compose apps has only a uuid registered as label "com.docker.compose.project".
+;; so for each deployment depending on type dig into coe resources and status to get values to update them afterward
+;; it has also the advantage to remove the need to check if deployment is really running on this NE
+
+;; query deployments in state started
+;; for each of deployment running on the NE depending on type check docker containers/services or kubernetes resources
+;; build a bulk update query on parameters
