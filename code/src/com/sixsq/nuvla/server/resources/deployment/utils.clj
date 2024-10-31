@@ -356,12 +356,16 @@
 ;  (filter docker-has-nuvla-deployment-label? (get-in nb-status [:coe-resources :docker :containers]))
 ;  )
 
+(defmulti get-deployment-state
+          (fn [{{:keys [subtype compatibility]} :module :as _deployment} _nb-status]
+            [subtype compatibility]))
 
-(defn deployment-state-docker-compose
+(defmethod get-deployment-state ["application" "docker-compose"]
   [deployment nb-status]
   (let [deployment-id (:id deployment)]
     (when-let [container (some #(when (= (get-in % [:Labels :com.docker.compose.project]) (u/id->uuid deployment-id)) %) (get-in nb-status [:coe-resources :docker :containers]))]
-      (let [node-id (get-in container [:Labels :com.docker.compose.service])]
+      (let [node-id (get-in container [:Labels :com.docker.compose.service])
+            ips     (get-in nb-status [:network :ips])]
         [{:parent  deployment-id,
           :name    (str node-id ".image"),
           :value   (:Image container),
@@ -379,21 +383,13 @@
           :value  (:ip nb-status)}
          {:parent deployment-id,
           :name   "ip.local",
-          :value  (get-in nb-status [:network :ips :local] "")}
+          :value  (get ips :local "")}
          {:parent deployment-id,
           :name   "ip.public",
-          :value  (get-in nb-status [:network :ips :public] "")}
+          :value  (get ips :public "")}
          {:parent deployment-id,
           :name   "ip.swarm",
-          :value  (get-in nb-status [:network :ips :swarm] "")}
+          :value  (get ips :swarm "")}
          {:parent deployment-id,
           :name   "ip.vpn",
-          :value  (get-in nb-status [:network :ips :vpn] "")}])
-      ))
-  )
-
-(defn get-deployment-state
-  [deployment nb-status]
-  (cond
-    (and (= (:subtype (:module deployment)) "application")
-         (= (:compatibility (:module deployment)) "docker-compose")) (deployment-state-docker-compose deployment nb-status)))
+          :value  (get ips :vpn "")}]))))
