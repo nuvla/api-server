@@ -11,6 +11,7 @@
     [com.sixsq.nuvla.server.resources.deployment :as t]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.module :as module]
+    [com.sixsq.nuvla.server.resources.spec.module :as module-spec]
     [com.sixsq.nuvla.server.resources.module-application :as module-application]
     [com.sixsq.nuvla.server.resources.module-lifecycle-test :refer [create-parent-projects]]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
@@ -57,7 +58,7 @@
     :path                      path
     :subtype                   subtype
 
-    :compatibility             "docker-compose"
+    :compatibility             module-spec/compatibility-docker-compose
 
     :logo-url                  "https://example.org/logo"
 
@@ -737,7 +738,7 @@
             subtype              "application"
             module-id            (setup-module session-user
                                                (assoc (valid-module subtype valid-module-content)
-                                                 :compatibility "swarm"))
+                                                 :compatibility module-spec/compatibility-swarm))
             valid-deployment     {:module {:href module-id}}
             deployment-id        (-> session-user
                                      (request base-uri
@@ -1399,4 +1400,3 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-key-value :state "ERROR")))))))
-

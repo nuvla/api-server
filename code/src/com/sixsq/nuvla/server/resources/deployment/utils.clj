@@ -17,6 +17,7 @@
     [com.sixsq.nuvla.server.resources.job.interface :as job-interface]
     [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.module.utils :as module-utils]
+    [com.sixsq.nuvla.server.resources.spec.module :as module-spec]
     [com.sixsq.nuvla.server.resources.nuvlabox.utils :as nuvlabox-utils]
     [com.sixsq.nuvla.server.resources.resource-log :as resource-log]
     [com.sixsq.nuvla.server.util.general :as gen-util]
@@ -345,22 +346,12 @@
 (defn add-api-endpoint
   [{:keys [api-endpoint] :as resource} {:keys [base-uri] :as _request}]
   (assoc resource :api-endpoint (or api-endpoint (str/replace-first base-uri #"/api/" ""))))
-;
-;(defn docker-has-nuvla-deployment-label?
-;  [container]
-;  (prn container)
-;  (some? (get-in container [:Labels :nuvla.deployment])))
-;
-;(defn parse-coe-resources
-;  [nb-status]
-;  (filter docker-has-nuvla-deployment-label? (get-in nb-status [:coe-resources :docker :containers]))
-;  )
 
 (defmulti get-deployment-state
           (fn [{{:keys [subtype compatibility]} :module :as _deployment} _nb-status]
             [subtype compatibility]))
 
-(defmethod get-deployment-state ["application" "docker-compose"]
+(defmethod get-deployment-state [module-spec/subtype-app module-spec/compatibility-docker-compose]
   [deployment nb-status]
   (let [deployment-id (:id deployment)]
     (when-let [container (some #(when (= (get-in % [:Labels :com.docker.compose.project]) (u/id->uuid deployment-id)) %) (get-in nb-status [:coe-resources :docker :containers]))]
