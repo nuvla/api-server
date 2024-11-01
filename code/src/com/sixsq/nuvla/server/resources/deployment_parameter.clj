@@ -26,10 +26,11 @@ configuration option.
                      :bulk-delete ["group/nuvla-user"]})
 
 
-(defn parameter->uuid
-  [parent node-id parameter-name]
-  (let [id (str/join ":" [parent node-id parameter-name])]
-    (u/from-data-uuid id)))
+(defn parameter->id
+  [{:keys [parent node-id name] :as _parameter}]
+  (->> (str/join ":" [parent node-id name])
+       u/from-data-uuid
+       (str resource-type "/")))
 
 
 ;;
@@ -56,9 +57,8 @@ configuration option.
 ;;
 
 (defmethod crud/new-identifier resource-type
-  [{:keys [parent node-id name] :as parameter} _resource-name]
-  (->> (parameter->uuid parent node-id name)
-       (str resource-type "/")
+  [parameter _resource-name]
+  (->> (parameter->id parameter)
        (assoc parameter :id)))
 
 
