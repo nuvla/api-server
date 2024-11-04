@@ -26,6 +26,15 @@
   resource)
 
 (defn add-fn
+  "Standard add resource helper function, implementing the following steps:
+ - set a new generated id and a resource type to the body
+ - initialize the resource
+ - set the `created` and the `updated` timestamp, and the `created-by` field
+ - set the resource acl
+ - call the `pre-validate` hook with the resource initialized by the steps above
+ - call the resource validate method
+ - store the resource into the database
+ Return the stored resource."
   [resource-name collection-acl resource-uri & {:keys [pre-validate-hook
                                                        options]
                                                 :or   {pre-validate-hook pass-through}}]
@@ -87,6 +96,16 @@
 
 
 (defn edit-fn
+  "Standard edit resource helper function, implementing the following steps:
+   - retrieve the current resource from db
+   - in case of json-patch request compute the full resource to patch and update the body
+   - call the `pre-delete-attrs-hook` with the resource from the db and the expanded body request
+   - merge the body into the resource; a list of immutable keys can be specified, which will not be overridden
+   - update the `updated` timestamp
+   - call the `pre-validate` hook with the merged resource
+   - call the resource validate method
+   - store the merged resource into the database
+   Return the stored resource with the addition of the set of allowed operations."
   [resource-name & {:keys [pre-validate-hook
                            pre-delete-attrs-hook
                            immutable-keys
@@ -104,6 +123,7 @@
         (-> resource
             (pre-delete-attrs-hook request)
             (u/delete-attributes request immutable-keys)
+            (u/merge-body request immutable-keys)
             u/update-timestamps
             (u/set-updated-by request)
             (pre-validate-hook request)
