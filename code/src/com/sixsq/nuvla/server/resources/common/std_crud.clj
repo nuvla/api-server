@@ -101,7 +101,7 @@
    - in case of json-patch request compute the full resource to patch and update the body
    - call the `pre-delete-attrs-hook` with the resource from the db and the expanded body request
    - merge the body into the resource; a list of immutable keys can be specified, which will not be overridden
-   - update the `updated` timestamp
+   - update the `updated` timestamp and the `updated-by` field
    - call the `pre-validate` hook with the merged resource
    - call the resource validate method
    - store the merged resource into the database
