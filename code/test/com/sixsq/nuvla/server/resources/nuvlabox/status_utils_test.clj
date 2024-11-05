@@ -190,3 +190,27 @@
             (with-redefs [crud/retrieve-by-id-as-admin (constantly {:capabilities       [nb-utils/capability-heartbeat]
                                                                     :heartbeat-interval 20})]
               (data-utils/nuvlabox-status->insert-availability-request nuvlabox-status true)))))))
+
+(deftest prepare-bulk-operation-data
+  (is (= [{:update {:_id    "deployment-parameter/a85cebf7-17b0-324e-a2ec-a1143be6056d"
+                    :_index "deployment-parameter"}}
+          {:doc {:id      "deployment-parameter/a85cebf7-17b0-324e-a2ec-a1143be6056d"
+                 :name    "node_exporter.image"
+                 :node-id "node_exporter"
+                 :parent  "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
+                 :value   "quay.io/prometheus/node-exporter:latest"}}
+          {:update {:_id    "deployment-parameter/ea930503-cd39-369f-bc3f-e455f1ddf024"
+                    :_index "deployment-parameter"}}
+          {:doc {:id     "deployment-parameter/ea930503-cd39-369f-bc3f-e455f1ddf024"
+                 :name   "hostname"
+                 :parent "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
+                 :value  "10.0.133.172"}}]
+         (t/prepare-bulk-operation-data [{:parent  "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39",
+                                          :name    "node_exporter.image",
+                                          :value   "quay.io/prometheus/node-exporter:latest",
+                                          :node-id "node_exporter",
+                                          :id      "deployment-parameter/a85cebf7-17b0-324e-a2ec-a1143be6056d"}
+                                         {:parent "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39",
+                                          :name   "hostname",
+                                          :value  "10.0.133.172",
+                                          :id     "deployment-parameter/ea930503-cd39-369f-bc3f-e455f1ddf024"}]))))

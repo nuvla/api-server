@@ -2,7 +2,12 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
+    [com.sixsq.nuvla.db.filter.parser :as parser]
     [com.sixsq.nuvla.db.impl :as db]
+    [com.sixsq.nuvla.server.resources.common.crud :as crud]
+    [com.sixsq.nuvla.server.resources.common.utils :as u]
+    [com.sixsq.nuvla.server.resources.deployment.utils :as dep-utils]
+    [com.sixsq.nuvla.server.resources.deployment-parameter :as dep-param]
     [com.sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [com.sixsq.nuvla.server.util.time :as time]))
 
@@ -30,6 +35,39 @@
   (assoc nuvlabox-status
     :last-telemetry (time/now-str)
     :next-telemetry (nb-utils/compute-next-report refresh-interval #(+ % 30))))
+
+(defn ne-deployments
+  [{:keys [parent] :as _nuvlabox-status}]
+  (let [filter-req (str "nuvlabox='" parent "' and " (u/filter-eq-vals "state" ["STARTED", "UPDATED"]))
+        options    {:cimi-params {:filter (parser/parse-cimi-filter filter-req)
+                                  :select ["id" "module" "nuvlabox" "state"]
+                                  :last   10000}}]
+    (second (crud/query-as-admin "deployment" options))))
+
+(defn get-ne-deployment-params
+  [nuvlabox-status]
+  (let [nb-deployments (ne-deployments nuvlabox-status)]
+    (mapcat #(dep-utils/get-deployment-state % nuvlabox-status) nb-deployments)))
+
+(defn prepare-bulk-operation-data
+  [params]
+  (mapcat (fn [param]
+            [{:update {:_id (:id param) :_index dep-param/resource-type}}
+             {:doc param}]) params))
+
+(defn update-deployment-parameters
+  [nuvlabox-status nuvlabox]
+  (when (nb-utils/is-nb-v2-17-or-newer? nuvlabox)
+    (log/warn "update-deployment-parameters is-nb-v2-17-or-newer?:" true)
+    (let [params (get-ne-deployment-params nuvlabox-status)]
+      (log/warn "update-deployment-parameters params:" params)
+      (when (seq params)
+        (try
+          (let [response (db/bulk-operation dep-param/resource-type (prepare-bulk-operation-data params))]
+            (log/info "Update-deployment-parameters:" params "\nResponse:" response))
+          (catch Exception e
+            (log/warn "Update-deployment-parameters with errors:" params "\nResponse:" (ex-message e)))))))
+  nuvlabox-status)
 
 (defn build-nuvlabox-status-acl
   [{:keys [id acl] :as _nuvlabox}]

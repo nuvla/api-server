@@ -40,8 +40,8 @@ configuration option.
 (defmethod crud/add-acl resource-type
   [{:keys [parent] :as resource} request]
   (-> resource
-      (a/acl-append-resource :edit-acl parent)
-      (a/add-acl request)))
+      (a/add-acl request)
+      (a/acl-append-resource :edit-acl parent)))
 
 
 (def validate-fn (u/create-spec-validation-fn ::deployment-parameter/deployment-parameter))

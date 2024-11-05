@@ -40,6 +40,29 @@
                  (get-in [:body (keyword index-name) :settings :index])
                  (select-keys [:number_of_shards :number_of_replicas])))))))
 
+(deftest bulk-operation
+  (with-open [client (esu/create-es-client (ltu/es-test-endpoint (ltu/es-node)))]
+    (let [index-name "test-index-creation"]
+      (t/create-index client index-name)
+      (let [{:keys [errors items] :as _response}
+            (t/bulk-operation client index-name [{:index {:_index index-name :_id "1"}} {:f1 "v1"}] nil)]
+        #_(prn (t/bulk-operation client index-name [{:update {:_id    "deployment-parameter/a85cebf7-17b0-324e-a2ec-a1143be6056d"
+                                                        :_index "deployment-parameter"}}
+                                              {:doc {:id      "deployment-parameter/a85cebf7-17b0-324e-a2ec-a1143be6056d"
+                                                     :name    "node_exporter.image"
+                                                     :node-id "node_exporter"
+                                                     :parent  "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
+                                                     :value   "quay.io/prometheus/node-exporter:latest"}}
+                                              {:update {:_id    "deployment-parameter/ea930503-cd39-369f-bc3f-e455f1ddf024"
+                                                        :_index "deployment-parameter"}}
+                                              {:doc {:id     "deployment-parameter/ea930503-cd39-369f-bc3f-e455f1ddf024"
+                                                     :name   "hostname"
+                                                     :parent "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
+                                                     :value  "10.0.133.172"}}] nil))
+        (is (false? errors))
+        (is (= (count items) 1))
+        (is (= (get-in items [0 :index :status]) 200))))))
+
 (deftest check-timeseries-index
   (with-open [client (esu/create-es-client (ltu/es-test-endpoint (ltu/es-node)))]
     (let [spec                  ::ts-nuvlaedge/schema
@@ -105,9 +128,8 @@
 
           (testing "Test datastream with above ilm policy"
             (t/create-datastream client index-name)
-            (let [_response          (-> (spandex/request client {:url (str "_data_stream/" index-name)})
-                                         (get-in [:body :data_streams]))
-                  start-time         (time/minus (time/now) (time/duration-unit 1 :seconds))
+            (spandex/request client {:url (str "_data_stream/" index-name)})
+            (let [start-time         (time/minus (time/now) (time/duration-unit 1 :seconds))
                   test-data-last-sec (map (fn [i] {:timestamp (-> start-time
                                                                   (time/plus (time/duration-unit (* i 10) :millis))
                                                                   time/to-str)
@@ -116,10 +138,9 @@
                                           (range 100))]
               (t/bulk-insert-metrics client collection-id test-data-last-sec {}))
             (spandex/request client {:url [:_refresh], :method :post})
-            (let [_response (-> (spandex/request client {:url (str "_data_stream/" index-name)})
-                                (get-in [:body :data_streams]))
-                  response  (-> (spandex/request client {:url (str index-name "/_search")})
-                                :body)]
+            (spandex/request client {:url (str "_data_stream/" index-name)})
+            (let [response (-> (spandex/request client {:url (str index-name "/_search")})
+                               :body)]
               (spandex/request client {:url [:_refresh], :method :post})
               (is (= 100 (get-in response [:hits :total :value])))))
 
