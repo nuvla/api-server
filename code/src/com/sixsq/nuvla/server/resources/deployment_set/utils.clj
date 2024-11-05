@@ -83,8 +83,7 @@
   [to-state]
   {::tk/on action-cancel ::tk/to to-state ::tk/guards [sm/guard-can-manage?]})
 
-(def transition-start {::tk/on action-start ::tk/to state-starting ::tk/guards [sm/guard-can-manage?
-                                                                                guard-operational-status-nok?]})
+(def transition-start {::tk/on action-start ::tk/to state-starting ::tk/guards [sm/guard-can-manage?]})
 (def transition-update {::tk/on action-update ::tk/to state-updating ::tk/guards [sm/guard-can-manage?
                                                                                   guard-operational-status-nok?]})
 (def transition-stop {::tk/on action-stop ::tk/to state-stopping ::tk/guards [sm/guard-can-manage?]})

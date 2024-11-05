@@ -182,7 +182,7 @@ These resources represent a deployment set that regroups deployments.
 
 (defn create-app-set
   [{:keys [modules] :as resource} request]
-  (if (seq modules)
+  (if (some? modules)
     (replace-modules-by-apps-set resource request)
     resource))
 

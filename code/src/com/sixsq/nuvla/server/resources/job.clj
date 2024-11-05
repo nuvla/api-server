@@ -119,16 +119,18 @@ request.
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [job      (-> (str resource-type "/" uuid)
-                       crud/retrieve-by-id-as-admin
-                       (a/throw-cannot-edit request)
-                       utils/throw-cannot-edit-in-final-state
-                       (u/delete-attributes request [:target-resource :action])
-                       (u/update-timestamps)
-                       (u/set-updated-by request)
-                       (utils/job-cond->edition)
-                       (crud/validate))
-          response (db/edit job {:refresh false})]
+    (let [immutable-keys [:target-resource :action]
+          job            (-> (str resource-type "/" uuid)
+                             crud/retrieve-by-id-as-admin
+                             (a/throw-cannot-edit request)
+                             utils/throw-cannot-edit-in-final-state
+                             (u/delete-attributes request immutable-keys)
+                             (u/merge-body request immutable-keys)
+                             (u/update-timestamps)
+                             (u/set-updated-by request)
+                             (utils/job-cond->edition)
+                             (crud/validate))
+          response       (db/edit job {:refresh false})]
       (when (utils/is-final-state? job)
         (interface/on-done job))
       response)
@@ -177,8 +179,8 @@ request.
 (defn create-cancel-children-jobs-job
   [{:keys [acl] parent-job-id :id :as _parent-job} request]
   (utils/create-job parent-job-id "cancel_children_jobs" acl
-                       (auth/current-user-id request)
-                       :priority 10))
+                    (auth/current-user-id request)
+                    :priority 10))
 
 (defn cancel-children-jobs-async [{action :action :as job} request]
   (when (str/starts-with? action "bulk")
