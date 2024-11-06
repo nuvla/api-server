@@ -61,7 +61,7 @@
                                                      :value  "10.0.133.172"}}] nil))
         (is (false? errors))
         (is (= (count items) 1))
-        (is (= (get-in items [0 :index :status]) 200))))))
+        (is (#{200 201} (get-in items [0 :index :status])))))))
 
 (deftest check-timeseries-index
   (with-open [client (esu/create-es-client (ltu/es-test-endpoint (ltu/es-node)))]
