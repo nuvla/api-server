@@ -17,8 +17,6 @@
     [com.sixsq.nuvla.server.resources.job.interface :as job-interface]
     [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.module.utils :as module-utils]
-    [com.sixsq.nuvla.server.resources.spec.module :as module-spec]
-    [com.sixsq.nuvla.server.resources.deployment-parameter :as dep-param]
     [com.sixsq.nuvla.server.resources.nuvlabox.utils :as nuvlabox-utils]
     [com.sixsq.nuvla.server.resources.resource-log :as resource-log]
     [com.sixsq.nuvla.server.util.general :as gen-util]
@@ -347,92 +345,3 @@
 (defn add-api-endpoint
   [{:keys [api-endpoint] :as resource} {:keys [base-uri] :as _request}]
   (assoc resource :api-endpoint (or api-endpoint (str/replace-first base-uri #"/api/" ""))))
-
-(defn list-global-params
-  [{{{:keys [local public swarm vpn]} :ips} :network ip :ip :as _nb-status}]
-  [{:name  "ip.local",
-    :value local}
-   {:name  "ip.public",
-    :value public}
-   {:name  "ip.swarm",
-    :value swarm}
-   {:name  "ip.vpn",
-    :value vpn}
-   {:name  "hostname",
-    :value ip}])
-
-
-(defn add-parent
-  [deployment-id deployment-parameter]
-  (assoc deployment-parameter :parent deployment-id))
-
-(defn param-add-node-id
-  [node-id deployment-parameter]
-  (assoc deployment-parameter :node-id node-id))
-
-(defn param-add-id
-  [deployment-parameter]
-  (assoc deployment-parameter :id (dep-param/parameter->id deployment-parameter)))
-
-(defn param-prefix-name-by-node-id
-  [{:keys [name node-id] :as deployment-parameter}]
-  (assoc deployment-parameter :name (str node-id "." name)))
-
-(defn docker-swarm-service-params
-  [service]
-  (let [node-id (some-> service (get-in [:Spec :Name]) (gen-util/safe-subs 37))]
-    (map (comp param-prefix-name-by-node-id (partial param-add-node-id node-id))
-         [{:name  "mode",
-           :value (cond
-                    ;; todo support all modes
-                    (get-in service [:Spec :Mode :Replicated]) "replicated"
-                    :else "")}
-          {:name  "replicas.running",
-           :value (str (get-in service [:ServiceStatus :RunningTasks]))}
-          {:name  "replicas.desired",
-           :value (str (get-in service [:ServiceStatus :DesiredTasks]))}
-          {:name  "service-id",
-           :value (some-> service :ID (gen-util/safe-subs 0 12)),}
-          {:name  "node-id",
-           :value node-id}
-          {:name  "image",
-           :value (get-in service [:Spec :Labels :com.docker.stack.image] "")}])))
-
-(defn docker-compose-container-params
-  [container]
-  (let [node-id (get-in container [:Labels :com.docker.compose.service])]
-    (map (comp param-prefix-name-by-node-id (partial param-add-node-id node-id))
-         (let [node-id (get-in container [:Labels :com.docker.compose.service])]
-           [{:name  "image",
-             :value (:Image container)}
-            {:name  "node-id",
-             :value node-id},
-            {:name  "service-id",
-             :value (:Id container)}]))))
-
-(defmulti get-docker-state (fn [{{:keys [compatibility]} :module :as _deployment} _nb-status] compatibility))
-
-(defmethod get-docker-state module-spec/compatibility-swarm
-  [{:keys [id] :as _deployment} nb-status]
-  (->> (get-in nb-status [:coe-resources :docker :services])
-       (filter #(= (get-in % [:Spec :Labels :com.docker.stack.namespace]) (u/id->uuid id)))
-       (mapcat docker-swarm-service-params)))
-
-(defmethod get-docker-state module-spec/compatibility-docker-compose
-  [{:keys [id] :as _deployment} nb-status]
-  (->> (get-in nb-status [:coe-resources :docker :containers])
-       (filter #(= (get-in % [:Labels :com.docker.compose.project]) (u/id->uuid id)))
-       (mapcat docker-compose-container-params)))
-
-(defmulti get-deployment-state (fn [{{:keys [subtype]} :module :as _deployment} _nb-status]
-                                 subtype))
-
-(defmethod get-deployment-state module-spec/subtype-app-docker
-  [deployment nb-status]
-  (let [deployment-id (:id deployment)
-        add-parent-id (partial add-parent deployment-id)]
-    (mapv
-      (comp param-add-id add-parent-id)
-      (concat
-        (list-global-params nb-status)
-        (get-docker-state deployment nb-status)))))
