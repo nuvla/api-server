@@ -97,7 +97,7 @@
 (defn param-bulk-operation-data
   [{:keys [id] :as param}]
   [{:update {:_id id :_index dep-param/resource-type}}
-   {:doc    (select-keys param [:value])
+   {:doc    (select-keys param [:value :updated])
     :upsert param}])
 
 (defn params-bulk-operation-data
@@ -186,7 +186,7 @@
 
 (defn get-ne-deployment-params
   [nuvlabox-status nb-deployments]
-  (let [global-params  (list-global-params nuvlabox-status)]
+  (let [global-params (list-global-params nuvlabox-status)]
     (mapcat (fn [{:keys [id] :as deployment}]
               (map
                 #(complete-param id %)
@@ -201,16 +201,26 @@
     nuvlabox-status
     (ne-deployments nuvlabox-status)))
 
+(defn summarise-update-params-response
+  [{:keys [took errors items] :as _response}]
+  (->> items
+       (map #(get-in % [:update :result]))
+       frequencies
+       (map (fn [[k v]] (str k ": " v)))
+       (concat ["errors:" errors
+                "took:" (str took "ms")])
+       (str/join " ")))
+
 (defn update-deployment-parameters
   [nuvlabox-status nuvlabox]
   (when (nb-utils/is-nb-v2-17-or-newer? nuvlabox)
-    (log/warn "update-deployment-parameters is-nb-v2-17-or-newer?:" true)
-    (let [params (query-ne-deployments-get-params nuvlabox-status)]
-      (log/warn "update-deployment-parameters params:" params)
+    (let [log-title (str "Update deployment-parameters for " (:id nuvlabox) ":")
+          params    (query-ne-deployments-get-params nuvlabox-status)]
+      (log/warn log-title "Update/inserting" (count params) "parameters")
       (when (seq params)
         (try
           (let [response (db/bulk-operation dep-param/resource-type (params-bulk-operation-data params))]
-            (log/info "Update-deployment-parameters:" params "\nResponse:" response))
+            (log/warn log-title (summarise-update-params-response response)))
           (catch Exception e
-            (log/warn "Update-deployment-parameters with errors:" params "\nResponse:" (ex-message e)))))))
+            (log/error log-title (ex-message e) (ex-data e)))))))
   nuvlabox-status)

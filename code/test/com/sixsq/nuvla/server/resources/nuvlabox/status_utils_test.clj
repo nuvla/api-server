@@ -1,9 +1,11 @@
 (ns com.sixsq.nuvla.server.resources.nuvlabox.status-utils-test
   (:require
-    [clojure.test :refer [are deftest is testing]]
+    [clojure.test :refer [are deftest is testing use-fixtures]]
+    [clojure.tools.logging :as log]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
+    [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.nuvlabox.data-utils :as data-utils]
     [com.sixsq.nuvla.server.resources.nuvlabox.status-utils :as t]
     [com.sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
@@ -329,7 +331,8 @@
 (deftest param-bulk-operation-data
   (is (= [{:update {:_id    "deployment-parameter/bfeb89ab-ebb8-38fb-b08d-1fabcf26ccfc"
                     :_index "deployment-parameter"}}
-          {:doc    {:value "some-value"}
+          {:doc    {:updated "2024-11-06T10:36:22.306Z"
+                    :value   "some-value"}
            :upsert {:acl           {:edit-acl ["deployment/xyz"]
                                     :owners   ["group/nuvla-admin"]}
                     :created       "2024-11-06T10:36:22.306Z"
@@ -756,14 +759,30 @@
                :module {:compatibility "swarm"
                         :subtype       "application"}}])))))
 
+(use-fixtures :once ltu/with-test-server-fixture)
 
-;; to build a list of deployments states to be updated
-;; do not start from coe-resources but from deployment
-;; because compose apps has only a uuid registered as label "com.docker.compose.project".
-;; so for each deployment depending on type dig into coe resources and status to get values to update them afterward
-;; it has also the advantage to remove the need to check if deployment is really running on this NE
+(deftest update-deployment-parameters
+  (let [defined-uuids (take 10 (repeatedly random-uuid))
+        summary-fn t/summarise-update-params-response]
+    (with-redefs [t/get-ne-deployment-params (constantly
+                                              (map (fn [uuid]
+                                                     {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
+                                                                      :owners   ["group/nuvla-admin"]}
+                                                      :created       "2024-11-06T09:18:02.545Z"
 
-;; query deployments in state started
-;; for each of deployment running on the NE depending on type check docker containers/services or kubernetes resources
-;; build a bulk update query on parameters
-
+                                                      :created-by    "internal"
+                                                      :id            (str "deployment-parameter/" uuid)
+                                                      :name          "param-name"
+                                                      :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
+                                                      :resource-type "deployment-parameter"
+                                                      :updated       "2024-11-06T09:18:02.545Z"
+                                                      :value         "v"}) defined-uuids))
+                  t/summarise-update-params-response #(is (re-matches #"errors: false took: \d{1,3}ms created: 10" (summary-fn %)))]
+     (t/update-deployment-parameters {}
+                                     {:nuvlabox-engine-version "2.17.1"})
+     (with-redefs [t/summarise-update-params-response #(is (re-matches #"errors: false took: \d{1,3}ms noop: 10" (summary-fn %)))]
+       (t/update-deployment-parameters {}
+                                      {:nuvlabox-engine-version "2.17.1"}))
+     (with-redefs [t/param-bulk-operation-data (constantly "wrong")]
+       (t/update-deployment-parameters {}
+                                       {:nuvlabox-engine-version "2.17.1"})))))
