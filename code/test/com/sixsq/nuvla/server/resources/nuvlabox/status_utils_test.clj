@@ -1,8 +1,8 @@
 (ns com.sixsq.nuvla.server.resources.nuvlabox.status-utils-test
   (:require
     [clojure.test :refer [are deftest is testing use-fixtures]]
-    [clojure.tools.logging :as log]
     [com.sixsq.nuvla.auth.utils :as auth]
+    [com.sixsq.nuvla.db.es.common.utils :as escu]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
@@ -310,9 +310,9 @@
 
 (deftest complete-param
   (with-redefs [time/now (constantly (time/parse-date "2024-11-06T10:36:22.306Z"))]
-    (let [dep-id "deployment/xyz"]
-      (is (= {:acl           {:edit-acl ["deployment/xyz"]
-                              :owners   ["group/nuvla-admin"]}
+    (let [deployment {:id  "deployment/xyz"
+                      :acl {:owners ["user/someone"]}}]
+      (is (= {:acl           {:owners ["user/someone"]}
               :created       "2024-11-06T10:36:22.306Z"
               :created-by    "internal"
               :id            "deployment-parameter/bfeb89ab-ebb8-38fb-b08d-1fabcf26ccfc"
@@ -322,15 +322,15 @@
               :resource-type "deployment-parameter"
               :updated       "2024-11-06T10:36:22.306Z"
               :value         "nuvladev/nuvlaedge:detect-nuvla-coe-resources-slim-docker"}
-             (t/complete-param dep-id
+             (t/complete-param deployment
                                {:name    "agent.image",
                                 :value   "nuvladev/nuvlaedge:detect-nuvla-coe-resources-slim-docker",
                                 :node-id "agent"}))))))
 
 
 (deftest param-bulk-operation-data
-  (is (= [{:update {:_id    "deployment-parameter/bfeb89ab-ebb8-38fb-b08d-1fabcf26ccfc"
-                    :_index "deployment-parameter"}}
+  (is (= [{:update {:_id    "bfeb89ab-ebb8-38fb-b08d-1fabcf26ccfc"
+                    :_index "nuvla-deployment-parameter"}}
           {:doc    {:updated "2024-11-06T10:36:22.306Z"
                     :value   "some-value"}
            :upsert {:acl           {:edit-acl ["deployment/xyz"]
@@ -357,14 +357,14 @@
                                        :value         "some-value"}))))
 
 (deftest prepare-bulk-operation-data
-  (is (= [{:update {:_id    "deployment-parameter/a85cebf7-17b0-324e-a2ec-a1143be6056d"
-                    :_index "deployment-parameter"}}
+  (is (= [{:update {:_id    "a85cebf7-17b0-324e-a2ec-a1143be6056d"
+                    :_index "nuvla-deployment-parameter"}}
           {:doc    {:value "quay.io/prometheus/node-exporter:latest"}
            :upsert {:id    "deployment-parameter/a85cebf7-17b0-324e-a2ec-a1143be6056d"
                     :name  "node_exporter.image"
                     :value "quay.io/prometheus/node-exporter:latest"}}
-          {:update {:_id    "deployment-parameter/ea930503-cd39-369f-bc3f-e455f1ddf024"
-                    :_index "deployment-parameter"}}
+          {:update {:_id    "ea930503-cd39-369f-bc3f-e455f1ddf024"
+                    :_index "nuvla-deployment-parameter"}}
           {:doc    {:value "10.0.133.172"}
            :upsert {:id    "deployment-parameter/ea930503-cd39-369f-bc3f-e455f1ddf024"
                     :name  "hostname"
@@ -477,7 +477,9 @@
                                              :Id     "cd377e4afc0843f6f964d7f4f1d79f368a7096234ed29310cbbc054af7178eef"}]}}}
              [{:id     "deployment/b3b70820-2de4-4a11-b00c-a79661c3d433"
                :module {:compatibility "docker-compose"
-                        :subtype       "application"}}])))
+                        :subtype       "application"}
+               :acl    {:edit-acl ["deployment/b3b70820-2de4-4a11-b00c-a79661c3d433"]
+                        :owners   ["group/nuvla-admin"]}}])))
     (is (= [{:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
                              :owners   ["group/nuvla-admin"]}
              :created       "2024-11-06T09:18:02.545Z"
@@ -757,32 +759,34 @@
                                     :local  "10.160.3.157"}}}
              [{:id     "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
                :module {:compatibility "swarm"
-                        :subtype       "application"}}])))))
+                        :subtype       "application"}
+               :acl    {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
+                        :owners   ["group/nuvla-admin"]}}])))))
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
 (deftest update-deployment-parameters
   (let [defined-uuids (take 10 (repeatedly random-uuid))
-        summary-fn t/summarise-update-params-response]
-    (with-redefs [t/get-ne-deployment-params (constantly
-                                              (map (fn [uuid]
-                                                     {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                                                      :owners   ["group/nuvla-admin"]}
-                                                      :created       "2024-11-06T09:18:02.545Z"
+        summary-fn    escu/summarise-bulk-operation-response]
+    (with-redefs [t/get-ne-deployment-params             (constantly
+                                                           (map (fn [uuid]
+                                                                  {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
+                                                                                   :owners   ["group/nuvla-admin"]}
+                                                                   :created       "2024-11-06T09:18:02.545Z"
 
-                                                      :created-by    "internal"
-                                                      :id            (str "deployment-parameter/" uuid)
-                                                      :name          "param-name"
-                                                      :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                                                      :resource-type "deployment-parameter"
-                                                      :updated       "2024-11-06T09:18:02.545Z"
-                                                      :value         "v"}) defined-uuids))
-                  t/summarise-update-params-response #(is (re-matches #"errors: false took: \d{1,3}ms created: 10" (summary-fn %)))]
-     (t/update-deployment-parameters {}
-                                     {:nuvlabox-engine-version "2.17.1"})
-     (with-redefs [t/summarise-update-params-response #(is (re-matches #"errors: false took: \d{1,3}ms noop: 10" (summary-fn %)))]
-       (t/update-deployment-parameters {}
-                                      {:nuvlabox-engine-version "2.17.1"}))
-     (with-redefs [t/param-bulk-operation-data (constantly "wrong")]
-       (t/update-deployment-parameters {}
-                                       {:nuvlabox-engine-version "2.17.1"})))))
+                                                                   :created-by    "internal"
+                                                                   :id            (str "deployment-parameter/" uuid)
+                                                                   :name          "param-name"
+                                                                   :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
+                                                                   :resource-type "deployment-parameter"
+                                                                   :updated       "2024-11-06T09:18:02.545Z"
+                                                                   :value         "v"}) defined-uuids))
+                  escu/summarise-bulk-operation-response #(is (re-matches #"errors: false took: \d{1,3}ms created: 10" (summary-fn %)))]
+      (t/update-deployment-parameters {}
+                                      {:nuvlabox-engine-version "2.17.1"})
+      (with-redefs [escu/summarise-bulk-operation-response #(is (re-matches #"errors: false took: \d{1,3}ms noop: 10" (summary-fn %)))]
+        (t/update-deployment-parameters {}
+                                        {:nuvlabox-engine-version "2.17.1"}))
+      (with-redefs [t/param-bulk-operation-data (constantly "wrong")]
+        (t/update-deployment-parameters {}
+                                        {:nuvlabox-engine-version "2.17.1"})))))

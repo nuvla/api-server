@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
-    [com.sixsq.nuvla.auth.acl-resource :as acl-resource]
+    [com.sixsq.nuvla.db.es.common.utils :as escu]
     [com.sixsq.nuvla.db.filter.parser :as parser]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
@@ -42,7 +42,7 @@
   [{:keys [parent] :as _nuvlabox-status}]
   (let [filter-req (str "nuvlabox='" parent "' and " (u/filter-eq-vals "state" ["STARTED", "UPDATED"]))
         options    {:cimi-params {:filter (parser/parse-cimi-filter filter-req)
-                                  :select ["id" "module" "nuvlabox" "state"]
+                                  :select ["id" "module" "nuvlabox" "acl"]
                                   :last   10000}}]
     (second (crud/query-as-admin "deployment" options))))
 
@@ -84,19 +84,18 @@
         (log/debugf "detect-swarm - parent: %s - resource-id: %s - scripted-edit: %s" parent resource-id response)))))
 
 (defn complete-param
-  [deployment-id deployment-parameter]
+  [{:keys [id acl] :as _deployment} deployment-parameter]
   (-> deployment-parameter
-      (assoc :parent deployment-id
+      (assoc :parent id
              :created-by "internal"
              :resource-type dep-param/resource-type
-             :acl {:owners   [acl-resource/group-admin]
-                   :edit-acl [deployment-id]})
+             :acl acl)
       (crud/new-identifier dep-param/resource-type)
       u/update-timestamps))
 
 (defn param-bulk-operation-data
   [{:keys [id] :as param}]
-  [{:update {:_id id :_index dep-param/resource-type}}
+  [{:update {:_id (u/id->uuid id) :_index (escu/collection-id->index dep-param/resource-type)}}
    {:doc    (select-keys param [:value :updated])
     :upsert param}])
 
@@ -187,9 +186,9 @@
 (defn get-ne-deployment-params
   [nuvlabox-status nb-deployments]
   (let [global-params (list-global-params nuvlabox-status)]
-    (mapcat (fn [{:keys [id] :as deployment}]
+    (mapcat (fn [deployment]
               (map
-                #(complete-param id %)
+                #(complete-param deployment %)
                 (concat
                   global-params
                   (get-deployment-state deployment nuvlabox-status))))
@@ -201,16 +200,6 @@
     nuvlabox-status
     (ne-deployments nuvlabox-status)))
 
-(defn summarise-update-params-response
-  [{:keys [took errors items] :as _response}]
-  (->> items
-       (map #(get-in % [:update :result]))
-       frequencies
-       (map (fn [[k v]] (str k ": " v)))
-       (concat ["errors:" errors
-                "took:" (str took "ms")])
-       (str/join " ")))
-
 (defn update-deployment-parameters
   [nuvlabox-status nuvlabox]
   (when (nb-utils/is-nb-v2-17-or-newer? nuvlabox)
@@ -220,7 +209,7 @@
       (when (seq params)
         (try
           (let [response (db/bulk-operation dep-param/resource-type (params-bulk-operation-data params))]
-            (log/warn log-title (summarise-update-params-response response)))
+            (log/warn log-title (escu/summarise-bulk-operation-response response)))
           (catch Exception e
             (log/error log-title (ex-message e) (ex-data e)))))))
   nuvlabox-status)

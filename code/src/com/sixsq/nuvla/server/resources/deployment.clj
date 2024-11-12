@@ -6,6 +6,7 @@ a container orchestration engine.
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.db.impl :as db]
