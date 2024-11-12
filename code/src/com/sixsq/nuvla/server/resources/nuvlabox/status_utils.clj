@@ -134,33 +134,42 @@
   (let [node-id (some-> service (get-in [:Spec :Name]) (gen-util/safe-subs 37))]
     (params-for-node-id
       node-id
-      [{:name  "mode",
-        :value (cond
-                 ;; todo support all modes
-                 (get-in service [:Spec :Mode :Replicated]) "replicated"
-                 :else "")}
-       {:name  "replicas.running",
-        :value (str (get-in service [:ServiceStatus :RunningTasks]))}
-       {:name  "replicas.desired",
-        :value (str (get-in service [:ServiceStatus :DesiredTasks]))}
-       {:name  "service-id",
-        :value (some-> service :ID (gen-util/safe-subs 0 12)),}
-       {:name  "node-id",
-        :value node-id}
-       {:name  "image",
-        :value (get-in service [:Spec :Labels :com.docker.stack.image] "")}])))
+      (concat
+        [{:name  "mode",
+          :value (cond
+                   (get-in service [:Spec :Mode :Replicated]) "replicated"
+                   (get-in service [:Spec :Mode :Global]) "global"
+                   :else "")}
+         {:name  "replicas.running",
+          :value (str (get-in service [:ServiceStatus :RunningTasks]))}
+         {:name  "replicas.desired",
+          :value (str (get-in service [:ServiceStatus :DesiredTasks]))}
+         {:name  "service-id",
+          :value (some-> service :ID (gen-util/safe-subs 0 12)),}
+         {:name  "node-id",
+          :value node-id}
+         {:name  "image",
+          :value (get-in service [:Spec :Labels :com.docker.stack.image] "")}]
+        (keep (fn [{:keys [PublishedPort TargetPort Protocol]}]
+                (when PublishedPort
+                  {:name  (str Protocol "." TargetPort)
+                   :value (str PublishedPort)})) (get-in service [:Spec :EndpointSpec :Ports] []))))))
 
 (defn docker-compose-container-params
   [container]
   (let [node-id (get-in container [:Labels :com.docker.compose.service])]
     (params-for-node-id
       node-id
-      [{:name  "image",
-        :value (:Image container)}
-       {:name  "node-id",
-        :value node-id},
-       {:name  "service-id",
-        :value (:Id container)}])))
+      (concat [{:name  "image",
+                :value (:Image container)}
+               {:name  "node-id",
+                :value node-id},
+               {:name  "service-id",
+                :value (:Id container)}]
+              (keep (fn [{:keys [PublicPort PrivatePort Type]}]
+                      (when PublicPort
+                        {:name  (str Type "." PrivatePort)
+                         :value (str PublicPort)})) (:Ports container))))))
 
 (defmulti get-docker-state (fn [{{:keys [compatibility]} :module :as _deployment} _nb-status] compatibility))
 
