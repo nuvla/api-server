@@ -1674,14 +1674,25 @@
                           (ltu/is-status 201)
                           ltu/location-url)]
       (testing "Check that next-refresh is set to now + 1 minute."
-        (-> session-user
-            (request dep-set-url)
-            ltu/body->edn
-            (ltu/is-status 200)
-            (ltu/is-key-value :auto-update true)
-            (ltu/is-key-value
-              (comp #(time/time-between (time/now) % :seconds) time/parse-date)
-              :next-refresh 59)))
+        (let [dep-set (-> session-user
+                          (request dep-set-url)
+                          ltu/body->edn
+                          (ltu/is-status 200)
+                          (ltu/is-key-value :auto-update true)
+                          (ltu/is-key-value
+                            (comp #(time/time-between (time/now) % :seconds) time/parse-date)
+                            :next-refresh 299)
+                          ltu/body)]
+          (testing "Check that updating auto-update-interval also updates next-refresh."
+            (-> session-user
+                (request dep-set-url
+                         :request-method :put
+                         :body (json/write-str (assoc dep-set :auto-update-interval 10)))
+                ltu/body->edn
+                (ltu/is-status 200)
+                (ltu/is-key-value
+                  (comp #(time/time-between (time/now) % :seconds) time/parse-date)
+                  :next-refresh 599)))))
 
       (testing "auto-update action not available to non-admin users."
         (-> session-user

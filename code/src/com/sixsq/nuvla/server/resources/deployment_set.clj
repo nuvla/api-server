@@ -192,20 +192,34 @@ These resources represent a deployment set that regroups deployments.
   (assoc resource :operational-status (divergence-map resource request)))
 
 (defn assoc-next-refresh
-  [resource]
-  (assoc resource :next-refresh (t/to-str (t/plus (t/now) (t/duration-unit 1 :minutes)))))
+  [{:keys [auto-update-interval] :as resource}]
+  (assoc resource :next-refresh
+                  (-> (t/now)
+                      (t/plus (t/duration-unit (or auto-update-interval 5) :minutes))
+                      t/to-str)))
 
-(defn assoc-auto-update
-  [{:keys [auto-update next-refresh] :as resource}]
-  (cond-> resource
-          (nil? auto-update) (assoc :auto-update false)
-          (and auto-update (not next-refresh)) (assoc-next-refresh)))
+(defn assoc-auto-update-flag
+  [{:keys [auto-update next-refresh] :as resource}
+   {{:keys [uuid]} :params :as request}]
+  (let [current                  (when (and auto-update uuid)
+                                   (-> (str resource-type "/" uuid)
+                                       crud/retrieve-by-id-as-admin))
+        new-auto-update-interval (-> request :body :auto-update-interval)]
+    (cond-> resource
+
+            (nil? auto-update)
+            (assoc :auto-update false)
+
+            (and auto-update (or (not next-refresh)
+                                 (and (some? new-auto-update-interval)
+                                      (not= (:auto-update-interval current) new-auto-update-interval))))
+            (assoc-next-refresh))))
 
 (defn pre-validate-hook
   [resource request]
   (-> resource
       (assoc-operational-status request)
-      (assoc-auto-update)))
+      (assoc-auto-update-flag request)))
 
 (defn add-edit-pre-validate-hook
   [resource request]
