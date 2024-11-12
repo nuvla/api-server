@@ -14,27 +14,30 @@
 
 
 (def valid-deployment-set
-  {:id                 (str deployment-set-resource/resource-type "/uuid")
-   :resource-type      deployment-set-resource/resource-type
-   :created            timestamp
-   :updated            timestamp
-   :acl                valid-acl
+  {:id                   (str deployment-set-resource/resource-type "/uuid")
+   :resource-type        deployment-set-resource/resource-type
+   :created              timestamp
+   :updated              timestamp
+   :acl                  valid-acl
 
-   :state              utils/state-new
-   :applications-sets  [{:id         "module/c2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
-                         :version    1
-                         :overwrites [{:applications [{:id                      "module/c2dc1733-ac2c-45b1-b68a-0ec02653bc0f"
-                                                       :version                 10
-                                                       :environmental-variables [{:name  "env_var"
-                                                                                  :value "some value"}]
-                                                       :files                   [{:file-name    "my-config.conf"
-                                                                                  :file-content "file content example"}
-                                                                                 {:file-name    "file_1"
-                                                                                  :file-content "file content example"}]}]
-                                       :targets      ["credential/a2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
-                                                      "credential/b2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]}]}]
-   :operational-status {:status "OK"}
-   :api-endpoint       "https://nuvla.io"})
+   :state                utils/state-new
+   :applications-sets    [{:id         "module/c2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
+                           :version    1
+                           :overwrites [{:applications [{:id                      "module/c2dc1733-ac2c-45b1-b68a-0ec02653bc0f"
+                                                         :version                 10
+                                                         :environmental-variables [{:name  "env_var"
+                                                                                    :value "some value"}]
+                                                         :files                   [{:file-name    "my-config.conf"
+                                                                                    :file-content "file content example"}
+                                                                                   {:file-name    "file_1"
+                                                                                    :file-content "file content example"}]}]
+                                         :targets      ["credential/a2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
+                                                        "credential/b2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]}]}]
+   :operational-status   {:status "OK"}
+   :api-endpoint         "https://nuvla.io"
+   :auto-update          true
+   :auto-update-interval 300
+   :next-refresh         "2024-10-21T09:37:02.291Z"})
 
 
 (deftest test-schema-check
@@ -55,5 +58,5 @@
     (stu/is-invalid ::t/deployment-set (dissoc valid-deployment-set k)))
 
   ;; optional attributes
-  (doseq [k #{:operational-status :api-endpoint}]
+  (doseq [k #{:operational-status :api-endpoint :auto-update :auto-update-interval :next-refresh}]
     (stu/is-valid ::t/deployment-set (dissoc valid-deployment-set k))))

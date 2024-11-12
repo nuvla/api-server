@@ -22,7 +22,8 @@ These resources represent a deployment set that regroups deployments.
     [com.sixsq.nuvla.server.resources.spec.deployment-set :as spec]
     [com.sixsq.nuvla.server.resources.spec.module :as module-spec]
     [com.sixsq.nuvla.server.util.metadata :as gen-md]
-    [com.sixsq.nuvla.server.util.response :as r]))
+    [com.sixsq.nuvla.server.util.response :as r]
+    [com.sixsq.nuvla.server.util.time :as t]))
 
 (def ^:const resource-type (u/ns->type *ns*))
 
@@ -186,16 +187,46 @@ These resources represent a deployment set that regroups deployments.
     (replace-modules-by-apps-set resource request)
     resource))
 
-(defn update-operational-status
+(defn assoc-operational-status
   [resource request]
   (assoc resource :operational-status (divergence-map resource request)))
+
+(defn assoc-next-refresh
+  [{:keys [auto-update-interval] :as resource}]
+  (assoc resource :next-refresh
+                  (-> (t/now)
+                      (t/plus (t/duration-unit (or auto-update-interval 5) :minutes))
+                      t/to-str)))
+
+(defn assoc-auto-update-flag
+  [{:keys [auto-update next-refresh] :as resource}
+   {{:keys [uuid]} :params :as request}]
+  (let [current                  (when (and auto-update uuid)
+                                   (-> (str resource-type "/" uuid)
+                                       crud/retrieve-by-id-as-admin))
+        new-auto-update-interval (-> request :body :auto-update-interval)]
+    (cond-> resource
+
+            (nil? auto-update)
+            (assoc :auto-update false)
+
+            (and auto-update (or (not next-refresh)
+                                 (and (some? new-auto-update-interval)
+                                      (not= (:auto-update-interval current) new-auto-update-interval))))
+            (assoc-next-refresh))))
+
+(defn pre-validate-hook
+  [resource request]
+  (-> resource
+      (assoc-operational-status request)
+      (assoc-auto-update-flag request)))
 
 (defn add-edit-pre-validate-hook
   [resource request]
   (-> resource
       (dep-utils/add-api-endpoint request)
       (create-app-set request)
-      (update-operational-status request)))
+      (pre-validate-hook request)))
 
 (defn action-bulk
   [{:keys [id] :as _resource} {{:keys [action]} :params :as request}]
@@ -223,7 +254,7 @@ These resources represent a deployment set that regroups deployments.
   ([request f]
    (let [current (load-resource-throw-not-allowed-action request)]
      (-> current
-         (update-operational-status request)
+         (pre-validate-hook request)
          (sm/transition request)
          (utils/save-deployment-set current)
          (f request)))))
@@ -277,7 +308,7 @@ These resources represent a deployment set that regroups deployments.
           admin-request {:params      (u/id->request-params id)
                          :nuvla/authn auth/internal-identity}
           current       (crud/retrieve-by-id-as-admin id)
-          next          (update-operational-status current admin-request)
+          next          (pre-validate-hook current admin-request)
           action        (action-selector next admin-request)]
       (-> next
           (sm/transition (assoc-in admin-request [:params :action] action))
@@ -360,10 +391,21 @@ These resources represent a deployment set that regroups deployments.
         (sm/transition request)
         u/update-timestamps
         (u/set-updated-by request)
-        (update-operational-status request)
+        (pre-validate-hook request)
         crud/validate
         (crud/set-operations request)
         db/edit)))
+
+(defmethod crud/do-action [resource-type utils/action-auto-update]
+  [request]
+  (let [current (load-resource-throw-not-allowed-action request)]
+    (-> current
+        (pre-validate-hook request)
+        (sm/transition request)
+        (recompute-fleet request)
+        assoc-next-refresh
+        (utils/save-deployment-set current)
+        (action-bulk (assoc-in request [:params :action] utils/action-update)))))
 
 (defn cancel-latest-job
   [{:keys [id] :as _resource} _request]
