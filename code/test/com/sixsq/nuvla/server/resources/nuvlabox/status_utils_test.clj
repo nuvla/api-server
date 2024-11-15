@@ -9,6 +9,7 @@
     [com.sixsq.nuvla.server.resources.nuvlabox.data-utils :as data-utils]
     [com.sixsq.nuvla.server.resources.nuvlabox.status-utils :as t]
     [com.sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
+    [com.sixsq.nuvla.server.resources.spec.module :as module-spec]
     [com.sixsq.nuvla.server.resources.ts-nuvlaedge-availability :as ts-nuvlaedge-availability]
     [com.sixsq.nuvla.server.util.time :as time]))
 
@@ -193,120 +194,198 @@
                                                                     :heartbeat-interval 20})]
               (data-utils/nuvlabox-status->insert-availability-request nuvlabox-status true)))))))
 
+(def nb-status-coe-kubernetes {:ip            "10.0.133.172",
+                               :coe-resources {:kubernetes
+                                               {:deployments [{:metadata
+                                                               {:labels
+                                                                {:nuvla.deployment.uuid "819b9a9e-010f-4c26-82d5-aa395bbb6179"},
+                                                                :name "hello-edge"},
+                                                               :spec   {:replicas 1},
+                                                               :status {:replicas 1}},
+                                                              {:metadata {:name      "release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world",
+                                                                          :namespace "fd9d09a2-4ce8-4fbc-a112-0f60a46064ee",},
+                                                               :spec     {:replicas 1},
+                                                               :status   {:replicas 1}}]
+
+                                                :services    [{:metadata {:name      "release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world",
+                                                                          :namespace "fd9d09a2-4ce8-4fbc-a112-0f60a46064ee"}}]}},
+                               :network       {:ips {:public "143.233.127.6",
+                                                     :swarm  "10.160.3.194",
+                                                     :vpn    "10.0.133.172",
+                                                     :local  "10.160.3.157"}}})
+
+(def nb-status-coe-docker-swarm {:ip            "10.0.133.172",
+                                 :coe-resources {:docker
+                                                 {:services
+                                                  [{:ID            "8zjrszesw70t88thnna2eehxw",
+                                                    :Spec          {:Name   "395a87fa-6b53-4e76-8a36-eccf8a19bc39_node_exporter",
+                                                                    :Labels {:com.docker.stack.image     "quay.io/prometheus/node-exporter:latest",
+                                                                             :com.docker.stack.namespace "395a87fa-6b53-4e76-8a36-eccf8a19bc39"},
+                                                                    :Mode   {:Replicated {:Replicas 1}}},
+                                                    :Endpoint      {:Ports [{:Protocol      "tcp",
+                                                                             :TargetPort    9200,
+                                                                             :PublishedPort 9200,
+                                                                             :PublishMode   "ingress"}]}
+                                                    :ServiceStatus {:RunningTasks 1,
+                                                                    :DesiredTasks 1}}
+                                                   {:ID            "uuip6ca6fwsnj0fqeoz68o15a",
+                                                    :Spec          {:Name   "395a87fa-6b53-4e76-8a36-eccf8a19bc39_otelcol",
+                                                                    :Labels {:com.docker.stack.image     "harbor.res.eng.it/icos/meta-kernel/observability/otel-collector-icos-distribution:1.2.0-v0.92.0-1",
+                                                                             :com.docker.stack.namespace "395a87fa-6b53-4e76-8a36-eccf8a19bc39"},
+                                                                    :Mode   {:Replicated {:Replicas 1}}},
+                                                    :ServiceStatus {:RunningTasks 1,
+                                                                    :DesiredTasks 1}}
+                                                   {:ID            "t5smdvbjrht7sd0cfki9nu4qj",
+                                                    :Spec          {:Name   "395a87fa-6b53-4e76-8a36-eccf8a19bc39_telemetruum_leaf_exporter",
+                                                                    :Labels {:com.docker.stack.image     "harbor.res.eng.it/icos/meta-kernel/observability/telemetruum/telemetruum-leaf-exporter:0.1.0",
+                                                                             :com.docker.stack.namespace "395a87fa-6b53-4e76-8a36-eccf8a19bc39"},
+                                                                    :Mode   {:Replicated {:Replicas 1}}},
+                                                    :ServiceStatus {:RunningTasks 1,
+                                                                    :DesiredTasks 1}}]}},
+                                 :network       {:ips {:public "143.233.127.6",
+                                                       :swarm  "10.160.3.194",
+                                                       :vpn    "10.0.133.172",
+                                                       :local  "10.160.3.157"}}})
+
+(def nb-status-coe-docker-compose {:id            "nuvlabox-status/fb4da83b-e911-4f01-8bed-82a8473ac8e3",
+                                   :ip            "178.194.193.87",
+                                   :network       {:ips
+                                                   {:public "178.194.193.87",
+                                                    :swarm  "192.168.64.4",
+                                                    :vpn    "",
+                                                    :local  ""}}
+                                   :coe-resources {:docker
+                                                   {:containers [{:Id "f271e2566489ab4beca2ac193935076f8cf89b5ab768c78962a4ea028c9ab51c"},
+                                                                 {:Image  "nuvladev/nuvlaedge:detect-nuvla-coe-resources-slim-docker",
+                                                                  :Ports  [{:IP          "0.0.0.0",
+                                                                            :PrivatePort 8000
+                                                                            :Type        "tcp"}
+                                                                           {:IP          "0.0.0.0",
+                                                                            :PrivatePort 80
+                                                                            :PublicPort  32786
+                                                                            :Type        "tcp"}
+                                                                           {:IP          "0.0.0.0",
+                                                                            :PrivatePort 8080
+                                                                            :PublicPort  33783
+                                                                            :Type        "udp"}]
+                                                                  :Labels {:com.docker.compose.service "agent",
+                                                                           :com.docker.compose.project "b3b70820-2de4-4a11-b00c-a79661c3d433"},
+                                                                  :Id     "cd377e4afc0843f6f964d7f4f1d79f368a7096234ed29310cbbc054af7178eef"}]}}})
+
 (deftest get-deployment-state
   (with-redefs [time/now (constantly (time/parse-date "2024-11-06T09:18:02.545Z"))]
-    (is (= [{:name    "agent.image",
-             :value   "nuvladev/nuvlaedge:detect-nuvla-coe-resources-slim-docker",
-             :node-id "agent"}
-            {:name    "agent.node-id",
-             :value   "agent",
-             :node-id "agent"}
-            {:name    "agent.service-id",
-             :value   "cd377e4afc0843f6f964d7f4f1d79f368a7096234ed29310cbbc054af7178eef",
-             :node-id "agent"}]
-           (t/get-deployment-state
-             {:id     "deployment/b3b70820-2de4-4a11-b00c-a79661c3d433"
-              :module {:compatibility "docker-compose"
-                       :subtype       "application"}}
-             {:id            "nuvlabox-status/fb4da83b-e911-4f01-8bed-82a8473ac8e3",
-              :ip            "178.194.193.87",
-              :network       {:ips
-                              {:public "178.194.193.87",
-                               :swarm  "192.168.64.4",
-                               :vpn    "",
-                               :local  ""}}
-              :coe-resources {:docker
-                              {:containers [{:Id "f271e2566489ab4beca2ac193935076f8cf89b5ab768c78962a4ea028c9ab51c"},
-                                            {:Image  "nuvladev/nuvlaedge:detect-nuvla-coe-resources-slim-docker",
-                                             :Labels {:com.docker.compose.service "agent",
-                                                      :com.docker.compose.project "b3b70820-2de4-4a11-b00c-a79661c3d433"},
-                                             :Id     "cd377e4afc0843f6f964d7f4f1d79f368a7096234ed29310cbbc054af7178eef"}]}}}))))
-  (is (= [{:name    "node_exporter.mode"
-           :node-id "node_exporter"
-           :value   "replicated"}
-          {:name    "node_exporter.replicas.running"
-           :node-id "node_exporter"
-           :value   "1"}
-          {:name    "node_exporter.replicas.desired"
-           :node-id "node_exporter"
-           :value   "1"}
-          {:name    "node_exporter.service-id"
-           :node-id "node_exporter"
-           :value   "8zjrszesw70t"}
-          {:name    "node_exporter.node-id"
-           :node-id "node_exporter"
-           :value   "node_exporter"}
-          {:name    "node_exporter.image"
-           :node-id "node_exporter"
-           :value   "quay.io/prometheus/node-exporter:latest"}
-          {:name    "otelcol.mode"
-           :node-id "otelcol"
-           :value   "replicated"}
-          {:name    "otelcol.replicas.running"
-           :node-id "otelcol"
-           :value   "1"}
-          {:name    "otelcol.replicas.desired"
-           :node-id "otelcol"
-           :value   "1"}
-          {:name    "otelcol.service-id"
-           :node-id "otelcol"
-           :value   "uuip6ca6fwsn"}
-          {:name    "otelcol.node-id"
-           :node-id "otelcol"
-           :value   "otelcol"}
-          {:name    "otelcol.image"
-           :node-id "otelcol"
-           :value   "harbor.res.eng.it/icos/meta-kernel/observability/otel-collector-icos-distribution:1.2.0-v0.92.0-1"}
-          {:name    "telemetruum_leaf_exporter.mode"
-           :node-id "telemetruum_leaf_exporter"
-           :value   "replicated"}
-          {:name    "telemetruum_leaf_exporter.replicas.running"
-           :node-id "telemetruum_leaf_exporter"
-           :value   "1"}
-          {:name    "telemetruum_leaf_exporter.replicas.desired"
-           :node-id "telemetruum_leaf_exporter"
-           :value   "1"}
-          {:name    "telemetruum_leaf_exporter.service-id"
-           :node-id "telemetruum_leaf_exporter"
-           :value   "t5smdvbjrht7"}
-          {:name    "telemetruum_leaf_exporter.node-id"
-           :node-id "telemetruum_leaf_exporter"
-           :value   "telemetruum_leaf_exporter"}
-          {:name    "telemetruum_leaf_exporter.image"
-           :node-id "telemetruum_leaf_exporter"
-           :value   "harbor.res.eng.it/icos/meta-kernel/observability/telemetruum/telemetruum-leaf-exporter:0.1.0"}]
-         (t/get-deployment-state
-           {:id     "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-            :module {:compatibility "swarm"
-                     :subtype       "application"}}
-           {:ip            "10.0.133.172",
-            :coe-resources {:docker
-                            {:services
-                             [{:ID            "8zjrszesw70t88thnna2eehxw",
-                               :Spec          {:Name   "395a87fa-6b53-4e76-8a36-eccf8a19bc39_node_exporter",
-                                               :Labels {:com.docker.stack.image     "quay.io/prometheus/node-exporter:latest",
-                                                        :com.docker.stack.namespace "395a87fa-6b53-4e76-8a36-eccf8a19bc39"},
-                                               :Mode   {:Replicated {:Replicas 1}}},
-                               :ServiceStatus {:RunningTasks 1,
-                                               :DesiredTasks 1}}
-                              {:ID            "uuip6ca6fwsnj0fqeoz68o15a",
-                               :Spec          {:Name   "395a87fa-6b53-4e76-8a36-eccf8a19bc39_otelcol",
-                                               :Labels {:com.docker.stack.image     "harbor.res.eng.it/icos/meta-kernel/observability/otel-collector-icos-distribution:1.2.0-v0.92.0-1",
-                                                        :com.docker.stack.namespace "395a87fa-6b53-4e76-8a36-eccf8a19bc39"},
-                                               :Mode   {:Replicated {:Replicas 1}}},
-                               :ServiceStatus {:RunningTasks 1,
-                                               :DesiredTasks 1}}
-                              {:ID            "t5smdvbjrht7sd0cfki9nu4qj",
-                               :Spec          {:Name   "395a87fa-6b53-4e76-8a36-eccf8a19bc39_telemetruum_leaf_exporter",
-                                               :Labels {:com.docker.stack.image     "harbor.res.eng.it/icos/meta-kernel/observability/telemetruum/telemetruum-leaf-exporter:0.1.0",
-                                                        :com.docker.stack.namespace "395a87fa-6b53-4e76-8a36-eccf8a19bc39"},
-                                               :Mode   {:Replicated {:Replicas 1}}},
-                               :ServiceStatus {:RunningTasks 1,
-                                               :DesiredTasks 1}}]}},
-            :network       {:ips {:public "143.233.127.6",
-                                  :swarm  "10.160.3.194",
-                                  :vpn    "10.0.133.172",
-                                  :local  "10.160.3.157"}}}))))
+    (is (= #{{:name    "agent.image"
+              :node-id "agent"
+              :value   "nuvladev/nuvlaedge:detect-nuvla-coe-resources-slim-docker"}
+             {:name    "agent.node-id"
+              :node-id "agent"
+              :value   "agent"}
+             {:name    "agent.service-id"
+              :node-id "agent"
+              :value   "cd377e4afc0843f6f964d7f4f1d79f368a7096234ed29310cbbc054af7178eef"}
+             {:name    "agent.tcp.80"
+              :node-id "agent"
+              :value   "32786"}
+             {:name    "agent.udp.8080"
+              :node-id "agent"
+              :value   "33783"}}
+           (set (t/get-deployment-state
+                  {:id     "deployment/b3b70820-2de4-4a11-b00c-a79661c3d433"
+                   :module {:compatibility "docker-compose"
+                            :subtype       "application"}}
+                  nb-status-coe-docker-compose)))))
+  (is (= #{{:name    "node_exporter.mode"
+            :node-id "node_exporter"
+            :value   "replicated"}
+           {:name    "node_exporter.replicas.running"
+            :node-id "node_exporter"
+            :value   "1"}
+           {:name    "node_exporter.replicas.desired"
+            :node-id "node_exporter"
+            :value   "1"}
+           {:name    "node_exporter.service-id"
+            :node-id "node_exporter"
+            :value   "8zjrszesw70t"}
+           {:name    "node_exporter.node-id"
+            :node-id "node_exporter"
+            :value   "node_exporter"}
+           {:name    "node_exporter.image"
+            :node-id "node_exporter"
+            :value   "quay.io/prometheus/node-exporter:latest"}
+           {:name    "node_exporter.tcp.9200"
+            :node-id "node_exporter"
+            :value   "9200"}
+           {:name    "otelcol.mode"
+            :node-id "otelcol"
+            :value   "replicated"}
+           {:name    "otelcol.replicas.running"
+            :node-id "otelcol"
+            :value   "1"}
+           {:name    "otelcol.replicas.desired"
+            :node-id "otelcol"
+            :value   "1"}
+           {:name    "otelcol.service-id"
+            :node-id "otelcol"
+            :value   "uuip6ca6fwsn"}
+           {:name    "otelcol.node-id"
+            :node-id "otelcol"
+            :value   "otelcol"}
+           {:name    "otelcol.image"
+            :node-id "otelcol"
+            :value   "harbor.res.eng.it/icos/meta-kernel/observability/otel-collector-icos-distribution:1.2.0-v0.92.0-1"}
+           {:name    "telemetruum_leaf_exporter.mode"
+            :node-id "telemetruum_leaf_exporter"
+            :value   "replicated"}
+           {:name    "telemetruum_leaf_exporter.replicas.running"
+            :node-id "telemetruum_leaf_exporter"
+            :value   "1"}
+           {:name    "telemetruum_leaf_exporter.replicas.desired"
+            :node-id "telemetruum_leaf_exporter"
+            :value   "1"}
+           {:name    "telemetruum_leaf_exporter.service-id"
+            :node-id "telemetruum_leaf_exporter"
+            :value   "t5smdvbjrht7"}
+           {:name    "telemetruum_leaf_exporter.node-id"
+            :node-id "telemetruum_leaf_exporter"
+            :value   "telemetruum_leaf_exporter"}
+           {:name    "telemetruum_leaf_exporter.image"
+            :node-id "telemetruum_leaf_exporter"
+            :value   "harbor.res.eng.it/icos/meta-kernel/observability/telemetruum/telemetruum-leaf-exporter:0.1.0"}}
+         (set (t/get-deployment-state
+                {:id     "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
+                 :module {:compatibility "swarm"
+                          :subtype       "application"}}
+                nb-status-coe-docker-swarm))))
+  (is (= #{{:name    "Deployment.hello-edge.replicas.desired"
+            :node-id "Deployment.hello-edge"
+            :value   "1"}
+           {:name    "Deployment.hello-edge.node-id"
+            :node-id "Deployment.hello-edge"
+            :value   "Deployment.hello-edge"}
+           {:name    "Deployment.hello-edge.replicas.running"
+            :node-id "Deployment.hello-edge"
+            :value   "0"}}
+         (set (t/get-deployment-state
+                {:id     "deployment/819b9a9e-010f-4c26-82d5-aa395bbb6179"
+                 :module {:subtype module-spec/subtype-app-k8s}}
+                nb-status-coe-kubernetes))))
+
+  (is (= #{{:name    "Deployment.release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world.node-id"
+            :node-id "Deployment.release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world"
+            :value   "Deployment.release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world"}
+           {:name    "Deployment.release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world.replicas.desired"
+            :node-id "Deployment.release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world"
+            :value   "1"}
+           {:name    "Deployment.release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world.replicas.running"
+            :node-id "Deployment.release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world"
+            :value   "0"}
+           {:name    "Service.release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world.node-id"
+            :node-id "Service.release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world"
+            :value   "Service.release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world"}}
+         (set (t/get-deployment-state
+                {:id     "deployment/fd9d09a2-4ce8-4fbc-a112-0f60a46064ee"
+                 :module {:subtype module-spec/subtype-app-helm}}
+                nb-status-coe-kubernetes)))))
 
 (deftest complete-param
   (with-redefs [time/now (constantly (time/parse-date "2024-11-06T10:36:22.306Z"))]
@@ -326,7 +405,6 @@
                                {:name    "agent.image",
                                 :value   "nuvladev/nuvlaedge:detect-nuvla-coe-resources-slim-docker",
                                 :node-id "agent"}))))))
-
 
 (deftest param-bulk-operation-data
   (is (= [{:update {:_id    "bfeb89ab-ebb8-38fb-b08d-1fabcf26ccfc"
@@ -485,358 +563,39 @@
                 :updated       "2024-11-06T09:18:02.545Z"
                 :value         "33783"}}
              (set (t/get-ne-deployment-params
-                    {:id            "nuvlabox-status/fb4da83b-e911-4f01-8bed-82a8473ac8e3",
-                     :ip            "178.194.193.87",
-                     :network       {:ips
-                                     {:public "178.194.193.87",
-                                      :swarm  "192.168.64.4",
-                                      :vpn    "",
-                                      :local  ""}}
-                     :coe-resources {:docker
-                                     {:containers [{:Id "f271e2566489ab4beca2ac193935076f8cf89b5ab768c78962a4ea028c9ab51c"},
-                                                   {:Image  "nuvladev/nuvlaedge:detect-nuvla-coe-resources-slim-docker",
-                                                    :Ports  [{:IP          "0.0.0.0",
-                                                              :PrivatePort 8000
-                                                              :Type        "tcp"}
-                                                             {:IP          "0.0.0.0",
-                                                              :PrivatePort 80
-                                                              :PublicPort  32786
-                                                              :Type        "tcp"}
-                                                             {:IP          "0.0.0.0",
-                                                              :PrivatePort 8080
-                                                              :PublicPort  33783
-                                                              :Type        "udp"}]
-                                                    :Labels {:com.docker.compose.service "agent",
-                                                             :com.docker.compose.project "b3b70820-2de4-4a11-b00c-a79661c3d433"},
-                                                    :Id     "cd377e4afc0843f6f964d7f4f1d79f368a7096234ed29310cbbc054af7178eef"}]}}}
+                    nb-status-coe-docker-compose
                     [{:id     "deployment/b3b70820-2de4-4a11-b00c-a79661c3d433"
                       :module {:compatibility "docker-compose"
                                :subtype       "application"}
                       :acl    {:edit-acl ["deployment/b3b70820-2de4-4a11-b00c-a79661c3d433"]
-                               :owners   ["group/nuvla-admin"]}}])))))
-    (testing "docker swarm NuvlaEdge deployment parameters"
-      (is (= #{{:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/00e08780-9056-3bd6-a38f-88d3662d881f"
-                :name          "ip.local"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "10.160.3.157"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/471cdd6f-0e90-3a76-baf8-77831eff75d9"
-                :name          "ip.public"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "143.233.127.6"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/be6612c6-628e-3eab-9fba-81cef3ae7648"
-                :name          "ip.swarm"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "10.160.3.194"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/1fefb4e4-b7bb-346b-92b9-acd3a3c00d1e"
-                :name          "ip.vpn"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "10.0.133.172"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/ea930503-cd39-369f-bc3f-e455f1ddf024"
-                :name          "hostname"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "10.0.133.172"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/11f8e5d0-6ca1-370e-9bf9-e7be1354ca61"
-                :name          "node_exporter.mode"
-                :node-id       "node_exporter"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "replicated"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/6f858e11-1aee-3a95-85ab-5e83af8bb828"
-                :name          "node_exporter.replicas.running"
-                :node-id       "node_exporter"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "1"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/679d66d0-631c-3a3d-9d6b-c901c47a0d81"
-                :name          "node_exporter.replicas.desired"
-                :node-id       "node_exporter"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "1"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/2ea2cf7d-75f3-3a66-ae58-fd71bbe8bebd"
-                :name          "node_exporter.service-id"
-                :node-id       "node_exporter"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "8zjrszesw70t"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/bd11f3f7-f962-3556-97f5-3335cdb8c58e"
-                :name          "node_exporter.node-id"
-                :node-id       "node_exporter"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "node_exporter"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/a85cebf7-17b0-324e-a2ec-a1143be6056d"
-                :name          "node_exporter.image"
-                :node-id       "node_exporter"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "quay.io/prometheus/node-exporter:latest"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/49553853-8843-35a4-b6a0-f29e33fa5d2b"
-                :name          "otelcol.mode"
-                :node-id       "otelcol"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "replicated"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/41d1dc8f-e40c-379b-8f90-97a5449bb599"
-                :name          "otelcol.replicas.running"
-                :node-id       "otelcol"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "1"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/758b85b3-7212-3c75-8833-7861a53b4ead"
-                :name          "otelcol.replicas.desired"
-                :node-id       "otelcol"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "1"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/956fd55c-a1ec-3a34-9e7d-915a2dfa0884"
-                :name          "otelcol.service-id"
-                :node-id       "otelcol"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "uuip6ca6fwsn"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/77b44cf0-ba8c-380f-847d-2d12fefd88c6"
-                :name          "otelcol.node-id"
-                :node-id       "otelcol"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "otelcol"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/66ef5e70-34ca-34c9-838c-a1b05ddd8b34"
-                :name          "otelcol.image"
-                :node-id       "otelcol"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "harbor.res.eng.it/icos/meta-kernel/observability/otel-collector-icos-distribution:1.2.0-v0.92.0-1"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/8388dd76-0097-3dc3-a5c1-04eb53dc6f26"
-                :name          "telemetruum_leaf_exporter.mode"
-                :node-id       "telemetruum_leaf_exporter"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "replicated"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/45c8a074-2a03-37ce-9cf8-6d8a88943940"
-                :name          "telemetruum_leaf_exporter.replicas.running"
-                :node-id       "telemetruum_leaf_exporter"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "1"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/9b89bb0b-98cb-35cf-9b1b-9e73ef8ecbe6"
-                :name          "telemetruum_leaf_exporter.replicas.desired"
-                :node-id       "telemetruum_leaf_exporter"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "1"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/f4286a03-43f5-3dc8-8878-0231398cc635"
-                :name          "telemetruum_leaf_exporter.service-id"
-                :node-id       "telemetruum_leaf_exporter"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "t5smdvbjrht7"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/9e969e18-442d-36d7-9907-dc8680d373b5"
-                :name          "telemetruum_leaf_exporter.node-id"
-                :node-id       "telemetruum_leaf_exporter"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "telemetruum_leaf_exporter"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/8e9ad322-5016-365c-aa40-ad75fc485a75"
-                :name          "telemetruum_leaf_exporter.image"
-                :node-id       "telemetruum_leaf_exporter"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "harbor.res.eng.it/icos/meta-kernel/observability/telemetruum/telemetruum-leaf-exporter:0.1.0"}
-               {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                :owners   ["group/nuvla-admin"]}
-                :created       "2024-11-06T09:18:02.545Z"
-                :created-by    "internal"
-                :id            "deployment-parameter/231266ad-ca3a-3aa8-b4b3-ee6db0236016"
-                :name          "node_exporter.tcp.9200"
-                :node-id       "node_exporter"
-                :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                :resource-type "deployment-parameter"
-                :updated       "2024-11-06T09:18:02.545Z"
-                :value         "9200"}}
-             (set (t/get-ne-deployment-params
-                    {:ip            "10.0.133.172",
-                     :coe-resources {:docker
-                                     {:services
-                                      [{:ID            "8zjrszesw70t88thnna2eehxw",
-                                        :Spec          {:Name         "395a87fa-6b53-4e76-8a36-eccf8a19bc39_node_exporter",
-                                                        :Labels       {:com.docker.stack.image     "quay.io/prometheus/node-exporter:latest",
-                                                                       :com.docker.stack.namespace "395a87fa-6b53-4e76-8a36-eccf8a19bc39"},
-                                                        :Mode         {:Replicated {:Replicas 1}},
-                                                        :EndpointSpec {:Ports [{:Protocol      "tcp",
-                                                                                :TargetPort    9200,
-                                                                                :PublishedPort 9200,
-                                                                                :PublishMode   "ingress"}]}},
-                                        :ServiceStatus {:RunningTasks 1,
-                                                        :DesiredTasks 1}}
-                                       {:ID            "uuip6ca6fwsnj0fqeoz68o15a",
-                                        :Spec          {:Name   "395a87fa-6b53-4e76-8a36-eccf8a19bc39_otelcol",
-                                                        :Labels {:com.docker.stack.image     "harbor.res.eng.it/icos/meta-kernel/observability/otel-collector-icos-distribution:1.2.0-v0.92.0-1",
-                                                                 :com.docker.stack.namespace "395a87fa-6b53-4e76-8a36-eccf8a19bc39"},
-                                                        :Mode   {:Replicated {:Replicas 1}}},
-                                        :ServiceStatus {:RunningTasks 1,
-                                                        :DesiredTasks 1}}
-                                       {:ID            "t5smdvbjrht7sd0cfki9nu4qj",
-                                        :Spec          {:Name   "395a87fa-6b53-4e76-8a36-eccf8a19bc39_telemetruum_leaf_exporter",
-                                                        :Labels {:com.docker.stack.image     "harbor.res.eng.it/icos/meta-kernel/observability/telemetruum/telemetruum-leaf-exporter:0.1.0",
-                                                                 :com.docker.stack.namespace "395a87fa-6b53-4e76-8a36-eccf8a19bc39"},
-                                                        :Mode   {:Replicated {:Replicas 1}}},
-                                        :ServiceStatus {:RunningTasks 1,
-                                                        :DesiredTasks 1}}]}},
-                     :network       {:ips {:public "143.233.127.6",
-                                           :swarm  "10.160.3.194",
-                                           :vpn    "10.0.133.172",
-                                           :local  "10.160.3.157"}}}
-                    [{:id     "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                      :module {:compatibility "swarm"
-                               :subtype       "application"}
-                      :acl    {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
                                :owners   ["group/nuvla-admin"]}}])))))))
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
 (deftest update-deployment-parameters
-  (let [defined-uuids (take 10 (repeatedly random-uuid))
-        summary-fn    escu/summarise-bulk-operation-response]
-    (with-redefs [t/get-ne-deployment-params             (constantly
-                                                           (map (fn [uuid]
-                                                                  {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                                                                   :owners   ["group/nuvla-admin"]}
-                                                                   :created       "2024-11-06T09:18:02.545Z"
+  (testing "load test"
+    (let [n             100
+          defined-uuids (take n (repeatedly random-uuid))
+          summary-fn    escu/summarise-bulk-operation-response]
+      (with-redefs [t/get-ne-deployment-params             (constantly
+                                                             (map (fn [uuid]
+                                                                    {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
+                                                                                     :owners   ["group/nuvla-admin"]}
+                                                                     :created       "2024-11-06T09:18:02.545Z"
 
-                                                                   :created-by    "internal"
-                                                                   :id            (str "deployment-parameter/" uuid)
-                                                                   :name          "param-name"
-                                                                   :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                                                                   :resource-type "deployment-parameter"
-                                                                   :updated       "2024-11-06T09:18:02.545Z"
-                                                                   :value         "v"}) defined-uuids))
-                  escu/summarise-bulk-operation-response #(is (re-matches #"errors: false took: \d{1,3}ms created: 10" (summary-fn %)))]
-      (t/update-deployment-parameters {}
-                                      {:nuvlabox-engine-version "2.17.1"})
-      (with-redefs [escu/summarise-bulk-operation-response #(is (re-matches #"errors: false took: \d{1,3}ms noop: 10" (summary-fn %)))]
+                                                                     :created-by    "internal"
+                                                                     :id            (str "deployment-parameter/" uuid)
+                                                                     :name          "param-name"
+                                                                     :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
+                                                                     :resource-type "deployment-parameter"
+                                                                     :updated       "2024-11-06T09:18:02.545Z"
+                                                                     :value         "v"}) defined-uuids))
+                    escu/summarise-bulk-operation-response #(is (re-matches (re-pattern (str "errors: false took: \\d{1,3}ms created: " n)) (summary-fn %)))]
         (t/update-deployment-parameters {}
-                                        {:nuvlabox-engine-version "2.17.1"}))
-      (with-redefs [t/param-bulk-operation-data (constantly "wrong")]
-        (t/update-deployment-parameters {}
-                                        {:nuvlabox-engine-version "2.17.1"})))))
+                                        {:nuvlabox-engine-version "2.17.1"})
+        (with-redefs [escu/summarise-bulk-operation-response #(is (re-matches (re-pattern (str "errors: false took: \\d{1,3}ms noop: " n)) (summary-fn %)))]
+          (t/update-deployment-parameters {}
+                                          {:nuvlabox-engine-version "2.17.1"}))
+        (with-redefs [t/param-bulk-operation-data (constantly "wrong")]
+          (t/update-deployment-parameters {}
+                                          {:nuvlabox-engine-version "2.17.1"}))))))

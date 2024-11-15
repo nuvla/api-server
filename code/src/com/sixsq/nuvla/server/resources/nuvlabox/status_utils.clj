@@ -153,7 +153,7 @@
         (keep (fn [{:keys [PublishedPort TargetPort Protocol]}]
                 (when PublishedPort
                   {:name  (str Protocol "." TargetPort)
-                   :value (str PublishedPort)})) (get-in service [:Spec :EndpointSpec :Ports] []))))))
+                   :value (str PublishedPort)})) (get-in service [:Endpoint :Ports] []))))))
 
 (defn docker-compose-container-params
   [container]
@@ -171,6 +171,41 @@
                         {:name  (str Type "." PrivatePort)
                          :value (str PublicPort)})) (:Ports container))))))
 
+(defn k8s-deployment-params
+  [deployment]
+  (let [node-id (str "Deployment." (get-in deployment [:metadata :name] ""))]
+    (params-for-node-id
+      node-id
+      (concat [{:name  "replicas.desired",
+                :value (str (get-in deployment [:spec :replicas] ""))}
+               {:name  "node-id",
+                :value node-id},
+               {:name  "replicas.running",
+                :value (str (get-in deployment [:status :readyReplicas] 0))}]
+              #_(keep (fn [{:keys [PublicPort PrivatePort Type]}]
+                        (when PublicPort
+                          {:name  (str Type "." PrivatePort)
+                           :value (str PublicPort)})) (:Ports container))))))
+
+(defn k8s-service-params
+  [deployment]
+  (let [node-id (str "Service." (get-in deployment [:metadata :name] ""))]
+    ;ports = kube_resource['spec']['ports']
+    ;        for port in ports:
+    ;            external_port = port.get('nodePort')
+    ;            if external_port:
+    ;                internal_port = port['port']
+    ;                protocol = port['protocol'].lower()
+    ;                object_info[f'{protocol}.{internal_port}'] = str(external_port)
+    (params-for-node-id
+      node-id
+      (concat [{:name  "node-id",
+                :value node-id}]
+              #_(keep (fn [{:keys [PublicPort PrivatePort Type]}]
+                        (when PublicPort
+                          {:name  (str Type "." PrivatePort)
+                           :value (str PublicPort)})) (:Ports container))))))
+
 (defmulti get-docker-state (fn [{{:keys [compatibility]} :module :as _deployment} _nb-status] compatibility))
 
 (defmethod get-docker-state module-spec/compatibility-swarm
@@ -185,12 +220,35 @@
        (filter #(= (get-in % [:Labels :com.docker.compose.project]) (u/id->uuid id)))
        (mapcat docker-compose-container-params)))
 
+(defn get-k8s-state
+  [{:keys [id] :as _deployment} nb-status]
+  (let [uuid (u/id->uuid id)]
+    (concat
+      (->> (get-in nb-status [:coe-resources :kubernetes :deployments])
+           (filter #(or (= (get-in % [:metadata :labels :nuvla.deployment.uuid]) uuid)
+                        (= (get-in % [:metadata :namespace]) uuid)))
+           (mapcat k8s-deployment-params))
+      (->> (get-in nb-status [:coe-resources :kubernetes :services])
+           (filter #(or (= (get-in % [:metadata :labels :nuvla.deployment.uuid]) uuid)
+                        (= (get-in % [:metadata :namespace]) uuid)))
+           (mapcat k8s-service-params))
+      ;; :todo helm info missing
+      )))
+
 (defmulti get-deployment-state (fn [{{:keys [subtype]} :module :as _deployment} _nb-status]
                                  subtype))
 
 (defmethod get-deployment-state module-spec/subtype-app-docker
   [deployment nb-status]
   (get-docker-state deployment nb-status))
+
+(defmethod get-deployment-state module-spec/subtype-app-k8s
+  [deployment nb-status]
+  (get-k8s-state deployment nb-status))
+
+(defmethod get-deployment-state module-spec/subtype-app-helm
+  [deployment nb-status]
+  (get-k8s-state deployment nb-status))
 
 (defn get-ne-deployment-params
   [nuvlabox-status nb-deployments]
@@ -211,14 +269,17 @@
 
 (defn update-deployment-parameters
   [nuvlabox-status nuvlabox]
-  (when (nb-utils/is-nb-v2-17-or-newer? nuvlabox)
-    (let [log-title (str "Update deployment-parameters for " (:id nuvlabox) ":")
-          params    (query-ne-deployments-get-params nuvlabox-status)]
-      (log/warn log-title "Update/inserting" (count params) "parameters")
-      (when (seq params)
-        (try
-          (let [response (db/bulk-operation dep-param/resource-type (params-bulk-operation-data params))]
-            (log/warn log-title (escu/summarise-bulk-operation-response response)))
-          (catch Exception e
-            (log/error log-title (ex-message e) (ex-data e)))))))
+  (let [log-title (str "Update deployment-parameters for " (:id nuvlabox) ":")]
+    (try
+      (when (nb-utils/is-nb-v2-17-or-newer? nuvlabox)
+        (let [params (query-ne-deployments-get-params nuvlabox-status)]
+          (log/warn log-title "Update/inserting" (count params) "parameters")
+          (when (seq params)
+            (try
+              (let [response (db/bulk-operation dep-param/resource-type (params-bulk-operation-data params))]
+                (log/warn log-title (escu/summarise-bulk-operation-response response)))
+              (catch Exception e
+                (log/error log-title (ex-message e) (ex-data e)))))))
+      (catch Exception e
+        (log/error log-title "failed: " e))))
   nuvlabox-status)
