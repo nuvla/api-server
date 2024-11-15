@@ -355,6 +355,7 @@
               (ltu/is-operation-absent utils/action-force-delete)
               (ltu/is-key-value :applications-sets dep-apps-sets)
               (ltu/has-key :operational-status)
+              (ltu/is-key-value :owner "user/jane")
               (ltu/is-key-value :api-endpoint "http://localhost")))
 
         (testing "start action will create a bulk_deployment_set_start job"

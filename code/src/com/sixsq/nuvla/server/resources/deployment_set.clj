@@ -228,6 +228,12 @@ These resources represent a deployment set that regroups deployments.
       (create-app-set request)
       (pre-validate-hook request)))
 
+(defn add-pre-validate-hook
+  [resource request]
+  (-> resource
+      (assoc :owner (auth/current-active-claim request))
+      (add-edit-pre-validate-hook request)))
+
 (defn action-bulk
   [{:keys [id] :as _resource} {{:keys [action]} :params :as request}]
   (let [acl {:owners   ["group/nuvla-admin"]
@@ -418,7 +424,8 @@ These resources represent a deployment set that regroups deployments.
   [request]
   (standard-action request cancel-latest-job))
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-type :pre-validate-hook add-edit-pre-validate-hook))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type
+                               :pre-validate-hook add-pre-validate-hook))
 
 (defmethod crud/add resource-type
   [{{:keys [start]} :body :as request}]
@@ -437,7 +444,9 @@ These resources represent a deployment set that regroups deployments.
   [request]
   (retrieve-impl request))
 
-(def edit-impl (std-crud/edit-fn resource-type :pre-validate-hook add-edit-pre-validate-hook))
+(def edit-impl (std-crud/edit-fn resource-type
+                                 :immutable-keys [:owner]
+                                 :pre-validate-hook add-edit-pre-validate-hook))
 
 (defmethod crud/edit resource-type
   [request]
