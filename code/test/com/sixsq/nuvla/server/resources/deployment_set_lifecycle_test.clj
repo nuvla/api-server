@@ -358,6 +358,19 @@
               (ltu/is-key-value :owner "user/jane")
               (ltu/is-key-value :api-endpoint "http://localhost")))
 
+        (testing "acl check : DG id should be in edit-data/manage and the dg owner should be in acl edit-data/delete/manage"
+          (-> session-admin
+              (request dep-set-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :acl {:owners    ["group/nuvla-admin"]
+                                      :edit-data [resource-id "user/jane"]
+                                      :view-data [resource-id "user/jane"]
+                                      :edit-meta [resource-id "user/jane"]
+                                      :view-meta [resource-id "user/jane"]
+                                      :manage    [resource-id "user/jane"]
+                                      :delete    ["user/jane"]})))
+
         (testing "start action will create a bulk_deployment_set_start job"
           (let [start-op-url  (-> session-user
                                   (request dep-set-url)

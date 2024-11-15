@@ -95,8 +95,12 @@ These resources represent a deployment set that regroups deployments.
 ;;
 
 (defmethod crud/add-acl resource-type
-  [resource request]
-  (a/add-acl resource request))
+  [{dg-id :id :as resource} request]
+  (let [current-user (auth/current-active-claim request)]
+    (assoc resource :acl {:owners    ["group/nuvla-admin"]
+                          :edit-data [dg-id current-user]
+                          :manage    [dg-id current-user]
+                          :delete    [current-user]})))
 
 ;;
 ;; CRUD operations
