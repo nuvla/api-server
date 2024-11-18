@@ -205,10 +205,20 @@
                                                               {:metadata {:name      "release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world",
                                                                           :namespace "fd9d09a2-4ce8-4fbc-a112-0f60a46064ee",},
                                                                :spec     {:replicas 1},
-                                                               :status   {:replicas 1}}]
-
+                                                               :status   {:replicas 1}}],
                                                 :services    [{:metadata {:name      "release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world",
-                                                                          :namespace "fd9d09a2-4ce8-4fbc-a112-0f60a46064ee"}}]}},
+                                                                          :namespace "fd9d09a2-4ce8-4fbc-a112-0f60a46064ee"},
+                                                               :spec     {:ports [{:port       80,
+                                                                                   :targetPort 80,
+                                                                                   :nodePort   30007,
+                                                                                   :protocol   "TCP"}]}}],
+                                                :secrets     [{:metadata {:labels    {:name   "release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee",
+                                                                                      :owner  "helm",
+                                                                                      :status "deployed"},
+                                                                          :namespace "fd9d09a2-4ce8-4fbc-a112-0f60a46064ee"},
+                                                               :type     "helm.sh/release.v1"}]
+
+                                                }},
                                :network       {:ips {:public "143.233.127.6",
                                                      :swarm  "10.160.3.194",
                                                      :vpn    "10.0.133.172",
@@ -381,7 +391,24 @@
             :value   "0"}
            {:name    "Service.release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world.node-id"
             :node-id "Service.release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world"
-            :value   "Service.release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world"}}
+            :value   "Service.release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world"}
+           {:name    "Service.release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world.tcp.80"
+            :node-id "Service.release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world"
+            :value   "30007"}
+           {:name  "helm-app_version"
+            :value ""}
+           {:name  "helm-chart"
+            :value ""}
+           {:name  "helm-name"
+            :value "release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee"}
+           {:name  "helm-namespace"
+            :value "fd9d09a2-4ce8-4fbc-a112-0f60a46064ee"}
+           {:name  "helm-revision"
+            :value ""}
+           {:name  "helm-status"
+            :value "deployed"}
+           {:name  "helm-updated"
+            :value ""}}
          (set (t/get-deployment-state
                 {:id     "deployment/fd9d09a2-4ce8-4fbc-a112-0f60a46064ee"
                  :module {:subtype module-spec/subtype-app-helm}}

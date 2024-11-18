@@ -176,35 +176,43 @@
   (let [node-id (str "Deployment." (get-in deployment [:metadata :name] ""))]
     (params-for-node-id
       node-id
-      (concat [{:name  "replicas.desired",
-                :value (str (get-in deployment [:spec :replicas] ""))}
-               {:name  "node-id",
-                :value node-id},
-               {:name  "replicas.running",
-                :value (str (get-in deployment [:status :readyReplicas] 0))}]
-              #_(keep (fn [{:keys [PublicPort PrivatePort Type]}]
-                        (when PublicPort
-                          {:name  (str Type "." PrivatePort)
-                           :value (str PublicPort)})) (:Ports container))))))
+      [{:name  "replicas.desired",
+        :value (str (get-in deployment [:spec :replicas] ""))}
+       {:name  "node-id",
+        :value node-id},
+       {:name  "replicas.running",
+        :value (str (get-in deployment [:status :readyReplicas] 0))}])))
 
 (defn k8s-service-params
-  [deployment]
-  (let [node-id (str "Service." (get-in deployment [:metadata :name] ""))]
-    ;ports = kube_resource['spec']['ports']
-    ;        for port in ports:
-    ;            external_port = port.get('nodePort')
-    ;            if external_port:
-    ;                internal_port = port['port']
-    ;                protocol = port['protocol'].lower()
-    ;                object_info[f'{protocol}.{internal_port}'] = str(external_port)
+  [service]
+  (let [node-id (str "Service." (get-in service [:metadata :name] ""))]
     (params-for-node-id
       node-id
       (concat [{:name  "node-id",
                 :value node-id}]
-              #_(keep (fn [{:keys [PublicPort PrivatePort Type]}]
-                        (when PublicPort
-                          {:name  (str Type "." PrivatePort)
-                           :value (str PublicPort)})) (:Ports container))))))
+              (keep (fn [{:keys [nodePort port protocol]}]
+                      (when nodePort
+                        {:name  (str (str/lower-case (or protocol "")) "." port)
+                         :value (str nodePort)})) (get-in service [:spec :ports]))))))
+
+(defn k8s-secret-params
+  [secret]
+  [{:name  "helm-name",
+    :value (get-in secret [:metadata :labels :name] "")}
+   {:name  "helm-status",
+    :value (get-in secret [:metadata :labels :status] "")}
+   {:name  "helm-namespace",
+    :value (get-in secret [:metadata :namespace] "")}
+   {:name  "helm-updated",
+    :value ""}
+   ;;fixme  ➜ kubectl get secrets <name> --namespace <namespace>  --template={{.data.release}} | base64 -d | base64 -d | gzip -d | jq .
+   ;; is this needed or we just refresh values on deployment start/update
+   {:name  "helm-chart",
+    :value ""}
+   {:name  "helm-app_version",
+    :value ""}
+   {:name  "helm-revision",
+    :value ""}])
 
 (defmulti get-docker-state (fn [{{:keys [compatibility]} :module :as _deployment} _nb-status] compatibility))
 
@@ -222,18 +230,22 @@
 
 (defn get-k8s-state
   [{:keys [id] :as _deployment} nb-status]
-  (let [uuid (u/id->uuid id)]
+  (let [uuid            (u/id->uuid id)
+        coe-k8s         (get-in nb-status [:coe-resources :kubernetes])
+        filter-ns-uuid  #(= (get-in % [:metadata :namespace]) uuid)
+        filter-dep-uuid #(or (= (get-in % [:metadata :labels :nuvla.deployment.uuid]) uuid)
+                             (filter-ns-uuid %))]
     (concat
-      (->> (get-in nb-status [:coe-resources :kubernetes :deployments])
-           (filter #(or (= (get-in % [:metadata :labels :nuvla.deployment.uuid]) uuid)
-                        (= (get-in % [:metadata :namespace]) uuid)))
+      (->> (get coe-k8s :deployments)
+           (filter filter-dep-uuid)
            (mapcat k8s-deployment-params))
-      (->> (get-in nb-status [:coe-resources :kubernetes :services])
-           (filter #(or (= (get-in % [:metadata :labels :nuvla.deployment.uuid]) uuid)
-                        (= (get-in % [:metadata :namespace]) uuid)))
+      (->> (get coe-k8s :services)
+           (filter filter-dep-uuid)
            (mapcat k8s-service-params))
-      ;; :todo helm info missing
-      )))
+      (->> (get coe-k8s :secrets)
+           (filter #(and (filter-ns-uuid %)
+                         (str/starts-with? (:type %) "helm.sh/release.v")))
+           (mapcat k8s-secret-params)))))
 
 (defmulti get-deployment-state (fn [{{:keys [subtype]} :module :as _deployment} _nb-status]
                                  subtype))
