@@ -195,24 +195,22 @@
                         {:name  (str (str/lower-case (or protocol "")) "." port)
                          :value (str nodePort)})) (get-in service [:spec :ports]))))))
 
-(defn k8s-secret-params
-  [secret]
+(defn k8s-helmreleases-params
+  [helmrelase]
   [{:name  "helm-name",
-    :value (get-in secret [:metadata :labels :name] "")}
+    :value (get helmrelase :name "")}
    {:name  "helm-status",
-    :value (get-in secret [:metadata :labels :status] "")}
+    :value (get helmrelase :status "")}
    {:name  "helm-namespace",
-    :value (get-in secret [:metadata :namespace] "")}
+    :value (get helmrelase :namespace "")}
    {:name  "helm-updated",
-    :value ""}
-   ;;fixme  ➜ kubectl get secrets <name> --namespace <namespace>  --template={{.data.release}} | base64 -d | base64 -d | gzip -d | jq .
-   ;; is this needed or we just refresh values on deployment start/update
+    :value (get helmrelase :updated "")}
    {:name  "helm-chart",
-    :value ""}
+    :value (get helmrelase :chart "")}
    {:name  "helm-app_version",
-    :value ""}
+    :value (get helmrelase :app_version "")}
    {:name  "helm-revision",
-    :value ""}])
+    :value (get helmrelase :revision "")}])
 
 (defmulti get-docker-state (fn [{{:keys [compatibility]} :module :as _deployment} _nb-status] compatibility))
 
@@ -232,9 +230,8 @@
   [{:keys [id] :as _deployment} nb-status]
   (let [uuid            (u/id->uuid id)
         coe-k8s         (get-in nb-status [:coe-resources :kubernetes])
-        filter-ns-uuid  #(= (get-in % [:metadata :namespace]) uuid)
         filter-dep-uuid #(or (= (get-in % [:metadata :labels :nuvla.deployment.uuid]) uuid)
-                             (filter-ns-uuid %))]
+                             (= (get-in % [:metadata :namespace]) uuid))]
     (concat
       (->> (get coe-k8s :deployments)
            (filter filter-dep-uuid)
@@ -242,10 +239,9 @@
       (->> (get coe-k8s :services)
            (filter filter-dep-uuid)
            (mapcat k8s-service-params))
-      (->> (get coe-k8s :secrets)
-           (filter #(and (filter-ns-uuid %)
-                         (str/starts-with? (:type %) "helm.sh/release.v")))
-           (mapcat k8s-secret-params)))))
+      (->> (get coe-k8s :helmreleases)
+           (filter #(= (get % :namespace) uuid))
+           (mapcat k8s-helmreleases-params)))))
 
 (defmulti get-deployment-state (fn [{{:keys [subtype]} :module :as _deployment} _nb-status]
                                  subtype))

@@ -212,13 +212,20 @@
                                                                                    :targetPort 80,
                                                                                    :nodePort   30007,
                                                                                    :protocol   "TCP"}]}}],
-                                                :secrets     [{:metadata {:labels    {:name   "release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee",
-                                                                                      :owner  "helm",
-                                                                                      :status "deployed"},
-                                                                          :namespace "fd9d09a2-4ce8-4fbc-a112-0f60a46064ee"},
-                                                               :type     "helm.sh/release.v1"}]
-
-                                                }},
+                                                :helmreleases [{:name "nuvlabox-6c37d85d-d818-4069-a50c-dae9983364d1",
+                                                                :namespace "default",
+                                                                :revision "1",
+                                                                :updated "2024-11-19 09:41:32.121871 +0100 +0100",
+                                                                :status "deployed",
+                                                                :chart "nuvlaedge-2.17.0",
+                                                                :app_version "2.17.0"}
+                                                               {:name "release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee",
+                                                                :namespace "fd9d09a2-4ce8-4fbc-a112-0f60a46064ee",
+                                                                :revision "1",
+                                                                :updated "2024-11-13 11:13:42.534312596 +0000 UTC",
+                                                                :status "deployed",
+                                                                :chart "hello-world-0.1.0",
+                                                                :app_version "1.16.0"}]}},
                                :network       {:ips {:public "143.233.127.6",
                                                      :swarm  "10.160.3.194",
                                                      :vpn    "10.0.133.172",
@@ -396,19 +403,19 @@
             :node-id "Service.release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world"
             :value   "30007"}
            {:name  "helm-app_version"
-            :value ""}
+            :value "1.16.0"}
            {:name  "helm-chart"
-            :value ""}
+            :value "hello-world-0.1.0"}
            {:name  "helm-name"
             :value "release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee"}
            {:name  "helm-namespace"
             :value "fd9d09a2-4ce8-4fbc-a112-0f60a46064ee"}
            {:name  "helm-revision"
-            :value ""}
+            :value "1"}
            {:name  "helm-status"
             :value "deployed"}
            {:name  "helm-updated"
-            :value ""}}
+            :value "2024-11-13 11:13:42.534312596 +0000 UTC"}}
          (set (t/get-deployment-state
                 {:id     "deployment/fd9d09a2-4ce8-4fbc-a112-0f60a46064ee"
                  :module {:subtype module-spec/subtype-app-helm}}
