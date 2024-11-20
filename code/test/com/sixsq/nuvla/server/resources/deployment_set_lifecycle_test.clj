@@ -328,12 +328,20 @@
                               (ltu/is-status 201)))
 
             dep-set-url (str p/service-context resource-id)
-            job-payload {"authn-info" {"active-claim" "user/jane"
-                                       "claims"       ["group/nuvla-anon"
-                                                       "user/jane"
-                                                       "group/nuvla-user"
-                                                       session-id]
-                                       "user-id"      "user/jane"}}]
+            job-payload {"authn-info"          {"active-claim" "user/jane"
+                                                "claims"       ["group/nuvla-anon"
+                                                                "user/jane"
+                                                                "group/nuvla-user"
+                                                                session-id]
+                                                "user-id"      "user/jane"}
+                         "dg-authn-info"       {"active-claim" resource-id
+                                                "claims"       [resource-id
+                                                                "group/nuvla-user"]
+                                                "user-id"      resource-id}
+                         "dg-owner-authn-info" {"active-claim" "user/jane"
+                                                "claims"       ["user/jane"
+                                                                "group/nuvla-user"]
+                                                "user-id"      "user/jane"}}]
 
         (testing "user query should see one document"
           (-> session-user
