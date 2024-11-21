@@ -396,13 +396,17 @@
     action-ok
     action-nok))
 
-(defn query-nuvlaboxes
-  [cimi-filter request]
+(defn query-nuvlaboxes-as
+  [cimi-filter authn]
   (let [{:keys [body]} (crud/query {:params      {:resource-name nuvlabox/resource-type}
                                     :cimi-params {:filter (parser/parse-cimi-filter cimi-filter)
                                                   :last   10000}
-                                    :nuvla/authn (:nuvla/authn request)})]
+                                    :nuvla/authn authn})]
     (:resources body)))
+
+(defn query-nuvlaboxes
+  [cimi-filter request]
+  (query-nuvlaboxes-as cimi-filter (:nuvla/authn request)))
 
 (defn get-missing-edges
   [deployment-set request]
@@ -413,6 +417,14 @@
                                  (map :id)
                                  set)]
     (set/difference (set edges) existing-edges)))
+
+(defn query-modules-as
+  [cimi-filter authn]
+  (let [{:keys [body]} (crud/query {:params      {:resource-name m/resource-type}
+                                    :cimi-params {:filter (parser/parse-cimi-filter cimi-filter)
+                                                  :last   10000}
+                                    :nuvla/authn authn})]
+    (:resources body)))
 
 (defn minimum-requirements
   [deployment-set applications-sets]

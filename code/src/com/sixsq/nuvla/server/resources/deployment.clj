@@ -5,7 +5,6 @@ a container orchestration engine.
 "
   (:require
     [clojure.data.json :as json]
-    [clojure.string :as str]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.db.impl :as db]
@@ -107,9 +106,18 @@ a container orchestration engine.
   [resource]
   (validate-fn resource))
 
+(defn add-deployment-set-to-acl
+  [{dg-id :deployment-set :as resource}]
+  (cond-> resource
+          dg-id
+          (-> (a/acl-append-resource :edit-data dg-id)
+              (a/acl-append-resource :manage dg-id)
+              (a/acl-append-resource :delete dg-id))))
+
 (defmethod crud/add-acl resource-type
   [resource request]
-  (a/add-acl resource request))
+  (-> (a/add-acl resource request)
+      (add-deployment-set-to-acl)))
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 

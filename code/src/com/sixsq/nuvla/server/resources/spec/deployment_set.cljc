@@ -75,6 +75,12 @@
     :json-schema/type "array"
     :json-schema/display-name "applications sets"))
 
+(s/def ::owner
+  (-> (st/spec ::common/id)
+      (assoc :name "owner"
+             :json-schema/type "resource-id"
+             :json-schema/description "id of principal (user or group) that owns the Deployment Set")))
+
 (s/def ::auto-update
   (assoc (st/spec boolean?)
     :name "auto-update"
@@ -100,7 +106,8 @@
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::state
                                   ::applications-sets]
-                         :opt-un [::start
+                         :opt-un [::owner
+                                  ::start
                                   ::os/operational-status
                                   ::deployment/api-endpoint
                                   ::auto-update
