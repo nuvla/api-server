@@ -108,16 +108,11 @@ a container orchestration engine.
 
 (defn add-deployment-set-to-acl
   [{dg-id :deployment-set :as resource}]
-  (let [add-dg-principal (fn [principals]
-                           (if (some #(= dg-id %) principals)
-                             principals
-                             (conj (or principals []) dg-id)))]
-
-    (cond-> resource
-            dg-id
-            (-> (update-in [:acl :edit-data] add-dg-principal)
-                (update-in [:acl :manage] add-dg-principal)
-                (update-in [:acl :delete] add-dg-principal)))))
+  (cond-> resource
+          dg-id
+          (-> (a/acl-append-resource :edit-data dg-id)
+              (a/acl-append-resource :manage dg-id)
+              (a/acl-append-resource :delete dg-id))))
 
 (defmethod crud/add-acl resource-type
   [resource request]
