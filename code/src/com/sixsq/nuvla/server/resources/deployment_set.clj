@@ -112,14 +112,18 @@ These resources represent a deployment set that regroups deployments.
 ;;
 
 (defn get-owner-authn
-  [{:keys [owner] :as _resource}]
-  {:claims       #{owner "group/nuvla-user"}
-   :user-id      owner
-   :active-claim owner})
+  [{:keys [owner acl] :as _resource}]
+  (when-let [owner (or owner
+                       ;; for old DGs:
+                       (-> acl :owners first))]
+    {:claims       #{owner "group/nuvla-user"}
+     :user-id      owner
+     :active-claim owner}))
 
 (defn get-owner-request
   [resource]
-  {:nuvla/authn (get-owner-authn resource)})
+  (when-let [owner-authn (get-owner-authn resource)]
+    {:nuvla/authn owner-authn}))
 
 (defn get-dg-authn
   [{dg-id :id :as _resource}]
