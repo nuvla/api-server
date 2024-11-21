@@ -2,6 +2,16 @@
 
 ## Released
 
+## [6.11.1](https://github.com/nuvla/api-server/compare/6.11.0...6.11.1) (2024-11-21)
+
+
+### Bug Fixes
+
+* **dg-permission-issues:** At creation time DG acl is built to include the DG id in edit-data/manage and the owner of it should be in acl edit-data/view-acl/delete/manage ([110c9ef](https://github.com/nuvla/api-server/commit/110c9efde35837cacef6d8502779894ca92dfe22))
+* **dg-permission-issues:** At creation time of DG save the creator of it in an owner attribute ([110c9ef](https://github.com/nuvla/api-server/commit/110c9efde35837cacef6d8502779894ca92dfe22))
+* **dg-permission-issues:** put authn info as job payload ([110c9ef](https://github.com/nuvla/api-server/commit/110c9efde35837cacef6d8502779894ca92dfe22))
+* **dg-permission-issues:** recompute fleet as owner and fix tests ([110c9ef](https://github.com/nuvla/api-server/commit/110c9efde35837cacef6d8502779894ca92dfe22))
+
 ## [6.11.0](https://github.com/nuvla/api-server/compare/6.10.0...6.11.0) (2024-11-12)
 
 
