@@ -376,6 +376,7 @@
               (ltu/is-key-value :acl {:owners    ["group/nuvla-admin"]
                                       :edit-data [resource-id "user/jane"]
                                       :view-data [resource-id "user/jane"]
+                                      :view-acl  [resource-id "user/jane"]
                                       :edit-meta [resource-id "user/jane"]
                                       :view-meta [resource-id "user/jane"]
                                       :manage    [resource-id "user/jane"]
@@ -906,7 +907,7 @@
                                  :applications-sets fleet-filter)
                                (ltu/is-operation-present utils/action-recompute-fleet)
                                ltu/body)]
-      (is (= dep-set (dissoc dep-set-as-admin :acl)))
+      (is (= dep-set dep-set-as-admin))
 
       (testing "Fleet filter"
         (-> session-user
