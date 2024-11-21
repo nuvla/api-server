@@ -103,6 +103,7 @@ These resources represent a deployment set that regroups deployments.
   (let [current-user (auth/current-active-claim request)]
     (assoc resource :acl {:owners    ["group/nuvla-admin"]
                           :edit-data [dg-id current-user]
+                          :view-acl  [dg-id current-user]
                           :manage    [dg-id current-user]
                           :delete    [current-user]})))
 
@@ -116,11 +117,19 @@ These resources represent a deployment set that regroups deployments.
    :user-id      owner
    :active-claim owner})
 
+(defn get-owner-request
+  [resource]
+  {:nuvla/authn (get-owner-authn resource)})
+
 (defn get-dg-authn
   [{dg-id :id :as _resource}]
   {:claims       [dg-id "group/nuvla-user"]
    :user-id      dg-id
    :active-claim dg-id})
+
+(defn get-internal-request
+  []
+  {:nuvla/authn auth/internal-identity})
 
 (defn load-resource-throw-not-allowed-action
   [{{:keys [uuid]} :params :as request}]
@@ -134,7 +143,7 @@ These resources represent a deployment set that regroups deployments.
    (divergence-map (load-resource-throw-not-allowed-action request) request))
   ([{:keys [applications-sets] :as deployment-set} _request]
    (when (seq applications-sets)
-     (let [owner-request     {:nuvla/authn (get-owner-authn deployment-set)}
+     (let [owner-request     (get-owner-request deployment-set)
            applications-sets (-> deployment-set
                                  utils/get-applications-sets-href
                                  (crud/get-resource-throw-nok owner-request))
@@ -255,8 +264,9 @@ These resources represent a deployment set that regroups deployments.
             (assoc-next-refresh))))
 
 (defn check-edges-permissions
-  [{:keys [id] {:keys [missing-edges]} :operational-status :as resource}]
+  [{:keys [id] :as resource}]
   (let [fleet             (get-in resource [:applications-sets 0 :overwrites 0 :fleet])
+        missing-edges     (utils/get-missing-edges resource (get-internal-request))
         not-deleted-edges (set/difference (set fleet) (set missing-edges))
         cimi-filter       (str "id=['" (str/join "','" not-deleted-edges) "']")
         retrieved-fleet   (utils/query-nuvlaboxes-as cimi-filter (get-owner-authn resource))]
@@ -278,10 +288,10 @@ These resources represent a deployment set that regroups deployments.
 (defn pre-validate-hook
   [resource request]
   (-> resource
-      (assoc-operational-status request)
-      (assoc-auto-update-flag request)
       (check-edges-permissions)
-      (check-apps-permissions)))
+      (check-apps-permissions)
+      (assoc-operational-status request)
+      (assoc-auto-update-flag request)))
 
 (defn add-edit-pre-validate-hook
   [resource request]
@@ -351,7 +361,7 @@ These resources represent a deployment set that regroups deployments.
 (defmethod crud/do-action [resource-type utils/action-plan]
   [request]
   (let [deployment-set    (load-resource-throw-not-allowed-action request)
-        owner-request     {:nuvla/authn (get-owner-authn deployment-set)}
+        owner-request     (get-owner-request deployment-set)
         applications-sets (-> deployment-set
                               utils/get-applications-sets-href
                               (crud/get-resource-throw-nok owner-request))]
@@ -360,7 +370,7 @@ These resources represent a deployment set that regroups deployments.
 (defmethod crud/do-action [resource-type utils/action-check-requirements]
   [request]
   (let [deployment-set    (load-resource-throw-not-allowed-action request)
-        owner-request     {:nuvla/authn (get-owner-authn deployment-set)}
+        owner-request     (get-owner-request deployment-set)
         applications-sets (-> deployment-set
                               utils/get-applications-sets-href
                               (crud/get-resource-throw-nok owner-request))]
