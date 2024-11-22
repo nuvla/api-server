@@ -39,9 +39,6 @@
 (def app6-id "module/64e8d02d-1b40-46d0-b1d8-2093024fc1d2")
 (def app7-id "module/1cefb94b-c527-4b8a-be5f-802b131c1a9e")
 
-(def all-apps
-  (mapv (fn [app-id] {:id app-id}) [app1-id app2-id app3-id app4-id app5-id app6-id app7-id]))
-
 (def dep-apps-sets [{:id      app5-id,
                      :version 11,
                      :overwrites
@@ -177,6 +174,14 @@
     :view-data ["group/nuvla-admin"],
     :manage    ["group/nuvla-admin"],
     :edit-meta ["group/nuvla-admin"]}})
+
+(defn read-payload
+  [payload]
+  (-> payload
+      json/read-str
+      (update-in ["authn-info" "claims"] set)
+      (update-in ["dg-authn-info" "claims"] set)
+      (update-in ["dg-owner-authn-info" "claims"] set)))
 
 (deftest plan-test
   (is (= (utils/plan u-deployment-set u-applications-sets-v11)
@@ -329,18 +334,20 @@
 
             dep-set-url (str p/service-context resource-id)
             job-payload {"authn-info"          {"active-claim" "user/jane"
-                                                "claims"       ["group/nuvla-anon"
-                                                                "user/jane"
-                                                                "group/nuvla-user"
-                                                                session-id]
+                                                "claims"       #{"group/nuvla-anon"
+                                                                 "user/jane"
+                                                                 "group/nuvla-user"
+                                                                 session-id}
                                                 "user-id"      "user/jane"}
                          "dg-authn-info"       {"active-claim" resource-id
-                                                "claims"       [resource-id
-                                                                "group/nuvla-user"]
+                                                "claims"       #{resource-id
+                                                                 "group/nuvla-user"
+                                                                 "group/nuvla-anon"}
                                                 "user-id"      resource-id}
                          "dg-owner-authn-info" {"active-claim" "user/jane"
-                                                "claims"       ["user/jane"
-                                                                "group/nuvla-user"]
+                                                "claims"       #{"group/nuvla-anon"
+                                                                 "user/jane"
+                                                                 "group/nuvla-user"}
                                                 "user-id"      "user/jane"}}]
 
         (testing "user query should see one document"
@@ -614,7 +621,7 @@
                 (ltu/is-status 200)
                 (ltu/is-key-value :href :target-resource resource-id)
                 (ltu/is-key-value :action "bulk_deployment_set_update")
-                (ltu/is-key-value json/read-str :payload job-payload))))
+                (ltu/is-key-value read-payload :payload job-payload))))
 
         (testing "edit action is not allowed in a transitional state"
           (with-redefs [crud/get-resource-throw-nok
@@ -670,7 +677,7 @@
                 (ltu/is-status 200)
                 (ltu/is-key-value :href :target-resource resource-id)
                 (ltu/is-key-value :action "bulk_deployment_set_update")
-                (ltu/is-key-value json/read-str :payload job-payload))
+                (ltu/is-key-value read-payload :payload job-payload))
             (testing "cancel action will cancel the running job"
               (let [cancel-op-url (-> session-user
                                       (request dep-set-url)
@@ -739,7 +746,7 @@
                 (ltu/is-status 200)
                 (ltu/is-key-value :href :target-resource resource-id)
                 (ltu/is-key-value :action "bulk_deployment_set_stop")
-                (ltu/is-key-value json/read-str :payload job-payload))
+                (ltu/is-key-value read-payload :payload job-payload))
             (-> session-user
                 (request dep-set-url)
                 ltu/body->edn

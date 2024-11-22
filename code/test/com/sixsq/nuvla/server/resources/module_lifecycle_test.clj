@@ -657,7 +657,7 @@
     (lifecycle-test-module module-spec/subtype-app-helm valid-application)))
 
 (deftest throw-can-not-access-helm-repo-cred
-  (is (= (t/throw-can-not-access-helm-repo-cred {} {}) {})))
+  (is (= (t/throw-can-not-access-helm-repo-cred {}) {})))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id module/resource-type))]

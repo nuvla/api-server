@@ -114,4 +114,4 @@
       [m-a m-b] {:arg1 [m-a m-b] :arg2 [m-a (assoc m-b :value "any")]})))
 
 (deftest throw-can-not-access-helm-repo-cred
-  (is (= (t/throw-can-not-access-helm-repo-cred {} {}) {})))
+  (is (= (t/throw-can-not-access-helm-repo-cred {}) {})))

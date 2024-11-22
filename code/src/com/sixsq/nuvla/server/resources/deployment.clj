@@ -297,9 +297,9 @@ a container orchestration engine.
           deployment     (-> (crud/retrieve-by-id-as-admin id)
                              (u/throw-cannot-do-action-invalid-state utils/can-start? "start")
                              (utils/throw-when-payment-required request)
-                             (utils/throw-can-not-access-registries-creds request)
-                             (utils/throw-can-not-access-helm-repo-cred request)
-                             (utils/throw-can-not-access-helm-repo-url request))
+                             utils/throw-can-not-access-registries-creds
+                             utils/throw-can-not-access-helm-repo-cred
+                             utils/throw-can-not-access-helm-repo-url)
           stopped?       (= (:state deployment) "STOPPED")
           user-rights?   (get-in deployment [:module :content :requires-user-rights])
           data?          (some? (:data deployment))
@@ -384,9 +384,9 @@ a container orchestration engine.
                       (u/throw-cannot-do-action-invalid-state
                         utils/can-update? "update_deployment")
                       (utils/throw-when-payment-required request)
-                      (utils/throw-can-not-access-registries-creds request)
-                      (utils/throw-can-not-access-helm-repo-cred request)
-                      (utils/throw-can-not-access-helm-repo-url request))
+                      utils/throw-can-not-access-registries-creds
+                      utils/throw-can-not-access-helm-repo-cred
+                      utils/throw-can-not-access-helm-repo-url)
           new     (-> current
                       (assoc :state "UPDATING")
                       (edit-deployment request))]

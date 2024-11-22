@@ -406,7 +406,7 @@
 
 (defn query-nuvlaboxes
   [cimi-filter request]
-  (query-nuvlaboxes-as cimi-filter (:nuvla/authn request)))
+  (query-nuvlaboxes-as cimi-filter (auth/current-authentication request)))
 
 (defn get-missing-edges
   [deployment-set request]

@@ -175,25 +175,25 @@
     (resource-log/create-log id components acl opts)))
 
 (defn throw-can-not-access-registries-creds
-  [{:keys [registries-credentials] :as resource} request]
+  [{:keys [registries-credentials] :as resource}]
   (let [preselected-creds   (-> resource
                                 (get-in [:module :content :registries-credentials] [])
                                 set)
         creds-to-be-checked (set/difference (set registries-credentials) preselected-creds)]
-    (module-utils/throw-cannot-access-registries-credentials creds-to-be-checked request)
+    (module-utils/throw-cannot-access-registries-credentials creds-to-be-checked (auth/get-owner-request resource))
     resource))
 
 
 (defn throw-can-not-access-helm-repo-url
-  [resource request]
+  [resource]
   (let [helm-repo-url (get-in resource [:module :content :helm-repo-url])]
-    (module-utils/throw-can-not-access-helm-repo-url helm-repo-url request)
+    (module-utils/throw-can-not-access-helm-repo-url helm-repo-url (auth/get-owner-request resource))
     resource))
 
 (defn throw-can-not-access-helm-repo-cred
-  [resource request]
+  [resource]
   (let [cred (get-in resource [:module :content :helm-repo-cred])]
-    (module-utils/throw-can-not-access-helm-repo-cred cred request)
+    (module-utils/throw-can-not-access-helm-repo-cred cred (auth/get-owner-request resource))
     resource))
 
 
@@ -291,20 +291,18 @@
                      (seq files) (assoc :files files)))))
 
 (defn throw-when-payment-required
-  [{{:keys [price] :as module} :module :as deployment} request]
+  [{{:keys [price] :as module} :module owner :owner :as deployment} request]
   (if (or (nil? config-nuvla/*stripe-api-key*)
           (a/is-admin? (auth/current-authentication request))
-          (let [active-claim (auth/current-active-claim request)]
-            (or
-              (a/can-edit-data? module request)
-              (case (:status (payment/active-claim->subscription active-claim))
-                ("active" "past_due") true
-                "trialing" (or (nil? price)
-                               (:follow-customer-trial price)
-                               (-> active-claim
-                                   payment/active-claim->s-customer
-                                   payment/can-pay?))
-                false))))
+          (a/can-edit-data? module request)
+          (case (:status (payment/active-claim->subscription owner))
+            ("active" "past_due") true
+            "trialing" (or (nil? price)
+                           (:follow-customer-trial price)
+                           (-> owner
+                               payment/active-claim->s-customer
+                               payment/can-pay?))
+            false))
     deployment
     (payment/throw-payment-required)))
 

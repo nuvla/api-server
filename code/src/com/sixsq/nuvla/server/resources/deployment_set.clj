@@ -111,26 +111,6 @@ These resources represent a deployment set that regroups deployments.
 ;; CRUD operations
 ;;
 
-(defn get-owner-authn
-  [{:keys [owner] :as _resource}]
-  {:claims       #{owner "group/nuvla-user"}
-   :user-id      owner
-   :active-claim owner})
-
-(defn get-owner-request
-  [resource]
-  {:nuvla/authn (get-owner-authn resource)})
-
-(defn get-dg-authn
-  [{dg-id :id :as _resource}]
-  {:claims       [dg-id "group/nuvla-user"]
-   :user-id      dg-id
-   :active-claim dg-id})
-
-(defn get-internal-request
-  []
-  {:nuvla/authn auth/internal-identity})
-
 (defn load-resource-throw-not-allowed-action
   [{{:keys [uuid]} :params :as request}]
   (-> (str resource-type "/" uuid)
@@ -143,7 +123,7 @@ These resources represent a deployment set that regroups deployments.
    (divergence-map (load-resource-throw-not-allowed-action request) request))
   ([{:keys [applications-sets] :as deployment-set} _request]
    (when (seq applications-sets)
-     (let [owner-request     (get-owner-request deployment-set)
+     (let [owner-request     (auth/get-owner-request deployment-set)
            applications-sets (-> deployment-set
                                  utils/get-applications-sets-href
                                  (crud/get-resource-throw-nok owner-request))
@@ -182,7 +162,7 @@ These resources represent a deployment set that regroups deployments.
 
 (defn create-module-apps-set
   [{:keys [owner modules] :as resource} request]
-  (let [modules-data (mapv #(retrieve-module-as % (get-owner-authn resource))
+  (let [modules-data (mapv #(retrieve-module-as % (auth/get-owner-authn resource))
                            (distinct modules))]
     (create-module
       {:path    (str module-utils/project-apps-sets "/" (u/rand-uuid))
@@ -215,7 +195,7 @@ These resources represent a deployment set that regroups deployments.
    If :fleet is not specified, it is computed by querying edges satisfying the :fleet-filter.
    If both :fleet and :fleet-filter are specified, they are stored as-is, no consistency check is made."
   [{:keys [fleet fleet-filter overwrites] :as resource}]
-  (let [owner-authn   (get-owner-authn resource)
+  (let [owner-authn   (auth/get-owner-authn resource)
         owner-request {:nuvla/authn owner-authn}
         apps-set-id   (create-module-apps-set resource owner-request)
         fleet         (or fleet (map :id (some-> fleet-filter (utils/query-nuvlaboxes-as owner-authn))))]
@@ -266,10 +246,10 @@ These resources represent a deployment set that regroups deployments.
 (defn check-edges-permissions
   [{:keys [id] :as resource}]
   (let [fleet             (get-in resource [:applications-sets 0 :overwrites 0 :fleet])
-        missing-edges     (utils/get-missing-edges resource (get-internal-request))
+        missing-edges     (utils/get-missing-edges resource (auth/get-internal-request))
         not-deleted-edges (set/difference (set fleet) (set missing-edges))
         cimi-filter       (str "id=['" (str/join "','" not-deleted-edges) "']")
-        retrieved-fleet   (utils/query-nuvlaboxes-as cimi-filter (get-owner-authn resource))]
+        retrieved-fleet   (utils/query-nuvlaboxes-as cimi-filter (auth/get-owner-authn resource))]
     (when (not= (count not-deleted-edges) (count retrieved-fleet))
       (throw (r/ex-response "All edges must be visible to DG owner" 403 id)))
     resource))
@@ -278,7 +258,7 @@ These resources represent a deployment set that regroups deployments.
   [{:keys [id] :as resource}]
   (let [apps           (get-in resource [:applications-sets 0 :overwrites 0 :applications])
         cimi-filter    (str "id=['" (str/join "','" (map :id apps)) "']")
-        retrieved-apps (utils/query-modules-as cimi-filter (get-owner-authn resource))]
+        retrieved-apps (utils/query-modules-as cimi-filter (auth/get-owner-authn resource))]
     (when (not= (count apps) (count retrieved-apps))
       (throw (r/ex-response (str "All apps must be visible to DG owner : "
                                  (mapv :id apps)
@@ -316,8 +296,8 @@ These resources represent a deployment set that regroups deployments.
 
 (defn authn-info-payload
   [resource]
-  {:dg-owner-authn-info (get-owner-authn resource)
-   :dg-authn-info       (get-dg-authn resource)})
+  {:dg-owner-authn-info (auth/get-owner-authn resource)
+   :dg-authn-info       (auth/get-resource-id-authn resource)})
 
 (defn action-bulk
   [{:keys [id] :as resource} {{:keys [action]} :params :as request}]
@@ -361,7 +341,7 @@ These resources represent a deployment set that regroups deployments.
 (defmethod crud/do-action [resource-type utils/action-plan]
   [request]
   (let [deployment-set    (load-resource-throw-not-allowed-action request)
-        owner-request     (get-owner-request deployment-set)
+        owner-request     (auth/get-owner-request deployment-set)
         applications-sets (-> deployment-set
                               utils/get-applications-sets-href
                               (crud/get-resource-throw-nok owner-request))]
@@ -370,7 +350,7 @@ These resources represent a deployment set that regroups deployments.
 (defmethod crud/do-action [resource-type utils/action-check-requirements]
   [request]
   (let [deployment-set    (load-resource-throw-not-allowed-action request)
-        owner-request     (get-owner-request deployment-set)
+        owner-request     (auth/get-owner-request deployment-set)
         applications-sets (-> deployment-set
                               utils/get-applications-sets-href
                               (crud/get-resource-throw-nok owner-request))]
