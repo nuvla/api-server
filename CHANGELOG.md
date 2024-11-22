@@ -2,6 +2,13 @@
 
 ## Released
 
+## [6.11.2](https://github.com/nuvla/api-server/compare/6.11.1...6.11.2) (2024-11-22)
+
+
+### Bug Fixes
+
+* **Deployment:** Checks for subscription and access to cres and infras should be done as owner of the deployment ([b73b630](https://github.com/nuvla/api-server/commit/b73b6306b01898b6869ee04b539578d7833cd8de))
+
 ## [6.11.1](https://github.com/nuvla/api-server/compare/6.11.0...6.11.1) (2024-11-21)
 
 
