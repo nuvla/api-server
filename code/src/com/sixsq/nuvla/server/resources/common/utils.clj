@@ -3,7 +3,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.string :as str]
-    [clojure.walk :as walk]
+    [clojure.walk :as w]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.server.util.log :as logu]
@@ -316,7 +316,7 @@
    an HTML form. This takes the flat list of form parameters, keywordizes the
    keys, and adds the parent :sessionTemplate key."
   [tpl form-data]
-  {tpl (walk/keywordize-keys form-data)})
+  {tpl (w/keywordize-keys form-data)})
 
 
 (defn is-content-type?
@@ -396,3 +396,10 @@
 (defn filter-eq-vals
   [attribute vals]
   (str attribute "=" (vec vals)))
+
+(defn stringify-keys
+  [m]
+  (let [f (fn [[k v]] (if (keyword? k) [(if-let [ns (namespace k)]
+                                          (str ns "/" (name k))
+                                          (name k)) v] [k v]))]
+    (w/postwalk (fn [x] (if (map? x) (into {} (map f x)) x)) m)))

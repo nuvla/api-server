@@ -157,6 +157,51 @@
   (mdtu/check-metadata-exists nb-status/resource-type
                               (str nb-status/resource-type "-" nb-status-2/schema-version)))
 
+(deftest lifecycle-json-patch-edit
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session       (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-user  (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
+
+          nuvlabox-id   (-> session-user
+                            (request nuvlabox-base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-nuvlabox))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
+
+          valid-acl     {:owners    ["group/nuvla-admin"]
+                         :edit-data [nuvlabox-id]}
+
+          session-nb    (header session authn-info-header (str nuvlabox-id " " nuvlabox-id " group/nuvla-user group/nuvla-anon"))]
+
+      (when-let [status-url (-> session-admin
+                                (request base-uri
+                                         :request-method :post
+                                         :body (json/write-str (assoc (select-keys valid-state [:version :status]) :parent nuvlabox-id
+                                                                                                                   :acl valid-acl
+                                                                                                                   :coe-resources {:docker {:containers []}})))
+                                (ltu/body->edn)
+                                (ltu/is-status 201)
+                                (ltu/location-url))]
+        (-> session-nb
+            (request status-url
+                     :content-type "application/json-patch+json"
+                     :request-method :put
+                     :body "[{\"op\": \"add\", \"path\": \"/coe-resources\", \"value\": {\"docker\": {\"containers\": [{\"id\": 1, \"labels\": {\"a\": \"1\", \"a/b/c\": \"2\"}}] }}}]")
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (-> session-user
+            (request status-url)
+            ltu/body->edn
+            (ltu/is-status 200)
+            (ltu/is-key-value u/stringify-keys :coe-resources {"docker" {"containers" [{"id"     1
+                                                                                        "labels" {"a"     "1"
+                                                                                                  "a/b/c" "2"}}]}}))))))
 
 (deftest lifecycle
   (binding [config-nuvla/*stripe-api-key* nil]
