@@ -2,6 +2,13 @@
 
 ## Released
 
+## [6.11.3](https://github.com/nuvla/api-server/compare/6.11.2...6.11.3) (2024-11-26)
+
+
+### Bug Fixes
+
+* **Std-crud:** Json patch break when keys are interpreted as namespaced keys bugfix ([#966](https://github.com/nuvla/api-server/issues/966)) ([5adae42](https://github.com/nuvla/api-server/commit/5adae429f2aaaebfcd0aa4738f44483c58e8a869))
+
 ## [6.11.2](https://github.com/nuvla/api-server/compare/6.11.1...6.11.2) (2024-11-22)
 
 
