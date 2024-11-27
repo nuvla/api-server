@@ -75,13 +75,44 @@
     :json-schema/type "array"
     :json-schema/display-name "applications sets"))
 
+(s/def ::owner
+  (-> (st/spec ::common/id)
+      (assoc :name "owner"
+             :json-schema/type "resource-id"
+             :json-schema/description "id of principal (user or group) that owns the Deployment Set")))
+
+(s/def ::auto-update
+  (assoc (st/spec boolean?)
+    :name "auto-update"
+    :json-schema/type "boolean"
+    :json-schema/display-name "auto update"
+    :json-schema/description "Auto update deployment group automatically at regular intervals"))
+
+(s/def ::auto-update-interval
+  (assoc (st/spec pos-int?)
+    :name "auto-update-interval"
+    :json-schema/type "integer"
+    :json-schema/display-name "auto update interval"
+    :json-schema/description "Auto update interval in minutes"))
+
+(s/def ::next-refresh
+  (assoc (st/spec ::core/timestamp)
+    :name "next-refresh"
+    :json-schema/type "date-time"
+    :json-schema/display-name "next refresh"
+    :json-schema/description "Time of the next refresh"))
+
 (def deployment-set-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::state
                                   ::applications-sets]
-                         :opt-un [::start
+                         :opt-un [::owner
+                                  ::start
                                   ::os/operational-status
-                                  ::deployment/api-endpoint]}]))
+                                  ::deployment/api-endpoint
+                                  ::auto-update
+                                  ::auto-update-interval
+                                  ::next-refresh]}]))
 
 
 (s/def ::deployment-set (su/only-keys-maps deployment-set-keys-spec))

@@ -88,8 +88,8 @@
 (defn json-patch
   [resource {:keys [body] :as request}]
   (if (json-patch-request? request)
-    (->> (w/stringify-keys body)
-         (json-safe-patch (w/stringify-keys resource))
+    (->> (u/stringify-keys body)
+         (json-safe-patch (u/stringify-keys resource))
          w/keywordize-keys
          (assoc request :body))
     request))

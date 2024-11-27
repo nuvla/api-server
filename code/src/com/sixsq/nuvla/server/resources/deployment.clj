@@ -5,8 +5,6 @@ a container orchestration engine.
 "
   (:require
     [clojure.data.json :as json]
-    [clojure.string :as str]
-    [clojure.tools.logging :as log]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.db.impl :as db]
@@ -108,9 +106,18 @@ a container orchestration engine.
   [resource]
   (validate-fn resource))
 
+(defn add-deployment-set-to-acl
+  [{dg-id :deployment-set :as resource}]
+  (cond-> resource
+          dg-id
+          (-> (a/acl-append-resource :edit-data dg-id)
+              (a/acl-append-resource :manage dg-id)
+              (a/acl-append-resource :delete dg-id))))
+
 (defmethod crud/add-acl resource-type
   [resource request]
-  (a/add-acl resource request))
+  (-> (a/add-acl resource request)
+      (add-deployment-set-to-acl)))
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
@@ -290,9 +297,9 @@ a container orchestration engine.
           deployment     (-> (crud/retrieve-by-id-as-admin id)
                              (u/throw-cannot-do-action-invalid-state utils/can-start? "start")
                              (utils/throw-when-payment-required request)
-                             (utils/throw-can-not-access-registries-creds request)
-                             (utils/throw-can-not-access-helm-repo-cred request)
-                             (utils/throw-can-not-access-helm-repo-url request))
+                             utils/throw-can-not-access-registries-creds
+                             utils/throw-can-not-access-helm-repo-cred
+                             utils/throw-can-not-access-helm-repo-url)
           stopped?       (= (:state deployment) "STOPPED")
           user-rights?   (get-in deployment [:module :content :requires-user-rights])
           data?          (some? (:data deployment))
@@ -377,9 +384,9 @@ a container orchestration engine.
                       (u/throw-cannot-do-action-invalid-state
                         utils/can-update? "update_deployment")
                       (utils/throw-when-payment-required request)
-                      (utils/throw-can-not-access-registries-creds request)
-                      (utils/throw-can-not-access-helm-repo-cred request)
-                      (utils/throw-can-not-access-helm-repo-url request))
+                      utils/throw-can-not-access-registries-creds
+                      utils/throw-can-not-access-helm-repo-cred
+                      utils/throw-can-not-access-helm-repo-url)
           new     (-> current
                       (assoc :state "UPDATING")
                       (edit-deployment request))]

@@ -2,6 +2,46 @@
 
 ## Released
 
+## [6.11.3](https://github.com/nuvla/api-server/compare/6.11.2...6.11.3) (2024-11-26)
+
+
+### Bug Fixes
+
+* **Std-crud:** Json patch break when keys are interpreted as namespaced keys bugfix ([#966](https://github.com/nuvla/api-server/issues/966)) ([5adae42](https://github.com/nuvla/api-server/commit/5adae429f2aaaebfcd0aa4738f44483c58e8a869))
+
+## [6.11.2](https://github.com/nuvla/api-server/compare/6.11.1...6.11.2) (2024-11-22)
+
+
+### Bug Fixes
+
+* **Deployment:** Checks for subscription and access to cres and infras should be done as owner of the deployment ([b73b630](https://github.com/nuvla/api-server/commit/b73b6306b01898b6869ee04b539578d7833cd8de))
+
+## [6.11.1](https://github.com/nuvla/api-server/compare/6.11.0...6.11.1) (2024-11-21)
+
+
+### Bug Fixes
+
+* **dg-permission-issues:** At creation time DG acl is built to include the DG id in edit-data/manage and the owner of it should be in acl edit-data/view-acl/delete/manage ([110c9ef](https://github.com/nuvla/api-server/commit/110c9efde35837cacef6d8502779894ca92dfe22))
+* **dg-permission-issues:** At creation time of DG save the creator of it in an owner attribute ([110c9ef](https://github.com/nuvla/api-server/commit/110c9efde35837cacef6d8502779894ca92dfe22))
+* **dg-permission-issues:** put authn info as job payload ([110c9ef](https://github.com/nuvla/api-server/commit/110c9efde35837cacef6d8502779894ca92dfe22))
+* **dg-permission-issues:** recompute fleet as owner and fix tests ([110c9ef](https://github.com/nuvla/api-server/commit/110c9efde35837cacef6d8502779894ca92dfe22))
+
+## [6.11.0](https://github.com/nuvla/api-server/compare/6.10.0...6.11.0) (2024-11-12)
+
+
+### Features
+
+* **Deployment group:** add support for dg auto update custom interval ([378af5e](https://github.com/nuvla/api-server/commit/378af5e3342a3026dc6030545bba977a28dd6a1e))
+* **dg-no-apps-no-edges:** Allow DGs to have no edges and / or no apps defined ([#956](https://github.com/nuvla/api-server/issues/956)) ([884ec67](https://github.com/nuvla/api-server/commit/884ec6766eefaf3e561de85424012f1a0f12eb69))
+
+
+### Bug Fixes
+
+* **Deployment group:** Add api-endpoint attribute ([02455f7](https://github.com/nuvla/api-server/commit/02455f705058ca713d4a4caa9b8bf1aac79cea1d))
+* **Deployment:** Allow user to edit api-endpoint attribute ([02455f7](https://github.com/nuvla/api-server/commit/02455f705058ca713d4a4caa9b8bf1aac79cea1d))
+* **Nuvlabox:** Make coe resource action available only for version &gt;= v2.17.0 ([#954](https://github.com/nuvla/api-server/issues/954)) ([4ca2d02](https://github.com/nuvla/api-server/commit/4ca2d0204c6a85e697a277e65a4b4c4c5f470a04))
+* **std-crud:** Refactor and document std-crud/add-fn and std-crud/edit-fn ([46e6231](https://github.com/nuvla/api-server/commit/46e62319d276e0607ea931e9a3db61e840c9747c))
+
 ## [6.10.0](https://github.com/nuvla/api-server/compare/6.9.1...6.10.0) (2024-10-15)
 
 

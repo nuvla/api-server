@@ -25,6 +25,7 @@
 (def action-operational-status "operational-status")
 (def action-recompute-fleet "recompute-fleet")
 (def action-check-requirements "check-requirements")
+(def action-auto-update "auto-update")
 
 (def actions [crud/action-edit
               crud/action-delete
@@ -36,7 +37,8 @@
               action-check-requirements
               action-plan
               action-operational-status
-              action-recompute-fleet])
+              action-recompute-fleet
+              action-auto-update])
 
 
 (def state-new "NEW")
@@ -71,6 +73,8 @@
 
 (def guard-fleet-filter-defined? :fleet-filter-defined)
 
+(def guard-auto-update-enabled? :auto-update-enabled)
+
 (defn transition-ok
   [to-state]
   {::tk/on action-ok ::tk/to to-state ::tk/guards [sm/guard-is-admin?]})
@@ -96,6 +100,8 @@
 (def transition-operational-status {::tk/on action-operational-status ::tk/guards [sm/guard-can-manage?]})
 (def transition-recompute-fleet {::tk/on action-recompute-fleet ::tk/guards [sm/guard-can-edit?
                                                                              guard-fleet-filter-defined?]})
+(def transition-auto-update {::tk/on action-auto-update ::tk/guards [sm/guard-is-admin?
+                                                                     guard-auto-update-enabled?]})
 
 (defn operational-status-nok?
   [{{:keys [status]} :operational-status :as _resource}]
@@ -104,6 +110,10 @@
 (defn fleet-filter-defined?
   [resource]
   (some? (get-in resource [:applications-sets 0 :overwrites 0 :fleet-filter])))
+
+(defn auto-update-enabled?
+  [resource]
+  (true? (:auto-update resource)))
 
 (def state-machine
   {::tk/states [{::tk/name        state-new
@@ -130,7 +140,8 @@
                                    transition-plan
                                    transition-operational-status
                                    transition-force-delete
-                                   transition-recompute-fleet]}
+                                   transition-recompute-fleet
+                                   transition-auto-update]}
                 {::tk/name        state-partially-started
                  ::tk/transitions [transition-edit
                                    transition-update
@@ -139,7 +150,8 @@
                                    transition-plan
                                    transition-operational-status
                                    transition-force-delete
-                                   transition-recompute-fleet]}
+                                   transition-recompute-fleet
+                                   transition-auto-update]}
                 {::tk/name        state-stopping
                  ::tk/transitions [(transition-cancel state-partially-stopped)
                                    (transition-nok state-partially-stopped)
@@ -181,7 +193,8 @@
                                    transition-plan
                                    transition-operational-status
                                    transition-force-delete
-                                   transition-recompute-fleet]}
+                                   transition-recompute-fleet
+                                   transition-auto-update]}
                 {::tk/name        state-partially-updated
                  ::tk/transitions [transition-edit
                                    transition-update
@@ -190,13 +203,15 @@
                                    transition-plan
                                    transition-operational-status
                                    transition-force-delete
-                                   transition-recompute-fleet]}]
+                                   transition-recompute-fleet
+                                   transition-auto-update]}]
    ::tk/guard? (fn [{{:keys [resource _request]} ::tk/process
                      guard                       ::tk/guard :as ctx}]
                  (or (sm/guard? ctx)
                      (condp = guard
                        guard-operational-status-nok? (operational-status-nok? resource)
                        guard-fleet-filter-defined? (fleet-filter-defined? resource)
+                       guard-auto-update-enabled? (auto-update-enabled? resource)
                        false)))
    ::tk/state  state-new})
 
@@ -381,13 +396,17 @@
     action-ok
     action-nok))
 
-(defn query-nuvlaboxes
-  [cimi-filter request]
+(defn query-nuvlaboxes-as
+  [cimi-filter authn]
   (let [{:keys [body]} (crud/query {:params      {:resource-name nuvlabox/resource-type}
                                     :cimi-params {:filter (parser/parse-cimi-filter cimi-filter)
                                                   :last   10000}
-                                    :nuvla/authn (:nuvla/authn request)})]
+                                    :nuvla/authn authn})]
     (:resources body)))
+
+(defn query-nuvlaboxes
+  [cimi-filter request]
+  (query-nuvlaboxes-as cimi-filter (auth/current-authentication request)))
 
 (defn get-missing-edges
   [deployment-set request]
@@ -398,6 +417,14 @@
                                  (map :id)
                                  set)]
     (set/difference (set edges) existing-edges)))
+
+(defn query-modules-as
+  [cimi-filter authn]
+  (let [{:keys [body]} (crud/query {:params      {:resource-name m/resource-type}
+                                    :cimi-params {:filter (parser/parse-cimi-filter cimi-filter)
+                                                  :last   10000}
+                                    :nuvla/authn authn})]
+    (:resources body)))
 
 (defn minimum-requirements
   [deployment-set applications-sets]
