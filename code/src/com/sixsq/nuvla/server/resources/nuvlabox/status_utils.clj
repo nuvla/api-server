@@ -279,7 +279,7 @@
   [nuvlabox-status nuvlabox]
   (let [log-title (str "Update deployment-parameters for " (:id nuvlabox) ":")]
     (try
-      (when (nb-utils/is-nb-v2-17-or-newer? nuvlabox)
+      (when (:coe-resources nuvlabox-status)
         (let [params (query-ne-deployments-get-params nuvlabox-status)]
           (log/warn log-title "Update/inserting" (count params) "parameters")
           (when (seq params)
