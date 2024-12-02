@@ -103,6 +103,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
         (utils/status-telemetry-attributes nb)
         (utils/set-name-description-acl nb)
         (utils/update-deployment-parameters nb)
+        (utils/create-deployment-state-jobs)
         (cond-> (some? resources-prev)
                 (assoc :resources-prev resources-prev)))))
 
