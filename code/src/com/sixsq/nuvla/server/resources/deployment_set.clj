@@ -299,23 +299,26 @@ These resources represent a deployment set that regroups deployments.
   {:dg-owner-authn-info (auth/get-owner-authn resource)
    :dg-authn-info       (auth/get-resource-id-authn resource)})
 
+(defn action-job-acl
+  [{:keys [owner] :as _resource} request]
+  (-> {:owners   ["group/nuvla-admin"]
+       :view-acl [(auth/current-active-claim request)]}
+      (a/acl-append :view-acl owner)
+      (a/acl-append :manage owner)))
+
 (defn action-bulk
-  [{:keys [id owner] :as resource} {{:keys [action]} :params :as request}]
-  (let [acl (-> {:owners   ["group/nuvla-admin"]
-                 :view-acl [(auth/current-active-claim request)]}
-                (a/acl-append :view-acl owner))]
+  [{:keys [id] :as resource} {{:keys [action]} :params :as request}]
+  (let [acl (action-job-acl resource request)]
     (job-utils/create-bulk-job
       (utils/bulk-action-job-name action) id request acl
       (authn-info-payload resource))))
 
 (defn action-simple
-  [{:keys [id owner] :as resource} {{:keys [action]} :params :as request}]
+  [{:keys [id] :as resource} {{:keys [action]} :params :as request}]
   (let [job-action (utils/action-job-name action)
         {{job-id     :resource-id
           job-status :status} :body} (job-utils/create-job id (utils/action-job-name action)
-                                                           (-> {:owners   ["group/nuvla-admin"]
-                                                                :view-acl [(auth/current-active-claim request)]}
-                                                               (a/acl-append :view-acl owner))
+                                                           (action-job-acl resource request)
                                                            (auth/current-user-id request)
                                                            :payload (json/write-str (authn-info-payload resource)))
         job-msg    (str action " on " id " with async " job-id)]
