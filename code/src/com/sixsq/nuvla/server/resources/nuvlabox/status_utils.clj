@@ -44,7 +44,7 @@
   [{:keys [parent] :as _nuvlabox-status}]
   (let [filter-req (str "nuvlabox='" parent "' and " (u/filter-eq-vals "state" ["STARTED", "UPDATED"]))
         options    {:cimi-params {:filter (parser/parse-cimi-filter filter-req)
-                                  :select ["id" "module" "nuvlabox" "acl"]
+                                  :select ["id" "module" "nuvlabox" "acl" "execution-mode"]
                                   :last   10000}}]
     (second (crud/query-as-admin "deployment" options))))
 
