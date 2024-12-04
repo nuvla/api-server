@@ -196,35 +196,35 @@
 
 (def nb-status-coe-kubernetes {:ip            "10.0.133.172",
                                :coe-resources {:kubernetes
-                                               {:deployments  [{:metadata
-                                                                {:labels
-                                                                 {:nuvla.deployment.uuid "819b9a9e-010f-4c26-82d5-aa395bbb6179"},
-                                                                 :name "hello-edge"},
-                                                                :spec   {:replicas 1},
-                                                                :status {:replicas 1}},
-                                                               {:metadata {:name      "release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world",
-                                                                           :namespace "fd9d09a2-4ce8-4fbc-a112-0f60a46064ee",},
-                                                                :spec     {:replicas 1},
-                                                                :status   {:replicas 1}}],
-                                                :services     [{:metadata {:name      "release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world",
-                                                                           :namespace "fd9d09a2-4ce8-4fbc-a112-0f60a46064ee"},
-                                                                :spec     {:ports [{:port       80,
-                                                                                    :targetPort 80,
-                                                                                    :nodePort   30007,
-                                                                                    :protocol   "TCP"}]}}],
-                                                :helmreleases [{:name        "nuvlabox-6c37d85d-d818-4069-a50c-dae9983364d1",
-                                                                :namespace   "default",
-                                                                :revision    "1",
-                                                                :updated     "2024-11-19 09:41:32.121871 +0100 +0100",
-                                                                :status      "deployed",
-                                                                :chart       "nuvlaedge-2.17.0",
+                                               {:deployments [{:metadata
+                                                               {:labels
+                                                                {:nuvla.deployment.uuid "819b9a9e-010f-4c26-82d5-aa395bbb6179"},
+                                                                :name "hello-edge"},
+                                                               :spec   {:replicas 1},
+                                                               :status {:replicas 1}},
+                                                              {:metadata {:name      "release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world",
+                                                                          :namespace "fd9d09a2-4ce8-4fbc-a112-0f60a46064ee",},
+                                                               :spec     {:replicas 1},
+                                                               :status   {:replicas 1}}],
+                                                :services    [{:metadata {:name      "release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world",
+                                                                          :namespace "fd9d09a2-4ce8-4fbc-a112-0f60a46064ee"},
+                                                               :spec     {:ports [{:port       80,
+                                                                                   :targetPort 80,
+                                                                                   :nodePort   30007,
+                                                                                   :protocol   "TCP"}]}}],
+                                                :helmreleases [{:name "nuvlabox-6c37d85d-d818-4069-a50c-dae9983364d1",
+                                                                :namespace "default",
+                                                                :revision "1",
+                                                                :updated "2024-11-19 09:41:32.121871 +0100 +0100",
+                                                                :status "deployed",
+                                                                :chart "nuvlaedge-2.17.0",
                                                                 :app_version "2.17.0"}
-                                                               {:name        "release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee",
-                                                                :namespace   "fd9d09a2-4ce8-4fbc-a112-0f60a46064ee",
-                                                                :revision    "1",
-                                                                :updated     "2024-11-13 11:13:42.534312596 +0000 UTC",
-                                                                :status      "deployed",
-                                                                :chart       "hello-world-0.1.0",
+                                                               {:name "release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee",
+                                                                :namespace "fd9d09a2-4ce8-4fbc-a112-0f60a46064ee",
+                                                                :revision "1",
+                                                                :updated "2024-11-13 11:13:42.534312596 +0000 UTC",
+                                                                :status "deployed",
+                                                                :chart "hello-world-0.1.0",
                                                                 :app_version "1.16.0"}]}},
                                :network       {:ips {:public "143.233.127.6",
                                                      :swarm  "10.160.3.194",
@@ -608,31 +608,28 @@
 
 (deftest update-deployment-parameters
   (testing "load test"
-    (let [n              100
-          defined-uuids  (take n (repeatedly random-uuid))
-          summary-fn     escu/summarise-bulk-operation-response
-          ne-deployments (constantly
-                           (map (fn [uuid]
-                                  {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                                   :owners   ["group/nuvla-admin"]}
-                                   :created       "2024-11-06T09:18:02.545Z"
+    (let [n             100
+          defined-uuids (take n (repeatedly random-uuid))
+          summary-fn    escu/summarise-bulk-operation-response]
+      (with-redefs [t/get-ne-deployment-params             (constantly
+                                                             (map (fn [uuid]
+                                                                    {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
+                                                                                     :owners   ["group/nuvla-admin"]}
+                                                                     :created       "2024-11-06T09:18:02.545Z"
 
-                                   :created-by    "internal"
-                                   :id            (str "deployment-parameter/" uuid)
-                                   :name          "param-name"
-                                   :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                                   :resource-type "deployment-parameter"
-                                   :updated       "2024-11-06T09:18:02.545Z"
-                                   :value         "v"}) defined-uuids))]
-      (with-redefs [escu/summarise-bulk-operation-response #(is (re-matches (re-pattern (str "errors: false took: \\d{1,3}ms created: " n)) (summary-fn %)))]
+                                                                     :created-by    "internal"
+                                                                     :id            (str "deployment-parameter/" uuid)
+                                                                     :name          "param-name"
+                                                                     :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
+                                                                     :resource-type "deployment-parameter"
+                                                                     :updated       "2024-11-06T09:18:02.545Z"
+                                                                     :value         "v"}) defined-uuids))
+                    escu/summarise-bulk-operation-response #(is (re-matches (re-pattern (str "errors: false took: \\d{1,3}ms created: " n)) (summary-fn %)))]
         (t/update-deployment-parameters {}
-                                        {:nuvlabox-engine-version "2.17.1"}
-                                        ne-deployments)
+                                        {:nuvlabox-engine-version "2.17.1"})
         (with-redefs [escu/summarise-bulk-operation-response #(is (re-matches (re-pattern (str "errors: false took: \\d{1,3}ms noop: " n)) (summary-fn %)))]
           (t/update-deployment-parameters {}
-                                          {:nuvlabox-engine-version "2.17.1"}
-                                          ne-deployments))
+                                          {:nuvlabox-engine-version "2.17.1"}))
         (with-redefs [t/param-bulk-operation-data (constantly "wrong")]
           (t/update-deployment-parameters {}
-                                          {:nuvlabox-engine-version "2.17.1"}
-                                          ne-deployments))))))
+                                          {:nuvlabox-engine-version "2.17.1"}))))))

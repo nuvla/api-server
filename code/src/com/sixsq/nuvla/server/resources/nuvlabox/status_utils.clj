@@ -2,14 +2,12 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
-    [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.db.es.common.utils :as escu]
     [com.sixsq.nuvla.db.filter.parser :as parser]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.deployment-parameter :as dep-param]
-    [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [com.sixsq.nuvla.server.resources.spec.module :as module-spec]
     [com.sixsq.nuvla.server.util.general :as gen-util]
@@ -40,7 +38,7 @@
     :last-telemetry (time/now-str)
     :next-telemetry (nb-utils/compute-next-report refresh-interval #(+ % 30))))
 
-(defn get-ne-deployments
+(defn ne-deployments
   [{:keys [parent] :as _nuvlabox-status}]
   (let [filter-req (str "nuvlabox='" parent "' and " (u/filter-eq-vals "state" ["STARTED", "UPDATED"]))
         options    {:cimi-params {:filter (parser/parse-cimi-filter filter-req)
@@ -271,50 +269,25 @@
                   (get-deployment-state deployment nuvlabox-status))))
             nb-deployments)))
 
+(defn query-ne-deployments-get-params
+  [nuvlabox-status]
+  (get-ne-deployment-params
+    nuvlabox-status
+    (ne-deployments nuvlabox-status)))
+
 (defn update-deployment-parameters
-  [nuvlabox-status nuvlabox ne-deployments]
+  [nuvlabox-status nuvlabox]
   (let [log-title (str "Update deployment-parameters for " (:id nuvlabox) ":")]
     (try
       (when (:coe-resources nuvlabox-status)
-        (let [params (get-ne-deployment-params nuvlabox-status ne-deployments)]
-          (log/debug log-title "Update/inserting" (count params) "parameters")
+        (let [params (query-ne-deployments-get-params nuvlabox-status)]
+          (log/warn log-title "Update/inserting" (count params) "parameters")
           (when (seq params)
             (try
               (let [response (db/bulk-operation dep-param/resource-type (params-bulk-operation-data params))]
-                (log/debug log-title (escu/summarise-bulk-operation-response response)))
+                (log/warn log-title (escu/summarise-bulk-operation-response response)))
               (catch Exception e
                 (log/error log-title (ex-message e) (ex-data e)))))))
       (catch Exception e
         (log/error log-title "failed: " e))))
-  nuvlabox-status)
-
-(defn create-deployment-state-job
-  [{:keys [id, execution-mode] :as _deployment}
-   {:keys [parent] :as _nb-status}]
-  (log/debug "Creating deployment_state job for " id)
-  (job-utils/create-job id "deployment_state"
-                        (-> {:owners [a/group-admin]}
-                            (a/acl-append :edit-data parent)
-                            (a/acl-append :manage parent))
-                        "internal"
-                        :execution-mode execution-mode))
-
-(defmulti create-deployment-state-job-if-needed
-  (fn [{{:keys [subtype]} :module :as _deployment} _nb-status]
-    (if (= subtype module-spec/subtype-app-helm) module-spec/subtype-app-k8s subtype)))
-
-(defmethod create-deployment-state-job-if-needed module-spec/subtype-app-docker
-  [deployment {{:keys [docker]} :coe-resources :as nb-status}]
-  (when (empty? docker))
-    (create-deployment-state-job deployment nb-status))
-
-(defmethod create-deployment-state-job-if-needed module-spec/subtype-app-k8s
-  [deployment {{:keys [kubernetes]} :coe-resources :as nb-status}]
-  (when (empty? kubernetes))
-    (create-deployment-state-job deployment nb-status))
-
-(defn create-deployment-state-jobs
-  [nuvlabox-status ne-deployments]
-  (doseq [deployment ne-deployments]
-    (create-deployment-state-job-if-needed deployment nuvlabox-status))
   nuvlabox-status)
