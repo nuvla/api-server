@@ -97,12 +97,14 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
   [{nb-id          :parent
     resources-prev :resources :as resource}
    request]
-  (let [nb (crud/retrieve-by-id-as-admin nb-id)]
+  (let [nb             (crud/retrieve-by-id-as-admin nb-id)
+        ne-deployments (utils/get-ne-deployments resource)]
     (-> (nb-utils/throw-parent-nuvlabox-is-suspended resource nb)
         (nb-utils/legacy-heartbeat request nb)
         (utils/status-telemetry-attributes nb)
         (utils/set-name-description-acl nb)
-        (utils/update-deployment-parameters nb)
+        (utils/update-deployment-parameters nb ne-deployments)
+        (utils/create-deployment-state-jobs ne-deployments)
         (cond-> (some? resources-prev)
                 (assoc :resources-prev resources-prev)))))
 
