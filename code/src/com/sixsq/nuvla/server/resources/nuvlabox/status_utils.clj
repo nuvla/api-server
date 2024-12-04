@@ -40,7 +40,7 @@
     :last-telemetry (time/now-str)
     :next-telemetry (nb-utils/compute-next-report refresh-interval #(+ % 30))))
 
-(defn ne-deployments
+(defn get-ne-deployments
   [{:keys [parent] :as _nuvlabox-status}]
   (let [filter-req (str "nuvlabox='" parent "' and " (u/filter-eq-vals "state" ["STARTED", "UPDATED"]))
         options    {:cimi-params {:filter (parser/parse-cimi-filter filter-req)
@@ -271,18 +271,12 @@
                   (get-deployment-state deployment nuvlabox-status))))
             nb-deployments)))
 
-(defn query-ne-deployments-get-params
-  [nuvlabox-status]
-  (get-ne-deployment-params
-    nuvlabox-status
-    (ne-deployments nuvlabox-status)))
-
 (defn update-deployment-parameters
-  [nuvlabox-status nuvlabox]
+  [nuvlabox-status nuvlabox ne-deployments]
   (let [log-title (str "Update deployment-parameters for " (:id nuvlabox) ":")]
     (try
       (when (:coe-resources nuvlabox-status)
-        (let [params (query-ne-deployments-get-params nuvlabox-status)]
+        (let [params (get-ne-deployment-params nuvlabox-status ne-deployments)]
           (log/debug log-title "Update/inserting" (count params) "parameters")
           (when (seq params)
             (try
@@ -298,29 +292,29 @@
   [{:keys [id, execution-mode] :as _deployment}
    {:keys [parent] :as _nb-status}]
   (log/debug "Creating deployment_state job for " id)
-  (job-utils/create-job id "deployment_state"
+  (job-utils/create-job id "deployment_state_10"
                         (-> {:owners [a/group-admin]}
                             (a/acl-append :edit-data parent)
                             (a/acl-append :manage parent))
                         "internal"
                         :execution-mode execution-mode))
+
 (defmulti create-deployment-state-job-if-needed
   (fn [{{:keys [subtype]} :module :as _deployment} _nb-status]
     (if (= subtype module-spec/subtype-app-helm) module-spec/subtype-app-k8s subtype)))
 
 (defmethod create-deployment-state-job-if-needed module-spec/subtype-app-docker
   [deployment {{:keys [docker]} :coe-resources :as nb-status}]
-  (when-not (not-empty docker))
+  (when (empty? docker))
     (create-deployment-state-job deployment nb-status))
 
 (defmethod create-deployment-state-job-if-needed module-spec/subtype-app-k8s
   [deployment {{:keys [kubernetes]} :coe-resources :as nb-status}]
-  (when-not (not-empty kubernetes))
+  (when (empty? kubernetes))
     (create-deployment-state-job deployment nb-status))
 
 (defn create-deployment-state-jobs
-  [nuvlabox-status]
-  (map (fn [deployment]
-         (create-deployment-state-job-if-needed deployment nuvlabox-status))
-       (ne-deployments nuvlabox-status))
+  [nuvlabox-status ne-deployments]
+  (doseq [deployment ne-deployments]
+    (create-deployment-state-job-if-needed deployment nuvlabox-status))
   nuvlabox-status)
