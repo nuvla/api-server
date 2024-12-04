@@ -315,6 +315,7 @@
 
 (defn create-deployment-state-jobs
   [nuvlabox-status ne-deployments]
+  (log/debug "deployment_state job nb-status: " nuvlabox-status)
   (doseq [deployment ne-deployments]
     (create-deployment-state-job-if-needed deployment nuvlabox-status))
   nuvlabox-status)
