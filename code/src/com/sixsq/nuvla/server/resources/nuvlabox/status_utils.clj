@@ -292,7 +292,7 @@
   [{:keys [id, execution-mode] :as _deployment}
    {:keys [parent] :as _nb-status}]
   (log/debug "Creating deployment_state job for " id)
-  (job-utils/create-job id "deployment_state_10"
+  (job-utils/create-job id "deployment_state"
                         (-> {:owners [a/group-admin]}
                             (a/acl-append :edit-data parent)
                             (a/acl-append :manage parent))
