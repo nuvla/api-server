@@ -286,14 +286,6 @@ These resources represent a deployment set that regroups deployments.
       (assoc :owner (auth/current-active-claim request))
       (add-edit-pre-validate-hook request)))
 
-(defn edit-pre-validate-hook
-  [{:keys [owner acl] :as resource} request]
-  (-> resource
-      ;; add owner to existing DGs without the owner attribute
-      ;; TODO: remove the following line when all legacy DGs are fixed
-      (cond-> (not owner) (assoc :owner (-> acl :owners first)))
-      (add-edit-pre-validate-hook request)))
-
 (defn authn-info-payload
   [resource]
   {:dg-owner-authn-info (auth/get-owner-authn resource)
@@ -323,16 +315,20 @@ These resources represent a deployment set that regroups deployments.
       (throw (r/ex-response (format "unable to create async job to %s" job-action) 500 id))
       (r/map-response job-msg 202 id job-id))))
 
+(defn internal-standard-action
+  [current request f]
+  (-> current
+      (pre-validate-hook request)
+      (sm/transition request)
+      (utils/save-deployment-set current)
+      (f request)))
+
 (defn standard-action
   ([request]
    (standard-action request (fn [resource _request] resource)))
   ([request f]
    (let [current (load-resource-throw-not-allowed-action request)]
-     (-> current
-         (pre-validate-hook request)
-         (sm/transition request)
-         (utils/save-deployment-set current)
-         (f request)))))
+     (internal-standard-action current request f))))
 
 (defn state-transition
   [id action]
@@ -393,6 +389,7 @@ These resources represent a deployment set that regroups deployments.
 
 (def action-ok-nok-transition-op-status
   (action-ok-nok-transition-fn utils/operational-status-dependent-action))
+
 (def action-ok-nok-transition-all-deps-stopped?
   (action-ok-nok-transition-fn utils/deployments-dependent-action))
 
@@ -464,27 +461,23 @@ These resources represent a deployment set that regroups deployments.
 
 (defmethod crud/do-action [resource-type utils/action-recompute-fleet]
   [request]
-  (let [current (load-resource-throw-not-allowed-action request)]
-    (-> current
-        recompute-fleet
-        (sm/transition request)
-        u/update-timestamps
-        (u/set-updated-by request)
-        (pre-validate-hook request)
-        crud/validate
-        (crud/set-operations request)
-        db/edit)))
+  (let [current (load-resource-throw-not-allowed-action request)
+        next    (-> (recompute-fleet current)
+                    (pre-validate-hook request))]
+    (r/json-response (utils/save-deployment-set next current))))
 
 (defmethod crud/do-action [resource-type utils/action-auto-update]
   [request]
-  (let [current (load-resource-throw-not-allowed-action request)]
-    (-> current
-        (pre-validate-hook request)
-        (sm/transition request)
-        recompute-fleet
-        assoc-next-refresh
-        (utils/save-deployment-set current)
-        (action-bulk (assoc-in request [:params :action] utils/action-update)))))
+  (let [current        (load-resource-throw-not-allowed-action request)
+        next           (-> current
+                           recompute-fleet
+                           assoc-next-refresh
+                           (pre-validate-hook request)
+                           (utils/save-deployment-set current))
+        update-request (assoc-in request [:params :action] utils/action-update)]
+    (if (utils/operational-status-nok? next)
+      (internal-standard-action next update-request action-bulk)
+      (r/map-response "Deployment set is up to date." 200 (:id next)))))
 
 (defn cancel-latest-job
   [{:keys [id] :as _resource} _request]
@@ -519,7 +512,7 @@ These resources represent a deployment set that regroups deployments.
 
 (def edit-impl (std-crud/edit-fn resource-type
                                  :immutable-keys [:owner]
-                                 :pre-validate-hook edit-pre-validate-hook))
+                                 :pre-validate-hook add-edit-pre-validate-hook))
 
 (defmethod crud/edit resource-type
   [request]
