@@ -272,16 +272,17 @@
             ne-deployments)))
 
 (defn update-deployment-parameters
-  [nuvlabox-status nuvlabox ne-deployments]
-  (let [log-title (str "Update deployment-parameters for " (:id nuvlabox) ":")]
+  [nuvlabox-status ne-deployments]
+  (let [log-title (str "Update deployment-parameters for " (:parent nuvlabox-status) ":")]
     (try
       (when (:coe-resources nuvlabox-status)
         (let [params (get-ne-deployment-params nuvlabox-status ne-deployments)]
           (log/debug log-title "Update/inserting" (count params) "parameters")
           (when (seq params)
             (try
-              (let [response (db/bulk-operation dep-param/resource-type (params-bulk-operation-data params))]
-                (log/debug log-title (escu/summarise-bulk-operation-response response)))
+              (let [response (db/bulk-operation dep-param/resource-type (params-bulk-operation-data params))
+                    summary  (escu/summarise-bulk-operation-response response)]
+                (log/debug log-title summary))
               (catch Exception e
                 (log/error log-title (ex-message e) (ex-data e)))))))
       (catch Exception e

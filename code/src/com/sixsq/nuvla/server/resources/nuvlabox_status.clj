@@ -103,7 +103,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
         (nb-utils/legacy-heartbeat request nb)
         (utils/status-telemetry-attributes nb)
         (utils/set-name-description-acl nb)
-        (utils/update-deployment-parameters nb ne-deployments)
+        (utils/update-deployment-parameters ne-deployments)
         (utils/create-deployment-state-jobs ne-deployments)
         (cond-> (some? resources-prev)
                 (assoc :resources-prev resources-prev)))))

@@ -612,34 +612,44 @@
     (let [n              100
           defined-uuids  (take n (repeatedly random-uuid))
           summary-fn     escu/summarise-bulk-operation-response
-          ne-deployments (constantly
-                           (map (fn [uuid]
-                                  {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
-                                                   :owners   ["group/nuvla-admin"]}
-                                   :created       "2024-11-06T09:18:02.545Z"
+          ne-deployments (map (fn [uuid]
+                                {:acl           {:edit-acl ["deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"]
+                                                 :owners   ["group/nuvla-admin"]}
+                                 :created       "2024-11-06T09:18:02.545Z"
+                                 :created-by    "internal"
+                                 :module        {:subtype       module-spec/subtype-app-docker
+                                                 :compatibility module-spec/compatibility-docker-compose}
+                                 :id            (str "deployment-parameter/" uuid)
+                                 :name          "param-name"
+                                 :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
+                                 :resource-type "deployment-parameter"
+                                 :updated       "2024-11-06T09:18:02.545Z"
+                                 :value         "v"}) defined-uuids)
+          nb-status      {:coe-resources {:docker {}}}
+          result!        (atom nil)]
+      (with-redefs [escu/summarise-bulk-operation-response #(reset! result! %)]
+        (testing "without coe-resources no params should be created"
+          (t/update-deployment-parameters {} ne-deployments)
+          (is (nil? @result!)))
+        (reset! result! nil)
 
-                                   :created-by    "internal"
-                                   :id            (str "deployment-parameter/" uuid)
-                                   :name          "param-name"
-                                   :parent        "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
-                                   :resource-type "deployment-parameter"
-                                   :updated       "2024-11-06T09:18:02.545Z"
-                                   :value         "v"}) defined-uuids))]
-      (with-redefs [escu/summarise-bulk-operation-response #(is (re-matches (re-pattern (str "errors: false took: \\d{1,3}ms created: " n)) (summary-fn %)))]
-        (t/update-deployment-parameters {}
-                                        {:nuvlabox-engine-version "2.17.1"}
-                                        ne-deployments)
-        (with-redefs [escu/summarise-bulk-operation-response #(is (re-matches (re-pattern (str "errors: false took: \\d{1,3}ms noop: " n)) (summary-fn %)))]
-          (t/update-deployment-parameters {}
-                                          {:nuvlabox-engine-version "2.17.1"}
-                                          ne-deployments))
-        (with-redefs [t/param-bulk-operation-data (constantly "wrong")]
-          (t/update-deployment-parameters {}
-                                          {:nuvlabox-engine-version "2.17.1"}
-                                          ne-deployments))))))
+        (testing "with coe-resources params should be created"
+          (t/update-deployment-parameters nb-status ne-deployments)
+          (is (re-matches (re-pattern (str "errors: false took: \\d{1,3}ms created: " (* 5 n))) (summary-fn @result!))))
+        (reset! result! nil)
+
+        (testing "with coe-resources params should be updated"
+          (t/update-deployment-parameters nb-status ne-deployments)
+          (is (re-matches (re-pattern (str "errors: false took: \\d{1,3}ms updated: " (* 5 n))) (summary-fn @result!))))
+        (reset! result! nil)
+
+        (testing "when something wrong happens, error is logged and no exception is thrown and nb-status is returned"
+          (with-redefs [t/param-bulk-operation-data (constantly "wrong")]
+            (is (= (t/update-deployment-parameters nb-status ne-deployments) nb-status))))))))
+
 
 (deftest create-deployment-state-jobs
-  (let [jobs       (atom [])
+  (let [results!   (atom [])
         dep-docker {:id             "deployment-parameter/abc"
                     :execution-mode "pull"
                     :module         {:subtype module-spec/subtype-app-docker}
@@ -656,48 +666,48 @@
                     :parent         "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
                     :resource-type  "deployment-parameter"}]
     (testing "should create jobs since coe-resources is empty"
-      (with-redefs [job-utils/create-job (fn [& args] (swap! jobs conj args))]
+      (with-redefs [job-utils/create-job (fn [& args] (swap! results! conj args))]
         (t/create-deployment-state-jobs {} [dep-docker dep-k8s dep-helm]))
-      (is (= @jobs ['("deployment-parameter/abc"
-                       "deployment_state"
-                       {:owners ["group/nuvla-admin"]}
-                       "internal"
-                       :execution-mode
-                       "pull")
-                    '("deployment-parameter/abc"
-                       "deployment_state"
-                       {:owners ["group/nuvla-admin"]}
-                       "internal"
-                       :execution-mode
-                       "pull")
-                    '("deployment-parameter/abc"
-                       "deployment_state"
-                       {:owners ["group/nuvla-admin"]}
-                       "internal"
-                       :execution-mode
-                       "push")])))
-    (reset! jobs [])
+      (is (= @results! ['("deployment-parameter/abc"
+                           "deployment_state"
+                           {:owners ["group/nuvla-admin"]}
+                           "internal"
+                           :execution-mode
+                           "pull")
+                        '("deployment-parameter/abc"
+                           "deployment_state"
+                           {:owners ["group/nuvla-admin"]}
+                           "internal"
+                           :execution-mode
+                           "pull")
+                        '("deployment-parameter/abc"
+                           "deployment_state"
+                           {:owners ["group/nuvla-admin"]}
+                           "internal"
+                           :execution-mode
+                           "push")])))
+    (reset! results! [])
 
     (testing "should not create jobs since both (docker, k8s) coe-resources are there"
-      (with-redefs [job-utils/create-job (fn [& args] (swap! jobs conj args))]
+      (with-redefs [job-utils/create-job (fn [& args] (swap! results! conj args))]
         (t/create-deployment-state-jobs {:coe-resources {:docker     {:images []}
                                                          :kubernetes {:foo "bar"}}} [dep-docker dep-k8s dep-helm]))
-      (is (= @jobs [])))
+      (is (= @results! [])))
 
-    (reset! jobs [])
+    (reset! results! [])
 
     (testing "should create jobs only for k8s since coe-resources for docker are there"
-      (with-redefs [job-utils/create-job (fn [& args] (swap! jobs conj args))]
+      (with-redefs [job-utils/create-job (fn [& args] (swap! results! conj args))]
         (t/create-deployment-state-jobs {:coe-resources {:docker {:images []}}} [dep-docker dep-k8s dep-helm]))
-      (is (= @jobs ['("deployment-parameter/abc"
-                       "deployment_state"
-                       {:owners ["group/nuvla-admin"]}
-                       "internal"
-                       :execution-mode
-                       "pull")
-                    '("deployment-parameter/abc"
-                       "deployment_state"
-                       {:owners ["group/nuvla-admin"]}
-                       "internal"
-                       :execution-mode
-                       "push")])))))
+      (is (= @results! ['("deployment-parameter/abc"
+                           "deployment_state"
+                           {:owners ["group/nuvla-admin"]}
+                           "internal"
+                           :execution-mode
+                           "pull")
+                        '("deployment-parameter/abc"
+                           "deployment_state"
+                           {:owners ["group/nuvla-admin"]}
+                           "internal"
+                           :execution-mode
+                           "push")])))))
