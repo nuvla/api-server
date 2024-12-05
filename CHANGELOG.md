@@ -2,6 +2,18 @@
 
 ## Released
 
+## [6.11.4](https://github.com/nuvla/api-server/compare/6.11.3...6.11.4) (2024-12-05)
+
+
+### Bug Fixes
+
+* **Deployment group:** Make jobs created by auto update visible to the dg owner ([#969](https://github.com/nuvla/api-server/issues/969)) ([3e1c584](https://github.com/nuvla/api-server/commit/3e1c584c615bda483da6c495ce69dd4ac1ac9eca))
+* **Deployment set:** Add lifecycle test auto update with dynamic filter ([2ec5da4](https://github.com/nuvla/api-server/commit/2ec5da48bf7a1cb6dbbbf8b760d7ef24aa36b6fb))
+* **Deployment set:** Auto update optimization avoid multiple read and write of deployment set to unneed queries ([2ec5da4](https://github.com/nuvla/api-server/commit/2ec5da48bf7a1cb6dbbbf8b760d7ef24aa36b6fb))
+* **Deployment set:** Auto update should not bypass state-machine and call update move state to updating state ([2ec5da4](https://github.com/nuvla/api-server/commit/2ec5da48bf7a1cb6dbbbf8b760d7ef24aa36b6fb))
+* **Deployment set:** Auto update should not bypass state-machine and call update move state to updating state ([2ec5da4](https://github.com/nuvla/api-server/commit/2ec5da48bf7a1cb6dbbbf8b760d7ef24aa36b6fb))
+* **Deployment set:** Recompute fleet reuse existing code instead of a non standatd write ([2ec5da4](https://github.com/nuvla/api-server/commit/2ec5da48bf7a1cb6dbbbf8b760d7ef24aa36b6fb))
+
 ## [6.11.3](https://github.com/nuvla/api-server/compare/6.11.2...6.11.3) (2024-11-26)
 
 
