@@ -2,6 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is testing use-fixtures]]
+    [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
@@ -25,6 +26,12 @@
 (def deployment-base-uri (str p/service-context deployment/resource-type))
 
 (def session-id "session/324c6138-aaaa-bbbb-cccc-af3ad15815db")
+
+(defn state-transition
+  [id action]
+  (t/standard-action {:params      (assoc (u/id->request-params id)
+                                     :action action)
+                      :nuvla/authn auth/internal-identity}))
 
 (deftest check-metadata
   (mdtu/check-metadata-exists t/resource-type))
@@ -637,7 +644,7 @@
         (testing "force state transition to simulate job action"
           (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
                         utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
-            (t/state-transition resource-id utils/action-nok))
+            (state-transition resource-id utils/action-nok))
           (-> session-user
               (request dep-set-url)
               ltu/body->edn
@@ -762,7 +769,7 @@
         (testing "force state transition to simulate job action"
           (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
                         utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
-            (t/state-transition resource-id utils/action-nok))
+            (state-transition resource-id utils/action-nok))
 
           (-> session-user
               (request dep-set-url)
@@ -1337,7 +1344,7 @@
                                       ltu/body->edn
                                       (ltu/is-status 202)
                                       ltu/location-url)
-              _                   (t/state-transition resource-id utils/action-ok)
+              _                   (state-transition resource-id utils/action-ok)
               stop-op-url         (-> session-admin
                                       (request dep-set-url)
                                       ltu/body->edn
@@ -1407,7 +1414,7 @@
                                       ltu/body->edn
                                       (ltu/is-status 202)
                                       ltu/location-url)
-              _                   (t/state-transition resource-id utils/action-ok)
+              _                   (state-transition resource-id utils/action-ok)
               stop-op-url         (-> session-admin
                                       (request dep-set-url)
                                       ltu/body->edn
@@ -1470,7 +1477,7 @@
                                         ltu/body->edn
                                         (ltu/is-status 202)
                                         ltu/location-url)
-              _                     (t/state-transition resource-id utils/action-ok)
+              _                     (state-transition resource-id utils/action-ok)
               update-op-url         (-> session-admin
                                         (request dep-set-url)
                                         ltu/body->edn
@@ -1845,8 +1852,7 @@
                               (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
         module-id     (resource-creation/create-module session-user)
         ne-id-1       (resource-creation/create-nuvlabox session-user {})
-        fleet         [ne-id-1]
-        fleet-filter  "resource:type='nuvlabox'"]
+        fleet         [ne-id-1]]
 
     (module/initialize)
 
@@ -1858,45 +1864,39 @@
         ltu/body->edn
         (ltu/is-status 200))
 
-    (let [dep-set-url (-> session-user
+    (let [response     (-> session-user
                           (request base-uri
                                    :request-method :post
-                                   :body (json/write-str {:name         dep-set-name,
-                                                          :start        false,
-                                                          :modules      [module-id]
-                                                          :fleet        fleet
-                                                          :fleet-filter fleet-filter
-                                                          :auto-update  true}))
+                                   :body (json/write-str {:name        dep-set-name,
+                                                          :start       false,
+                                                          :modules     [module-id]
+                                                          :fleet       fleet
+                                                          :auto-update true}))
                           ltu/body->edn
-                          (ltu/is-status 201)
-                          ltu/location-url)]
-      (testing "Check that next-refresh is set to now + 1 minute."
-        (let [dep-set (-> session-user
-                          (request dep-set-url)
-                          ltu/body->edn
-                          (ltu/is-status 200)
-                          (ltu/is-key-value :auto-update true)
-                          (ltu/is-key-value
-                            (comp #(time/time-between (time/now) % :seconds) time/parse-date)
-                            :next-refresh 299)
-                          ltu/body)]
-          (testing "Check that updating auto-update-interval also updates next-refresh."
-            (-> session-user
-                (request dep-set-url
-                         :request-method :put
-                         :body (json/write-str (assoc dep-set :auto-update-interval 10)))
-                ltu/body->edn
-                (ltu/is-status 200)
-                (ltu/is-key-value
-                  (comp #(time/time-between (time/now) % :seconds) time/parse-date)
-                  :next-refresh 599)))))
+                          (ltu/is-status 201))
+          dep-set-id  (ltu/location response)
+          dep-set-url (ltu/location-url response)]
 
-      (testing "auto-update action not available to non-admin users."
+      (testing "Check that next-refresh is set to now + 1 minute."
         (-> session-user
             (request dep-set-url)
             ltu/body->edn
             (ltu/is-status 200)
-            (ltu/is-operation-absent utils/action-auto-update)))
+            (ltu/is-key-value :auto-update true)
+            (ltu/is-key-value
+              (comp #(time/time-between (time/now) % :seconds) time/parse-date)
+              :next-refresh 299)))
+
+      (testing "Check that updating auto-update-interval also updates next-refresh."
+        (-> session-user
+            (request dep-set-url
+                     :request-method :put
+                     :body (json/write-str {:auto-update-interval 10}))
+            ltu/body->edn
+            (ltu/is-status 200)
+            (ltu/is-key-value
+              (comp #(time/time-between (time/now) % :seconds) time/parse-date)
+              :next-refresh 599)))
 
       (testing "auto-update action not available in NEW state"
         (-> session-admin
@@ -1906,7 +1906,27 @@
             (ltu/is-key-value :state utils/state-new)
             (ltu/is-operation-absent utils/action-auto-update)))
 
-      (testing "Force state to STARTED and call auto-update action"
+      (-> session-user
+          (request (-> session-user
+                       (request dep-set-url)
+                       ltu/body->edn
+                       (ltu/is-status 200)
+                       (ltu/is-operation-present utils/action-start)
+                       (ltu/get-op-url utils/action-start)))
+          ltu/body->edn
+          (ltu/is-status 202))
+
+      (state-transition dep-set-id utils/action-ok)
+
+      (testing "auto-update action not available to non-admin users."
+        (-> session-user
+            (request dep-set-url)
+            ltu/body->edn
+            (ltu/is-status 200)
+            (ltu/is-key-value :state utils/state-started)
+            (ltu/is-operation-absent utils/action-auto-update)))
+
+      (testing "auto-update action available to admin user."
         (-> session-admin
             (request dep-set-url
                      :request-method :put
@@ -1914,62 +1934,118 @@
             ltu/body->edn
             (ltu/is-status 200)
             (ltu/is-operation-present utils/action-auto-update)
-            (ltu/is-key-value :state utils/state-started))
-        (let [response           (-> session-admin
+            (ltu/is-key-value :state utils/state-started)))
+
+      (testing "auto-update action not available when auto-update is not enabled"
+        (-> session-admin
+            (request dep-set-url
+                     :request-method :put
+                     :body (json/write-str {:auto-update false}))
+            ltu/body->edn
+            (ltu/is-status 200)
+            (ltu/is-operation-absent utils/action-auto-update))
+
+        (-> session-admin
+            (request dep-set-url
+                     :request-method :put
+                     :body (json/write-str {:auto-update true}))
+            ltu/body->edn
+            (ltu/is-status 200)
+            (ltu/is-operation-present utils/action-auto-update)))
+
+      (testing "Call auto-update action"
+        (let [auto-update-op-url (-> session-admin
                                      (request dep-set-url)
                                      ltu/body->edn
                                      (ltu/is-status 200)
-                                     (ltu/is-operation-present utils/action-auto-update))
-              dep-set            (ltu/body response)
-              op-status          (:operational-status dep-set)
-              auto-update-op-url (ltu/get-op-url response utils/action-auto-update)]
-          (-> session-admin
-              (request auto-update-op-url)
-              ltu/body->edn
-              (ltu/is-status 202))
-          (is (= 1 (count (:deployments-to-add op-status))))
+                                     (ltu/is-operation-present utils/action-auto-update)
+                                     (ltu/get-op-url utils/action-auto-update))]
 
-          (testing "Add a new edge, auto update and check that the fleet is updated in the operational status"
-            (let [ne-id-2   (resource-creation/create-nuvlabox session-user {})
-                  new-fleet [ne-id-1 ne-id-2]]
-              (-> session-admin
-                  (request dep-set-url
-                           :request-method :put
-                           :body (json/write-str (assoc-in dep-set [:applications-sets 0 :overwrites 0 :fleet] new-fleet)))
-                  ltu/body->edn
-                  (ltu/is-status 200))
+          (testing "Static fleet"
+            (-> session-admin
+                (request auto-update-op-url)
+                ltu/body->edn
+                (ltu/is-status 202))
 
+            (-> session-admin
+                (request dep-set-url)
+                ltu/body->edn
+                (ltu/is-status 200)
+                (ltu/is-key-value (comp count :deployments-to-add) :operational-status 1)
+                (ltu/is-key-value :state utils/state-updating))
+
+            (state-transition dep-set-id utils/action-ok)
+
+            (testing "Add a new edge, auto update and check that the fleet is updated in the operational status"
+              (let [ne-id-2   (resource-creation/create-nuvlabox session-user {})
+                    new-fleet [ne-id-1 ne-id-2]]
+                (-> session-admin
+                    (request dep-set-url
+                             :request-method :put
+                             :body (-> session-user
+                                       (request dep-set-url)
+                                       ltu/body->edn
+                                       (ltu/is-status 200)
+                                       ltu/body
+                                       (assoc-in [:applications-sets 0 :overwrites 0 :fleet] new-fleet)
+                                       json/write-str))
+                    ltu/body->edn
+                    (ltu/is-status 200))
+
+                (-> session-admin
+                    (request auto-update-op-url)
+                    ltu/body->edn
+                    (ltu/is-status 202))
+
+                (-> session-user
+                    (request dep-set-url)
+                    ltu/body->edn
+                    (ltu/is-status 200)
+                    (ltu/is-key-value (comp count :deployments-to-add) :operational-status 2)
+                    (ltu/is-key-value :state utils/state-updating)))))
+
+          (state-transition dep-set-id utils/action-ok)
+
+          (testing "Dynamic fleet"
+            (-> session-user
+                (request dep-set-url
+                         :request-method :put
+                         :body (-> session-user
+                                   (request dep-set-url)
+                                   ltu/body->edn
+                                   (ltu/is-status 200)
+                                   ltu/body
+                                   (assoc-in [:applications-sets 0 :overwrites 0 :fleet-filter] "resource:type='nuvlabox'")
+                                   json/write-str))
+                ltu/body->edn
+                (ltu/is-status 200))
+
+            (testing "with recompute fleet 0 nuvlaedge match filter"
               (-> session-admin
                   (request auto-update-op-url)
                   ltu/body->edn
-                  (ltu/is-status 202))
-
-              (let [new-op-status (-> session-admin
-                                      (request dep-set-url)
-                                      ltu/body->edn
-                                      (ltu/is-status 200)
-                                      ltu/body
-                                      :operational-status)]
-                (is (= 2 (count (:deployments-to-add new-op-status)))))))
-
-          (testing "auto-update action not available when auto-update is not enabled"
-            (-> session-admin
-                (request dep-set-url
-                         :request-method :put
-                         :body (json/write-str (assoc dep-set :auto-update false)))
-                ltu/body->edn
-                (ltu/is-status 200)
-                (ltu/is-operation-absent utils/action-auto-update)
-                (ltu/is-key-value :state utils/state-started))
+                  (ltu/is-status 200)))
 
             (-> session-admin
-                (request dep-set-url
-                         :request-method :put
-                         :body (json/write-str (assoc dep-set :auto-update true)))
+                (request dep-set-url)
                 ltu/body->edn
                 (ltu/is-status 200)
-                (ltu/is-operation-present utils/action-auto-update)
-                (ltu/is-key-value :state utils/state-started))))))))
+                (ltu/is-key-value (comp count :deployments-to-add) :operational-status 0)
+                (ltu/is-key-value :state utils/state-updated))
+
+            (with-redefs [utils/query-nuvlaboxes-as (constantly [{:id ne-id-1}])]
+              (-> session-admin
+                  (request auto-update-op-url)
+                  ltu/body->edn
+                  (ltu/is-status 202)))
+
+            (-> session-admin
+                (request dep-set-url)
+                ltu/body->edn
+                (ltu/is-status 200)
+                (ltu/is-key-value (comp count :deployments-to-add) :operational-status 1)
+                (ltu/is-key-value :state utils/state-updating))
+            ))))))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]

@@ -107,6 +107,10 @@
   [{{:keys [status]} :operational-status :as _resource}]
   (= status operational-status-nok))
 
+(defn operational-status-ok?
+  [{{:keys [status]} :operational-status :as _resource}]
+  (= status operational-status-ok))
+
 (defn fleet-filter-defined?
   [resource]
   (some? (get-in resource [:applications-sets 0 :overwrites 0 :fleet-filter])))
