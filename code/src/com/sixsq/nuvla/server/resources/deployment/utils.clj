@@ -110,12 +110,13 @@
 
 
 (defn create-job
-  [{:keys [id nuvlabox] :as resource} request action execution-mode
+  [{:keys [id nuvlabox deployment-set] :as resource} request action execution-mode
    & {:keys [payload]}]
   (a/throw-cannot-manage resource request)
   (let [active-claim (auth/current-active-claim request)
         low-priority (get-in request [:body :low-priority] false)
         parent-job   (get-in request [:body :parent-job])
+        dg           (some-> deployment-set crud/retrieve-by-id-as-admin)
         {{job-id     :resource-id
           job-status :status} :body} (job-utils/create-job
                                        id action
@@ -123,7 +124,8 @@
                                            (a/acl-append :edit-data nuvlabox)
                                            (a/acl-append :manage nuvlabox)
                                            (a/acl-append :view-data active-claim)
-                                           (a/acl-append :manage active-claim))
+                                           (a/acl-append :manage active-claim)
+                                           (cond-> dg (a/acl-append :view-acl (:owner dg))))
                                        (auth/current-user-id request)
                                        :parent-job parent-job
                                        :priority (if low-priority 999 50)
