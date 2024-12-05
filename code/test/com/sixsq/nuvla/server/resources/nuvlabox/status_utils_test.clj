@@ -5,6 +5,7 @@
     [com.sixsq.nuvla.db.es.common.utils :as escu]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
+    [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.nuvlabox.data-utils :as data-utils]
     [com.sixsq.nuvla.server.resources.nuvlabox.status-utils :as t]
@@ -636,3 +637,67 @@
           (t/update-deployment-parameters {}
                                           {:nuvlabox-engine-version "2.17.1"}
                                           ne-deployments))))))
+
+(deftest create-deployment-state-jobs
+  (let [jobs       (atom [])
+        dep-docker {:id             "deployment-parameter/abc"
+                    :execution-mode "pull"
+                    :module         {:subtype module-spec/subtype-app-docker}
+                    :parent         "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
+                    :resource-type  "deployment-parameter"}
+        dep-k8s    {:id             "deployment-parameter/abc"
+                    :execution-mode "pull"
+                    :module         {:subtype module-spec/subtype-app-k8s}
+                    :parent         "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
+                    :resource-type  "deployment-parameter"}
+        dep-helm   {:id             "deployment-parameter/abc"
+                    :execution-mode "push"
+                    :module         {:subtype module-spec/subtype-app-helm}
+                    :parent         "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
+                    :resource-type  "deployment-parameter"}]
+    (testing "should create jobs since coe-resources is empty"
+      (with-redefs [job-utils/create-job (fn [& args] (swap! jobs conj args))]
+        (t/create-deployment-state-jobs {} [dep-docker dep-k8s dep-helm]))
+      (is (= @jobs ['("deployment-parameter/abc"
+                       "deployment_state"
+                       {:owners ["group/nuvla-admin"]}
+                       "internal"
+                       :execution-mode
+                       "pull")
+                    '("deployment-parameter/abc"
+                       "deployment_state"
+                       {:owners ["group/nuvla-admin"]}
+                       "internal"
+                       :execution-mode
+                       "pull")
+                    '("deployment-parameter/abc"
+                       "deployment_state"
+                       {:owners ["group/nuvla-admin"]}
+                       "internal"
+                       :execution-mode
+                       "push")])))
+    (reset! jobs [])
+
+    (testing "should not create jobs since both (docker, k8s) coe-resources are there"
+      (with-redefs [job-utils/create-job (fn [& args] (swap! jobs conj args))]
+        (t/create-deployment-state-jobs {:coe-resources {:docker     {:images []}
+                                                         :kubernetes {:foo "bar"}}} [dep-docker dep-k8s dep-helm]))
+      (is (= @jobs [])))
+
+    (reset! jobs [])
+
+    (testing "should create jobs only for k8s since coe-resources for docker are there"
+      (with-redefs [job-utils/create-job (fn [& args] (swap! jobs conj args))]
+        (t/create-deployment-state-jobs {:coe-resources {:docker {:images []}}} [dep-docker dep-k8s dep-helm]))
+      (is (= @jobs ['("deployment-parameter/abc"
+                       "deployment_state"
+                       {:owners ["group/nuvla-admin"]}
+                       "internal"
+                       :execution-mode
+                       "pull")
+                    '("deployment-parameter/abc"
+                       "deployment_state"
+                       {:owners ["group/nuvla-admin"]}
+                       "internal"
+                       :execution-mode
+                       "push")])))))

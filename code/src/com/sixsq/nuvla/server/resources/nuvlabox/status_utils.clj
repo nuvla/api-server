@@ -261,7 +261,7 @@
   (get-k8s-state deployment nb-status))
 
 (defn get-ne-deployment-params
-  [nuvlabox-status nb-deployments]
+  [nuvlabox-status ne-deployments]
   (let [global-params (list-global-params nuvlabox-status)]
     (mapcat (fn [deployment]
               (map
@@ -269,7 +269,7 @@
                 (concat
                   global-params
                   (get-deployment-state deployment nuvlabox-status))))
-            nb-deployments)))
+            ne-deployments)))
 
 (defn update-deployment-parameters
   [nuvlabox-status nuvlabox ne-deployments]
@@ -300,18 +300,18 @@
                         :execution-mode execution-mode))
 
 (defmulti create-deployment-state-job-if-needed
-  (fn [{{:keys [subtype]} :module :as _deployment} _nb-status]
-    (if (= subtype module-spec/subtype-app-helm) module-spec/subtype-app-k8s subtype)))
+          (fn [{{:keys [subtype]} :module :as _deployment} _nb-status]
+            (if (= subtype module-spec/subtype-app-helm) module-spec/subtype-app-k8s subtype)))
 
 (defmethod create-deployment-state-job-if-needed module-spec/subtype-app-docker
   [deployment {{:keys [docker]} :coe-resources :as nb-status}]
-  (when (empty? docker))
-    (create-deployment-state-job deployment nb-status))
+  (when (empty? docker)
+    (create-deployment-state-job deployment nb-status)))
 
 (defmethod create-deployment-state-job-if-needed module-spec/subtype-app-k8s
   [deployment {{:keys [kubernetes]} :coe-resources :as nb-status}]
-  (when (empty? kubernetes))
-    (create-deployment-state-job deployment nb-status))
+  (when (empty? kubernetes)
+    (create-deployment-state-job deployment nb-status)))
 
 (defn create-deployment-state-jobs
   [nuvlabox-status ne-deployments]
