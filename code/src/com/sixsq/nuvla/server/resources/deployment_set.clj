@@ -315,6 +315,10 @@ These resources represent a deployment set that regroups deployments.
       (throw (r/ex-response (format "unable to create async job to %s" job-action) 500 id))
       (r/map-response job-msg 202 id job-id))))
 
+(defn resource->json-response
+  [resource _request]
+  (r/json-response resource))
+
 (defn internal-standard-action
   [current request f]
   (-> current
@@ -325,16 +329,10 @@ These resources represent a deployment set that regroups deployments.
 
 (defn standard-action
   ([request]
-   (standard-action request (fn [resource _request] resource)))
+   (standard-action request resource->json-response))
   ([request f]
    (let [current (load-resource-throw-not-allowed-action request)]
      (internal-standard-action current request f))))
-
-(defn state-transition
-  [id action]
-  (standard-action {:params      (assoc (u/id->request-params id)
-                                   :action action)
-                    :nuvla/authn auth/internal-identity}))
 
 (defmethod crud/do-action [resource-type utils/action-plan]
   [request]
@@ -461,10 +459,10 @@ These resources represent a deployment set that regroups deployments.
 
 (defmethod crud/do-action [resource-type utils/action-recompute-fleet]
   [request]
-  (let [current (load-resource-throw-not-allowed-action request)
-        next    (-> (recompute-fleet current)
-                    (pre-validate-hook request))]
-    (r/json-response (utils/save-deployment-set next current))))
+  (-> request
+      load-resource-throw-not-allowed-action
+      recompute-fleet
+      (internal-standard-action request resource->json-response)))
 
 (defmethod crud/do-action [resource-type utils/action-auto-update]
   [request]

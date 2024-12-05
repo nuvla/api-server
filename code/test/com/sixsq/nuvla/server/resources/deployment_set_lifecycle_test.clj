@@ -2,6 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is testing use-fixtures]]
+    [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
@@ -25,6 +26,12 @@
 (def deployment-base-uri (str p/service-context deployment/resource-type))
 
 (def session-id "session/324c6138-aaaa-bbbb-cccc-af3ad15815db")
+
+(defn state-transition
+  [id action]
+  (t/standard-action {:params      (assoc (u/id->request-params id)
+                                     :action action)
+                      :nuvla/authn auth/internal-identity}))
 
 (deftest check-metadata
   (mdtu/check-metadata-exists t/resource-type))
@@ -637,7 +644,7 @@
         (testing "force state transition to simulate job action"
           (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
                         utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
-            (t/state-transition resource-id utils/action-nok))
+            (state-transition resource-id utils/action-nok))
           (-> session-user
               (request dep-set-url)
               ltu/body->edn
@@ -762,7 +769,7 @@
         (testing "force state transition to simulate job action"
           (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
                         utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
-            (t/state-transition resource-id utils/action-nok))
+            (state-transition resource-id utils/action-nok))
 
           (-> session-user
               (request dep-set-url)
@@ -1337,7 +1344,7 @@
                                       ltu/body->edn
                                       (ltu/is-status 202)
                                       ltu/location-url)
-              _                   (t/state-transition resource-id utils/action-ok)
+              _                   (state-transition resource-id utils/action-ok)
               stop-op-url         (-> session-admin
                                       (request dep-set-url)
                                       ltu/body->edn
@@ -1407,7 +1414,7 @@
                                       ltu/body->edn
                                       (ltu/is-status 202)
                                       ltu/location-url)
-              _                   (t/state-transition resource-id utils/action-ok)
+              _                   (state-transition resource-id utils/action-ok)
               stop-op-url         (-> session-admin
                                       (request dep-set-url)
                                       ltu/body->edn
@@ -1470,7 +1477,7 @@
                                         ltu/body->edn
                                         (ltu/is-status 202)
                                         ltu/location-url)
-              _                     (t/state-transition resource-id utils/action-ok)
+              _                     (state-transition resource-id utils/action-ok)
               update-op-url         (-> session-admin
                                         (request dep-set-url)
                                         ltu/body->edn
@@ -1857,7 +1864,7 @@
         ltu/body->edn
         (ltu/is-status 200))
 
-    (let [dep-set-url (-> session-user
+    (let [response     (-> session-user
                           (request base-uri
                                    :request-method :post
                                    :body (json/write-str {:name        dep-set-name,
@@ -1866,8 +1873,9 @@
                                                           :fleet       fleet
                                                           :auto-update true}))
                           ltu/body->edn
-                          (ltu/is-status 201)
-                          ltu/location-url)]
+                          (ltu/is-status 201))
+          dep-set-id  (ltu/location response)
+          dep-set-url (ltu/location-url response)]
 
       (testing "Check that next-refresh is set to now + 1 minute."
         (-> session-user
@@ -1898,21 +1906,24 @@
             (ltu/is-key-value :state utils/state-new)
             (ltu/is-operation-absent utils/action-auto-update)))
 
-      (testing "Force state to started"
-        (-> session-admin
-            (request dep-set-url
-                     :request-method :put
-                     :body (json/write-str {:state utils/state-started}))
-            ltu/body->edn
-            (ltu/is-status 200)
-            (ltu/is-operation-present utils/action-auto-update)
-            (ltu/is-key-value :state utils/state-started)))
+      (-> session-user
+          (request (-> session-user
+                       (request dep-set-url)
+                       ltu/body->edn
+                       (ltu/is-status 200)
+                       (ltu/is-operation-present utils/action-start)
+                       (ltu/get-op-url utils/action-start)))
+          ltu/body->edn
+          (ltu/is-status 202))
+
+      (state-transition dep-set-id utils/action-ok)
 
       (testing "auto-update action not available to non-admin users."
         (-> session-user
             (request dep-set-url)
             ltu/body->edn
             (ltu/is-status 200)
+            (ltu/is-key-value :state utils/state-started)
             (ltu/is-operation-absent utils/action-auto-update)))
 
       (testing "auto-update action available to admin user."
@@ -1963,6 +1974,8 @@
                 (ltu/is-key-value (comp count :deployments-to-add) :operational-status 1)
                 (ltu/is-key-value :state utils/state-updating))
 
+            (state-transition dep-set-id utils/action-ok)
+
             (testing "Add a new edge, auto update and check that the fleet is updated in the operational status"
               (let [ne-id-2   (resource-creation/create-nuvlabox session-user {})
                     new-fleet [ne-id-1 ne-id-2]]
@@ -1975,7 +1988,6 @@
                                        (ltu/is-status 200)
                                        ltu/body
                                        (assoc-in [:applications-sets 0 :overwrites 0 :fleet] new-fleet)
-                                       (assoc :state utils/state-updated)
                                        json/write-str))
                     ltu/body->edn
                     (ltu/is-status 200))
@@ -1991,14 +2003,10 @@
                     (ltu/is-status 200)
                     (ltu/is-key-value (comp count :deployments-to-add) :operational-status 2)
                     (ltu/is-key-value :state utils/state-updating)))))
-          (testing "Dynamic fleet"
-            (-> session-admin
-                (request dep-set-url
-                         :request-method :put
-                         :body (json/write-str {:state utils/state-updated}))
-                ltu/body->edn
-                (ltu/is-status 200))
 
+          (state-transition dep-set-id utils/action-ok)
+
+          (testing "Dynamic fleet"
             (-> session-user
                 (request dep-set-url
                          :request-method :put
@@ -2014,9 +2022,9 @@
 
             (testing "with recompute fleet 0 nuvlaedge match filter"
               (-> session-admin
-                 (request auto-update-op-url)
-                 ltu/body->edn
-                 (ltu/is-status 200)))
+                  (request auto-update-op-url)
+                  ltu/body->edn
+                  (ltu/is-status 200)))
 
             (-> session-admin
                 (request dep-set-url)
@@ -2026,10 +2034,10 @@
                 (ltu/is-key-value :state utils/state-updated))
 
             (with-redefs [utils/query-nuvlaboxes-as (constantly [{:id ne-id-1}])]
-                (-> session-admin
-                    (request auto-update-op-url)
-                    ltu/body->edn
-                    (ltu/is-status 202)))
+              (-> session-admin
+                  (request auto-update-op-url)
+                  ltu/body->edn
+                  (ltu/is-status 202)))
 
             (-> session-admin
                 (request dep-set-url)
