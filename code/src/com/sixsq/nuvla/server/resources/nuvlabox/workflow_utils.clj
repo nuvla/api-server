@@ -587,11 +587,22 @@
                      cluster-id " from NuvlaBox " nuvlabox-id)]
         (throw (ex-info msg (r/map-response msg 400 "")))))))
 
+(defn assoc-coe-list
+  [nuvlabox swarm-id swarm-enabled kubernetes-id capabilities]
+  (assoc nuvlabox
+    :coe-list (cond-> []
+                      swarm-id (conj (cond-> {:id       swarm-id
+                                              :coe-type (if swarm-enabled "swarm" "docker")}
+                                             (seq capabilities) (assoc :capabilities capabilities)))
+                      kubernetes-id (conj (cond-> {:id       kubernetes-id
+                                                   :coe-type "kubernetes"}
+                                                  (seq capabilities) (assoc :capabilities capabilities))))))
 
 (defn commission
-  [{:keys [id name acl vpn-server-id infrastructure-service-group] :as _resource}
+  [{:keys [id name acl vpn-server-id infrastructure-service-group] :as nuvlabox}
    {{:keys [tags
             capabilities
+            ssh-keys
             swarm-endpoint
             swarm-token-manager swarm-token-worker
             swarm-client-key swarm-client-cert swarm-client-ca
@@ -603,7 +614,9 @@
             cluster-id cluster-worker-id cluster-orchestrator cluster-managers cluster-workers
             removed]} :body :as request}]
   (when-let [isg-id infrastructure-service-group]
-    (let [removed-set    (if (coll? removed) (set removed) #{})
+    (let [capabilities   (some-> capabilities set vec)
+          ssh-keys       (some-> ssh-keys set vec)
+          removed-set    (if (coll? removed) (set removed) #{})
           swarm-worker   (some-> cluster-worker-id string?)
           swarm-removed? (contains? removed-set "swarm-endpoint")
           swarm-enabled  (cond
@@ -685,7 +698,12 @@
 
       (when (contains? removed-set "swarm-token-worker")
         (delete-resource (get-swarm-token swarm-id "WORKER") auth/internal-identity))
-      )))
+
+      (-> nuvlabox
+          (assoc :state utils/state-commissioned)
+          (assoc-coe-list swarm-id swarm-enabled kubernetes-id capabilities)
+          (cond-> capabilities (assoc :capabilities capabilities)
+                  ssh-keys (assoc :ssh-keys ssh-keys))))))
 
 
 (defn get-nuvlabox-children
