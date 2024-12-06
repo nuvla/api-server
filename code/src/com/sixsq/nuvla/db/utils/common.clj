@@ -19,6 +19,4 @@
   "Same as `split-id` exception that the collection ID will be returned as a
    keyword."
   [id]
-  (when id
-    (let [[type docid] (str/split id #"/")]
-      [(keyword type) (or docid type)])))
+  (update (split-id id) 0 keyword))

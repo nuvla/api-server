@@ -260,16 +260,11 @@
           (r/response-conflict collection-id)
           (r/response-error (str "unexpected exception: " (or error e))))))))
 
-(defn bulk-insert-metrics
+(defn bulk-operation
   [client collection-id data _options]
   (try
     (let [index          (escu/collection-id->index collection-id)
-          data-transform (fn [{:keys [timestamp] :as doc}]
-                           (-> doc
-                               (dissoc :timestamp)
-                               (assoc "@timestamp" timestamp)))
-          body           (spandex/chunks->body (interleave (repeat {:create {}})
-                                                           (map data-transform data)))
+          body           (spandex/chunks->body data)
           response       (spandex/request client {:url     [index :_bulk]
                                                   :method  :put
                                                   :headers {"Content-Type" "application/x-ndjson"}
@@ -287,6 +282,16 @@
     (catch Exception e
       (let [{:keys [body status]} (ex-data e)]
         (throw (r/ex-response (str body) (or status 500)))))))
+
+(defn bulk-insert-metrics
+  [client collection-id data options]
+  (let [data-transform (fn [{:keys [timestamp] :as doc}]
+                         (-> doc
+                             (dissoc :timestamp)
+                             (assoc "@timestamp" timestamp)))
+        data (interleave (repeat {:create {}})
+                         (map data-transform data))]
+    (bulk-operation client collection-id data options)))
 
 (defn bulk-edit-data
   [client collection-id
@@ -494,6 +499,9 @@
 
   (bulk-insert-metrics [_ collection-id data options]
     (bulk-insert-metrics client collection-id data options))
+
+  (bulk-operation [_ collection-id data options]
+    (bulk-operation client collection-id data options))
 
   (bulk-delete [_ collection-id options]
     (bulk-delete-data client collection-id options))

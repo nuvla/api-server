@@ -127,7 +127,7 @@
 
             valid-app   {:parent-path   "example"
                          :path          "example/app"
-                         :subtype       module-spec/subtype-app
+                         :subtype       module-spec/subtype-app-docker
                          :compatibility "docker-compose"}
             app-uri     (-> session-user
                             (request base-uri

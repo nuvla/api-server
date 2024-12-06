@@ -6,28 +6,22 @@
 
 (def ^:dynamic *impl* nil)
 
-
 (defn set-impl!
   [impl]
   (alter-var-root #'*impl* (constantly impl)))
-
 
 (defn unset-impl!
   []
   (.unbindRoot #'*impl*))
 
-
 (defn initialize [collection-id & [options]]
   (p/initialize *impl* collection-id options))
-
 
 (defn add [data & [options]]
   (p/add *impl* data options))
 
-
 (defn retrieve [id & [options]]
   (p/retrieve *impl* id options))
-
 
 (defn edit [data & [options]]
   (p/edit *impl* data options))
@@ -37,7 +31,6 @@
 
 (defn delete [data & [options]]
   (p/delete *impl* data options))
-
 
 (defn query [collection-id & [options]]
   (p/query *impl* collection-id options))
@@ -51,12 +44,14 @@
 (defn bulk-insert-metrics [collection-id data & [options]]
   (p/bulk-insert-metrics *impl* collection-id data options))
 
+(defn bulk-operation [collection-id data & [options]]
+  (p/bulk-operation *impl* collection-id data options))
+
 (defn bulk-delete [collection-id & [options]]
   (p/bulk-delete *impl* collection-id options))
 
 (defn bulk-edit [collection-id & [options]]
   (p/bulk-edit *impl* collection-id options))
-
 
 (defn close []
   (when-let [^Closeable impl *impl*]

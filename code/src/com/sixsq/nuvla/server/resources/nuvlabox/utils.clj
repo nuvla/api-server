@@ -122,10 +122,14 @@
   [nuvlabox]
   (u/is-state-within? #{state-commissioned state-suspended} nuvlabox))
 
+(defn is-nb-v2-17-or-newer?
+  [nuvlabox]
+  (not (is-version-older? nuvlabox "2.17.0")))
+
 (defn can-coe-resource-actions?
   [nuvlabox]
   (and (is-state-commissioned? nuvlabox)
-       (not (is-version-older? nuvlabox "2.17.0"))))
+       (is-nb-v2-17-or-newer? nuvlabox)))
 
 (defn throw-nuvlabox-is-suspended
   [{:keys [id] :as nuvlabox}]

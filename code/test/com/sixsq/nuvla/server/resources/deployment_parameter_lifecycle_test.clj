@@ -38,12 +38,12 @@
         session-anon     (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")
         parent-id        (->> (resource-creation/create-module session-jane)
                               (resource-creation/create-deployment session-jane))
-        expected-dp-id   (str "deployment-parameter/" (t/parameter->uuid parent-id node-id parameter-name))
         valid-entry      {:name    parameter-name
                           :parent  parent-id
                           :node-id node-id
                           :acl     {:owners   ["group/nuvla-admin"]
                                     :edit-acl ["user/jane"]}}
+        expected-dp-id   (t/parameter->id valid-entry)
         valid-entry-user {:name    parameter-name-user
                           :parent  parent-id
                           :node-id node-id

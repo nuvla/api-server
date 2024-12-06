@@ -11,6 +11,7 @@
     [com.sixsq.nuvla.server.resources.deployment :as t]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.module :as module]
+    [com.sixsq.nuvla.server.resources.spec.module :as module-spec]
     [com.sixsq.nuvla.server.resources.module-application :as module-application]
     [com.sixsq.nuvla.server.resources.module-lifecycle-test :refer [create-parent-projects]]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
@@ -57,7 +58,7 @@
     :path                      path
     :subtype                   subtype
 
-    :compatibility             "docker-compose"
+    :compatibility             module-spec/compatibility-docker-compose
 
     :logo-url                  "https://example.org/logo"
 
@@ -468,12 +469,6 @@
                                             (ltu/is-status 201)
                                             (ltu/location-url)))]
 
-                    (testing "verify that the deployment parameter was created"
-                      (-> session-user
-                          (request dep-param-url)
-                          (ltu/body->edn)
-                          (ltu/is-status 200)))
-
                     (testing "try to stop the deployment and check the stop job was created"
                       (let [job-id  (-> session-user
                                         (request stop-url
@@ -523,23 +518,13 @@
                           (ltu/is-status 200)
                           (ltu/is-operation-present "start")))
 
-                    ;; Disabled test because of flapping error build
-                    ;; on edit changes on deployment acl are propagated to deployment parameters
-                    #_(let [deployment-acl (-> session-user
+                    (testing "on edit changes on deployment acl are propagated to deployment parameters"
+                      (let [deployment-acl (-> session-user
                                                (request deployment-url)
                                                (ltu/body->edn)
                                                (ltu/is-status 200)
                                                (ltu/body)
                                                :acl)]
-
-                        (ltu/refresh-es-indices)
-
-                        (-> session-user
-                            (request dep-param-url)
-                            (ltu/body->edn)
-                            (ltu/is-status 200)
-                            (ltu/is-key-value #(= deployment-acl %) :acl true))
-
                         (-> session-user
                             (request deployment-url
                                      :request-method :put
@@ -549,12 +534,14 @@
                             (ltu/body->edn)
                             (ltu/is-status 200))
 
+                        (ltu/refresh-es-indices)
+
                         (-> session-user
                             (request dep-param-url)
                             (ltu/body->edn)
                             (ltu/is-status 200)
                             (ltu/is-key-value #(some #{"user/shared"} (:view-data %))
-                                              :acl "user/shared")))
+                                              :acl "user/shared"))))
 
                     (testing "verify user can create another deployment from existing one by using clone action"
                       (let [cloned-dep-id   (-> session-user
@@ -737,7 +724,7 @@
             subtype              "application"
             module-id            (setup-module session-user
                                                (assoc (valid-module subtype valid-module-content)
-                                                 :compatibility "swarm"))
+                                                 :compatibility module-spec/compatibility-swarm))
             valid-deployment     {:module {:href module-id}}
             deployment-id        (-> session-user
                                      (request base-uri
@@ -1399,4 +1386,3 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-key-value :state "ERROR")))))))
-

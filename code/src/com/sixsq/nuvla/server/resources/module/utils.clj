@@ -31,7 +31,7 @@
 
 (defn is-application?
   [resource]
-  (is-subtype? resource module-spec/subtype-app))
+  (is-subtype? resource module-spec/subtype-app-docker))
 
 (defn is-application-k8s?
   [resource]
@@ -47,7 +47,7 @@
 
 (defn is-component?
   [resource]
-  (is-subtype? resource module-spec/subtype-comp))
+  (is-subtype? resource module-spec/subtype-comp-docker))
 
 (defn is-project?
   [resource]

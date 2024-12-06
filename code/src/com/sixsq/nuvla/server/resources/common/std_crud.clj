@@ -35,7 +35,7 @@
  - call the resource validate method
  - store the resource into the database
  Return the stored resource."
-  [resource-name collection-acl resource-uri & {:keys [pre-validate-hook
+  [resource-name collection-acl _resource-uri & {:keys [pre-validate-hook
                                                        options]
                                                 :or   {pre-validate-hook pass-through}}]
   (validate-collection-acl collection-acl)
@@ -44,7 +44,7 @@
     (-> body
         u/strip-service-attrs
         (crud/new-identifier resource-name)
-        (assoc :resource-type resource-uri)
+        (assoc :resource-type resource-name)
         sm/initialize
         u/update-timestamps
         (u/set-created-by request)
@@ -254,9 +254,7 @@
     (throw-bulk-header-missing request)
     (a/throw-cannot-add collection-acl request)
     (a/throw-cannot-bulk-action collection-acl request)
-    (let [options  (select-keys request [:nuvla/authn :body])
-          response (db/bulk-insert-metrics resource-name body options)]
-      (r/json-response response))))
+    (r/json-response (db/bulk-insert-metrics resource-name body))))
 
 (defn generic-bulk-operation-fn
   [resource-name collection-acl bulk-op-fn]

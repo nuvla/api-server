@@ -48,3 +48,14 @@
                                #"\)"  "%29"
                                #"\~"  "%7E"})
       (URLDecoder/decode StandardCharsets/UTF_8)))
+
+
+(defn safe-subs
+  "Returns the substring of s beginning at start inclusive, and ending
+  at end (defaults to length of string), exclusive."
+  (^String [^String s start]
+   (safe-subs s start (.length s)))
+  (^String [^String s start end]
+   (try
+     (subs s start end)
+     (catch StringIndexOutOfBoundsException _))))

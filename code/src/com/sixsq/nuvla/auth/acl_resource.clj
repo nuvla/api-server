@@ -4,6 +4,8 @@
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.server.util.response :as ru]))
 
+(def group-admin "group/nuvla-admin")
+
 
 (def rights-hierarchy (-> (make-hierarchy)
 
@@ -59,7 +61,7 @@
 
 (defn is-admin?
   [{:keys [claims] :as _authn-info}]
-  (contains? (set claims) "group/nuvla-admin"))
+  (contains? (set claims) group-admin))
 
 (defn is-admin-request?
   [request]
@@ -70,7 +72,7 @@
   "Given the identity map, this extracts the associated right.
   If the right does not apply, then nil is returned."
   [{:keys [claims]} [right principals]]
-  (let [principals-with-admin (conj principals "group/nuvla-admin")]
+  (let [principals-with-admin (conj principals group-admin)]
     (when claims
       (when (some claims principals-with-admin)
         (get rights-keywords right)))))
