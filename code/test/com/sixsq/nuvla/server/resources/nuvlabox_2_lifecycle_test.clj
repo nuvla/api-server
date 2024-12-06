@@ -3,7 +3,6 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [are deftest is testing use-fixtures]]
-    [clojure.tools.logging :as log]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -539,7 +538,6 @@
                                (ltu/is-key-value :state "ACTIVATED")
                                (ltu/get-op-url :commission))]
 
-            (log/error "11111")
             ;; partial commissioning of the nuvlabox (no swarm credentials)
             (-> session
                 (request commission
@@ -558,7 +556,7 @@
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
-            #_(ltu/is-last-event nuvlabox-id
+            (ltu/is-last-event nuvlabox-id
                                {:name               "nuvlabox.commission"
                                 :description        (str user-name-or-id " commissioned nuvlabox")
                                 :category           "action"
@@ -567,10 +565,8 @@
                                 :authn-info         authn-info
                                 :acl                {:owners ["group/nuvla-admin" "user/alpha"]}})
 
-            (log/error "22222")
-
             ;; verify state of the resource
-            (-> session-admin
+            (-> session
                 (request nuvlabox-url)
                 (ltu/body->edn)
                 (ltu/is-status 200)
@@ -582,9 +578,9 @@
                 (ltu/is-operation-present :cluster-nuvlabox)
                 (ltu/is-key-value :state "COMMISSIONED")
                 (ltu/is-key-value :tags nil)
-                (ltu/is-key-value :coe-list [])
-                (ltu/dump))
-            (log/error "44444")
+                (ltu/is-key-value (partial mapv #(dissoc % :id))
+                                  :coe-list [{:capabilities [utils/capability-job-pull]
+                                              :coe-type     "docker"}]))
 
             ;; check that services exist
             (let [services (-> session
@@ -620,9 +616,31 @@
                   (when (= "s3" subtype)
                     (is (= 1 (count creds)))))))            ;; only key/secret pair
 
+            (-> session
+                (request commission
+                         :request-method :post
+                         :body (json/write-str {:cluster-worker-id   "cluster-worker-id"
+                                                :swarm-endpoint      "https://swarm.example.com"
+                                                :tags                tags
+                                                :capabilities        [utils/capability-job-pull]}))
+                (ltu/body->edn)
+                (ltu/is-status 200))
 
-
-
+            (-> session
+                (request nuvlabox-url)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-operation-present :edit)
+                (ltu/is-operation-absent :delete)
+                (ltu/is-operation-absent :activate)
+                (ltu/is-operation-present :commission)
+                (ltu/is-operation-present :decommission)
+                (ltu/is-operation-present :cluster-nuvlabox)
+                (ltu/is-key-value :state "COMMISSIONED")
+                (ltu/is-key-value :tags nil)
+                (ltu/is-key-value (partial mapv #(dissoc % :id))
+                                  :coe-list [{:capabilities [utils/capability-job-pull]
+                                              :coe-type     "swarm"}]))
 
             ;; check custom operations
             ;;
@@ -674,6 +692,22 @@
                                                 :kubernetes-endpoint    "https://k8s.example.com"}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
+
+            (-> session
+                (request nuvlabox-url)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-operation-present :edit)
+                (ltu/is-operation-absent :delete)
+                (ltu/is-operation-absent :activate)
+                (ltu/is-operation-present :commission)
+                (ltu/is-operation-present :decommission)
+                (ltu/is-operation-present :cluster-nuvlabox)
+                (ltu/is-key-value :state "COMMISSIONED")
+                (ltu/is-key-value :tags nil)
+                (ltu/is-key-value (partial mapv #(dissoc % :id))
+                                  :coe-list [{:coe-type "docker"}
+                                             {:coe-type "kubernetes"}]))
 
             ;; check the services again
             (let [services (-> session-owner
@@ -774,6 +808,7 @@
                                (ltu/is-operation-absent :commission)
                                (ltu/is-operation-present :decommission)
                                (ltu/is-key-value :state "DECOMMISSIONING")
+                               (ltu/is-key-value :coe-list nil)
                                (ltu/body)
                                :acl)]
 

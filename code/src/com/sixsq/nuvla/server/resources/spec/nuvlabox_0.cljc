@@ -275,7 +275,7 @@
 
 (s/def ::coe-type
   (-> (st/spec #{"docker" "swarm" "kubernetes"})
-      (assoc :name "type"
+      (assoc :name "coe-type"
              :json-schema/type "string"
              :json-schema/description "coe type"
              :json-schema/value-scope {:values ["docker" "swarm" "kubernetes"]})))

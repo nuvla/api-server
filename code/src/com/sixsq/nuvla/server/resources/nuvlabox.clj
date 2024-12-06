@@ -436,21 +436,16 @@ particular NuvlaBox release.
 
 
 (defmethod crud/do-action [resource-type "commission"]
-  [{{uuid :uuid} :params body :body :as request}]
+  [{{uuid :uuid} :params :as request}]
   (let [id (str resource-type "/" uuid)]
     (try
-      (let [capabilities (some-> body :capabilities set vec)
-            ssh-keys     (some-> body :ssh-keys set vec)
-            nuvlabox     (-> (crud/retrieve-by-id-as-admin id)
+      (let [nuvlabox     (-> (crud/retrieve-by-id-as-admin id)
                              (a/throw-cannot-manage request)
                              (u/throw-cannot-do-action
                                utils/can-commission? "commission")
-                             (assoc :state utils/state-commissioned)
-                             (cond-> capabilities (assoc :capabilities capabilities)
-                                     ssh-keys (assoc :ssh-keys ssh-keys))
                              u/update-timestamps
+                             (commission request)
                              crud/validate)]
-        (commission nuvlabox request)
 
         (let [resp (db/edit nuvlabox)]
           (ka-crud/publish-on-edit resource-type resp))
@@ -490,6 +485,7 @@ particular NuvlaBox release.
     (-> resource
         (assoc :state utils/state-decommissioning
                :acl updated-acl)
+        (dissoc :coe-list)
         u/update-timestamps
         (u/set-updated-by request)
         db/edit)

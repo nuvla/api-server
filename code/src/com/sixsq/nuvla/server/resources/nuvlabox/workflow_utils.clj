@@ -587,32 +587,22 @@
                      cluster-id " from NuvlaBox " nuvlabox-id)]
         (throw (ex-info msg (r/map-response msg 400 "")))))))
 
-(defn update-coe-list
-  [nuvlabox-id coe-list swarm-id swarm-enabled kubernetes-id capabilities]
-  (let [coe-type (cond (and swarm-id (not swarm-enabled)) "docker"
-                       (and swarm-id swarm-enabled) "swarm"
-                       kubernetes-id "kubernetes")
-        body     {:coe-list (vec (conj (set (or coe-list []))
-                                       (cond->
-                                         {:id       (or swarm-id kubernetes-id)
-                                          :coe-type coe-type}
-                                         (seq capabilities) (assoc :capabilities capabilities))))}
-        request  {:params      {:uuid          (u/id->uuid nuvlabox-id)
-                                :resource-name (u/id->resource-type nuvlabox-id)}
-                  :body        body
-                  :nuvla/authn auth/internal-identity}
-        {status :status} (crud/edit request)]
-    (if (= 200 status)
-      (do
-        (log/error "nuvlabox" nuvlabox-id "coe list updated")
-        nuvlabox-id)
-      (let [msg (str "cannot update coe list for NuvlaBox " nuvlabox-id)]
-        (throw (ex-info msg (r/map-response msg 400 "")))))))
+(defn assoc-coe-list
+  [nuvlabox swarm-id swarm-enabled kubernetes-id capabilities]
+  (assoc nuvlabox
+    :coe-list (cond-> []
+                      swarm-id (conj (cond-> {:id       swarm-id
+                                              :coe-type (if swarm-enabled "swarm" "docker")}
+                                             (seq capabilities) (assoc :capabilities capabilities)))
+                      kubernetes-id (conj (cond-> {:id       kubernetes-id
+                                                   :coe-type "kubernetes"}
+                                                  (seq capabilities) (assoc :capabilities capabilities))))))
 
 (defn commission
-  [{:keys [id name acl vpn-server-id infrastructure-service-group coe-list] :as _resource}
+  [{:keys [id name acl vpn-server-id infrastructure-service-group] :as nuvlabox}
    {{:keys [tags
             capabilities
+            ssh-keys
             swarm-endpoint
             swarm-token-manager swarm-token-worker
             swarm-client-key swarm-client-cert swarm-client-ca
@@ -624,7 +614,9 @@
             cluster-id cluster-worker-id cluster-orchestrator cluster-managers cluster-workers
             removed]} :body :as request}]
   (when-let [isg-id infrastructure-service-group]
-    (let [removed-set    (if (coll? removed) (set removed) #{})
+    (let [capabilities   (some-> capabilities set vec)
+          ssh-keys       (some-> ssh-keys set vec)
+          removed-set    (if (coll? removed) (set removed) #{})
           swarm-worker   (some-> cluster-worker-id string?)
           swarm-removed? (contains? removed-set "swarm-endpoint")
           swarm-enabled  (cond
@@ -659,8 +651,6 @@
           minio-id       (or
                            (update-minio-service id name acl isg-id minio-endpoint)
                            (create-minio-service id name acl isg-id minio-endpoint))]
-
-      (update-coe-list id coe-list swarm-id swarm-enabled kubernetes-id capabilities)
 
       (when (and cluster-id cluster-managers)
         (or
@@ -709,7 +699,11 @@
       (when (contains? removed-set "swarm-token-worker")
         (delete-resource (get-swarm-token swarm-id "WORKER") auth/internal-identity))
 
-      (prn "COMMend" (crud/retrieve-by-id id request)))))
+      (-> nuvlabox
+          (assoc :state utils/state-commissioned)
+          (assoc-coe-list swarm-id swarm-enabled kubernetes-id capabilities)
+          (cond-> capabilities (assoc :capabilities capabilities)
+                  ssh-keys (assoc :ssh-keys ssh-keys))))))
 
 
 (defn get-nuvlabox-children
