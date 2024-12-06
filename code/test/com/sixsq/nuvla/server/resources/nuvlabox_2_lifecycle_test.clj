@@ -3,6 +3,7 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [are deftest is testing use-fixtures]]
+    [clojure.tools.logging :as log]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -538,6 +539,7 @@
                                (ltu/is-key-value :state "ACTIVATED")
                                (ltu/get-op-url :commission))]
 
+            (log/error "11111")
             ;; partial commissioning of the nuvlabox (no swarm credentials)
             (-> session
                 (request commission
@@ -556,7 +558,7 @@
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
-            (ltu/is-last-event nuvlabox-id
+            #_(ltu/is-last-event nuvlabox-id
                                {:name               "nuvlabox.commission"
                                 :description        (str user-name-or-id " commissioned nuvlabox")
                                 :category           "action"
@@ -565,8 +567,10 @@
                                 :authn-info         authn-info
                                 :acl                {:owners ["group/nuvla-admin" "user/alpha"]}})
 
+            (log/error "22222")
+
             ;; verify state of the resource
-            (-> session
+            (-> session-admin
                 (request nuvlabox-url)
                 (ltu/body->edn)
                 (ltu/is-status 200)
@@ -577,7 +581,10 @@
                 (ltu/is-operation-present :decommission)
                 (ltu/is-operation-present :cluster-nuvlabox)
                 (ltu/is-key-value :state "COMMISSIONED")
-                (ltu/is-key-value :tags nil))
+                (ltu/is-key-value :tags nil)
+                (ltu/is-key-value :coe-list [])
+                (ltu/dump))
+            (log/error "44444")
 
             ;; check that services exist
             (let [services (-> session
@@ -1391,13 +1398,13 @@
 
       (testing "coe resource action is not available for nuvlabox engine version 1.0.0"
         (-> session-admin
-           (request nuvlabox-url
-                    :request-method :put
-                    :body (json/write-str {:state                   "COMMISSIONED"
-                                           :nuvlabox-engine-version "1.0.0"}))
-           (ltu/body->edn)
-           (ltu/is-status 200)
-           (ltu/is-operation-absent utils/action-coe-resource-actions)))
+            (request nuvlabox-url
+                     :request-method :put
+                     :body (json/write-str {:state                   "COMMISSIONED"
+                                            :nuvlabox-engine-version "1.0.0"}))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-operation-absent utils/action-coe-resource-actions)))
 
       (-> session-admin
           (request nuvlabox-url

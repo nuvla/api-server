@@ -531,7 +531,9 @@
                 (ltu/is-operation-present :decommission)
                 (ltu/is-operation-present :check-api)
                 (ltu/is-operation-present :reboot)
-                (ltu/is-key-value :state "COMMISSIONED"))
+                (ltu/is-key-value :state "COMMISSIONED")
+                (ltu/is-key-value :coe-list [])
+                (ltu/dump))
 
             ;; check that services exist
             (let [services (-> session

@@ -587,9 +587,30 @@
                      cluster-id " from NuvlaBox " nuvlabox-id)]
         (throw (ex-info msg (r/map-response msg 400 "")))))))
 
+(defn update-coe-list
+  [nuvlabox-id coe-list swarm-id swarm-enabled kubernetes-id capabilities]
+  (let [coe-type (cond (and swarm-id (not swarm-enabled)) "docker"
+                       (and swarm-id swarm-enabled) "swarm"
+                       kubernetes-id "kubernetes")
+        body     {:coe-list (vec (conj (set (or coe-list []))
+                                       (cond->
+                                         {:id       (or swarm-id kubernetes-id)
+                                          :coe-type coe-type}
+                                         (seq capabilities) (assoc :capabilities capabilities))))}
+        request  {:params      {:uuid          (u/id->uuid nuvlabox-id)
+                                :resource-name (u/id->resource-type nuvlabox-id)}
+                  :body        body
+                  :nuvla/authn auth/internal-identity}
+        {status :status} (crud/edit request)]
+    (if (= 200 status)
+      (do
+        (log/error "nuvlabox" nuvlabox-id "coe list updated")
+        nuvlabox-id)
+      (let [msg (str "cannot update coe list for NuvlaBox " nuvlabox-id)]
+        (throw (ex-info msg (r/map-response msg 400 "")))))))
 
 (defn commission
-  [{:keys [id name acl vpn-server-id infrastructure-service-group] :as _resource}
+  [{:keys [id name acl vpn-server-id infrastructure-service-group coe-list] :as _resource}
    {{:keys [tags
             capabilities
             swarm-endpoint
@@ -639,6 +660,8 @@
                            (update-minio-service id name acl isg-id minio-endpoint)
                            (create-minio-service id name acl isg-id minio-endpoint))]
 
+      (update-coe-list id coe-list swarm-id swarm-enabled kubernetes-id capabilities)
+
       (when (and cluster-id cluster-managers)
         (or
           (update-nuvlabox-cluster id cluster-id nil cluster-managers cluster-workers)
@@ -685,7 +708,8 @@
 
       (when (contains? removed-set "swarm-token-worker")
         (delete-resource (get-swarm-token swarm-id "WORKER") auth/internal-identity))
-      )))
+
+      (prn "COMMend" (crud/retrieve-by-id id request)))))
 
 
 (defn get-nuvlabox-children
