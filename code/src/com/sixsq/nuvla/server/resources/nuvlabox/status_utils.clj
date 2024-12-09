@@ -282,7 +282,7 @@
             (try
               (let [response (db/bulk-operation dep-param/resource-type (params-bulk-operation-data params))
                     summary  (escu/summarise-bulk-operation-response response)]
-                (log/debug log-title summary))
+                (log/debug log-title "summary:" summary))
               (catch Exception e
                 (log/error log-title (ex-message e) (ex-data e)))))))
       (catch Exception e

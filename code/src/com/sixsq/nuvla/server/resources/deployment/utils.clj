@@ -101,8 +101,9 @@
                                                 [{:update {:_id (u/id->uuid id) :_index (escu/collection-id->index dep-param/resource-type)}}
                                                  {:doc {:acl acl}}])))]
        (try
-         (let [response (db/bulk-operation dep-param/resource-type bulk-op-data)]
-           (log/warn log-title ":" (escu/summarise-bulk-operation-response response)))
+         (let [response (db/bulk-operation dep-param/resource-type bulk-op-data)
+               summary (escu/summarise-bulk-operation-response response)]
+           (log/debug log-title "summary:" summary))
          (catch Exception e
            (log/errorf log-title "failed: " e))))
      (catch Exception e
