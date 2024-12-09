@@ -183,7 +183,7 @@
        {:name  "node-id",
         :value node-id},
        {:name  "replicas.running",
-        :value (str (get-in deployment [:status :readyReplicas] 0))}])))
+        :value (str (get-in deployment [:status :ready_replicas] 0))}])))
 
 (defn k8s-service-params
   [service]
@@ -192,10 +192,10 @@
       node-id
       (concat [{:name  "node-id",
                 :value node-id}]
-              (keep (fn [{:keys [nodePort port protocol]}]
-                      (when nodePort
+              (keep (fn [{:keys [node_port port protocol]}]
+                      (when node_port
                         {:name  (str (str/lower-case (or protocol "")) "." port)
-                         :value (str nodePort)})) (get-in service [:spec :ports]))))))
+                         :value (str node_port)})) (get-in service [:spec :ports]))))))
 
 (defn k8s-helmreleases-params
   [helmrelase]
