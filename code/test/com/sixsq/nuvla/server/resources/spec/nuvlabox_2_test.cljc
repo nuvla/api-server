@@ -61,8 +61,7 @@
                :heartbeat-interval             20
 
                :coe-list                       [{:id           "infrastructure-service/uuid-0"
-                                                 :coe-type     "docker"
-                                                 :capabilities ["1" "2" "3"]}]})
+                                                 :coe-type     "docker"}]})
 
 
 (deftest check-nuvlabox

@@ -282,8 +282,7 @@
 
 (s/def ::coe
   (-> (st/spec (su/only-keys-maps {:req-un [::common/id
-                                            ::coe-type]
-                                   :opt-un [::istg/capabilities]}))
+                                            ::coe-type]}))
       (assoc :name "coe"
              :json-schema/type "map"
              :json-schema/description "container orchestration engine")))

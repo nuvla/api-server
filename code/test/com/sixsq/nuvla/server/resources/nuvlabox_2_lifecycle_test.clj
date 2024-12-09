@@ -579,8 +579,7 @@
                 (ltu/is-key-value :state "COMMISSIONED")
                 (ltu/is-key-value :tags nil)
                 (ltu/is-key-value (partial mapv #(dissoc % :id))
-                                  :coe-list [{:capabilities [utils/capability-job-pull]
-                                              :coe-type     "docker"}]))
+                                  :coe-list [{:coe-type     "docker"}]))
 
             ;; check that services exist
             (let [services (-> session
@@ -639,8 +638,7 @@
                 (ltu/is-key-value :state "COMMISSIONED")
                 (ltu/is-key-value :tags nil)
                 (ltu/is-key-value (partial mapv #(dissoc % :id))
-                                  :coe-list [{:capabilities [utils/capability-job-pull]
-                                              :coe-type     "swarm"}]))
+                                  :coe-list [{:coe-type     "swarm"}]))
 
             ;; check custom operations
             ;;

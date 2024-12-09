@@ -588,15 +588,13 @@
         (throw (ex-info msg (r/map-response msg 400 "")))))))
 
 (defn assoc-coe-list
-  [nuvlabox swarm-id swarm-enabled kubernetes-id capabilities]
+  [nuvlabox swarm-id swarm-enabled kubernetes-id]
   (assoc nuvlabox
     :coe-list (cond-> []
-                      swarm-id (conj (cond-> {:id       swarm-id
-                                              :coe-type (if swarm-enabled "swarm" "docker")}
-                                             (seq capabilities) (assoc :capabilities capabilities)))
-                      kubernetes-id (conj (cond-> {:id       kubernetes-id
-                                                   :coe-type "kubernetes"}
-                                                  (seq capabilities) (assoc :capabilities capabilities))))))
+                      swarm-id (conj {:id       swarm-id
+                                      :coe-type (if swarm-enabled "swarm" "docker")})
+                      kubernetes-id (conj {:id       kubernetes-id
+                                           :coe-type "kubernetes"}))))
 
 (defn commission
   [{:keys [id name acl vpn-server-id infrastructure-service-group] :as nuvlabox}
@@ -701,7 +699,7 @@
 
       (-> nuvlabox
           (assoc :state utils/state-commissioned)
-          (assoc-coe-list swarm-id swarm-enabled kubernetes-id capabilities)
+          (assoc-coe-list swarm-id swarm-enabled kubernetes-id)
           (cond-> capabilities (assoc :capabilities capabilities)
                   ssh-keys (assoc :ssh-keys ssh-keys))))))
 

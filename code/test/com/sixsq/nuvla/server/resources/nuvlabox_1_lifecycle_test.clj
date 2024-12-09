@@ -483,8 +483,7 @@
                 (ltu/is-key-value :state "COMMISSIONED")
                 (ltu/is-key-value :tags nil)
                 (ltu/is-key-value (partial mapv #(dissoc % :id))
-                                  :coe-list [{:capabilities ["NUVLA_JOB_PULL"]
-                                              :coe-type     "docker"}]))
+                                  :coe-list [{:coe-type "docker"}]))
 
             ;; check that services exist
             (let [services (-> session
