@@ -3,6 +3,7 @@
     [clojure.spec.alpha :as s]
     [com.sixsq.nuvla.server.resources.spec.common :as common]
     [com.sixsq.nuvla.server.resources.spec.core :as core]
+    [com.sixsq.nuvla.server.resources.spec.infrastructure-service-template-generic :as istg]
     [com.sixsq.nuvla.server.resources.spec.nuvlabox :as nb]
     [com.sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -272,6 +273,25 @@
 
     :json-schema/order 38))
 
+(s/def ::coe-type
+  (-> (st/spec #{"docker" "swarm" "kubernetes"})
+      (assoc :name "coe-type"
+             :json-schema/type "string"
+             :json-schema/description "coe type"
+             :json-schema/value-scope {:values ["docker" "swarm" "kubernetes"]})))
+
+(s/def ::coe
+  (-> (st/spec (su/only-keys-maps {:req-un [::common/id
+                                            ::coe-type]}))
+      (assoc :name "coe"
+             :json-schema/type "map"
+             :json-schema/description "container orchestration engine")))
+
+(s/def ::coe-list
+  (assoc (st/spec (s/coll-of ::coe :kind vector?))
+    :name "coe-list"
+    :json-schema/display-name "container orchestration engines list"
+    :json-schema/description "list of NuvlaBox container orchestration engines"))
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
@@ -304,4 +324,5 @@
                                ::online
                                ::inferred-location
                                ::nuvlabox-engine-version
-                               ::heartbeat-interval]}))
+                               ::heartbeat-interval
+                               ::coe-list]}))

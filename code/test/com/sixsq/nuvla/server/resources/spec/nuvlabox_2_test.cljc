@@ -58,7 +58,10 @@
                :online                         true
                :host-level-management-api-key  "credential/123-abc"
                :nuvlabox-engine-version        "1.2.3"
-               :heartbeat-interval             20})
+               :heartbeat-interval             20
+
+               :coe-list                       [{:id           "infrastructure-service/uuid-0"
+                                                 :coe-type     "docker"}]})
 
 
 (deftest check-nuvlabox
@@ -77,5 +80,5 @@
                  :manufacturer-serial-number :firmware-version :hardware-type :form-factor :wifi-ssid :wifi-password
                  :root-password :login-username :login-password :cloud-password :comment :vm-cidr :lan-cidr :os-version
                  :hw-revision-code :monitored :infrastructure-service-id :ssh-keys :capabilities :online
-                 :host-level-management-api-key :nuvlabox-engine-version}]
+                 :host-level-management-api-key :nuvlabox-engine-version :coe-list}]
     (stu/is-valid ::nb-2/schema (dissoc valid-nb attr))))

@@ -542,7 +542,8 @@
             (-> session
                 (request commission
                          :request-method :post
-                         :body (json/write-str {:swarm-token-worker  "abc"
+                         :body (json/write-str {:cluster-worker-id   "xyz"
+                                                :swarm-token-worker  "abc"
                                                 :swarm-token-manager "def"
                                                 ;:swarm-client-key    "key"
                                                 ;:swarm-client-cert   "cert"
@@ -577,7 +578,9 @@
                 (ltu/is-operation-present :decommission)
                 (ltu/is-operation-present :cluster-nuvlabox)
                 (ltu/is-key-value :state "COMMISSIONED")
-                (ltu/is-key-value :tags nil))
+                (ltu/is-key-value :tags nil)
+                (ltu/is-key-value (partial mapv #(dissoc % :id))
+                                  :coe-list [{:coe-type "swarm"}]))
 
             ;; check that services exist
             (let [services (-> session
@@ -613,9 +616,30 @@
                   (when (= "s3" subtype)
                     (is (= 1 (count creds)))))))            ;; only key/secret pair
 
+            (-> session
+                (request commission
+                         :request-method :post
+                         :body (json/write-str {:cluster-worker-id "cluster-worker-id"
+                                                :swarm-endpoint    "https://swarm.example.com"
+                                                :tags              tags
+                                                :capabilities      [utils/capability-job-pull]}))
+                (ltu/body->edn)
+                (ltu/is-status 200))
 
-
-
+            (-> session
+                (request nuvlabox-url)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-operation-present :edit)
+                (ltu/is-operation-absent :delete)
+                (ltu/is-operation-absent :activate)
+                (ltu/is-operation-present :commission)
+                (ltu/is-operation-present :decommission)
+                (ltu/is-operation-present :cluster-nuvlabox)
+                (ltu/is-key-value :state "COMMISSIONED")
+                (ltu/is-key-value :tags nil)
+                (ltu/is-key-value (partial mapv #(dissoc % :id))
+                                  :coe-list [{:coe-type "swarm"}]))
 
             ;; check custom operations
             ;;
@@ -667,6 +691,22 @@
                                                 :kubernetes-endpoint    "https://k8s.example.com"}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
+
+            (-> session
+                (request nuvlabox-url)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-operation-present :edit)
+                (ltu/is-operation-absent :delete)
+                (ltu/is-operation-absent :activate)
+                (ltu/is-operation-present :commission)
+                (ltu/is-operation-present :decommission)
+                (ltu/is-operation-present :cluster-nuvlabox)
+                (ltu/is-key-value :state "COMMISSIONED")
+                (ltu/is-key-value :tags nil)
+                (ltu/is-key-value (partial mapv #(dissoc % :id))
+                                  :coe-list [{:coe-type "swarm"}
+                                             {:coe-type "kubernetes"}]))
 
             ;; check the services again
             (let [services (-> session-owner
@@ -767,6 +807,7 @@
                                (ltu/is-operation-absent :commission)
                                (ltu/is-operation-present :decommission)
                                (ltu/is-key-value :state "DECOMMISSIONING")
+                               (ltu/is-key-value :coe-list nil)
                                (ltu/body)
                                :acl)]
 
@@ -894,7 +935,8 @@
           (-> session-owner
               (request commission
                        :request-method :post
-                       :body (json/write-str {:swarm-token-worker     "abc"
+                       :body (json/write-str {:cluster-worker-id      "xyz"
+                                              :swarm-token-worker     "abc"
                                               :swarm-token-manager    "def"
                                               :swarm-client-key       "key"
                                               :swarm-client-cert      "cert"
@@ -1391,13 +1433,13 @@
 
       (testing "coe resource action is not available for nuvlabox engine version 1.0.0"
         (-> session-admin
-           (request nuvlabox-url
-                    :request-method :put
-                    :body (json/write-str {:state                   "COMMISSIONED"
-                                           :nuvlabox-engine-version "1.0.0"}))
-           (ltu/body->edn)
-           (ltu/is-status 200)
-           (ltu/is-operation-absent utils/action-coe-resource-actions)))
+            (request nuvlabox-url
+                     :request-method :put
+                     :body (json/write-str {:state                   "COMMISSIONED"
+                                            :nuvlabox-engine-version "1.0.0"}))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-operation-absent utils/action-coe-resource-actions)))
 
       (-> session-admin
           (request nuvlabox-url
