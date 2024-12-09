@@ -579,7 +579,7 @@
                 (ltu/is-key-value :state "COMMISSIONED")
                 (ltu/is-key-value :tags nil)
                 (ltu/is-key-value (partial mapv #(dissoc % :id))
-                                  :coe-list [{:coe-type     "docker"}]))
+                                  :coe-list [{:coe-type "docker"}]))
 
             ;; check that services exist
             (let [services (-> session
@@ -618,10 +618,10 @@
             (-> session
                 (request commission
                          :request-method :post
-                         :body (json/write-str {:cluster-worker-id   "cluster-worker-id"
-                                                :swarm-endpoint      "https://swarm.example.com"
-                                                :tags                tags
-                                                :capabilities        [utils/capability-job-pull]}))
+                         :body (json/write-str {:cluster-worker-id "cluster-worker-id"
+                                                :swarm-endpoint    "https://swarm.example.com"
+                                                :tags              tags
+                                                :capabilities      [utils/capability-job-pull]}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -638,7 +638,7 @@
                 (ltu/is-key-value :state "COMMISSIONED")
                 (ltu/is-key-value :tags nil)
                 (ltu/is-key-value (partial mapv #(dissoc % :id))
-                                  :coe-list [{:coe-type     "swarm"}]))
+                                  :coe-list [{:coe-type "swarm"}]))
 
             ;; check custom operations
             ;;

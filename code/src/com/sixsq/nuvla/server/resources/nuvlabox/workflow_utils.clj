@@ -591,10 +591,14 @@
   [nuvlabox swarm-id swarm-enabled kubernetes-id]
   (assoc nuvlabox
     :coe-list (cond-> []
-                      swarm-id (conj {:id       swarm-id
-                                      :coe-type (if swarm-enabled "swarm" "docker")})
-                      kubernetes-id (conj {:id       kubernetes-id
-                                           :coe-type "kubernetes"}))))
+
+                      (and swarm-id (some? swarm-enabled))
+                      (conj {:id       swarm-id
+                             :coe-type (if swarm-enabled "swarm" "docker")})
+
+                      kubernetes-id
+                      (conj {:id       kubernetes-id
+                             :coe-type "kubernetes"}))))
 
 (defn commission
   [{:keys [id name acl vpn-server-id infrastructure-service-group] :as nuvlabox}
