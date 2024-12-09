@@ -41,27 +41,27 @@
              :json-schema/editable false
              :json-schema/order 33)))
 
-
 (def ^:const subtype-project "project")
-
-(def ^:const subtype-comp "component")
-
-(def ^:const subtype-app "Docker Application" "application")
-
+(def ^:const subtype-comp-docker "component")
+(def ^:const subtype-app-docker "Docker Application" "application")
 (def ^:const subtype-app-k8s "Kubernetes Application" "application_kubernetes")
-
 (def ^:const subtype-app-helm "Helm Application" "application_helm")
-
 (def ^:const subtype-apps-sets "Application Bouquet" "applications_sets")
 
 (def ^:const module-subtypes
   [subtype-project
-   subtype-comp
-   subtype-app
+   subtype-comp-docker
+   subtype-app-docker
    subtype-app-k8s
    subtype-app-helm
    subtype-apps-sets])
 
+(def ^:const compatibility-docker-compose "docker-compose")
+(def ^:const compatibility-swarm "swarm")
+
+(def ^:const compatibilities
+  [compatibility-docker-compose
+   compatibility-swarm])
 
 (s/def ::subtype
   (-> (st/spec (set module-subtypes))
@@ -184,13 +184,11 @@
 ;;
 
 (s/def ::compatibility
-  (-> (st/spec #{"swarm" "docker-compose"})
+  (-> (st/spec (set compatibilities))
       (assoc :name "compatibility"
              :json-schema/type "string"
              :json-schema/description "module compatibility"
-             :json-schema/value-scope {:values ["swarm" "docker-compose"]}
-
-
+             :json-schema/value-scope {:values compatibilities}
              :json-schema/fulltext true
              :json-schema/order 35)))
 

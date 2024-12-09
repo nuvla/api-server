@@ -42,7 +42,7 @@
              :json-schema/order 1)))
 
 (s/def :cluster-node-label/value
-  (-> (st/spec ::core/nonblank-string)
+  (-> (st/spec string?)
       (assoc :name "cluster-node-label-value"
              :json-schema/description "Cluster node label value"
 

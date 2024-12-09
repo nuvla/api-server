@@ -6,6 +6,8 @@
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
+    [com.sixsq.nuvla.db.es.common.utils :as escu]
+    [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.pricing.payment :as payment]
     [com.sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
@@ -14,6 +16,7 @@
     [com.sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [com.sixsq.nuvla.server.resources.credential :as credential]
     [com.sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
+    [com.sixsq.nuvla.server.resources.deployment-parameter :as dep-param]
     [com.sixsq.nuvla.server.resources.job.interface :as job-interface]
     [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.module.utils :as module-utils]
@@ -83,26 +86,28 @@
 
 (defn propagate-acl-to-dep-parameters
   [deployment-id acl]
-  (try
-    (let [query     {:params      {:resource-name "deployment-parameter"}
-                     :cimi-params {:filter (cimi-params-impl/cimi-filter
-                                             {:filter (str "parent='" deployment-id "'")})
-                                   :select ["id"]}
-                     :nuvla/authn auth/internal-identity}
-          child-ids (->> query crud/query :body :resources (map :id))]
-
-      (doseq [child-id child-ids]
-        (try
-          (let [[resource-name uuid] (u/parse-id child-id)
-                request {:params      {:resource-name resource-name
-                                       :uuid          uuid}
-                         :body        {:acl acl}
-                         :nuvla/authn auth/internal-identity}]
-            (crud/edit request))
-          (catch Exception e
-            (log/errorf "error propagating acl to %s for %s: %s" (:id child-id) deployment-id e)))))
-    (catch Exception _
-      (log/errorf "cannot propagate acl to deployment parameters related to %s" deployment-id))))
+  (let [log-title (str "Propagating acl to deployment parameters of " deployment-id)]
+    (try
+     (when-let [bulk-op-data (some->> {:params      {:resource-name "deployment-parameter"}
+                                       :cimi-params {:filter (cimi-params-impl/cimi-filter
+                                                               {:filter (str "parent='" deployment-id "'")})
+                                                     :select ["id"]}
+                                       :nuvla/authn auth/internal-identity}
+                                      crud/query
+                                      :body
+                                      :resources
+                                      seq
+                                      (mapcat (fn [{:keys [id] :as _dp}]
+                                                [{:update {:_id (u/id->uuid id) :_index (escu/collection-id->index dep-param/resource-type)}}
+                                                 {:doc {:acl acl}}])))]
+       (try
+         (let [response (db/bulk-operation dep-param/resource-type bulk-op-data)
+               summary (escu/summarise-bulk-operation-response response)]
+           (log/debug log-title "summary:" summary))
+         (catch Exception e
+           (log/errorf log-title "failed: " e))))
+     (catch Exception e
+       (log/errorf log-title "query failed: " e)))))
 
 
 (defn create-job

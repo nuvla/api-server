@@ -1,6 +1,6 @@
 (ns com.sixsq.nuvla.server.util.general-test
   (:require
-    [clojure.test :refer [are deftest]]
+    [clojure.test :refer [is are deftest]]
     [com.sixsq.nuvla.server.util.general :as t]))
 
 (deftest filter-map-nil-value
@@ -58,3 +58,15 @@
                     "012\n...\n789" {:s "0123456789" :n 6}
                     "" {:s "" :n 5}
                     "" {:s "" :n 0}))
+
+(deftest safe-subs
+  (are [expect arg] (= expect (t/safe-subs "abc" arg))
+                    "abc" 0
+                    "bc" 1
+                    "c" 2
+                    nil 5)
+  (are [expect arg] (= expect (t/safe-subs "abc" (:start arg) (:end arg)))
+                    "abc" {:start 0 :end 3}
+                    "ab" {:start 0 :end 2}
+                    "b" {:start 1 :end 2}
+                    nil {:start 0 :end 99}))
