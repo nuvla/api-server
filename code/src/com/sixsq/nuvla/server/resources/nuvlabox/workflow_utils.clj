@@ -588,17 +588,21 @@
         (throw (ex-info msg (r/map-response msg 400 "")))))))
 
 (defn assoc-coe-list
-  [nuvlabox swarm-id swarm-enabled kubernetes-id]
-  (assoc nuvlabox
-    :coe-list (cond-> []
+  [{:keys [coe-list] :as nuvlabox} swarm-id swarm-enabled kubernetes-id]
+  (let [coe-by-id (group-by :id coe-list)
+        swarm-coe (if (some? swarm-enabled)
+                    {:id       swarm-id
+                     :coe-type (if swarm-enabled "swarm" "docker")}
+                    (first (get coe-by-id swarm-id)))]
+    (assoc nuvlabox
+      :coe-list (cond-> []
 
-                      (and swarm-id (some? swarm-enabled))
-                      (conj {:id       swarm-id
-                             :coe-type (if swarm-enabled "swarm" "docker")})
+                        (and swarm-id swarm-coe)
+                        (conj swarm-coe)
 
-                      kubernetes-id
-                      (conj {:id       kubernetes-id
-                             :coe-type "kubernetes"}))))
+                        kubernetes-id
+                        (conj {:id       kubernetes-id
+                               :coe-type "kubernetes"})))))
 
 (defn commission
   [{:keys [id name acl vpn-server-id infrastructure-service-group] :as nuvlabox}
