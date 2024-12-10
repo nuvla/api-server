@@ -446,7 +446,8 @@
             (-> session
                 (request commission
                          :request-method :post
-                         :body (json/write-str {:swarm-token-worker  "abc"
+                         :body (json/write-str {:cluster-worker-id   "xyz"
+                                                :swarm-token-worker  "abc"
                                                 :swarm-token-manager "def"
                                                 ;:swarm-client-key    "key"
                                                 ;:swarm-client-cert   "cert"
@@ -483,7 +484,7 @@
                 (ltu/is-key-value :state "COMMISSIONED")
                 (ltu/is-key-value :tags nil)
                 (ltu/is-key-value (partial mapv #(dissoc % :id))
-                                  :coe-list [{:coe-type "docker"}]))
+                                  :coe-list [{:coe-type "swarm"}]))
 
             ;; check that services exist
             (let [services (-> session
