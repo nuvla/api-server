@@ -1151,10 +1151,10 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str {:name     dep-set-name,
-                                          :coe-type "docker"
-                                          :start    false,
-                                          :modules  [helm-module-id-2]}))
+                   :body (json/write-str {:name    dep-set-name,
+                                          :subtype "docker-compose"
+                                          :start   false,
+                                          :modules [helm-module-id-2]}))
           ltu/body->edn
           (ltu/is-status 403)
           (ltu/is-key-value :message (msg [helm-module-id-2])))
@@ -1162,10 +1162,10 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str {:name     dep-set-name,
-                                          :coe-type "kubernetes"
-                                          :start    false,
-                                          :modules  [compose-module-id]}))
+                   :body (json/write-str {:name    dep-set-name,
+                                          :subtype "kubernetes"
+                                          :start   false,
+                                          :modules [compose-module-id]}))
           ltu/body->edn
           (ltu/is-status 403)
           (ltu/is-key-value :message (msg [compose-module-id])))
@@ -1173,10 +1173,10 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str {:name     dep-set-name,
-                                          :coe-type "kubernetes"
-                                          :start    false,
-                                          :modules  [compose-module-id helm-module-id-2]}))
+                   :body (json/write-str {:name    dep-set-name,
+                                          :subtype "kubernetes"
+                                          :start   false,
+                                          :modules [compose-module-id helm-module-id-2]}))
           ltu/body->edn
           (ltu/is-status 403)
           (ltu/is-key-value :message (msg [compose-module-id]))))
@@ -1185,20 +1185,20 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str {:name     dep-set-name,
-                                          :coe-type "docker"
-                                          :start    false,
-                                          :modules  [compose-module-id]}))
+                   :body (json/write-str {:name    dep-set-name,
+                                          :subtype "docker-compose"
+                                          :start   false,
+                                          :modules [compose-module-id]}))
           ltu/body->edn
           (ltu/is-status 201))
 
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str {:name     dep-set-name,
-                                          :coe-type "kubernetes"
-                                          :start    false,
-                                          :modules  [helm-module-id-2]}))
+                   :body (json/write-str {:name    dep-set-name,
+                                          :subtype "kubernetes"
+                                          :start   false,
+                                          :modules [helm-module-id-2]}))
           ltu/body->edn
           (ltu/is-status 201)))))
 

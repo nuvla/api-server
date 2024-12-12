@@ -266,16 +266,16 @@ These resources represent a deployment set that regroups deployments.
     resource))
 
 (defn app-compatible?
-  [{:keys [coe-type] :as _resource}
+  [{dg-subtype :subtype :as _resource}
    {module-subtype :subtype module-compatibility :compatibility}]
-  (or (nil? coe-type)
-      (and (= "docker" coe-type)
+  (or (nil? dg-subtype)
+      (and (= spec/subtype-docker-compose dg-subtype)
            (= module-spec/subtype-app-docker module-subtype)
            (= module-spec/compatibility-docker-compose module-compatibility))
-      (and (= "swarm" coe-type)
+      (and (= spec/subtype-docker-swarm dg-subtype)
            (= module-spec/subtype-app-docker module-subtype)
            (#{module-spec/compatibility-docker-compose module-spec/compatibility-swarm} module-compatibility))
-      (and (= "kubernetes" coe-type)
+      (and (= spec/subtype-kubernetes dg-subtype)
            (#{module-spec/subtype-app-k8s module-spec/subtype-app-helm} module-subtype))))
 
 (defn check-apps-compatibility

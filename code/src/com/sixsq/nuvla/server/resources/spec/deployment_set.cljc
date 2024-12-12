@@ -11,12 +11,16 @@
     [com.sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
-(s/def ::coe-type
-  (-> (st/spec #{"docker" "swarm" "kubernetes"})
-      (assoc :name "coe-type"
+(def ^:const subtype-docker-compose "docker-compose")
+(def ^:const subtype-docker-swarm "application_kubernetes")
+(def ^:const subtype-kubernetes "kubernetes")
+
+(s/def ::subtype
+  (-> (st/spec #{subtype-docker-compose subtype-docker-swarm subtype-kubernetes})
+      (assoc :name "subtype"
              :json-schema/type "string"
-             :json-schema/description "coe type"
-             :json-schema/value-scope {:values ["docker" "swarm" "kubernetes"]})))
+             :json-schema/description "sub type"
+             :json-schema/value-scope {:values [subtype-docker-compose subtype-docker-swarm subtype-kubernetes]})))
 
 (s/def ::state
   (assoc (st/spec (set utils/states))
@@ -113,7 +117,7 @@
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::state
                                   ::applications-sets]
-                         :opt-un [::coe-type                ; FIXME: make required once back-filled
+                         :opt-un [::subtype                ; FIXME: make required once back-filled
                                   ::owner
                                   ::start
                                   ::os/operational-status
