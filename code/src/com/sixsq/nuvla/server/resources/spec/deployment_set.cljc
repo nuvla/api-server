@@ -11,6 +11,13 @@
     [com.sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
+(s/def ::coe-type
+  (-> (st/spec #{"docker" "swarm" "kubernetes"})
+      (assoc :name "coe-type"
+             :json-schema/type "string"
+             :json-schema/description "coe type"
+             :json-schema/value-scope {:values ["docker" "swarm" "kubernetes"]})))
+
 (s/def ::state
   (assoc (st/spec (set utils/states))
     :name "state"
@@ -29,10 +36,10 @@
 
 (s/def ::fleet
   (assoc (st/spec (s/coll-of string?))
-         :name "fleet"
-         :json-schema/type "array"
-         :json-schema/display-name "fleet"
-         :json-schema/description "List of targeted edge ids."))
+    :name "fleet"
+    :json-schema/type "array"
+    :json-schema/display-name "fleet"
+    :json-schema/description "List of targeted edge ids."))
 
 (s/def ::fleet-filter
   (-> (st/spec ::core/nonblank-string)
@@ -106,7 +113,8 @@
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::state
                                   ::applications-sets]
-                         :opt-un [::owner
+                         :opt-un [::coe-type                ; FIXME: make required once back-filled
+                                  ::owner
                                   ::start
                                   ::os/operational-status
                                   ::deployment/api-endpoint

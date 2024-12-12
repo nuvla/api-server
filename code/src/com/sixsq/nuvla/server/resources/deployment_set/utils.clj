@@ -430,6 +430,16 @@
                                     :nuvla/authn authn})]
     (:resources body)))
 
+(defn get-all-modules
+  [deployment-set applications-sets]
+  (->> (get-applications-sets deployment-set)
+       (mapcat merge-apps (module-utils/get-applications-sets applications-sets))
+       (map #(-> (crud/retrieve {:params         {:uuid          (str (u/id->uuid (:id %)) "_" (:version %))
+                                                  :resource-name m/resource-type}
+                                 :request-method :get
+                                 :nuvla/authn    auth/internal-identity})
+                 :body))))
+
 (defn minimum-requirements
   [deployment-set applications-sets]
   (->> (get-applications-sets deployment-set)

@@ -16,6 +16,7 @@
 (def valid-deployment-set
   {:id                   (str deployment-set-resource/resource-type "/uuid")
    :resource-type        deployment-set-resource/resource-type
+   :coe-type              "swarm"
    :created              timestamp
    :updated              timestamp
    :acl                  valid-acl

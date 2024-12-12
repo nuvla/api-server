@@ -12,6 +12,7 @@
     [com.sixsq.nuvla.server.resources.deployment :as deployment]
     [com.sixsq.nuvla.server.resources.deployment-set :as t]
     [com.sixsq.nuvla.server.resources.deployment-set.utils :as utils]
+    [com.sixsq.nuvla.server.resources.infrastructure-service.utils :as infra-service-utils]
     [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.module :as module]
@@ -1132,6 +1133,75 @@
                   (comp set :fleet first :overwrites first)
                   :applications-sets #{ne-id-1 ne-id-2 ne-id-3}))))))))
 
+(deftest compatibility
+  (let [session-anon      (-> (ltu/ring-app)
+                              session
+                              (content-type "application/json"))
+        session-user      (header session-anon authn-info-header
+                                  (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
+        compose-module-id (resource-creation/create-module session-user "p1" "p1/m1")
+        helm-module-id-2  (with-redefs [infra-service-utils/missing-helm-repo-url? (constantly false)]
+                            (resource-creation/create-module session-user "p2" "p2/m2" resource-creation/valid-helm-module))
+        msg               (fn [module-ids]
+                            (str "Some apps are not compatible with the DG subtype : " module-ids))]
+
+    (module/initialize)
+
+    (testing "Cannot add incompatible modules"
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str {:name     dep-set-name,
+                                          :coe-type "docker"
+                                          :start    false,
+                                          :modules  [helm-module-id-2]}))
+          ltu/body->edn
+          (ltu/is-status 403)
+          (ltu/is-key-value :message (msg [helm-module-id-2])))
+
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str {:name     dep-set-name,
+                                          :coe-type "kubernetes"
+                                          :start    false,
+                                          :modules  [compose-module-id]}))
+          ltu/body->edn
+          (ltu/is-status 403)
+          (ltu/is-key-value :message (msg [compose-module-id])))
+
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str {:name     dep-set-name,
+                                          :coe-type "kubernetes"
+                                          :start    false,
+                                          :modules  [compose-module-id helm-module-id-2]}))
+          ltu/body->edn
+          (ltu/is-status 403)
+          (ltu/is-key-value :message (msg [compose-module-id]))))
+
+    (testing "Compatible modules are accepted"
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str {:name     dep-set-name,
+                                          :coe-type "docker"
+                                          :start    false,
+                                          :modules  [compose-module-id]}))
+          ltu/body->edn
+          (ltu/is-status 201))
+
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str {:name     dep-set-name,
+                                          :coe-type "kubernetes"
+                                          :start    false,
+                                          :modules  [helm-module-id-2]}))
+          ltu/body->edn
+          (ltu/is-status 201)))))
+
 (deftest lifecycle-missing-edges
   (let [session-anon    (-> (ltu/ring-app)
                             session
@@ -1864,7 +1934,7 @@
         ltu/body->edn
         (ltu/is-status 200))
 
-    (let [response     (-> session-user
+    (let [response    (-> session-user
                           (request base-uri
                                    :request-method :post
                                    :body (json/write-str {:name        dep-set-name,
