@@ -1156,7 +1156,7 @@
                                           :start   false,
                                           :modules [helm-module-id-2]}))
           ltu/body->edn
-          (ltu/is-status 403)
+          (ltu/is-status 400)
           (ltu/is-key-value :message (msg [helm-module-id-2])))
 
       (-> session-user
@@ -1167,7 +1167,7 @@
                                           :start   false,
                                           :modules [compose-module-id]}))
           ltu/body->edn
-          (ltu/is-status 403)
+          (ltu/is-status 400)
           (ltu/is-key-value :message (msg [compose-module-id])))
 
       (-> session-user
@@ -1178,7 +1178,7 @@
                                           :start   false,
                                           :modules [compose-module-id helm-module-id-2]}))
           ltu/body->edn
-          (ltu/is-status 403)
+          (ltu/is-status 400)
           (ltu/is-key-value :message (msg [compose-module-id]))))
 
     (testing "Compatible modules are accepted"

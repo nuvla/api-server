@@ -289,7 +289,7 @@ These resources represent a deployment set that regroups deployments.
     (when-not (every? compatible? retrieved-apps)
       (let [not-compatible-apps (filter (complement compatible?) retrieved-apps)]
         (throw (r/ex-response (str "Some apps are not compatible with the DG subtype : "
-                                   (mapv :id not-compatible-apps)) 403 id))))
+                                   (mapv :id not-compatible-apps)) 400 id))))
     resource))
 
 (defn pre-validate-hook

@@ -12,7 +12,7 @@
     [spec-tools.core :as st]))
 
 (def ^:const subtype-docker-compose "docker-compose")
-(def ^:const subtype-docker-swarm "application_kubernetes")
+(def ^:const subtype-docker-swarm "docker-swarm")
 (def ^:const subtype-kubernetes "kubernetes")
 
 (s/def ::subtype
