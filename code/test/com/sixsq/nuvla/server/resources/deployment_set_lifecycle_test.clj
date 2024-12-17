@@ -331,8 +331,7 @@
 
     (testing "create must be possible for user"
       (let [{{{:keys [resource-id]} :body}
-             :response} (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                                      utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+             :response} (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
                           (-> session-user
                               (request base-uri
                                        :request-method :post
@@ -410,8 +409,7 @@
                                   (ltu/is-operation-absent utils/action-cancel)
                                   (ltu/is-operation-absent utils/action-recompute-fleet)
                                   (ltu/get-op-url utils/action-start))
-                start-job-url (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                                            utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+                start-job-url (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
                                 (-> session-user
                                     (request start-op-url)
                                     ltu/body->edn
@@ -455,8 +453,7 @@
                 (ltu/is-operation-absent utils/action-recompute-fleet)
                 (ltu/is-key-value :state utils/state-starting))
 
-            (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                          utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+            (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
               (-> session-admin
                   (request dep-set-url
                            :request-method :put
@@ -473,8 +470,7 @@
                   (ltu/is-key-value :state utils/state-started)))))
 
         (testing "edit action is possible"
-          (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                        utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+          (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
             (-> session-user
                 (request dep-set-url
                          :request-method :put
@@ -499,8 +495,7 @@
             (is (= (count (:deployments-to-update os)) 0)))
 
           (testing "user should be able to call operational-status NOK"
-            (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                          utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+            (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
               (-> session-user
                   (request (-> session-user
                                (request dep-set-url)
@@ -537,9 +532,7 @@
               (with-redefs [utils/current-deployments
                             (constantly fake-deployments)
                             crud/get-resource-throw-nok
-                            (constantly u-applications-sets-v11)
-                            utils/query-modules-as
-                            (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+                            (constantly u-applications-sets-v11)]
                 (-> session-user
                     (request (-> session-user
                                  (request dep-set-url)
@@ -554,8 +547,7 @@
                     (ltu/is-key-value :deployments-to-update nil))))
 
             (testing "editing deployment set will update the operational status"
-              (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                            utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+              (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
                 (-> session-user
                     (request dep-set-url
                              :request-method :put
@@ -579,8 +571,7 @@
 
             (testing "delete a deployment: user should be able to call operational-status and see a divergence"
               (with-redefs [utils/current-deployments   (constantly (drop 1 fake-deployments))
-                            crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                            utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+                            crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
                 (-> session-user
                     (request (-> session-user
                                  (request dep-set-url)
@@ -616,8 +607,7 @@
                                   (ltu/is-operation-absent utils/action-cancel)
                                   (ltu/is-operation-absent utils/action-recompute-fleet)
                                   (ltu/get-op-url utils/action-update))
-                job-url       (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                                            utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+                job-url       (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
                                 (-> session-user
                                     (request update-op-url)
                                     ltu/body->edn
@@ -643,8 +633,7 @@
                 (ltu/message-matches "edit action is not allowed in state [UPDATING]"))))
 
         (testing "force state transition to simulate job action"
-          (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                        utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+          (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
             (state-transition resource-id utils/action-nok))
           (-> session-user
               (request dep-set-url)
@@ -672,8 +661,7 @@
                                   (ltu/is-operation-absent utils/action-cancel)
                                   (ltu/is-operation-absent utils/action-recompute-fleet)
                                   (ltu/get-op-url utils/action-update))
-                job-url       (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                                            utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+                job-url       (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
                                 (-> session-user
                                     (request update-op-url)
                                     ltu/body->edn
@@ -699,8 +687,7 @@
                                       (ltu/is-operation-present utils/action-cancel)
                                       (ltu/is-operation-absent utils/action-recompute-fleet)
                                       (ltu/get-op-url utils/action-cancel))]
-                (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                              utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+                (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
                   (-> session-user
                       (request cancel-op-url)
                       ltu/body->edn
@@ -741,8 +728,7 @@
                                 (ltu/is-operation-absent utils/action-cancel)
                                 (ltu/is-operation-absent utils/action-recompute-fleet)
                                 (ltu/get-op-url utils/action-stop))
-                job-url     (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                                          utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+                job-url     (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
                               (-> session-user
                                   (request stop-op-url)
                                   (ltu/body->edn)
@@ -768,8 +754,7 @@
                 (ltu/is-key-value :state utils/state-stopping))))
 
         (testing "force state transition to simulate job action"
-          (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                        utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+          (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
             (state-transition resource-id utils/action-nok))
 
           (-> session-user
@@ -793,8 +778,7 @@
                                     (ltu/is-status 200)
                                     (ltu/get-op-url utils/action-force-delete))]
             (testing "on-done of job without success deployment-set is not deleted"
-              (let [job-url (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                                          utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+              (let [job-url (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
                               (-> session-user
                                   (request force-delete-op)
                                   (ltu/body->edn)
@@ -812,8 +796,7 @@
                   (ltu/is-status 200)))
 
             (testing "on-done of job with success deployment-set is deleted"
-              (let [job-url (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                                          utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+              (let [job-url (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
                               (-> session-user
                                   (request force-delete-op)
                                   (ltu/body->edn)
@@ -1261,8 +1244,7 @@
                                (content-type "application/json"))
           session-user     (header session-anon authn-info-header
                                    (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
-          dep-set-id       (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                                         utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+          dep-set-id       (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
                              (-> session-user
                                  (request base-uri
                                           :request-method :post
@@ -1294,8 +1276,7 @@
           new-dep-set-name "dep set name changed"]
 
       (testing "deployment set name is refreshed on edit of deployment"
-        (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                      utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+        (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
           (-> session-user
               (request dep-set-url
                        :request-method :put
@@ -1334,8 +1315,7 @@
                               (str "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon " session-id))]
 
     (testing "Canceling start action"
-      (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                    utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+      (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
         (let [{{{:keys [resource-id]} :body}
                :response} (-> session-admin
                               (request base-uri
@@ -1383,8 +1363,7 @@
               (ltu/is-status 200)
               (ltu/is-key-value :state utils/state-partially-started)))))
     (testing "Canceling stop action - not all deployments stopped"
-      (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                    utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+      (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
         (let [{{{:keys [resource-id]} :body}
                :response} (-> session-admin
                               (request base-uri
@@ -1446,8 +1425,7 @@
               (ltu/is-status 200)
               (ltu/is-key-value :state utils/state-partially-stopped)))))
     (testing "Canceling stop action - all deployments stopped"
-      (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                    utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+      (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
         (let [{{{:keys [resource-id]} :body}
                :response} (-> session-admin
                               (request base-uri
@@ -1516,8 +1494,7 @@
               (ltu/is-status 200)
               (ltu/is-key-value :state utils/state-stopped)))))
     (testing "Canceling update action"
-      (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                    utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+      (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
         (let [{{{:keys [resource-id]} :body}
                :response} (-> session-admin
                               (request base-uri
@@ -1580,8 +1557,7 @@
                 (ltu/is-status 200)
                 (ltu/is-key-value :state utils/state-partially-updated))))))
     (testing "Canceling start action but job not found for some reason"
-      (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)
-                    utils/query-modules-as      (constantly (get-in dep-apps-sets [0 :overwrites 0 :applications]))]
+      (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
         (let [{{{:keys [resource-id]} :body}
                :response} (-> session-admin
                               (request base-uri

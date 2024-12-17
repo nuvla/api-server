@@ -12,6 +12,7 @@
             [com.sixsq.nuvla.server.resources.module.utils :as module-utils]
             [com.sixsq.nuvla.server.resources.nuvlabox :as nuvlabox]
             [com.sixsq.nuvla.server.resources.nuvlabox-status :as nuvlabox-status]
+            [com.sixsq.nuvla.server.util.response :as r]
             [tilakone.core :as tk]))
 
 (def action-start "start")
@@ -422,23 +423,25 @@
                                  set)]
     (set/difference (set edges) existing-edges)))
 
-(defn query-modules-as
-  [cimi-filter authn]
-  (let [{:keys [body]} (crud/query {:params      {:resource-name m/resource-type}
-                                    :cimi-params {:filter (parser/parse-cimi-filter cimi-filter)
-                                                  :last   10000}
-                                    :nuvla/authn authn})]
-    (:resources body)))
-
-(defn get-all-modules
-  [deployment-set applications-sets]
-  (->> (get-applications-sets deployment-set)
-       (mapcat merge-apps (module-utils/get-applications-sets applications-sets))
-       (map #(-> (crud/retrieve {:params         {:uuid          (str (u/id->uuid (:id %)) "_" (:version %))
-                                                  :resource-name m/resource-type}
-                                 :request-method :get
-                                 :nuvla/authn    auth/internal-identity})
-                 :body))))
+(defn check-apps-permissions
+  [{:keys [id] :as deployment-set}]
+  (let [owner-request     (auth/get-owner-request deployment-set)
+        applications-sets (-> deployment-set
+                              get-applications-sets-href
+                              (crud/get-resource-throw-nok owner-request))
+        apps              (->> (get-applications-sets deployment-set)
+                               (mapcat merge-apps (module-utils/get-applications-sets applications-sets)))
+        retrieved-apps    (map #(-> (crud/retrieve {:params         {:uuid          (str (u/id->uuid (:id %)) "_" (:version %))
+                                                                     :resource-name m/resource-type}
+                                                    :request-method :get
+                                                    :nuvla/authn    (auth/get-owner-authn deployment-set)})
+                                    :body)
+                               apps)]
+    (when (not= (count apps) (count retrieved-apps))
+      (throw (r/ex-response (str "All apps must be visible to DG owner : "
+                                 (mapv :id apps)
+                                 (vec retrieved-apps)) 403 id)))
+    retrieved-apps))
 
 (defn minimum-requirements
   [deployment-set applications-sets]
