@@ -86,6 +86,13 @@
     :json-schema/description "total capacity of the resource"
     :json-schema/order 11))
 
+(s/def ::capacity-bytes
+  (assoc (st/spec pos-int?)
+    :name "capacity-bytes"
+    :json-schema/type "integer"
+    :json-schema/description "total capacity of the resource in bytes"
+    :json-schema/order 11))
+
 (s/def ::load
   (assoc (st/spec (s/and number? #(not (neg? %))))
     :name "load"
@@ -166,6 +173,13 @@
     :name "used"
     :json-schema/type "integer"
     :json-schema/description "used quantity of the resource"
+    :json-schema/order 12))
+
+(s/def ::used-bytes
+  (assoc (st/spec nat-int?)
+    :name "used-bytes"
+    :json-schema/type "integer"
+    :json-schema/description "used quantity of the resource in bytes"
     :json-schema/order 12))
 
 (s/def ::ram
@@ -265,11 +279,13 @@
 
 (s/def ::disk-info
   (assoc (st/spec (su/only-keys
-                    :req-un [::device
-                             ::capacity
-                             ::used]
+                    :req-un [::device]
                     :opt-un [::topic
-                             ::raw-sample]))
+                             ::raw-sample
+                             ::capacity
+                             ::used
+                             ::capacity-bytes
+                             ::used-bytes]))
     :name "disk-info"
     :json-schema/type "map"
     :json-schema/description "available and consumed disk space for device"))
