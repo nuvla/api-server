@@ -16,6 +16,7 @@
 (def valid-deployment-set
   {:id                   (str deployment-set-resource/resource-type "/uuid")
    :resource-type        deployment-set-resource/resource-type
+   :subtype              "docker-compose"
    :created              timestamp
    :updated              timestamp
    :acl                  valid-acl

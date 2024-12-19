@@ -254,24 +254,36 @@ These resources represent a deployment set that regroups deployments.
       (throw (r/ex-response "All edges must be visible to DG owner" 403 id)))
     resource))
 
-(defn check-apps-permissions
-  [{:keys [id] :as resource}]
-  (let [apps           (get-in resource [:applications-sets 0 :overwrites 0 :applications])
-        cimi-filter    (str "id=['" (str/join "','" (map :id apps)) "']")
-        retrieved-apps (utils/query-modules-as cimi-filter (auth/get-owner-authn resource))]
-    (when (not= (count apps) (count retrieved-apps))
-      (throw (r/ex-response (str "All apps must be visible to DG owner : "
-                                 (mapv :id apps)
-                                 (vec retrieved-apps)) 403 id)))
+(defn app-compatible?
+  [{dg-subtype :subtype :as _resource}
+   {module-subtype :subtype module-compatibility :compatibility}]
+  (or (nil? dg-subtype)
+      (and (= spec/subtype-docker-compose dg-subtype)
+           (= module-spec/subtype-app-docker module-subtype)
+           (= module-spec/compatibility-docker-compose module-compatibility))
+      (and (= spec/subtype-docker-swarm dg-subtype)
+           (= module-spec/subtype-app-docker module-subtype)
+           (#{module-spec/compatibility-docker-compose module-spec/compatibility-swarm} module-compatibility))
+      (and (= spec/subtype-kubernetes dg-subtype)
+           (#{module-spec/subtype-app-k8s module-spec/subtype-app-helm} module-subtype))))
+
+(defn check-apps-compatibility
+  [{:keys [id] :as resource} apps]
+  (let [compatible? (partial app-compatible? resource)]
+    (when-not (every? compatible? apps)
+      (let [not-compatible-apps (filter (complement compatible?) apps)]
+        (throw (r/ex-response (str "Some apps are not compatible with the DG subtype : "
+                                   (mapv :id not-compatible-apps)) 400 id))))
     resource))
 
 (defn pre-validate-hook
   [resource request]
-  (-> resource
-      (check-edges-permissions)
-      (check-apps-permissions)
-      (assoc-operational-status request)
-      (assoc-auto-update-flag request)))
+  (let [apps (utils/check-apps-permissions resource)]
+    (-> resource
+        (check-edges-permissions)
+        (check-apps-compatibility apps)
+        (assoc-operational-status request)
+        (assoc-auto-update-flag request))))
 
 (defn add-edit-pre-validate-hook
   [resource request]
