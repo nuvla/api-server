@@ -209,10 +209,10 @@
                                                                 :status   {:replicas 1}}],
                                                 :services     [{:metadata {:name      "release-fd9d09a2-4ce8-4fbc-a112-0f60a46064ee-hello-world",
                                                                            :namespace "fd9d09a2-4ce8-4fbc-a112-0f60a46064ee"},
-                                                                :spec     {:ports [{:port       80,
+                                                                :spec     {:ports [{:port        80,
                                                                                     :target_port 80,
                                                                                     :node_port   30007,
-                                                                                    :protocol   "TCP"}]}}],
+                                                                                    :protocol    "TCP"}]}}],
                                                 :helmreleases [{:name        "nuvlabox-6c37d85d-d818-4069-a50c-dae9983364d1",
                                                                 :namespace   "default",
                                                                 :revision    "1",
@@ -604,6 +604,37 @@
                                :subtype       "application"}
                       :acl    {:edit-acl ["deployment/b3b70820-2de4-4a11-b00c-a79661c3d433"]
                                :owners   ["group/nuvla-admin"]}}])))))))
+
+(deftest partition-by-old-docker-for-swarm
+  (let [dep-compose           {:id     "deployment/b3b70820-2de4-4a11-b00c-a79661c3d433"
+                               :module {:compatibility "docker-compose"
+                                        :subtype       "application"}}
+        dep-swarm-not-defined {:id     "deployment/swarm"
+                               :module {:compatibility "swarm"
+                                        :subtype       "application"}}
+        dep-swarm-defined     {:id     "deployment/395a87fa-6b53-4e76-8a36-eccf8a19bc39"
+                               :module {:compatibility "swarm"
+                                        :subtype       "application"}}]
+    (testing "docker compose goes normal process"
+      (is (= [[]
+              [dep-compose]]
+             (t/partition-by-old-docker-for-swarm
+               nb-status-coe-docker-compose
+               [dep-compose]))))
+    (testing "swarm without corresponding desired-tasks should be detected as old docker"
+      (is (= [[dep-swarm-not-defined]
+              [dep-compose]]
+             (t/partition-by-old-docker-for-swarm
+               nb-status-coe-docker-compose
+               [dep-compose
+                dep-swarm-not-defined]))))
+    (testing "fictive case to test if split is working fine"
+      (is (= [[dep-swarm-not-defined]
+              [dep-swarm-defined]]
+             (t/partition-by-old-docker-for-swarm
+               nb-status-coe-docker-swarm
+               [dep-swarm-defined
+                dep-swarm-not-defined]))))))
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
