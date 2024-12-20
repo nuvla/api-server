@@ -271,23 +271,20 @@
                   (get-deployment-state deployment nuvlabox-status))))
             ne-deployments)))
 
-(defn update-deployment-parameters
+(defn old-docker-detector
+  [nuvlabox-status {{:keys [subtype compatibility]} :module id :id :as _deployment}]
+  (and (= subtype module-spec/subtype-app-docker)
+       (= compatibility module-spec/compatibility-swarm)
+       (-> (get-in nuvlabox-status [:coe-resources :docker :services])
+           (->> (some #(when (= (get-in % [:Spec :Labels :com.docker.stack.namespace]) (u/id->uuid id)) %)))
+           (get-in [:ServiceStatus :DesiredTasks])
+           nil?)))
+
+(defn partition-by-old-docker-for-swarm
   [nuvlabox-status ne-deployments]
-  (let [log-title (str "Update deployment-parameters for " (:parent nuvlabox-status) ":")]
-    (try
-      (when (:coe-resources nuvlabox-status)
-        (let [params (get-ne-deployment-params nuvlabox-status ne-deployments)]
-          (log/debug log-title "Update/inserting" (count params) "parameters")
-          (when (seq params)
-            (try
-              (let [response (db/bulk-operation dep-param/resource-type (params-bulk-operation-data params))
-                    summary  (escu/summarise-bulk-operation-response response)]
-                (log/debug log-title "summary:" summary))
-              (catch Exception e
-                (log/error log-title (ex-message e) (ex-data e)))))))
-      (catch Exception e
-        (log/error log-title "failed: " e))))
-  nuvlabox-status)
+  (let [result (group-by (partial old-docker-detector nuvlabox-status) ne-deployments)]
+    [(get result true [])
+     (get result false [])]))
 
 (defn create-deployment-state-job
   [{:keys [id, execution-mode] :as _deployment}
@@ -299,6 +296,30 @@
                             (a/acl-append :manage parent))
                         "internal"
                         :execution-mode execution-mode))
+
+(defn update-deployment-parameters
+  [nuvlabox-status ne-deployments]
+  (let [log-title (str "Update deployment-parameters for " (:parent nuvlabox-status) ":")]
+    (try
+      (when (:coe-resources nuvlabox-status)
+        (let [[old-docker-swarm-deployments
+               left-deployments] (partition-by-old-docker-for-swarm nuvlabox-status ne-deployments)
+              params (get-ne-deployment-params nuvlabox-status left-deployments)]
+          (log/info log-title "Update/inserting" (count params) "parameters")
+          (when (seq params)
+            (try
+              (let [response (db/bulk-operation dep-param/resource-type (params-bulk-operation-data params))
+                    summary  (escu/summarise-bulk-operation-response response)]
+                (log/debug log-title "summary:" summary))
+              (catch Exception e
+                (log/error log-title (ex-message e) (ex-data e)))))
+          (when (seq old-docker-swarm-deployments)
+            (log/info "Creating deployment_state job for old docker "
+                      (count old-docker-swarm-deployments) "deployments")
+            (create-deployment-state-job old-docker-swarm-deployments nuvlabox-status))))
+      (catch Exception e
+        (log/error log-title "failed: " e))))
+  nuvlabox-status)
 
 (defmulti create-deployment-state-job-if-needed
           (fn [{{:keys [subtype]} :module :as _deployment} _nb-status]
