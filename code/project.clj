@@ -81,7 +81,7 @@
                                   [com.google.zxing/javase]]]
    [funcool/promesa "11.0.678"]
    [nrepl "1.1.1"]
-   [clj-json-patch "0.1.7"]
+   [com.github.java-json-tools/json-patch "1.13"]
    [io.forward/semver "0.1.0"]]
 
   :profiles

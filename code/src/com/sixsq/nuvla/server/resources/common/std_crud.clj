@@ -7,7 +7,6 @@
     [clojure.walk :as w]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
-    [clj-json-patch.core :as json-patch]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.middleware.cimi-params.impl :as impl]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
@@ -15,7 +14,10 @@
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
-    [com.sixsq.nuvla.server.util.response :as r]))
+    [com.sixsq.nuvla.server.util.response :as r])
+  (:import (com.fasterxml.jackson.databind JsonNode ObjectMapper)
+           (com.github.fge.jsonpatch JsonPatch)
+           (java.util Map)))
 
 
 (def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))
@@ -75,9 +77,10 @@
 (defn json-safe-patch
   [obj patches]
   (try
-    (if-let [result (json-patch/patch obj patches)]
-      result
-      (throw (Exception. "Patch interpretation failed!")))
+    (let [obj_mapper   (ObjectMapper.)
+          patches-node ^JsonPatch (.convertValue obj_mapper patches JsonPatch)
+          result (.apply patches-node (.convertValue obj_mapper obj JsonNode))]
+      (.convertValue obj_mapper result Map))
     (catch Exception e
       (log/debug "Json patch exception - ex-message:" (ex-message e) "ex-data:" (ex-data e) "exception:" e "resource:" (prn-str obj) "patches:" (prn-str (vec patches)))
       (throw (r/ex-bad-request (str "Json patch exception: " (ex-message e)))))))
