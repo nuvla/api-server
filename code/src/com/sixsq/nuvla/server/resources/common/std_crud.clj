@@ -1,6 +1,7 @@
 (ns com.sixsq.nuvla.server.resources.common.std-crud
   "Standard CRUD functions for resources."
   (:require
+    [clojure.data.json :as json]
     [clojure.stacktrace :as st]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
@@ -16,8 +17,7 @@
     [com.sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
     [com.sixsq.nuvla.server.util.response :as r])
   (:import (com.fasterxml.jackson.databind JsonNode ObjectMapper)
-           (com.github.fge.jsonpatch JsonPatch)
-           (java.util Map)))
+           (com.github.fge.jsonpatch JsonPatch)))
 
 
 (def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))
@@ -38,8 +38,8 @@
  - store the resource into the database
  Return the stored resource."
   [resource-name collection-acl _resource-uri & {:keys [pre-validate-hook
-                                                       options]
-                                                :or   {pre-validate-hook pass-through}}]
+                                                        options]
+                                                 :or   {pre-validate-hook pass-through}}]
   (validate-collection-acl collection-acl)
   (fn [{:keys [body] :as request}]
     (a/throw-cannot-add collection-acl request)
@@ -77,10 +77,11 @@
 (defn json-safe-patch
   [obj patches]
   (try
-    (let [obj_mapper   (ObjectMapper.)
-          patches-node ^JsonPatch (.convertValue obj_mapper patches JsonPatch)
-          result (.apply patches-node (.convertValue obj_mapper obj JsonNode))]
-      (.convertValue obj_mapper result Map))
+    (let [obj-mapper   (ObjectMapper.)
+          patches-node ^JsonPatch (.convertValue obj-mapper patches JsonPatch)]
+      (json/read-str (->> (.convertValue obj-mapper obj JsonNode)
+                          (.apply patches-node)
+                          (.writeValueAsString obj-mapper)) :key-fn keyword))
     (catch Exception e
       (log/debug "Json patch exception - ex-message:" (ex-message e) "ex-data:" (ex-data e) "exception:" e "resource:" (prn-str obj) "patches:" (prn-str (vec patches)))
       (throw (r/ex-bad-request (str "Json patch exception: " (ex-message e)))))))
