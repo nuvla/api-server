@@ -1,13 +1,13 @@
 (ns com.sixsq.nuvla.server.resources.common.std-crud
   "Standard CRUD functions for resources."
   (:require
+    [clojure.data.json :as json]
     [clojure.stacktrace :as st]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [clojure.walk :as w]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
-    [clj-json-patch.core :as json-patch]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.middleware.cimi-params.impl :as impl]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
@@ -15,7 +15,9 @@
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
-    [com.sixsq.nuvla.server.util.response :as r]))
+    [com.sixsq.nuvla.server.util.response :as r])
+  (:import (com.fasterxml.jackson.databind JsonNode ObjectMapper)
+           (com.github.fge.jsonpatch JsonPatch)))
 
 
 (def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))
@@ -36,8 +38,8 @@
  - store the resource into the database
  Return the stored resource."
   [resource-name collection-acl _resource-uri & {:keys [pre-validate-hook
-                                                       options]
-                                                :or   {pre-validate-hook pass-through}}]
+                                                        options]
+                                                 :or   {pre-validate-hook pass-through}}]
   (validate-collection-acl collection-acl)
   (fn [{:keys [body] :as request}]
     (a/throw-cannot-add collection-acl request)
@@ -75,9 +77,11 @@
 (defn json-safe-patch
   [obj patches]
   (try
-    (if-let [result (json-patch/patch obj patches)]
-      result
-      (throw (Exception. "Patch interpretation failed!")))
+    (let [obj-mapper   (ObjectMapper.)
+          patches-node ^JsonPatch (.convertValue obj-mapper patches JsonPatch)]
+      (json/read-str (->> (.convertValue obj-mapper obj JsonNode)
+                          (.apply patches-node)
+                          (.writeValueAsString obj-mapper)) :key-fn keyword))
     (catch Exception e
       (log/debug "Json patch exception - ex-message:" (ex-message e) "ex-data:" (ex-data e) "exception:" e "resource:" (prn-str obj) "patches:" (prn-str (vec patches)))
       (throw (r/ex-bad-request (str "Json patch exception: " (ex-message e)))))))
