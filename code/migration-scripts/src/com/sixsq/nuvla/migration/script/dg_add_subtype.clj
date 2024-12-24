@@ -94,10 +94,10 @@
             (prn "Failed to update deployment group " dg-id ": " ex)))))))
 
 (comment
-  (reset-session)
-  (ensure-admin-session
-    :dev-alb
-    ;:preprod
+  (api/reset-session)
+  (api/ensure-admin-session
+    ;:dev-alb
+    :preprod
     ;:prod
     )
 

@@ -192,7 +192,7 @@
 
 (defn patch-resource
   ([resource-id data]
-   (patch-resource resource-id data))
+   (patch-resource @session resource-id data))
   ([{:keys [base-uri]} resource-id data]
    (let [response (http/put (str base-uri "/" resource-id)
                             {:headers      {"content-type" "application/json"}

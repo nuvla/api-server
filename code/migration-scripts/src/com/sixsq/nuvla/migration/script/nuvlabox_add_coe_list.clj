@@ -62,11 +62,11 @@
           (prn "Failed to update nuvlabox " id ": " ex))))))
 
 (comment
-  (reset-session)
-  (ensure-admin-session
+  (api/reset-session)
+  (api/ensure-admin-session
     ;:local
-    :dev-alb
-    ;:preprod
+    ;:dev-alb
+    :preprod
     ;:prod
     )
 
