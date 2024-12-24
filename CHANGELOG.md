@@ -2,6 +2,13 @@
 
 ## Released
 
+## [6.12.2](https://github.com/nuvla/api-server/compare/6.12.1...6.12.2) (2024-12-24)
+
+
+### Bug Fixes
+
+* **Nuvlabox status:** create deployment_state job for old docker version bugfix ([6d79a8b](https://github.com/nuvla/api-server/commit/6d79a8b3c304ec1d9d4c184d7387b0ff6a639bc9))
+
 ## [6.12.1](https://github.com/nuvla/api-server/compare/6.12.0...6.12.1) (2024-12-23)
 
 
