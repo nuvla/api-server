@@ -2,6 +2,16 @@
 
 ## Released
 
+## [6.12.1](https://github.com/nuvla/api-server/compare/6.12.0...6.12.1) (2024-12-23)
+
+
+### Bug Fixes
+
+* **Nuvlabox status:** create deployment_state job for old docker version ([#979](https://github.com/nuvla/api-server/issues/979)) ([856fce6](https://github.com/nuvla/api-server/commit/856fce6aec3dd08e2636bbc4296d2b1068757481))
+* **NuvlaEdge:** Augment "nuvlabox" resource by coe info objects ([#974](https://github.com/nuvla/api-server/issues/974)) ([627e332](https://github.com/nuvla/api-server/commit/627e33236050268bd14b2db17b19db5248ddc9f7))
+* **std-crud:** Json patch failing in clojure libs ([#980](https://github.com/nuvla/api-server/issues/980)) ([2363d6b](https://github.com/nuvla/api-server/commit/2363d6b73e21bcc4d6649cd641f366ebea7d015a))
+* **wrong_infra_selected:** Added field subtype to DG ([#975](https://github.com/nuvla/api-server/issues/975)) ([07ca652](https://github.com/nuvla/api-server/commit/07ca65248c4518c8e3b7f735213eb9f6b4d552a4))
+
 ## [6.12.0](https://github.com/nuvla/api-server/compare/6.11.3...6.12.0) (2024-12-13)
 
 
