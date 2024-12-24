@@ -297,6 +297,30 @@
                         "internal"
                         :execution-mode execution-mode))
 
+
+(defmulti create-deployment-state-job-if-needed
+          (fn [{{:keys [subtype]} :module :as _deployment} _nb-status]
+            (if (= subtype module-spec/subtype-app-helm) module-spec/subtype-app-k8s subtype)))
+
+(defmethod create-deployment-state-job-if-needed module-spec/subtype-app-docker
+  [deployment {{:keys [docker]} :coe-resources :as nb-status}]
+  (when (empty? docker)
+    (create-deployment-state-job deployment nb-status)))
+
+(defmethod create-deployment-state-job-if-needed module-spec/subtype-app-k8s
+  [deployment {{:keys [kubernetes]} :coe-resources :as nb-status}]
+  (when (empty? kubernetes)
+    (create-deployment-state-job deployment nb-status)))
+
+(defn create-deployment-state-jobs
+  [nuvlabox-status ne-deployments]
+  (doseq [deployment ne-deployments]
+    (try
+      (create-deployment-state-job-if-needed deployment nuvlabox-status)
+      (catch Exception e
+        (log/error "create deployment state job failed for" (:id deployment) (ex-message e) (ex-data e)))))
+  nuvlabox-status)
+
 (defn update-deployment-parameters
   [nuvlabox-status ne-deployments]
   (let [log-title (str "Update deployment-parameters for " (:parent nuvlabox-status) ":")]
@@ -316,27 +340,7 @@
           (when (seq old-docker-swarm-deployments)
             (log/info "Creating deployment_state job for old docker "
                       (count old-docker-swarm-deployments) "deployments")
-            (create-deployment-state-job old-docker-swarm-deployments nuvlabox-status))))
+            (create-deployment-state-jobs nuvlabox-status old-docker-swarm-deployments))))
       (catch Exception e
         (log/error log-title "failed: " e))))
-  nuvlabox-status)
-
-(defmulti create-deployment-state-job-if-needed
-          (fn [{{:keys [subtype]} :module :as _deployment} _nb-status]
-            (if (= subtype module-spec/subtype-app-helm) module-spec/subtype-app-k8s subtype)))
-
-(defmethod create-deployment-state-job-if-needed module-spec/subtype-app-docker
-  [deployment {{:keys [docker]} :coe-resources :as nb-status}]
-  (when (empty? docker)
-    (create-deployment-state-job deployment nb-status)))
-
-(defmethod create-deployment-state-job-if-needed module-spec/subtype-app-k8s
-  [deployment {{:keys [kubernetes]} :coe-resources :as nb-status}]
-  (when (empty? kubernetes)
-    (create-deployment-state-job deployment nb-status)))
-
-(defn create-deployment-state-jobs
-  [nuvlabox-status ne-deployments]
-  (doseq [deployment ne-deployments]
-    (create-deployment-state-job-if-needed deployment nuvlabox-status))
   nuvlabox-status)
