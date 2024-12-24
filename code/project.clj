@@ -107,17 +107,18 @@
               :test-report-sonar {:output-dir     "test-reports"
                                   :emit-junit-xml true}}
 
-   :dev      {:dependencies   [[clj-kondo "RELEASE"]]
-              ;; paths
-              :source-paths   ["src"]
-              :test-paths     ["test"]
-              :resource-paths ["test-resources"]
-              ;; linters
-              :eastwood       {:exclude-namespaces [com.sixsq.nuvla.server.resources.job.utils]}
-              :env            {:nuvla-session-key   "test-resources/session.key"
-                               :nuvla-session-crt   "test-resources/session.crt"
-                               :es-sniffer-init     "no"
-                               :kafka-producer-init "no"}
-              ;; code coverage
-              :cloverage      {:ns-exclude-regex [#"com.sixsq.nuvla.pricing.protocol"]}
-              }})
+   :dev       {:dependencies   [[clj-kondo "RELEASE"]]
+               ;; paths
+               :source-paths   ["src"]
+               :test-paths     ["test"]
+               :resource-paths ["test-resources"]
+               ;; linters
+               :eastwood       {:exclude-namespaces [com.sixsq.nuvla.server.resources.job.utils]}
+               :env            {:nuvla-session-key   "test-resources/session.key"
+                                :nuvla-session-crt   "test-resources/session.crt"
+                                :es-sniffer-init     "no"
+                                :kafka-producer-init "no"}
+               ;; code coverage
+               :cloverage      {:ns-exclude-regex [#"com.sixsq.nuvla.pricing.protocol"]}
+               }
+   :migration {:source-paths ["migration-scripts/src"]}})
