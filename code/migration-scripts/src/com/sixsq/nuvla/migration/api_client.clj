@@ -18,8 +18,8 @@
              :username-env-var :dev-alb-username
              :password-env-var :dev-alb-password}
    :local   {:base-uri         "http://localhost:8200/api"
-             :username-env-var :dev-alb-username
-             :password-env-var :dev-alb-password}})
+             :username-env-var :local-username
+             :password-env-var :local-password}})
 
 (defn base-resource-uri
   [resource-type]
