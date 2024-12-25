@@ -75,7 +75,6 @@
 
   (fetch-all-infras (keep :infrastructure-service-group @nbs))
   (count @infras)
-  (->> @infras)
 
   (add-coe-list-to-nuvlaboxes)
   )

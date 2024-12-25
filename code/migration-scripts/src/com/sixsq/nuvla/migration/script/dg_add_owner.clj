@@ -117,16 +117,11 @@
         (catch Exception ex
           (prn "Failed to update deployment " id ": " ex))))))
 
-(defn dump-data
-  [filepath data]
-  (with-open [writer (io/writer filepath)]
-    (.write writer (pr-str data))))
-
 (comment
-  (reset-session)
-  (ensure-admin-session
-    :dev-alb
-    ;:preprod
+  (api/reset-session)
+  (api/ensure-admin-session
+    ;:dev-alb
+    :preprod
     ;:prod
     )
 
@@ -146,6 +141,4 @@
   ;(count @deployments)
 
   (add-deployment-set-to-dg-deployments-acl)
-
-  ;(count (fetch-all-deployments))
   )
