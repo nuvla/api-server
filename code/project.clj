@@ -85,39 +85,40 @@
    [io.forward/semver "0.1.0"]]
 
   :profiles
-  {:provided {:dependencies [[org.clojure/clojure "1.11.2"]
-                             [com.sixsq.nuvla/ring ~nuvla-ring-version]
-                             [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
+  {:provided  {:dependencies [[org.clojure/clojure "1.11.2"]
+                              [com.sixsq.nuvla/ring ~nuvla-ring-version]
+                              [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
 
-   :test     {:dependencies      [[me.raynes/fs "1.4.6"]
-                                  [org.testcontainers/testcontainers "1.17.6"]
-                                  [peridot "0.5.4"]
-                                  [clj-test-containers "0.7.4"]
-                                  [org.clojure/test.check "1.1.1"]
-                                  [com.cemerick/url "0.1.1"]
-                                  [org.clojars.konstan/kinsky-test-jar ~kinsky-version]
-                                  [same/ish "0.1.6"]]
-              :resource-paths    ["test-resources"]
-              :env               {:nuvla-session-key   "test-resources/session.key"
-                                  :nuvla-session-crt   "test-resources/session.crt"
-                                  :es-sniffer-init     "no"
-                                  :kafka-producer-init "yes"}
-              :aot               :all
-              :plugins           [[org.clojars.konstan/lein-test-report-sonar "0.0.4"]]
-              :test-report-sonar {:output-dir     "test-reports"
-                                  :emit-junit-xml true}}
+   :test      {:dependencies      [[me.raynes/fs "1.4.6"]
+                                   [org.testcontainers/testcontainers "1.17.6"]
+                                   [peridot "0.5.4"]
+                                   [clj-test-containers "0.7.4"]
+                                   [org.clojure/test.check "1.1.1"]
+                                   [com.cemerick/url "0.1.1"]
+                                   [org.clojars.konstan/kinsky-test-jar ~kinsky-version]
+                                   [same/ish "0.1.6"]]
+               :resource-paths    ["test-resources"]
+               :env               {:nuvla-session-key   "test-resources/session.key"
+                                   :nuvla-session-crt   "test-resources/session.crt"
+                                   :es-sniffer-init     "no"
+                                   :kafka-producer-init "yes"}
+               :aot               :all
+               :plugins           [[org.clojars.konstan/lein-test-report-sonar "0.0.4"]]
+               :test-report-sonar {:output-dir     "test-reports"
+                                   :emit-junit-xml true}}
 
-   :dev      {:dependencies   [[clj-kondo "RELEASE"]]
-              ;; paths
-              :source-paths   ["src"]
-              :test-paths     ["test"]
-              :resource-paths ["test-resources"]
-              ;; linters
-              :eastwood       {:exclude-namespaces [com.sixsq.nuvla.server.resources.job.utils]}
-              :env            {:nuvla-session-key   "test-resources/session.key"
-                               :nuvla-session-crt   "test-resources/session.crt"
-                               :es-sniffer-init     "no"
-                               :kafka-producer-init "no"}
-              ;; code coverage
-              :cloverage      {:ns-exclude-regex [#"com.sixsq.nuvla.pricing.protocol"]}
-              }})
+   :dev       {:dependencies   [[clj-kondo "RELEASE"]]
+               ;; paths
+               :source-paths   ["src"]
+               :test-paths     ["test"]
+               :resource-paths ["test-resources"]
+               ;; linters
+               :eastwood       {:exclude-namespaces [com.sixsq.nuvla.server.resources.job.utils]}
+               :env            {:nuvla-session-key   "test-resources/session.key"
+                                :nuvla-session-crt   "test-resources/session.crt"
+                                :es-sniffer-init     "no"
+                                :kafka-producer-init "no"}
+               ;; code coverage
+               :cloverage      {:ns-exclude-regex [#"com.sixsq.nuvla.pricing.protocol"]}
+               }
+   :migration {:source-paths ["migration-scripts/src"]}})
