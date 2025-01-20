@@ -499,6 +499,22 @@ a container orchestration engine.
   [request]
   (bulk-action-impl request))
 
+(defn bulk-update-as-admin
+  [filter doc]
+  (bulk-edit-impl
+    (-> (auth/get-internal-request)
+        (assoc :headers {"bulk" true}
+               :body {:filter filter
+                      :doc    doc}))))
+
+(defn bulk-update-nuvlabox-name-as-admin
+  [{:keys [id name] :as _nuvlabox}]
+  (bulk-update-as-admin (str "nuvlabox='" id "'") {:nuvlabox-name name}))
+
+(defn bulk-update-deployment-set-name-as-admin
+  [{:keys [id name] :as _deployment-set}]
+  (bulk-update-as-admin (str "deployment-set='" id "'") {:deployment-set-name name}))
+
 (defmethod crud/do-action [resource-type "fetch-module"]
   [{{uuid :uuid} :params body :body :as request}]
   (let [id          (str resource-type "/" uuid)

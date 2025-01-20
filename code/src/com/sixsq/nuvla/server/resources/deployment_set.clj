@@ -6,6 +6,7 @@ These resources represent a deployment set that regroups deployments.
     [clojure.data.json :as json]
     [clojure.set :as set]
     [clojure.string :as str]
+    [com.sixsq.nuvla.server.resources.deployment :as deployment]
     [com.sixsq.nuvla.server.resources.deployment.utils :as dep-utils]
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.auth.acl-resource :as a]
@@ -528,8 +529,15 @@ These resources represent a deployment set that regroups deployments.
                                  :pre-validate-hook add-edit-pre-validate-hook))
 
 (defmethod crud/edit resource-type
-  [request]
-  (edit-impl request))
+  [{{uuid :uuid} :params :as request}]
+  (let [current (-> (str resource-type "/" uuid)
+                    crud/retrieve-by-id-as-admin
+                    (a/throw-cannot-edit request))
+        resp    (edit-impl request)
+        next    (:body resp)]
+    (when (not= (:name current) (:name next))
+      (deployment/bulk-update-deployment-set-name-as-admin next))
+    resp))
 
 (defmethod crud/delete resource-type
   [request]

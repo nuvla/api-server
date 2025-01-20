@@ -1253,8 +1253,6 @@
                                  (ltu/is-status 201)
                                  (ltu/location)))
 
-          dep-set-url      (str p/service-context dep-set-id)
-
           valid-deployment {:module         {:href "module/x"}
                             :deployment-set dep-set-id}
           dep-url          (with-redefs [module-utils/resolve-module (constantly {:href "module/x"})]
@@ -1272,26 +1270,7 @@
                                (ltu/is-key-value :deployment-set dep-set-id)
                                (ltu/is-key-value :deployment-set-name dep-set-name)
                                (ltu/is-operation-present :detach)
-                               (ltu/get-op-url :detach))
-          new-dep-set-name "dep set name changed"]
-
-      (testing "deployment set name is refreshed on edit of deployment"
-        (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
-          (-> session-user
-              (request dep-set-url
-                       :request-method :put
-                       :body (json/write-str {:name new-dep-set-name}))
-              (ltu/body->edn)
-              (ltu/is-status 200)))
-
-        (-> session-user
-            (request dep-url
-                     :request-method :put
-                     :body (json/write-str {}))
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :deployment-set dep-set-id)
-            (ltu/is-key-value :deployment-set-name new-dep-set-name)))
+                               (ltu/get-op-url :detach))]
 
       (testing "user is able to detach deployment set"
         (-> session-user
@@ -1305,6 +1284,59 @@
             (ltu/is-key-value :deployment-set nil)
             (ltu/is-key-value :deployment-set-name nil)
             (ltu/is-operation-absent :detach))))))
+
+(deftest lifecycle-deployment-set-rename
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session-anon     (-> (ltu/ring-app)
+                               session
+                               (content-type "application/json"))
+          session-user     (header session-anon authn-info-header
+                                   (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
+          dep-set-id       (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
+                             (-> session-user
+                                 (request base-uri
+                                          :request-method :post
+                                          :body (json/write-str valid-deployment-set))
+                                 (ltu/body->edn)
+                                 (ltu/is-status 201)
+                                 (ltu/location)))
+
+          dep-set-url      (str p/service-context dep-set-id)
+
+          valid-deployment {:module         {:href "module/x"}
+                            :deployment-set dep-set-id}
+          dep-url          (with-redefs [module-utils/resolve-module (constantly {:href "module/x"})]
+                             (-> session-user
+                                 (request deployment-base-uri
+                                          :request-method :post
+                                          :body (json/write-str valid-deployment))
+                                 (ltu/body->edn)
+                                 (ltu/is-status 201)
+                                 (ltu/location-url)))
+          new-dep-set-name "dep set name changed"]
+
+      (-> session-user
+          (request dep-url)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :deployment-set dep-set-id)
+          (ltu/is-key-value :deployment-set-name dep-set-name))
+
+      (testing "deployment set name is updated on edit of deployment set name"
+        (with-redefs [crud/get-resource-throw-nok (constantly u-applications-sets-v11)]
+          (-> session-user
+              (request dep-set-url
+                       :request-method :put
+                       :body (json/write-str {:name new-dep-set-name}))
+              (ltu/body->edn)
+              (ltu/is-status 200)))
+
+        (-> session-user
+            (request dep-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :deployment-set dep-set-id)
+            (ltu/is-key-value :deployment-set-name new-dep-set-name))))))
 
 
 (deftest lifecycle-cancel-actions

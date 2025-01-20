@@ -6,6 +6,7 @@
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+    [com.sixsq.nuvla.server.resources.common.resource-creation :as resource-creation]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.configuration :as configuration]
     [com.sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
@@ -2104,6 +2105,99 @@
     true {:acl 1, :capabilities ["a"], :name "x"} {:acl 1, :capabilities ["a"], :name "z"}
     true {} {:nuvlabox-status "nuvlabox-status"}
     false {:acl 1, :online true} {:acl 1, :online false}))
+
+(deftest create-activate-commission-rename
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session             (-> (ltu/ring-app)
+                                  session
+                                  (content-type "application/json"))
+
+          session-owner       (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          session-anon        (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")
+
+          nuvlabox-id         (-> session-owner
+                                  (request base-uri
+                                           :request-method :post
+                                           :body (json/write-str valid-nuvlabox))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 201)
+                                  (ltu/location))
+
+          nuvlabox-url        (str p/service-context nuvlabox-id)
+
+          activate-url        (-> session-owner
+                                  (request nuvlabox-url)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/is-key-value :state "NEW")
+                                  (ltu/get-op-url :activate))
+
+          session-nuvlabox    (header session authn-info-header
+                                      (str nuvlabox-id " " nuvlabox-id
+                                           " group/nuvla-nuvlabox group/nuvla-anon"))
+
+          _                   (-> session-anon
+                                  (request activate-url
+                                           :request-method :post)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200))
+
+          commission          (-> session-owner
+                                  (request nuvlabox-url)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/get-op-url :commission))
+          _                   (-> session-nuvlabox
+                                  (request commission
+                                           :request-method :post
+                                           :body (json/write-str {:swarm-endpoint    "http://foo"
+                                                                  :swarm-client-key  "key"
+                                                                  :swarm-client-cert "cert"
+                                                                  :swarm-client-ca   "ca"}))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200))
+          swarm-credential-id (-> session-nuvlabox
+                                  (request (str p/service-context "credential?filter=subtype='infrastructure-service-swarm'"))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/is-count 1)
+                                  ltu/body
+                                  :resources
+                                  first
+                                  :id)
+          module-id           (resource-creation/create-module session-owner)
+          dep-1-id            (resource-creation/create-deployment session-owner module-id)
+          dep-2-id            (resource-creation/create-deployment session-owner module-id)]
+
+      (-> session-owner
+          (request (str p/service-context dep-2-id)
+                   :request-method :put
+                   :body (json/write-str {:parent swarm-credential-id}))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :nuvlabox-name "nb-test"))
+
+      (-> session-owner
+          (request nuvlabox-url
+                   :request-method :put
+                   :body (json/write-str {:name "new-name"}))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      (testing "deployment nuvlabox name was updated accordingly to the new name"
+       (-> session-owner
+           (request (str p/service-context dep-2-id)
+                    :request-method :put
+                    :body (json/write-str {:parent swarm-credential-id}))
+           (ltu/body->edn)
+           (ltu/is-status 200)
+           (ltu/is-key-value :nuvlabox-name "new-name")))
+
+      (-> session-owner
+          (request (str p/service-context dep-1-id))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :nuvlabox-name nil)))))
 
 (defn create-ne
   [session-owner nb-name]
