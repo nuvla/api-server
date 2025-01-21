@@ -28,6 +28,7 @@ particular NuvlaBox release.
     [com.sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
     [com.sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [com.sixsq.nuvla.server.util.log :as logu]
+    [com.sixsq.nuvla.server.resources.deployment :as deployment]
     [com.sixsq.nuvla.server.util.metadata :as gen-md]
     [com.sixsq.nuvla.server.util.response :as r]))
 
@@ -274,10 +275,13 @@ particular NuvlaBox release.
         (wf-utils/update-nuvlabox-api-key credential-api-key nuvlabox))
 
       (when (value-changed? current-nb updated-nb :acl)
-        (wf-utils/update-peripherals id acl))
+        (wf-utils/update-peripherals id acl)
+        (wf-utils/update-playbooks id acl))
 
-      (when (value-changed? current-nb updated-nb :acl)
-        (wf-utils/update-playbooks id acl)))))
+      (when (value-changed? current-nb updated-nb :name)
+        (deployment/bulk-update-nuvlabox-name-as-admin updated-nb))
+
+      )))
 
 
 (def edit-impl (std-crud/edit-fn resource-type

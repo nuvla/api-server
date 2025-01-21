@@ -1,17 +1,21 @@
 (ns com.sixsq.nuvla.db.es.script-utils
   (:require [clojure.string :as str]))
 
+(defn- param-key
+  [param k]
+  (str param "['" k "']"))
+
 (defn- set-field-script [k]
-  (str "ctx._source." k "=params." k))
+  (str (param-key "ctx._source" k) "=" (param-key "params" k)))
 
 (defn- add-to-array-script [k]
-  (str "ctx._source." k ".addAll(params." k ")"))
+  (str  (param-key "ctx._source" k) ".addAll(" (param-key "params" k) ")"))
 
 (defn- remove-from-array-script [k]
-  (str "ctx._source." k ".removeAll(params." k ")"))
+  (str (param-key "ctx._source" k) ".removeAll(" (param-key "params" k) ")"))
 
 (defn- initialize-if-necessary [k]
-  (let [field (str "ctx._source." k)]
+  (let [field (param-key "ctx._source" k)]
     (str "if (" field "== null) " field "= new ArrayList()")))
 
 (defmulti bulk-update-script (fn [_ operation] operation))
