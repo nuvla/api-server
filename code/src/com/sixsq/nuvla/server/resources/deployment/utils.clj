@@ -131,7 +131,7 @@
                                        :parent-job parent-job
                                        :priority (if low-priority 999 50)
                                        :execution-mode execution-mode
-                                       :payload (json/write-str payload))
+                                       :payload (when (seq payload) (json/write-str payload)))
         job-msg      (str action " " id " with async " job-id)]
     (when (not= job-status 201)
       (throw (r/ex-response
