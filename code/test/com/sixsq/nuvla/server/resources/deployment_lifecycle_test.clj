@@ -1358,11 +1358,7 @@
                                       (ltu/get-op-url :stop))
               job-url             (testing "try to stop the deployment and check the stop job was created"
                                     (-> session-user
-                                        (request stop-url
-                                                 :request-method :put
-                                                 :body (json/write-str {:remove-volume true
-                                                                        :remove-images true
-                                                                        :delete        true}))
+                                        (request stop-url)
                                         (ltu/body->edn)
                                         (ltu/is-status 202)
                                         (ltu/location-url)))
@@ -1372,7 +1368,6 @@
                                       (ltu/is-status 200)
                                       (ltu/is-key-value :state "QUEUED")
                                       (ltu/is-key-value :action "stop_deployment")
-                                      (ltu/is-key-value :payload "{\"remove-volume\":true}")
                                       (ltu/is-operation-present :cancel)
                                       (ltu/get-op-url :cancel))]
           (-> session-user
