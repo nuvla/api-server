@@ -1402,10 +1402,10 @@
           (doseq [[params payload] [[{} nil]
                                     [{:delete true}
                                      "{\"delete\":true}"]
-                                    [{:remove-volume true
-                                      :remove-images true
-                                      :delete        true}
-                                     "{\"delete\":true,\"remove-volume\":true,\"remove-images\":true}"]]]
+                                    [{:remove-volumes true
+                                      :remove-images  true
+                                      :delete         true}
+                                     "{\"delete\":true,\"remove-volumes\":true,\"remove-images\":true}"]]]
             (testing "force the state to STARTED"
               (-> session-user
                   (request deployment-url

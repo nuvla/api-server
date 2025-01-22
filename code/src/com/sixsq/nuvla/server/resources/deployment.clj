@@ -329,7 +329,7 @@ a container orchestration engine.
           execution-mode (:execution-mode deployment)
           params         (cond-> {}
                                  (:delete body) (assoc :delete true)
-                                 (:remove-volume body) (assoc :remove-volume true)
+                                 (:remove-volumes body) (assoc :remove-volumes true)
                                  (:remove-images body) (assoc :remove-images true))]
       (-> deployment
           (assoc :state "STOPPING")
