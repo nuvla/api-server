@@ -326,14 +326,15 @@ a container orchestration engine.
     (let [deployment     (-> (str resource-type "/" uuid)
                              (crud/retrieve-by-id-as-admin)
                              (u/throw-cannot-do-action-invalid-state utils/can-stop? "stop"))
-          execution-mode (:execution-mode deployment)]
+          execution-mode (:execution-mode deployment)
+          params         (cond-> {}
+                                 (:delete body) (assoc :delete true)
+                                 (:remove-volumes body) (assoc :remove-volumes true)
+                                 (:remove-images body) (assoc :remove-images true))]
       (-> deployment
           (assoc :state "STOPPING")
           (edit-deployment request)
-          (utils/create-job request "stop_deployment" execution-mode
-                            :payload (when (and (a/can-delete? deployment request)
-                                                (:delete body))
-                                       {:delete true}))))
+          (utils/create-job request "stop_deployment" execution-mode :payload params)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
