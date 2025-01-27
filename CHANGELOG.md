@@ -2,6 +2,21 @@
 
 ## Released
 
+## [6.13.0](https://github.com/nuvla/api-server/compare/6.12.2...6.13.0) (2025-01-27)
+
+
+### Features
+
+* **Deployment:** Support for stop remove-volumes and remove-images params ([#987](https://github.com/nuvla/api-server/issues/987)) ([a6fc40b](https://github.com/nuvla/api-server/commit/a6fc40b6fc4a556a3e7520995561aa784edfd510))
+
+
+### Bug Fixes
+
+* **Deployment group:** Bulk propagate name change to linked deployments ([#985](https://github.com/nuvla/api-server/issues/985)) ([9d1ce88](https://github.com/nuvla/api-server/commit/9d1ce88bb198aba95aa840a7416f537c9ad518b2))
+* **Deployment:** Do not provide payload when null ([a6fc40b](https://github.com/nuvla/api-server/commit/a6fc40b6fc4a556a3e7520995561aa784edfd510))
+* **ES binding:** Param name format change to support special characters in parameter name ([9d1ce88](https://github.com/nuvla/api-server/commit/9d1ce88bb198aba95aa840a7416f537c9ad518b2))
+* **NuvlaEdge:** Bulk propagate name change to linked deployments ([9d1ce88](https://github.com/nuvla/api-server/commit/9d1ce88bb198aba95aa840a7416f537c9ad518b2))
+
 ## [6.12.2](https://github.com/nuvla/api-server/compare/6.12.1...6.12.2) (2024-12-24)
 
 
