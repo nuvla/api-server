@@ -473,7 +473,8 @@ These resources represent a deployment set that regroups deployments.
     spec/subtype-docker-swarm
     (nb-utils/coe-filter [nb-spec/coe-type-swarm])
     spec/subtype-kubernetes
-    (nb-utils/coe-filter [nb-spec/coe-type-kubernetes])))
+    (nb-utils/coe-filter [nb-spec/coe-type-kubernetes])
+    nil))
 
 (defn recompute-fleet
   [{:keys [applications-sets owner] :as resource}]
@@ -482,7 +483,7 @@ These resources represent a deployment set that regroups deployments.
             fleet-filter
             (assoc-in [:applications-sets 0 :overwrites 0 :fleet]
                       (map :id (utils/query-nuvlaboxes-as
-                                 (str fleet-filter " and " (dg-subtype-filter resource))
+                                 (str fleet-filter (some->> (dg-subtype-filter resource) " and "))
                                  {:claims       #{owner "group/nuvla-user"}
                                   :user-id      owner
                                   :active-claim owner}))))))
