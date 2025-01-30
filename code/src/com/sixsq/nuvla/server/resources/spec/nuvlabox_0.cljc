@@ -277,7 +277,7 @@
       (assoc :name "coe-type"
              :json-schema/type "string"
              :json-schema/description "coe type"
-             :json-schema/value-scope {:values ["docker" "swarm" "kubernetes"]})))
+             :json-schema/value-scope {:values [nb/coe-type-docker nb/coe-type-swarm nb/coe-type-kubernetes]})))
 
 (s/def ::coe
   (-> (st/spec (su/only-keys-maps {:req-un [::common/id
