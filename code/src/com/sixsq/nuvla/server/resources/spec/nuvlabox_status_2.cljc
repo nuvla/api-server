@@ -21,21 +21,21 @@
              :json-schema/order 77)))
 
 (s/def ::node-id
-  (-> (st/spec ::core/nonblank-string)
+  (-> (st/spec string?)
       (assoc :name "node-id"
              :json-schema/description "Node ID, if it exists (usually assigned when node belongs to a cluster)"
 
              :json-schema/order 78)))
 
 (s/def ::cluster-id
-  (-> (st/spec ::core/nonblank-string)
+  (-> (st/spec string?)
       (assoc :name "cluster-id"
              :json-schema/description "Cluster ID, if it exists (usually assigned when node is a cluster manager)"
 
              :json-schema/order 79)))
 
 (s/def :cluster-node-label/name
-  (-> (st/spec ::core/nonblank-string)
+  (-> (st/spec string?)
       (assoc :name "cluster-node-label-name"
              :json-schema/description "Cluster node label name"
 
@@ -82,14 +82,14 @@
              :json-schema/order 82)))
 
 (s/def ::cluster-nodes
-  (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
+  (-> (st/spec (s/coll-of string? :min-count 1 :kind vector?))
       (assoc :name "cluster-nodes"
              :json-schema/description "List of Node IDs in the cluster"
 
              :json-schema/order 83)))
 
 (s/def ::cluster-managers
-  (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
+  (-> (st/spec (s/coll-of string? :min-count 1 :kind vector?))
       (assoc :name "cluster-managers"
              :json-schema/description "List of Node IDs in the cluster, corresponding to the managers only"
 
@@ -105,14 +105,14 @@
              :json-schema/order 85)))
 
 (s/def ::cluster-join-address
-  (-> (st/spec ::core/nonblank-string)
+  (-> (st/spec string?)
       (assoc :name "cluster-join-address"
              :json-schema/description "If manager, this is the advertised address to be used by other nodes to join"
 
              :json-schema/order 86)))
 
 (s/def ::components
-  (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
+  (-> (st/spec (s/coll-of string? :min-count 1 :kind vector?))
       (assoc :name "cpmponents"
              :json-schema/description "List of all the NuvlaBox components in the edge device"
 
@@ -188,7 +188,7 @@
              :json-schema/order 2)))
 
 (s/def :interface/interface
-  (-> (st/spec ::core/nonblank-string)
+  (-> (st/spec string?)
       (assoc :name "interface"
              :json-schema/description "Interface name")))
 

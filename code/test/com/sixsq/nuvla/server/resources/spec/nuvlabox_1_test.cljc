@@ -66,7 +66,7 @@
 (deftest check-nuvlabox
 
   (stu/is-valid ::nb-1/schema valid-nb)
-  (s/explain ::nb-1/schema valid-nb)
+
   (stu/is-invalid ::nb-1/schema (assoc valid-nb :bad-attr "BAD_ATTR"))
 
   ;; required
