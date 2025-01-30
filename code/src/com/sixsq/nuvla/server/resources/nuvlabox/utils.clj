@@ -434,3 +434,7 @@
         second
         first
         :id)))
+
+(defn coe-filter
+  [coes]
+  (str "coe-list/coe-type=" (vec coes)))

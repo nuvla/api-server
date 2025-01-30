@@ -7,6 +7,9 @@
     [com.sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
+(def ^:const coe-type-docker "docker")
+(def ^:const coe-type-swarm "swarm")
+(def ^:const coe-type-kubernetes "kubernetes")
 
 (s/def ::version
   (-> (st/spec nat-int?)

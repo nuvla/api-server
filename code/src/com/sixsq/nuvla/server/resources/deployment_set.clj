@@ -23,9 +23,11 @@ These resources represent a deployment set that regroups deployments.
     [com.sixsq.nuvla.server.resources.module :as module]
     [com.sixsq.nuvla.server.resources.module.utils :as module-utils]
     [com.sixsq.nuvla.server.resources.nuvlabox :as nuvlabox]
+    [com.sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [com.sixsq.nuvla.server.resources.resource-metadata :as md]
     [com.sixsq.nuvla.server.resources.spec.deployment-set :as spec]
     [com.sixsq.nuvla.server.resources.spec.module :as module-spec]
+    [com.sixsq.nuvla.server.resources.spec.nuvlabox :as nb-spec]
     [com.sixsq.nuvla.server.util.metadata :as gen-md]
     [com.sixsq.nuvla.server.util.response :as r]
     [com.sixsq.nuvla.server.util.time :as t]))
@@ -463,15 +465,28 @@ These resources represent a deployment set that regroups deployments.
   [request]
   (standard-action request action-simple))
 
+(defn dg-subtype-filter
+  [{:keys [subtype] :as _deployment-set}]
+  (condp = subtype
+    spec/subtype-docker-compose
+    (nb-utils/coe-filter [nb-spec/coe-type-docker nb-spec/coe-type-swarm])
+    spec/subtype-docker-swarm
+    (nb-utils/coe-filter [nb-spec/coe-type-swarm])
+    spec/subtype-kubernetes
+    (nb-utils/coe-filter [nb-spec/coe-type-kubernetes])
+    nil))
+
 (defn recompute-fleet
   [{:keys [applications-sets owner] :as resource}]
   (let [fleet-filter (-> applications-sets first :overwrites first :fleet-filter)]
     (cond-> resource
             fleet-filter
             (assoc-in [:applications-sets 0 :overwrites 0 :fleet]
-                      (map :id (utils/query-nuvlaboxes-as fleet-filter {:claims       #{owner "group/nuvla-user"}
-                                                                        :user-id      owner
-                                                                        :active-claim owner}))))))
+                      (map :id (utils/query-nuvlaboxes-as
+                                 (str fleet-filter (some->> (dg-subtype-filter resource) " and "))
+                                 {:claims       #{owner "group/nuvla-user"}
+                                  :user-id      owner
+                                  :active-claim owner}))))))
 
 (defmethod crud/do-action [resource-type utils/action-recompute-fleet]
   [request]

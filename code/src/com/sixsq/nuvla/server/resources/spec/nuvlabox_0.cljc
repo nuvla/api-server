@@ -3,7 +3,6 @@
     [clojure.spec.alpha :as s]
     [com.sixsq.nuvla.server.resources.spec.common :as common]
     [com.sixsq.nuvla.server.resources.spec.core :as core]
-    [com.sixsq.nuvla.server.resources.spec.infrastructure-service-template-generic :as istg]
     [com.sixsq.nuvla.server.resources.spec.nuvlabox :as nb]
     [com.sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -274,11 +273,11 @@
     :json-schema/order 38))
 
 (s/def ::coe-type
-  (-> (st/spec #{"docker" "swarm" "kubernetes"})
+  (-> (st/spec #{nb/coe-type-docker nb/coe-type-swarm nb/coe-type-kubernetes})
       (assoc :name "coe-type"
              :json-schema/type "string"
              :json-schema/description "coe type"
-             :json-schema/value-scope {:values ["docker" "swarm" "kubernetes"]})))
+             :json-schema/value-scope {:values [nb/coe-type-docker nb/coe-type-swarm nb/coe-type-kubernetes]})))
 
 (s/def ::coe
   (-> (st/spec (su/only-keys-maps {:req-un [::common/id
