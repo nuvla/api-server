@@ -1,4 +1,5 @@
-FROM nuvla/ring:2.1.10
+#FROM nuvla/ring:2.2.0
+FROM nuvladev/ring:2025-01-31-deps-upgrade
                 
 ARG GIT_BRANCH
 ARG GIT_COMMIT_ID
