@@ -1,5 +1,5 @@
 (def parent-version "6.8.0")
-(def nuvla-ring-version "2.1.11-SNAPSHOT")
+(def nuvla-ring-version "2.2.0")
 (def kinsky-version "0.3.1")
 
 (defproject com.sixsq.nuvla/api-server
@@ -61,7 +61,7 @@
    [com.amazonaws/aws-java-sdk-s3 "1.12.780"]
    [duratom "0.5.9"]
    [org.bouncycastle/bcpkix-jdk15on "1.70"]
-   [selmer "1.12.61"]
+   [selmer "1.12.62"]
    [org.clojure/java.classpath "1.1.0"]
    [org.clojure/tools.namespace "1.5.0"]
    [factual/geo "3.0.1" :exclusions [[org.locationtech.jts/jts-core]
