@@ -289,13 +289,15 @@
 (defn create-deployment-state-job
   [{:keys [id, execution-mode] :as _deployment}
    {:keys [parent] :as _nb-status}]
-  (log/debug "Creating deployment_state job for " id)
-  (job-utils/create-job id "deployment_state"
-                        (-> {:owners [a/group-admin]}
-                            (a/acl-append :edit-data parent)
-                            (a/acl-append :manage parent))
-                        "internal"
-                        :execution-mode execution-mode))
+  (if (some? (job-utils/existing-job-id-not-in-final-state id "deployment_state"))
+    (log/debug "Will not create deployment_state job because there is one queued or running for " id)
+    (do (log/debug "Creating deployment_state job for " id)
+        (job-utils/create-job id "deployment_state"
+                              (-> {:owners [a/group-admin]}
+                                  (a/acl-append :edit-data parent)
+                                  (a/acl-append :manage parent))
+                              "internal"
+                              :execution-mode execution-mode))))
 
 
 (defmulti create-deployment-state-job-if-needed
