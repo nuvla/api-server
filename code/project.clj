@@ -4,7 +4,7 @@
 
 (defproject com.sixsq.nuvla/api-server
   ; x-release-please-start-version
-  "6.13.2"
+  "6.13.3-SNAPSHOT"
   ; x-release-please-end
 
   :description "core api server"
