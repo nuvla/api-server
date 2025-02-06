@@ -25,7 +25,7 @@
   (let [modules-data (->> (fetch-all-modules-without-apps-set-subtype)
                           (map :id)
                           (fetch-full-modules))]
-    (prn modules-data)
+    (prn (count modules-data))
     (doseq [{module-id :id :keys [content] :as _module} modules-data]
       (let [first-apps-set-subtype (-> content :applications-sets first :subtype)]
         (try
@@ -45,4 +45,3 @@
 
   (fetch-all-modules-without-apps-set-subtype)
   (add-apps-set-subtype-where-missing))
-
