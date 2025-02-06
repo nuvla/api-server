@@ -26,6 +26,10 @@ resources and peripherals.
   [resource]
   (validate-fn resource))
 
+(defmethod nb-status/spec-subtype schema-version
+  [_resource]
+  ::nb-status-0/schema)
+
 
 ;;
 ;; initialization

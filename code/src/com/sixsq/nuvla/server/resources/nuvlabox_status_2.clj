@@ -26,6 +26,10 @@ resources.
   [resource]
   (validate-fn resource))
 
+(defmethod nb-status/spec-subtype schema-version
+  [_resource]
+  ::nb-status-2/schema)
+
 ;;
 ;; initialization
 ;;

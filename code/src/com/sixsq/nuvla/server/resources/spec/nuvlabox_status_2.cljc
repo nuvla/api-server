@@ -2,7 +2,6 @@
   (:require
     [clojure.spec.alpha :as s]
     [com.sixsq.nuvla.server.resources.spec.common :as common]
-    [com.sixsq.nuvla.server.resources.spec.core :as core]
     [com.sixsq.nuvla.server.resources.spec.nuvlabox-status :as nb-status]
     [com.sixsq.nuvla.server.resources.spec.nuvlabox-status-0 :as nb-status-0]
     [com.sixsq.nuvla.server.util.spec :as su]

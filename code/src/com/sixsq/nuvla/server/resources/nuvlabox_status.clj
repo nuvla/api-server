@@ -6,6 +6,8 @@ NuvlaBox activation, although they can be created manually by an administrator.
 Versioned subclasses define the attributes for a particular NuvlaBox release.
 "
   (:require
+    [clojure.spec.alpha :as s]
+    [clojure.tools.logging :as log]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -46,10 +48,27 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
     (throw (r/ex-bad-request (str "unsupported nuvlabox-status version: " version)))
     (throw (r/ex-bad-request "missing nuvlabox-status version"))))
 
+(defmulti spec-subtype :version)
+
 
 (defmethod crud/validate resource-type
   [resource]
   (validate-subtype resource))
+
+(defn heuristic-spec-problem-fixer
+  [resource {:keys [pred val in] :as _problem}]
+  (if (and (set? pred)
+           (keyword? val)
+           (= (last in) 0))
+    (if-let [path (seq (drop-last 2 in))]
+      (update-in resource path dissoc val)
+      (dissoc resource val))
+    (reduced resource)))
+
+(defn fix-resource-heuristic
+  [resource]
+  (let [problems (::s/problems (s/explain-data (spec-subtype resource) resource))]
+    (reduce heuristic-spec-problem-fixer resource problems)))
 
 
 ;;
@@ -117,21 +136,28 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
   (data-utils/track-availability (:body response) true)
   (utils/special-body-nuvlabox response request))
 
+(defn get-invalid-resource-ex
+  [resource]
+  (try
+    (crud/validate resource)
+    nil
+    (catch Exception ex
+      ex)))
+
 (defn pre-validate-hook
   [resource request]
-  (let [exception (try
-                    (crud/validate resource)
-                    nil
-                    (catch Exception ex
-                      ex))]
-    (if exception
-      (do
-        (-> request
-            (assoc-in [:headers "content-type"] "application/json")
-            (dissoc request :body)
-            crud/edit)
-        (throw exception))
-      resource)))
+  (if-let [exception (get-invalid-resource-ex resource)]
+    (let [fix-resource-attempt (fix-resource-heuristic resource)]
+      (if (nil? (get-invalid-resource-ex fix-resource-attempt))
+        (do
+          (log/warn "Status spec was invalid!" exception)
+          fix-resource-attempt)
+        (do (-> request
+                (assoc-in [:headers "content-type"] "application/json")
+                (assoc :body nil)
+                crud/edit)
+            (throw exception))))
+    resource))
 
 (def edit-impl (std-crud/edit-fn resource-type
                                  :pre-delete-attrs-hook pre-delete-attrs-hook
