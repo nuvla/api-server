@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.spec.nuvlabox-status-2-test
   (:require
-    [clojure.spec.alpha :as s]
     [clojure.test :refer [deftest]]
     [com.sixsq.nuvla.server.resources.nuvlabox-status :as nbs]
     [com.sixsq.nuvla.server.resources.spec.nuvlabox-status-2 :as nb-status-2]
@@ -137,44 +136,6 @@
 
   (stu/is-valid ::nb-status-2/schema state)
   (stu/is-invalid ::nb-status-2/schema (assoc state :bad-attr "BAD_ATTR"))
-  (let [new-state
-
-        (assoc state :description 1)
-
-        #_(-> (assoc state :bad-attr "BAD_ATTR"
-                                     :bad-attr-k 1
-                                     :cluster-join-address ""
-                                     )
-                        (assoc-in [:network :interfaces] [{:interface "eth0"
-                                                             :ips       [{:address "1.2.3.4"},
-                                                                         {:address "2.3.4.5"}]}
-                                                            {:interface "eth0"
-                                                             :ips       [{:address "2.3.4.5"}]}])
-                        (assoc-in [:resources :cpu :unknown] 2)
-                        (assoc-in [:resources :disks] [{:device   "root"
-                                                        :capacity 20000
-                                                        :used     10000}
-                                                       {:device   "root"
-                                                        :capacity 20000
-                                                        :zz nil
-                                                        :used     10000}])
-
-                        )
-
-        ;_           (clojure.pprint/pprint new-state)
-        new-state-1 (-> new-state
-                        #_(update-in [:bad-attr] dissoc))]
-
-    (clojure.pprint/pprint (-> (s/explain-data ::nb-status-2/schema new-state)
-                               ::s/problems
-                               (->>
-                                 (map #(select-keys % [:in :val :pred])))))
-    ;(s/explain ::nb-status-2/schema new-state)
-    (let [fixed-state (nbs/fix-resource-heuristic new-state)]
-      (prn (s/valid? ::nb-status-2/schema fixed-state))
-      #_(clojure.pprint/pprint fixed-state)
-      )
-    )
 
   ;; required
   (doseq [attr #{:id :resource-type :created :updated :acl
