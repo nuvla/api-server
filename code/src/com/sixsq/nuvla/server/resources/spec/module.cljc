@@ -289,6 +289,12 @@
              :json-schema/type "map"
              :json-schema/order 39)))
 
+(s/def ::apps-set-subtype
+  (-> (st/spec #{"docker" "kubernetes"})
+      (assoc :name "apps-set-subtype"
+             :json-schema/type "string"
+             :json-schema/value-scope {:values ["docker" "kubernetes"]}
+             :json-schema/description "subtype of the first applications set")))
 
 (def module-keys-spec (su/merge-keys-specs [common/common-attrs
                                             {:req-un [::path
@@ -304,7 +310,8 @@
                                                       ::validation-message
                                                       ::price
                                                       ::license
-                                                      ::published]}]))
+                                                      ::published
+                                                      ::apps-set-subtype]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-keys-spec))

@@ -186,6 +186,14 @@ component, or application.
       (add-version module content-href))
     module))
 
+(defn add-apps-set-subtype
+  [{:keys [subtype] :as module}]
+  (if (= module/subtype-apps-sets subtype)
+    (if-let [first-apps-set-subtype (get-in module [:content :applications-sets 0 :subtype])]
+      (assoc module :apps-set-subtype first-apps-set-subtype)
+      module)
+    module))
+
 (defn throw-cannot-access-registries-or-creds
   [request]
   (-> request
@@ -203,6 +211,7 @@ component, or application.
                (dissoc :parent-path :published :versions)
                utils/set-parent-path
                create-content
+               add-apps-set-subtype
                (dissoc :content)
                (utils/set-price nil request))))
 
@@ -277,6 +286,7 @@ component, or application.
                        existing-module [:parent-path :published :versions :subtype])
                      utils/set-parent-path
                      create-content
+                     add-apps-set-subtype
                      (dissoc :content)
                      (utils/set-price existing-module request))))))
 
