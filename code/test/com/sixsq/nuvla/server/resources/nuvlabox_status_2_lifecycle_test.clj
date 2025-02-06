@@ -324,7 +324,7 @@
                     (request status-url
                              :content-type "application/json-patch+json"
                              :request-method :put
-                             :body (json/write-str [{"op" "add" "path" "/foo" "value" "x"}]))
+                             :body (json/write-str [{"op" "add" "path" "/description" "value" 1}]))
                     (ltu/body->edn)
                     (ltu/is-status 400)))
               (testing "patch error are returned to the user"
@@ -2177,7 +2177,6 @@
     (let [session       (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
           session-user  (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
           nuvlabox-id   (-> session-user

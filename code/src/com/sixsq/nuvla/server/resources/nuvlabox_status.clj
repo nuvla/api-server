@@ -150,7 +150,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
     (let [fix-resource-attempt (fix-resource-heuristic resource)]
       (if (nil? (get-invalid-resource-ex fix-resource-attempt))
         (do
-          (log/warn "Status spec was invalid!" exception)
+          (log/error "Some Nuvlabox Status fields where ignored because of spec issues!: " exception)
           fix-resource-attempt)
         (do (-> request
                 (assoc-in [:headers "content-type"] "application/json")
