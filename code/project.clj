@@ -1,10 +1,10 @@
 (def parent-version "6.8.0")
-(def nuvla-ring-version "2.1.10")
+(def nuvla-ring-version "2.2.0")
 (def kinsky-version "0.3.1")
 
 (defproject com.sixsq.nuvla/api-server
   ; x-release-please-start-version
-  "6.13.1-SNAPSHOT"
+  "6.13.3-SNAPSHOT"
   ; x-release-please-end
 
   :description "core api server"
@@ -34,7 +34,7 @@
   :dependencies
   [[cc.qbits/spandex "0.8.2" :exclusions [[ring/ring-codec]]]
    [metosin/tilakone "0.0.4"]
-   [zookeeper-clj "0.11.0"
+   [zookeeper-clj "0.13.0"
     :exclusions [[potemkin]
                  [commons-io]
                  [io.netty/netty-handler]
@@ -42,26 +42,26 @@
    [org.clojars.konstan/kinsky ~kinsky-version
     :exclusions [com.github.luben/zstd-jni]]
    [compojure "1.7.1" :exclusions [[ring/ring-core]]]
-   [instaparse "1.4.14"]
-   [metosin/spec-tools "0.10.6"]
+   [instaparse "1.5.0"]
+   [metosin/spec-tools "0.10.7"]
    [expound "0.9.0"]
    [com.draines/postal "2.0.5"]
    [org.clojure/data.csv "1.1.0"]
-   [org.clojure/data.json "2.5.0"]
+   [org.clojure/data.json "2.5.1"]
    [ring/ring-json "0.5.1" :exclusions [[ring/ring-core]]]
    [ring-middleware-accept "2.0.3"]
-   [buddy/buddy-core "1.11.423"]
+   [buddy/buddy-core "1.12.0-430"]
    [buddy/buddy-hashers "2.0.167"]
-   [buddy/buddy-sign "3.5.351"]
-   [clj-http "3.12.3" :exclusions [[org.apache.httpcomponents/httpasyncclient]
+   [buddy/buddy-sign "3.6.1-359"]
+   [clj-http "3.13.0" :exclusions [[org.apache.httpcomponents/httpasyncclient]
                                    [potemkin]
                                    [commons-io]]]
    [clj-stacktrace "0.2.8"]
-   [clojure.java-time "1.4.2"]
-   [com.amazonaws/aws-java-sdk-s3 "1.12.694"]
+   [clojure.java-time "1.4.3"]
+   [com.amazonaws/aws-java-sdk-s3 "1.12.780"]
    [duratom "0.5.9"]
    [org.bouncycastle/bcpkix-jdk15on "1.70"]
-   [selmer "1.12.59"]
+   [selmer "1.12.62"]
    [org.clojure/java.classpath "1.1.0"]
    [org.clojure/tools.namespace "1.5.0"]
    [factual/geo "3.0.1" :exclusions [[org.locationtech.jts/jts-core]
@@ -71,7 +71,7 @@
    ;; spatial4j and jts-core are needed for factual/geo
    ;; issue in Factual geo https://github.com/Factual/geo/issues/74
    [org.locationtech.spatial4j/spatial4j "0.8"]
-   [org.locationtech.jts/jts-core "1.19.0"]
+   [org.locationtech.jts/jts-core "1.20.0"]
    ;; need for Factual geo wkt polygon to geojson
    ;; upgrading jts2geojson dependency to 0.16 or 0.17 creates conflicts for now
    [org.wololo/jts2geojson "0.18.1"]
@@ -80,17 +80,17 @@
                                   [com.github.kenglxn.qrgen/javase]
                                   [com.google.zxing/javase]]]
    [funcool/promesa "11.0.678"]
-   [nrepl "1.1.1"]
+   [nrepl "1.3.1"]
    [com.github.java-json-tools/json-patch "1.13"]
    [io.forward/semver "0.1.0"]]
 
   :profiles
-  {:provided {:dependencies [[org.clojure/clojure "1.11.2"]
+  {:provided {:dependencies [[org.clojure/clojure "1.12.0"]
                              [com.sixsq.nuvla/ring ~nuvla-ring-version]
                              [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
 
    :test     {:dependencies      [[me.raynes/fs "1.4.6"]
-                                  [org.testcontainers/testcontainers "1.17.6"]
+                                  [org.testcontainers/testcontainers "1.20.4"]
                                   [peridot "0.5.4"]
                                   [clj-test-containers "0.7.4"]
                                   [org.clojure/test.check "1.1.1"]

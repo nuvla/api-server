@@ -2,6 +2,20 @@
 
 ## Released
 
+## [6.13.2](https://github.com/nuvla/api-server/compare/6.13.1...6.13.2) (2025-02-03)
+
+
+### Bug Fixes
+
+* **Nuvlabox status:** Deployment state jobs piling up when NE is slow or offline bugfix ([#994](https://github.com/nuvla/api-server/issues/994)) ([6eae638](https://github.com/nuvla/api-server/commit/6eae638c2ffdb95932f63b937dfe30990c668d15))
+
+## [6.13.1](https://github.com/nuvla/api-server/compare/6.13.0...6.13.1) (2025-01-31)
+
+
+### Bug Fixes
+
+* **Deployment group:** Action recompute-fleet must take DG subtype into account ([dda116b](https://github.com/nuvla/api-server/commit/dda116baacb2125a82c7ca7ab1ad37cc20c68585))
+
 ## [6.13.0](https://github.com/nuvla/api-server/compare/6.12.2...6.13.0) (2025-01-27)
 
 
