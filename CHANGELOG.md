@@ -2,6 +2,15 @@
 
 ## Released
 
+## [6.14.0](https://github.com/nuvla/api-server/compare/6.13.2...6.14.0) (2025-02-07)
+
+
+### Features
+
+* **App Bouquets:** Copy first apps set subtype to module top level field apps-set-subtype ([#998](https://github.com/nuvla/api-server/issues/998)) ([0610c48](https://github.com/nuvla/api-server/commit/0610c480091db69fc4d1546e3d315e26a1d78dc3))
+* **Deps:** Upgrade of dependencies ([#991](https://github.com/nuvla/api-server/issues/991)) ([9243de5](https://github.com/nuvla/api-server/commit/9243de5990398fa520ecfe49f34d25e998099c3c))
+* **migration-scripts:** Version control Nuvla migration scripts ([#982](https://github.com/nuvla/api-server/issues/982)) ([76941b7](https://github.com/nuvla/api-server/commit/76941b706ab1461f8a1a315522ce2f26b70671f5))
+
 ## [6.13.2](https://github.com/nuvla/api-server/compare/6.13.1...6.13.2) (2025-02-03)
 
 
