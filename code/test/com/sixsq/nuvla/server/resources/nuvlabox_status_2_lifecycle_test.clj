@@ -324,7 +324,7 @@
                     (request status-url
                              :content-type "application/json-patch+json"
                              :request-method :put
-                             :body (json/write-str [{"op" "add" "path" "/foo" "value" "x"}]))
+                             :body (json/write-str [{"op" "add" "path" "/description" "value" 1}]))
                     (ltu/body->edn)
                     (ltu/is-status 400)))
               (testing "patch error are returned to the user"
@@ -530,11 +530,11 @@
               (is (true? @called) "availability metric was not inserted, but it should have"))))
 
         (testing "when a nuvlabox send telemetry that has a spec validation
-          issue, the heartbeat is still updated"
+          issue that can't be fixed, the heartbeat is still updated"
           (-> session-nb
               (request status-url
                        :request-method :put
-                       :body (json/write-str {:wrong 1}))
+                       :body (json/write-str {:description 1}))
               (ltu/body->edn)
               (ltu/is-status 400))
 
@@ -543,14 +543,35 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-key-value :online true)
+              (ltu/is-key-value :description "NuvlaEdge status of nb-test-status")
               (ltu/is-key-value string? :last-heartbeat true)
-              (ltu/is-key-value string? :next-heartbeat true))
+              (ltu/is-key-value string? :next-heartbeat true)))
 
-          (-> session-admin
-              (request nuvlabox-url)
+        (-> session-admin
+            (request (-> session-admin
+                         (request nuvlabox-url)
+                         (ltu/body->edn)
+                         (ltu/is-status 200)
+                         (ltu/get-op-url nb-utils/action-set-offline)))
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (testing "when a nuvlabox send telemetry that has a spec validation
+          issue that can be fixed, the heartbeat is still updated and valid values are updated"
+          (-> session-nb
+              (request status-url
+                       :request-method :put
+                       :body (json/write-str {:description "hello"
+                                              :wrong       1}))
+              (ltu/body->edn)
+              (ltu/is-status 200))
+
+          (-> session-nb
+              (request status-url)
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value :online true)))))))
+              (ltu/is-key-value :online true)
+              (ltu/is-key-value :description "hello")))))))
 
 (defn check-accept-header
   [metrics-request now]
@@ -2156,7 +2177,6 @@
     (let [session       (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
           session-user  (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
           nuvlabox-id   (-> session-user

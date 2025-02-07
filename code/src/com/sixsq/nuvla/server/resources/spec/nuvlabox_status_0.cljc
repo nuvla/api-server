@@ -57,7 +57,7 @@
     :json-schema/order 33))
 
 (s/def ::comment
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "comment"
     :json-schema/description "comment about the current NuvlaBox status"
     :json-schema/order 10))
@@ -67,13 +67,13 @@
 ;;
 
 (s/def ::topic
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "topic"
     :json-schema/description "topic name within the NuvlaBox Data Gateway"
     :json-schema/order 36))
 
 (s/def ::raw-sample
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "raw sample"
     :json-schema/description "raw message sample published to the NB Data Gateway topic"
     :json-schema/order 37))
@@ -180,7 +180,7 @@
     :json-schema/order 23))
 
 (s/def ::interface
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "interface"
     :json-schema/description "network interface name"
     :json-schema/order 44))
@@ -209,13 +209,13 @@
     :json-schema/order 47))
 
 (s/def ::name
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "name"
     :json-schema/description "Name of the pin (or underlying function)"
     :json-schema/order 48))
 
 (s/def ::mode
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "mode"
     :json-schema/description "How the pin is being used. Usually is one of in/out/pwm/clock/up/down/tri/ALT#"
     :json-schema/order 49))
@@ -252,13 +252,13 @@
     :json-schema/order 53))
 
 (s/def ::nuvlabox-engine-version
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "nuvlabox-engine-version"
     :json-schema/description "nuvlabox engine release"
     :json-schema/order 54))
 
 (s/def ::device
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "device"
     :json-schema/description "name of disk device"
     :json-schema/order 10))
@@ -282,7 +282,7 @@
     :json-schema/order 24))
 
 (s/def ::metric-name
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "metric-name"
     :json-schema/description "name of the metric"
     :json-schema/order 67))
@@ -294,7 +294,7 @@
     :json-schema/order 68))
 
 (s/def ::unit
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "unit"
     :json-schema/description "metric value units"
     :json-schema/order 69))
@@ -319,49 +319,49 @@
     :json-schema/order 71))
 
 (s/def ::id
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "id"
     :json-schema/description "Container ID"
     :json-schema/order 86))
 
 (s/def ::name
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "name"
     :json-schema/description "Container name"
     :json-schema/order 87))
 
 (s/def ::container-status
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "status"
     :json-schema/description "Container status"
     :json-schema/order 88))
 
 (s/def ::cpu-percent
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "cpu"
     :json-schema/description "Container CPU usage (%)"
     :json-schema/order 89))
 
 (s/def ::mem-usage-limit
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "mem-usage-limit"
     :json-schema/description "Container memory usage and limit"
     :json-schema/order 90))
 
 (s/def ::mem-percent
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "mem"
     :json-schema/description "Container memory usage (%)"
     :json-schema/order 91))
 
 (s/def ::net-in-out
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "net-in-out"
     :json-schema/description "Container network usage, in and out"
     :json-schema/order 92))
 
 (s/def ::blk-in-out
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "blk-in-out"
     :json-schema/description "Container block devices usage, in and out"
     :json-schema/order 93))
@@ -509,31 +509,31 @@
     :json-schema/order 30))
 
 (s/def ::operating-system
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "operating-system"
     :json-schema/description "name of the host OS"
     :json-schema/order 37))
 
 (s/def ::architecture
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "architecture"
     :json-schema/description "platform hw architecture"
     :json-schema/order 38))
 
 (s/def ::hostname
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "hostname"
     :json-schema/description "device hostname"
     :json-schema/order 39))
 
 (s/def ::ip
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "ip"
     :json-schema/description "device IP, as used by the NuvlaBox"
     :json-schema/order 40))
 
 (s/def ::docker-server-version
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "docker server version"
     :json-schema/description "docker server version on the host"
     :json-schema/order 41))
@@ -548,28 +548,28 @@
 ;;
 
 (s/def ::vendor-id
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "vendor-id"
     :json-schema/display-name "vendor ID"
     :json-schema/description "unique identifier of the peripheral vendor"
     :json-schema/order 11))
 
 (s/def ::device-id
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "device-id"
     :json-schema/display-name "device ID"
     :json-schema/description "unique identifier of the device"
     :json-schema/order 12))
 
 (s/def ::bus-id
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "bus-id"
     :json-schema/display-name "USB bus ID"
     :json-schema/description "unique identifier of the USB bus"
     :json-schema/order 13))
 
 (s/def ::product-id
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "product-id"
     :json-schema/display-name "product ID"
     :json-schema/description "unique identifier of the product"
@@ -612,7 +612,7 @@
 ;;
 
 (s/def ::wifi-password
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "wifi-password"
     :json-schema/description "WIFI password for the NuvlaBox"
     :json-schema/order 35))
@@ -636,7 +636,7 @@
     :json-schema/order 56))
 
 (s/def ::docker-plugins
-  (assoc (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+  (assoc (st/spec (s/coll-of string? :kind vector?))
     :name "Docker Plugins"
     :json-schema/description "List of enabled Docker Plugins on the NuvlaBox host"
     :json-schema/order 55))
@@ -646,25 +646,25 @@
 ;;
 
 (s/def ::vulnerability-id
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "vulnerability-id"
     :json-schema/description "unique ID for the vulnerability"
     :json-schema/order 57))
 
 (s/def ::vulnerability-description
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "vulnerability-description"
     :json-schema/description "Detailed description of the vulnerability"
     :json-schema/order 58))
 
 (s/def ::product
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "product"
     :json-schema/description "Specific product name corresponding to the vulnerability"
     :json-schema/order 60))
 
 (s/def ::vulnerability-reference
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "vulnerability-reference"
     :json-schema/description "Link for online database with vulnerability info"
     :json-schema/order 61))
@@ -706,7 +706,7 @@
     :json-schema/order 64))
 
 (s/def ::affected-products
-  (assoc (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+  (assoc (st/spec (s/coll-of string? :kind vector?))
     :name "affected-products"
     :json-schema/description "List of affected products in the detected vulnerabilities"
     :json-schema/order 65))
@@ -730,31 +730,31 @@
     :json-schema/order 66))
 
 (s/def ::swarm-node-id
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "swarm-node-id"
     :json-schema/description "ID of the underlying Swarm node"
     :json-schema/order 67))
 
 (s/def ::project-name
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "project-name"
     :json-schema/description "Name of the project used during the NuvlaBox Engine installation"
     :json-schema/order 68))
 
 (s/def ::config-files
-  (assoc (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
+  (assoc (st/spec (s/coll-of string? :min-count 1 :kind vector?))
     :name "config-files"
     :json-schema/description "List of files (compose files or manifests) used during the NuvlaBox Engine installation"
     :json-schema/order 69))
 
 (s/def ::working-dir
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "working-dir"
     :json-schema/description "Directory on the host, from where the NuvlaBox Engine was installed"
     :json-schema/order 70))
 
 (s/def ::environment
-  (assoc (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+  (assoc (st/spec (s/coll-of string? :kind vector?))
     :name "environment"
     :json-schema/description "List of environment variables set at installation time"
     :json-schema/order 71))
@@ -804,7 +804,7 @@
     :json-schema/order 76))
 
 (s/def ::thermal-zone
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "thermal-zone"
     :json-schema/description "Name of the thermal zone"
     :json-schema/order 77))
@@ -832,13 +832,13 @@
     :json-schema/order 80))
 
 (s/def ::kubelet-version
-  (assoc (st/spec ::core/nonblank-string)
+  (assoc (st/spec string?)
     :name "kubelet version"
     :json-schema/description "kubelet version on the host"
     :json-schema/order 81))
 
 (s/def ::container-plugins
-  (assoc (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+  (assoc (st/spec (s/coll-of string? :kind vector?))
     :name "Container Plugins"
     :json-schema/description "List of enabled Container Plugins on the NuvlaBox host"
     :json-schema/order 82))
