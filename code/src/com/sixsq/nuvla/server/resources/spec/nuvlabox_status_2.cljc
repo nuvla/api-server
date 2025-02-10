@@ -171,8 +171,15 @@
 
              :json-schema/order 4)))
 
+(s/def :address/type
+  (-> (st/spec string?)
+      (assoc :name "address-type"
+             :json-schema/description "IP address type"
+
+             :json-schema/order 5)))
+
 (s/def ::ip-info
-  (-> (st/spec (su/only-keys :opt-un [::address]))
+  (-> (st/spec (su/only-keys :opt-un [::address :address/type]))
       (assoc :name "ip-info"
              :json-schema/type "map"
              :json-schema/description "IP info"
