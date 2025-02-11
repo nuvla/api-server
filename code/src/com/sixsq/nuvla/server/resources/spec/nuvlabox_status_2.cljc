@@ -210,7 +210,6 @@
 (s/def ::interfaces
   (-> (st/spec (s/coll-of ::interface :kind vector?))
       (assoc :name "interfaces"
-             :json-schema/type "map"
              :json-schema/description "Network interfaces"
 
              :json-schema/order 3)))
