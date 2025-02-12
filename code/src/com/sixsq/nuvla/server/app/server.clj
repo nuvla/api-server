@@ -1,5 +1,8 @@
 (ns com.sixsq.nuvla.server.app.server
   (:require
+    [clojure.data.json :as json]
+    [taoensso.telemere :as telemere]
+    [taoensso.telemere.tools-logging :as telemere-tools-logging]
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.db.loader :as db-loader]
@@ -38,7 +41,7 @@
 
 
 (defn- create-ring-handler
-  "Creates a ring handler that wraps all of the service routes
+  "Creates a ring handler that wraps all the service routes
    in the necessary ring middleware to handle authentication,
    header treatment, and message formatting."
   []
@@ -91,9 +94,28 @@
     (catch Exception e
       (log/warn "failed removing all instrumentation metrics:" (str e)))))
 
+(def my-handler
+  (telemere/handler:console
+    {:output-fn
+     (telemere/pr-signal-fn
+       {:pr-fn json/write-str})}))
+
+; env var to control logging
+; TAOENSSO_TELEMERE_RT_MIN_LEVEL={:default :debug, :slf4j [["org.apache.zookeeper.*" :warn] ["*" :info]]}
+
+(defn init-logging
+  []
+  (telemere-tools-logging/tools-logging->telemere!)
+  (telemere/add-handler! ::log-json-handler my-handler)
+  (telemere/remove-handler! :default/console)
+  (telemere/log! {:level :debug
+                  :data  (telemere/check-interop)} "Telemere interop check.")
+  (telemere/log! {:level :debug
+                  :data  taoensso.telemere.impl/*rt-sig-filter*} "Telemere interop check."))
 
 (defn init
   []
+  (init-logging)
 
   (db-loader/load-and-set-persistent-db-binding
     (env/env :persistent-db-binding-ns default-db-binding-ns))
