@@ -82,8 +82,8 @@
 
 
 (defn get-main-routes
-  "Returns all of the routes defined for the server.  This uses
-   dynamic loading to discover all of the defined resources on the
+  "Returns all the routes defined for the server.  This uses
+   dynamic loading to discover all the defined resources on the
    classpath."
   []
   (apply routes (doall (concat [cors-preflight-check-route

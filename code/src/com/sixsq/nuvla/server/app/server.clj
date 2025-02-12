@@ -1,5 +1,7 @@
 (ns com.sixsq.nuvla.server.app.server
   (:require
+    [clojure.data.json :as json]
+    [taoensso.telemere :as telemere]
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.db.loader :as db-loader]
@@ -38,7 +40,7 @@
 
 
 (defn- create-ring-handler
-  "Creates a ring handler that wraps all of the service routes
+  "Creates a ring handler that wraps all the service routes
    in the necessary ring middleware to handle authentication,
    header treatment, and message formatting."
   []
@@ -91,9 +93,19 @@
     (catch Exception e
       (log/warn "failed removing all instrumentation metrics:" (str e)))))
 
+(defn init-logging
+  []
+  (when (telemere/get-env {:as :edn :default false} [:json-logging :json-logging<.edn>])
+    (telemere/add-handler! ::log-json-handler (telemere/handler:console
+                                                {:output-fn
+                                                 (telemere/pr-signal-fn
+                                                   {:pr-fn json/write-str})}))
+    (telemere/remove-handler! :default/console)
+    (telemere/log! :info "Logging in json enabled.")))
 
 (defn init
   []
+  (init-logging)
 
   (db-loader/load-and-set-persistent-db-binding
     (env/env :persistent-db-binding-ns default-db-binding-ns))

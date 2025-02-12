@@ -32,12 +32,15 @@
     [ring.middleware.nested-params :refer [wrap-nested-params]]
     [ring.middleware.params :refer [wrap-params]]
     [ring.util.codec :as codec]
-    [zookeeper :as zk]))
+    [zookeeper :as zk]
+    [com.sixsq.nuvla.server.app.server :as server]))
 
 (def ^:private es-node-client-cache (atom nil))
 
 (def es-port 9200)
 (def zk-port 2181)
+
+(server/init-logging)
 
 (defn es-node
   []
