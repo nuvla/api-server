@@ -122,8 +122,11 @@
                                                        :swarm  "5.6.7.8"
                                                        :vpn    ""}
                                           :interfaces [{:interface "eth0"
-                                                        :ips       [{:address "1.2.3.4"},
-                                                                    {:address "2.3.4.5"}]}
+                                                        :ips       [{:address "1.2.3.4"
+                                                                     :type "v4"},
+                                                                    {:address "2.3.4.5"},
+                                                                    {:address "fe80::30df:ecff:fea1:af11"
+                                                                     :type "v6"}]}
                                                        {:interface "eth1"
                                                         :ips       [{:address "3.4.5.6"}]}
                                                        {:interface "enp3s0"
