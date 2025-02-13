@@ -2,6 +2,13 @@
 
 ## Released
 
+## [6.15.0](https://github.com/nuvla/api-server/compare/6.14.0...6.15.0) (2025-02-13)
+
+
+### Features
+
+* **NuvlaBox status:** add field "type" to ips of interfaces to distinguish v4 and v6 IPs ([#1000](https://github.com/nuvla/api-server/issues/1000)) ([3eb6a49](https://github.com/nuvla/api-server/commit/3eb6a493cd6044bd078814b2f2d0ed28a82d6586))
+
 ## [6.14.0](https://github.com/nuvla/api-server/compare/6.13.2...6.14.0) (2025-02-07)
 
 
