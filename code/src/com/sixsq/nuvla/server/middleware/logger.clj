@@ -48,10 +48,10 @@
           request-data  (request-log-data request)
           _             (telemere/log! {:id      "request"
                                         :level   :debug
-                                        :request request-data})
+                                        :data request-data})
           {:keys [status] :as response} (handler request)
           response-data (response-log-data request-data start (System/currentTimeMillis) status)]
       (telemere/log! {:id    "response"
                       :level (response-status->log-level status)
-                      :response  response-data})
+                      :data  response-data})
       response)))
