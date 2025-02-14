@@ -82,11 +82,16 @@
    [funcool/promesa "11.0.678"]
    [nrepl "1.3.1"]
    [com.github.java-json-tools/json-patch "1.13"]
-   [io.forward/semver "0.1.0"]]
+   [io.forward/semver "0.1.0"]
+   [org.clojure/tools.reader "1.5.0"]
+   [com.taoensso/telemere "1.0.0-RC2"]
+   [com.taoensso/telemere-slf4j "1.0.0-RC2"]]
 
   :profiles
   {:provided {:dependencies [[org.clojure/clojure "1.12.0"]
-                             [com.sixsq.nuvla/ring ~nuvla-ring-version]
+                             [com.sixsq.nuvla/ring ~nuvla-ring-version
+                              :exclusions [[ch.qos.logback/logback-classic]
+                                           [ch.qos.logback/logback-core]]]
                              [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
 
    :test     {:dependencies      [[me.raynes/fs "1.4.6"]

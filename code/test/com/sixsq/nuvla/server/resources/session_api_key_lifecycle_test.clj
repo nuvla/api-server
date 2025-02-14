@@ -3,7 +3,6 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [are deftest is use-fixtures]]
-    [clojure.tools.logging :as log]
     [com.sixsq.nuvla.auth.cookies :as cookies]
     [com.sixsq.nuvla.auth.utils.sign :as sign]
     [com.sixsq.nuvla.server.app.params :as p]
