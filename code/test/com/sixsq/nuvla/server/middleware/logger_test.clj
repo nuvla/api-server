@@ -47,26 +47,24 @@
                                           (req {:nuvla-authn-info "joe joe R1 R2"}))))
 
   (testing "log does not display password"
-    (= "a=1&b=2" (:query-string
-                   (t/request-log-data
-                     (req {:nuvla-authn-info "super super group/nuvla-admin"
-                           :query-string     "a=1&password=secret&b=2"}))))))
+    (is (= "a=1&b=2" (:query-string
+                       (t/request-log-data
+                         (req {:nuvla-authn-info "super super group/nuvla-admin"
+                               :query-string     "a=1&password=secret&b=2"})))))))
 
 
 (deftest response-log-data
-  (is (= {:data  {:authn-info   {:active-claim "joe"
-                                 :claims       #{"R1"
-                                                 "R2"
-                                                 "group/nuvla-anon"
-                                                 "joe"}
-                                 :user-id      "joe"}
-                  :content-type "application/json"
-                  :duration-ms  2142
-                  :method       "GET"
-                  :status       200
-                  :uri          "api/resource"}
-          :id    "response"
-          :level :info}
+  (is (= {:authn-info   {:active-claim "joe"
+                         :claims       #{"R1"
+                                         "R2"
+                                         "group/nuvla-anon"
+                                         "joe"}
+                         :user-id      "joe"}
+          :content-type "application/json"
+          :duration-ms  2142
+          :method       "GET"
+          :status       200
+          :uri          "api/resource"}
          (t/response-log-data {:authn-info   {:active-claim "joe"
                                               :claims       #{"R1"
                                                               "R2"
@@ -76,23 +74,19 @@
                                :content-type "application/json"
                                :method       "GET"
                                :uri          "api/resource"} start end 200)))
-  (is (= {:data  {:content-type "application/json"
-                  :duration-ms  2142
-                  :method       "POST"
-                  :status       303
-                  :uri          "api/session"}
-          :id    "response"
-          :level :info}
+  (is (= {:content-type "application/json"
+          :duration-ms  2142
+          :method       "POST"
+          :status       303
+          :uri          "api/session"}
          (t/response-log-data {:content-type "application/json"
                                :method       "POST"
                                :uri          "api/session"} start end 303)))
-  (is (= {:data  {:content-type "application/json"
-                  :duration-ms  2142
-                  :method       "GET"
-                  :status       404
-                  :uri          "api/foo"}
-          :id    "response"
-          :level :warn}
+  (is (= {:content-type "application/json"
+          :duration-ms  2142
+          :method       "GET"
+          :status       404
+          :uri          "api/foo"}
          (t/response-log-data {:content-type "application/json"
                                :method       "GET"
                                :uri          "api/foo"} start end 404))))
