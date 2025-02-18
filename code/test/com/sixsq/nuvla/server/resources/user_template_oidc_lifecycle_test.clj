@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.user-template-oidc-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.auth.external :as ex]
     [com.sixsq.nuvla.auth.oidc :as auth-oidc]
@@ -15,6 +14,7 @@
     [com.sixsq.nuvla.server.resources.user-template-oidc :as oidc]
     [com.sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -76,7 +76,7 @@
                               :order  10
                               :hidden false}
                              (merge oidc/resource)
-                             json/write-str)]
+                             j/write-value-as-string)]
 
       (-> session-admin
           (request user-template-base-uri
@@ -111,7 +111,7 @@
       (-> session-anon
           (request base-uri
                    :request-method :post
-                   :body (json/write-str href-create))
+                   :body (j/write-value-as-string href-create))
           (ltu/body->edn)
           (ltu/message-matches #".*missing or incorrect configuration.*")
           (ltu/is-status 500))
@@ -123,14 +123,14 @@
             cfg-href (-> session-admin
                          (request configuration-base-uri
                                   :request-method :post
-                                  :body (json/write-str configuration-user-oidc))
+                                  :body (j/write-value-as-string configuration-user-oidc))
                          (ltu/body->edn)
                          (ltu/is-status 201)
                          (ltu/location))
             _        (-> session-admin
                          (request configuration-base-uri
                                   :request-method :post
-                                  :body (json/write-str configuration-user-oidc))
+                                  :body (j/write-value-as-string configuration-user-oidc))
                          (ltu/body->edn)
                          (ltu/is-status 409))]
 
@@ -141,7 +141,7 @@
         (let [uri (-> session-anon
                       (request base-uri
                                :request-method :post
-                               :body (json/write-str href-create))
+                               :body (j/write-value-as-string href-create))
                       (ltu/body->edn)
                       (ltu/is-status 303)
                       ltu/location)]
@@ -174,7 +174,7 @@
             (-> session-admin
                 (request configuration-base-uri
                          :request-method :post
-                         :body (json/write-str configuration-user-oidc))
+                         :body (j/write-value-as-string configuration-user-oidc))
                 (ltu/body->edn)
                 (ltu/is-status 201))
 

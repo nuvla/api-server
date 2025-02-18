@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.common.resource-creation
   (:require
-    [clojure.data.json :as json]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
@@ -17,6 +16,7 @@
     [com.sixsq.nuvla.server.resources.user :as user]
     [com.sixsq.nuvla.server.resources.user-template :as user-tpl]
     [com.sixsq.nuvla.server.resources.user-template-minimum :as minimum]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]
      :rename {session session-base}]
     [postal.core :as postal]))
@@ -40,7 +40,7 @@
       (-> (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
           (request (str p/service-context user/resource-type)
                    :request-method :post
-                   :body (json/write-str {:template {:href  (str user-tpl/resource-type "/" minimum/registration-method)
+                   :body (j/write-value-as-string {:template {:href  (str user-tpl/resource-type "/" minimum/registration-method)
                                                      :email user-email}}))
           (ltu/is-status 201)
           (ltu/location)))))
@@ -111,7 +111,7 @@
      (-> session
          (request (str p/service-context module/resource-type)
                   :request-method :post
-                  :body (json/write-str
+                  :body (j/write-value-as-string
                           {:subtype "project"
                            :path    project-path}))
          (ltu/body->edn)
@@ -119,7 +119,7 @@
      (-> session
          (request (str p/service-context module/resource-type)
                   :request-method :post
-                  :body (json/write-str (assoc payload :path module-path)))
+                  :body (j/write-value-as-string (assoc payload :path module-path)))
          (ltu/body->edn)
          (ltu/is-status 201)
          (ltu/location)))))
@@ -131,7 +131,7 @@
     (-> session
         (request (str p/service-context deployment/resource-type)
                  :request-method :post
-                 :body (json/write-str {:module {:href module-id}}))
+                 :body (j/write-value-as-string {:module {:href module-id}}))
         (ltu/body->edn)
         (ltu/is-status 201)
         (ltu/location))))
@@ -148,7 +148,7 @@
     (-> session
         (request (str p/service-context credential/resource-type)
                  :request-method :post
-                 :body (json/write-str tmpl))
+                 :body (j/write-value-as-string tmpl))
         (ltu/body->edn)
         (ltu/is-status 201)
         (ltu/location))))
@@ -158,7 +158,7 @@
   (-> session
       (request (str p/service-context nuvlabox/resource-type)
                :request-method :post
-               :body (json/write-str data))
+               :body (j/write-value-as-string data))
       (ltu/body->edn)
       (ltu/is-status 201)
       (ltu/location)))

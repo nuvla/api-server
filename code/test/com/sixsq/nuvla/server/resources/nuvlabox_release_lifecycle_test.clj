@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.nuvlabox-release-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest testing use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -8,6 +7,7 @@
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.nuvlabox-release :as t]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -62,14 +62,14 @@
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str valid-nuvlabox-release))
+                 :body (j/write-value-as-string valid-nuvlabox-release))
         (ltu/body->edn)
         (ltu/is-status 403))
 
     (let [abs-url     (-> session-admin
                             (request base-uri
                                      :request-method :post
-                                     :body (json/write-str valid-nuvlabox-release))
+                                     :body (j/write-value-as-string valid-nuvlabox-release))
                             (ltu/body->edn)
                             (ltu/is-status 201)
                             (ltu/location-url))]
@@ -77,7 +77,7 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str valid-nuvlabox-release))
+                   :body (j/write-value-as-string valid-nuvlabox-release))
           (ltu/body->edn)
           (ltu/is-status 403))
 
@@ -109,7 +109,7 @@
       (-> session-admin
           (request abs-url
                    :request-method :put
-                   :body (json/write-str {:name      "edit name"
+                   :body (j/write-value-as-string {:name      "edit name"
                                           :published true}))
           (ltu/body->edn)
           (ltu/is-status 200)
@@ -127,7 +127,7 @@
                                    :request-method :post
                                    :body (-> valid-nuvlabox-release
                                              (assoc :published published)
-                                             json/write-str))
+                                             j/write-value-as-string))
                           (ltu/body->edn)
                           (ltu/is-status 201)
                           (ltu/location-url))]

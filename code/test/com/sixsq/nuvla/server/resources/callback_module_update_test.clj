@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.callback-module-update-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -9,6 +8,7 @@
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.module :as module]
     [com.sixsq.nuvla.server.resources.notification :as notif]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -55,7 +55,7 @@
         _project-module (-> session-user
                             (request module-base-uri
                                      :request-method :post
-                                     :body (json/write-str
+                                     :body (j/write-value-as-string
                                              {:subtype "project"
                                               :path    "a"}))
                             (ltu/body->edn)
@@ -63,7 +63,7 @@
         module-resource     (-> session-user
                                 (request module-base-uri
                                          :request-method :post
-                                         :body (json/write-str (assoc module-entry :content module-content)))
+                                         :body (j/write-value-as-string (assoc module-entry :content module-content)))
                                 (ltu/body->edn)
                                 (ltu/is-status 201)
                                 (ltu/location))
@@ -77,7 +77,7 @@
         callback-id         (-> session-admin
                                 (request base-uri
                                          :request-method :post
-                                         :body (json/write-str create-callback))
+                                         :body (j/write-value-as-string create-callback))
                                 (ltu/body->edn)
                                 (ltu/is-status 201)
                                 (ltu/body)
@@ -93,7 +93,7 @@
         notification-id     (-> session-admin
                                 (request (str p/service-context notif/resource-type)
                                          :request-method :post
-                                         :body (json/write-str create-notification))
+                                         :body (j/write-value-as-string create-notification))
                                 (ltu/body->edn)
                                 (ltu/is-status 201)
                                 (ltu/body)

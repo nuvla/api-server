@@ -1,12 +1,12 @@
 (ns com.sixsq.nuvla.server.resources.module-application-helm-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.module-application-helm :as module-application-helm]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -88,7 +88,7 @@
       (-> session
           (request base-uri
                    :request-method :post
-                   :body (json/write-str valid-entry-helm-repo))
+                   :body (j/write-value-as-string valid-entry-helm-repo))
           (ltu/body->edn)
           (ltu/is-status 403)))
 
@@ -110,7 +110,7 @@
       (let [uri     (-> session-admin
                         (request base-uri
                                  :request-method :post
-                                 :body (json/write-str valid-entry))
+                                 :body (j/write-value-as-string valid-entry))
                         (ltu/body->edn)
                         (ltu/is-status 201)
                         (ltu/location))
@@ -154,7 +154,7 @@
       (-> session-admin
           (request base-uri
                    :request-method :post
-                   :body (json/write-str invalid-entry))
+                   :body (j/write-value-as-string invalid-entry))
           (ltu/body->edn)
           (ltu/is-status 400)))
     ))
@@ -168,7 +168,7 @@
     (let [uri (-> session-admin
                   (request base-uri
                            :request-method :post
-                           :body (json/write-str valid-entry-helm-repo))
+                           :body (j/write-value-as-string valid-entry-helm-repo))
                   (ltu/body->edn)
                   (ltu/is-status 201)
                   (ltu/location))
@@ -178,7 +178,7 @@
       (-> session-admin
           (request abs-uri
                    :request-method :put
-                   :body (json/write-str valid-entry-chart-url))
+                   :body (j/write-value-as-string valid-entry-chart-url))
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/body))

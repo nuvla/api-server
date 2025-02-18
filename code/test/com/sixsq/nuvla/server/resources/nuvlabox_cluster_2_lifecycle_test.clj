@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.nuvlabox-cluster-2-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
@@ -13,6 +12,7 @@
     [com.sixsq.nuvla.server.resources.nuvlabox-cluster-2 :as nb-cluster-2]
     [com.sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -84,7 +84,7 @@
           nuvlabox-id        (-> session-owner
                                  (request nuvlabox-base-uri
                                           :request-method :post
-                                          :body (json/write-str valid-nuvlabox))
+                                          :body (j/write-value-as-string valid-nuvlabox))
                                  (ltu/body->edn)
                                  (ltu/is-status 201)
                                  (ltu/location))
@@ -92,7 +92,7 @@
           _                  (-> session-admin
                                  (request nuvlabox-status-base-uri
                                           :request-method :post
-                                          :body (json/write-str (assoc valid-nuvlabox-status :parent nuvlabox-id
+                                          :body (j/write-value-as-string (assoc valid-nuvlabox-status :parent nuvlabox-id
                                                                                              :acl {:owners    ["group/nuvla-admin"]
                                                                                                    :edit-data [nuvlabox-id]})))
                                  (ltu/body->edn)
@@ -102,7 +102,7 @@
           nuvlabox-id-2      (-> session-user
                                  (request nuvlabox-base-uri
                                           :request-method :post
-                                          :body (json/write-str valid-nuvlabox))
+                                          :body (j/write-value-as-string valid-nuvlabox))
                                  (ltu/body->edn)
                                  (ltu/is-status 201)
                                  (ltu/location))
@@ -110,7 +110,7 @@
           _                  (-> session-admin
                                  (request nuvlabox-status-base-uri
                                           :request-method :post
-                                          :body (json/write-str (assoc valid-nuvlabox-status :parent nuvlabox-id-2
+                                          :body (j/write-value-as-string (assoc valid-nuvlabox-status :parent nuvlabox-id-2
                                                                                              :node-id node-2-id
                                                                                              :cluster-node-role "manager"
                                                                                              :acl {:owners    ["group/nuvla-admin"]
@@ -181,7 +181,7 @@
       (-> session-anon
           (request base-uri
                    :request-method :post
-                   :body (json/write-str valid-cluster))
+                   :body (j/write-value-as-string valid-cluster))
           (ltu/body->edn)
           (ltu/is-status 403))
 
@@ -190,7 +190,7 @@
       (when-let [cluster-url (-> session-nb
                                  (request base-uri
                                           :request-method :post
-                                          :body (json/write-str valid-cluster))
+                                          :body (j/write-value-as-string valid-cluster))
                                  (ltu/body->edn)
                                  (ltu/is-status 201)
                                  (ltu/location-url))]
@@ -217,7 +217,7 @@
         (-> session-nb
             (request cluster-url
                      :request-method :put
-                     :body (json/write-str {:name "new cluster name"}))
+                     :body (j/write-value-as-string {:name "new cluster name"}))
             (ltu/body->edn)
             (ltu/is-status 403))
 
@@ -232,7 +232,7 @@
         (-> session-owner
             (request (str p/service-context nuvlabox-id)
                      :request-method :put
-                     :body (json/write-str {:acl {:owners   ["group/nuvla-admin"]
+                     :body (j/write-value-as-string {:acl {:owners   ["group/nuvla-admin"]
                                                   :view-acl [nuvlabox-owner user-beta]}}))
             (ltu/body->edn)
             (ltu/is-status 200))
@@ -248,7 +248,7 @@
         (-> session-admin
             (request cluster-url
                      :request-method :put
-                     :body (json/write-str {:managers [node-1-id node-2-id]
+                     :body (j/write-value-as-string {:managers [node-1-id node-2-id]
                                             :status-notes ["test"]}))
             (ltu/body->edn)
             (ltu/is-status 200))
@@ -279,7 +279,7 @@
         (-> session-nb-2
             (request commission
                      :request-method :post
-                     :body (json/write-str commission-payload))
+                     :body (j/write-value-as-string commission-payload))
             (ltu/body->edn)
             (ltu/is-status 200))
 
@@ -311,7 +311,7 @@
         (-> session-nb-2
             (request commission
                      :request-method :post
-                     :body (json/write-str (assoc commission-payload :cluster-workers [node-1-id])))
+                     :body (j/write-value-as-string (assoc commission-payload :cluster-workers [node-1-id])))
             (ltu/body->edn)
             (ltu/is-status 200))
 
@@ -319,7 +319,7 @@
         (-> session-nb
           (request commission-1
             :request-method :post
-            :body (json/write-str {:cluster-worker-id node-1-id}))
+            :body (j/write-value-as-string {:cluster-worker-id node-1-id}))
           (ltu/body->edn)
           (ltu/is-status 200))
 
@@ -336,7 +336,7 @@
         (-> session-nb-2
             (request commission
                      :request-method :post
-                     :body (json/write-str (assoc commission-payload :cluster-managers [node-1-id] :cluster-workers [])))
+                     :body (j/write-value-as-string (assoc commission-payload :cluster-managers [node-1-id] :cluster-workers [])))
             (ltu/body->edn)
             (ltu/is-status 200))
 

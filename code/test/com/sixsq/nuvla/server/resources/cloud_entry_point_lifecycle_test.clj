@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.cloud-entry-point-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest testing use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -9,6 +8,7 @@
     [com.sixsq.nuvla.server.resources.spec.cloud-entry-point :as cep]
     [com.sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]
     [qbits.spandex :as spandex]))
 
@@ -56,7 +56,7 @@
     (-> session-user
         (request base-uri
                  :request-method :put
-                 :body (json/write-str {:name "dummy"}))
+                 :body (j/write-value-as-string {:name "dummy"}))
         (ltu/body->edn)
         (ltu/is-status 403))
 
@@ -65,7 +65,7 @@
     (-> session-admin
         (request base-uri
                  :request-method :put
-                 :body (json/write-str {:name "dummy"}))
+                 :body (j/write-value-as-string {:name "dummy"}))
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-resource-uri t/resource-type)

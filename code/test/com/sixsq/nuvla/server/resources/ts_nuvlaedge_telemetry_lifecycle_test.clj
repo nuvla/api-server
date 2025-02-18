@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.ts-nuvlaedge-telemetry-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -8,6 +7,7 @@
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.ts-nuvlaedge-telemetry :as t]
     [com.sixsq.nuvla.server.util.time :as time]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]))
 
@@ -64,7 +64,7 @@
         (request (str base-uri "/bulk-insert")
                  :headers {:bulk true}
                  :request-method :patch
-                 :body (json/write-str entries))
+                 :body (j/write-value-as-string entries))
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-key-value :errors false)
@@ -84,7 +84,7 @@
             (request (str base-uri "/bulk-insert")
                      :headers {:bulk true}
                      :request-method :patch
-                     :body (json/write-str [invalid-entry]))
+                     :body (j/write-value-as-string [invalid-entry]))
             (ltu/body->edn)
             (ltu/is-status 400))))
 
@@ -104,7 +104,7 @@
             (request (str base-uri "/bulk-insert")
                      :headers {:bulk true}
                      :request-method :patch
-                     :body (json/write-str conflicting-entries))
+                     :body (j/write-value-as-string conflicting-entries))
             (ltu/body->edn)
             (ltu/is-status 400))))))
 
@@ -140,7 +140,7 @@
         (request (str base-uri "/bulk-insert")
                  :headers {:bulk true}
                  :request-method :patch
-                 :body (json/write-str entries))
+                 :body (j/write-value-as-string entries))
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-key-value :errors false)
@@ -156,7 +156,7 @@
                    :body (rc/form-encode
                            {:last 0
                             :tsds-aggregation
-                            (json/write-str
+                            (j/write-value-as-string
                               {:aggregations
                                {:tsds-stats
                                 {:date_histogram
@@ -178,7 +178,7 @@
                               :body (rc/form-encode
                                       {:last 0
                                        :tsds-aggregation
-                                       (json/write-str
+                                       (j/write-value-as-string
                                          {:aggregations
                                           {:tsds-stats
                                            {:date_histogram
@@ -252,7 +252,7 @@
         (request (str base-uri "/bulk-insert")
                  :headers {:bulk true}
                  :request-method :patch
-                 :body (json/write-str entries))
+                 :body (j/write-value-as-string entries))
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-key-value :errors false)
@@ -268,7 +268,7 @@
                    :body (rc/form-encode
                            {:last 0
                             :tsds-aggregation
-                            (json/write-str
+                            (j/write-value-as-string
                               {:aggregations
                                {:tsds-stats
                                 {:date_histogram
@@ -294,7 +294,7 @@
                               :body (rc/form-encode
                                       {:last 0
                                        :tsds-aggregation
-                                       (json/write-str
+                                       (j/write-value-as-string
                                          {:aggregations
                                           {:tsds-stats
                                            {:date_histogram
@@ -323,7 +323,7 @@
                    :body (rc/form-encode
                            {:last 0
                             :tsds-aggregation
-                            (json/write-str
+                            (j/write-value-as-string
                               {:aggregations
                                {:tsds-stats
                                 {:date_histogram
@@ -350,7 +350,7 @@
                                           :body (rc/form-encode
                                                   {:last 0
                                                    :tsds-aggregation
-                                                   (json/write-str
+                                                   (j/write-value-as-string
                                                      {:aggregations
                                                       {:tsds-stats
                                                        {:date_histogram
@@ -388,7 +388,7 @@
         (request (str base-uri "/bulk-insert")
                  :headers {:bulk true}
                  :request-method :patch
-                 :body (json/write-str entries))
+                 :body (j/write-value-as-string entries))
         (ltu/body->edn)
         (ltu/is-status 403))
 
@@ -399,7 +399,7 @@
                  :body (rc/form-encode
                          {:last 0
                           :tsds-aggregation
-                          (json/write-str
+                          (j/write-value-as-string
                             {:aggregations
                              {:tsds-stats
                               {:date_histogram

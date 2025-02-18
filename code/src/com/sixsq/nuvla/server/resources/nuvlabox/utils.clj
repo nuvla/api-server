@@ -13,8 +13,8 @@
     [com.sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.util.response :as r]
-    [semver.core :as semver]
-    [com.sixsq.nuvla.server.util.time :as time]))
+    [com.sixsq.nuvla.server.util.time :as time]
+    [semver.core :as semver]))
 
 (def ^:const state-new "NEW")
 (def ^:const state-activated "ACTIVATED")

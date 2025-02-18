@@ -1,11 +1,11 @@
 (ns com.sixsq.nuvla.server.resources.subscription-config-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.subscription-config :as t]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]])
   (:import
     [java.util UUID]))
@@ -53,7 +53,7 @@
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str valid-subscription-config))
+                 :body (j/write-value-as-string valid-subscription-config))
         (ltu/body->edn)
         (ltu/is-status 403))
 
@@ -61,7 +61,7 @@
     (let [subs-uri (-> session-user
                        (request base-uri
                                 :request-method :post
-                                :body (json/write-str valid-subscription-config))
+                                :body (j/write-value-as-string valid-subscription-config))
                        (ltu/body->edn)
                        (ltu/is-status 201)
                        (ltu/location))
@@ -90,7 +90,7 @@
         (-> session-user
             (request subs-abs-uri
                      :request-method :put
-                     :body (json/write-str updated))
+                     :body (j/write-value-as-string updated))
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/body))
@@ -136,7 +136,7 @@
         (-> session-user
             (request (str subs-abs-uri "/" t/set-notif-method-ids)
                      :request-method :post
-                     :body (json/write-str {:method-ids method-ids}))
+                     :body (j/write-value-as-string {:method-ids method-ids}))
             (ltu/body->edn)
             (ltu/is-status 200))
 
@@ -193,7 +193,7 @@
     (let [subs-abs-uri (-> session-user
                            (request base-uri
                                     :request-method :post
-                                    :body (json/write-str (update-in subs-config-base
+                                    :body (j/write-value-as-string (update-in subs-config-base
                                                                      [:criteria]
                                                                      assoc :reset-start-date 25 :reset-interval "month")))
                            (ltu/body->edn)
@@ -213,7 +213,7 @@
       (-> session-user
           (request subs-abs-uri
                    :request-method :put
-                   :body (json/write-str (update-in subs-config-base
+                   :body (j/write-value-as-string (update-in subs-config-base
                                                     [:criteria]
                                                     assoc :reset-start-date 7 :reset-interval "7d")))
           (ltu/body->edn)
@@ -225,7 +225,7 @@
       (-> session-user
           (request subs-abs-uri
                    :request-method :put
-                   :body (json/write-str (update-in subs-config-base
+                   :body (j/write-value-as-string (update-in subs-config-base
                                                     [:criteria]
                                                     assoc :reset-start-date 7 :reset-interval "month")))
           (ltu/body->edn)
@@ -242,7 +242,7 @@
     (-> session-user
         (request base-uri
                  :request-method :post
-                 :body (json/write-str (update-in subs-config-base
+                 :body (j/write-value-as-string (update-in subs-config-base
                                                   [:criteria]
                                                   assoc :reset-start-date 0 :reset-interval "month")))
         (ltu/body->edn)
@@ -250,7 +250,7 @@
     (-> session-user
         (request base-uri
                  :request-method :post
-                 :body (json/write-str (update-in subs-config-base
+                 :body (j/write-value-as-string (update-in subs-config-base
                                                   [:criteria]
                                                   assoc :reset-start-date 32 :reset-interval "month")))
         (ltu/body->edn)
@@ -260,7 +260,7 @@
     (-> session-user
         (request base-uri
                  :request-method :post
-                 :body (json/write-str (update-in subs-config-base
+                 :body (j/write-value-as-string (update-in subs-config-base
                                                   [:criteria]
                                                   assoc :reset-start-date 7 :reset-interval "7d")))
         (ltu/body->edn)

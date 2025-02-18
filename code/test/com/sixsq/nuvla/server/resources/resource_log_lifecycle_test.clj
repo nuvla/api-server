@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.resource-log-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [are deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
@@ -11,6 +10,7 @@
     [com.sixsq.nuvla.server.resources.nuvlabox :as nb]
     [com.sixsq.nuvla.server.resources.resource-log :as t]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]
      :rename {session session-base}]))
 
@@ -65,7 +65,7 @@
   (let [parent-id        (-> session-jane
                              (request nuvlabox-base-uri
                                       :request-method :post
-                                      :body (json/write-str
+                                      :body (j/write-value-as-string
                                               {:owner user-id}))
                              (ltu/body->edn)
                              (ltu/is-status 201)
@@ -114,7 +114,7 @@
       (-> session
           (request base-uri
                    :request-method :post
-                   :body (json/write-str valid-entry))
+                   :body (j/write-value-as-string valid-entry))
           (ltu/body->edn)
           (ltu/is-status 403)))
 
@@ -162,7 +162,7 @@
         (-> session-jane
             (request test-uri
                      :request-method :put
-                     :body (json/write-str {:parent         bad-id
+                     :body (j/write-value-as-string {:parent         bad-id
                                             :name           "updated-name"
                                             :last-timestamp "1974-08-25T10:00:00.00Z"
                                             :log            {:c3 ["log3"]}}))
@@ -173,7 +173,7 @@
         (-> session-nuvlabox
             (request test-uri
                      :request-method :put
-                     :body (json/write-str {:parent         bad-id
+                     :body (j/write-value-as-string {:parent         bad-id
                                             :name           "updated-name"
                                             :last-timestamp "1974-08-25T10:00:00.00Z"
                                             :log            {:c3 ["log3"]}}))
@@ -235,7 +235,7 @@
       (-> session-anon
           (request test-uri
                    :request-method :put
-                   :body (json/write-str valid-entry))
+                   :body (j/write-value-as-string valid-entry))
           (ltu/body->edn)
           (ltu/is-status 403))
 
@@ -295,7 +295,7 @@
         (-> session
             (request base-uri
                      :request-method :post
-                     :body (json/write-str valid-entry))
+                     :body (j/write-value-as-string valid-entry))
             (ltu/body->edn)
             (ltu/is-status 403)))
 
@@ -344,7 +344,7 @@
           (-> session-jane
               (request test-uri
                        :request-method :put
-                       :body (json/write-str {:parent         bad-id
+                       :body (j/write-value-as-string {:parent         bad-id
                                               :name           "updated-name"
                                               :components     ["s1"]
                                               :last-timestamp "1964-08-25T10:00:00.00Z"
@@ -408,7 +408,7 @@
         (-> session-anon
             (request test-uri
                      :request-method :put
-                     :body (json/write-str valid-entry))
+                     :body (j/write-value-as-string valid-entry))
             (ltu/body->edn)
             (ltu/is-status 403))
 

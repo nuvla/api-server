@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.session.utils-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -12,6 +11,7 @@
     [com.sixsq.nuvla.server.resources.user :as user]
     [com.sixsq.nuvla.server.resources.user-template :as user-tpl]
     [com.sixsq.nuvla.server.resources.user-template-email-password :as email-password]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]))
 
@@ -52,7 +52,7 @@
       (let [user-id (-> session-admin
                         (request (str p/service-context user/resource-type)
                                  :request-method :post
-                                 :body (json/write-str href-create))
+                                 :body (j/write-value-as-string href-create))
                         (ltu/body->edn)
                         (ltu/is-status 201)
                         (ltu/location))]
@@ -114,7 +114,7 @@
       (let [resp    (-> session-anon
                         (request base-uri
                                  :request-method :post
-                                 :body (json/write-str valid-create))
+                                 :body (j/write-value-as-string valid-create))
                         (ltu/body->edn)
                         (ltu/is-set-cookie)
                         (ltu/is-status 201))

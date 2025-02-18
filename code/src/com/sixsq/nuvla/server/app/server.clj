@@ -1,7 +1,5 @@
 (ns com.sixsq.nuvla.server.app.server
   (:require
-    [clojure.data.json :as json]
-    [taoensso.telemere :as telemere]
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.db.loader :as db-loader]
@@ -20,13 +18,15 @@
     [com.sixsq.nuvla.server.util.zookeeper :as zku]
     [compojure.core :as compojure]
     [environ.core :as env]
+    [jsonista.core :as j]
     [nrepl.server :as nrepl]
     [nrepl.transport :as transport]
     [ring.middleware.cookies :refer [wrap-cookies]]
     [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
     [ring.middleware.keyword-params :refer [wrap-keyword-params]]
     [ring.middleware.nested-params :refer [wrap-nested-params]]
-    [ring.middleware.params :refer [wrap-params]]))
+    [ring.middleware.params :refer [wrap-params]]
+    [taoensso.telemere :as telemere]))
 
 
 (def default-db-binding-ns "com.sixsq.nuvla.db.es.loader")
@@ -99,7 +99,7 @@
     (telemere/add-handler! ::log-json-handler (telemere/handler:console
                                                 {:output-fn
                                                  (telemere/pr-signal-fn
-                                                   {:pr-fn json/write-str})}))
+                                                   {:pr-fn j/write-value-as-string})}))
     (telemere/remove-handler! :default/console)
     (telemere/log! :info "Logging in json enabled.")))
 

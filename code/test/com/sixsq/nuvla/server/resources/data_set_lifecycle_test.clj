@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.data-set-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -8,6 +7,7 @@
     [com.sixsq.nuvla.server.resources.data-set :as t]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -63,7 +63,7 @@
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str valid-data-set))
+                 :body (j/write-value-as-string valid-data-set))
         (ltu/body->edn)
         (ltu/is-status 403))
 
@@ -71,7 +71,7 @@
     (let [admin-uri     (-> session-admin
                             (request base-uri
                                      :request-method :post
-                                     :body (json/write-str valid-data-set))
+                                     :body (j/write-value-as-string valid-data-set))
                             (ltu/body->edn)
                             (ltu/is-status 201)
                             (ltu/location))
@@ -81,7 +81,7 @@
           user-uri      (-> session-user
                             (request base-uri
                                      :request-method :post
-                                     :body (json/write-str valid-data-set))
+                                     :body (j/write-value-as-string valid-data-set))
                             (ltu/body->edn)
                             (ltu/is-status 201)
                             (ltu/location))
@@ -122,7 +122,7 @@
           (-> session-admin
               (request admin-abs-uri
                        :request-method :put
-                       :body (json/write-str updated))
+                       :body (j/write-value-as-string updated))
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/body))

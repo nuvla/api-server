@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.hook-reset-password-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -11,6 +10,7 @@
     [com.sixsq.nuvla.server.resources.session-password-lifecycle-test :as password-test]
     [com.sixsq.nuvla.server.resources.session-template :as st]
     [com.sixsq.nuvla.server.util.general :as gen-util]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [ring.util.codec :as codec]))
@@ -60,7 +60,7 @@
         (-> session-anon
             (request base-uri
                      :request-method :post
-                     :body (json/write-str form))
+                     :body (j/write-value-as-string form))
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/message-matches
@@ -73,7 +73,7 @@
           (-> session-anon
               (request callback-url
                        :request-method :post
-                       :body (json/write-str {:new-password "too-simple"}))
+                       :body (j/write-value-as-string {:new-password "too-simple"}))
               (ltu/body->edn)
               (ltu/is-status 400)
               (ltu/message-matches #"password must contain at least.*"))
@@ -81,7 +81,7 @@
           (-> session-anon
               (request callback-url
                        :request-method :post
-                       :body (json/write-str {:new-password "VeryDifficult-1"}))
+                       :body (j/write-value-as-string {:new-password "VeryDifficult-1"}))
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/message-matches
@@ -90,7 +90,7 @@
           (-> session-admin
               (request (str p/service-context jane-user-id)
                        :request-method :put
-                       :body (json/write-str {:id    jane-user-id
+                       :body (j/write-value-as-string {:id    jane-user-id
                                               :state "SUSPENDED"}))
               (ltu/body->edn)
               (ltu/is-status 200))
@@ -99,7 +99,7 @@
           (-> session-anon
               (request callback-url
                        :request-method :post
-                       :body (json/write-str {:new-password "VeryDifficult-1"}))
+                       :body (j/write-value-as-string {:new-password "VeryDifficult-1"}))
               (ltu/body->edn)
               (ltu/is-status 400)
               (ltu/message-matches

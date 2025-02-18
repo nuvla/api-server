@@ -1,6 +1,6 @@
 (ns com.sixsq.nuvla.db.es.aggregation
-  (:require [clojure.data.json :as json]
-            [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [jsonista.core :as j]))
 
 (def supported-aggregator {:min           "min"
                            :max           "max"
@@ -39,4 +39,4 @@
 (defn tsds-aggregators
   "Deserialize the tsds aggregation information in the :params parameter."
   [{:keys [tsds-aggregation] :as _params}]
-  (some-> tsds-aggregation json/read-str))
+  (some-> tsds-aggregation j/read-value))

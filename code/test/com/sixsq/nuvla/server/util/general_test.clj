@@ -1,6 +1,6 @@
 (ns com.sixsq.nuvla.server.util.general-test
   (:require
-    [clojure.test :refer [is are deftest]]
+    [clojure.test :refer [are deftest is]]
     [com.sixsq.nuvla.server.util.general :as t]))
 
 (deftest filter-map-nil-value

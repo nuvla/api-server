@@ -1,11 +1,11 @@
 (ns com.sixsq.nuvla.server.resources.notification-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.notification :as t]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]))
 
@@ -66,7 +66,7 @@
       (-> session
           (request base-uri
                    :request-method :post
-                   :body (json/write-str valid-notification))
+                   :body (j/write-value-as-string valid-notification))
           (ltu/body->edn)
           (ltu/is-status 403)))
 
@@ -75,7 +75,7 @@
       (-> session-admin
           (request base-uri
                    :request-method :post
-                   :body (json/write-str (assoc valid-notification k v)))
+                   :body (j/write-value-as-string (assoc valid-notification k v)))
           (ltu/body->edn)
           (ltu/is-status 400)
           (ltu/message-matches #"(?s).*resource notification/.* does not satisfy defined schema.*")))
@@ -87,7 +87,7 @@
           uri     (-> session-admin
                       (request base-uri
                                :request-method :post
-                               :body (json/write-str (assoc valid-notification :acl acl)))
+                               :body (j/write-value-as-string (assoc valid-notification :acl acl)))
                       (ltu/body->edn)
                       (ltu/is-status 201)
                       (ltu/location))
@@ -132,7 +132,7 @@
       (-> session-admin
           (request abs-uri
                    :request-method :put
-                   :body (json/write-str (assoc valid-notification :message "new message")))
+                   :body (j/write-value-as-string (assoc valid-notification :message "new message")))
           (ltu/body->edn)
           (ltu/is-status 405)
           (ltu/message-matches #"(?s).*invalid method.*"))
@@ -148,7 +148,7 @@
         (-> session-user
             (request defer-url
                      :request-method :post
-                     :body (json/write-str {t/defer-param-kw 5.0}))
+                     :body (j/write-value-as-string {t/defer-param-kw 5.0}))
             (ltu/body->edn)
             (ltu/is-status 400))
 
@@ -156,7 +156,7 @@
         (-> session-user
             (request defer-url
                      :request-method :post
-                     :body (json/write-str {t/defer-param-kw 10}))
+                     :body (j/write-value-as-string {t/defer-param-kw 10}))
             (ltu/body->edn)
             (ltu/is-status 200))
 
@@ -170,7 +170,7 @@
         (-> session-user
             (request defer-url
                      :request-method :post
-                     :body (json/write-str {t/defer-param-kw 60}))
+                     :body (j/write-value-as-string {t/defer-param-kw 60}))
             (ltu/body->edn)
             (ltu/is-status 200))
 

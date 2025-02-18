@@ -1,12 +1,12 @@
 (ns com.sixsq.nuvla.server.resources.session-template-lifecycle-test-utils
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [is]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.session-template :as st]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -23,7 +23,7 @@
     (-> session-admin
         (request base-uri
                  :request-method :post
-                 :body (json/write-str valid-template))
+                 :body (j/write-value-as-string valid-template))
         (ltu/body->edn)
         (ltu/is-status 409))
 
@@ -98,7 +98,7 @@
     (-> session-admin
         (request base-uri
                  :request-method :post
-                 :body (json/write-str (assoc valid-template :method "UNKNOWN")))
+                 :body (j/write-value-as-string (assoc valid-template :method "UNKNOWN")))
         (ltu/body->edn)
         (ltu/is-status 400))
 
@@ -106,7 +106,7 @@
     (let [uri     (-> session-admin
                       (request base-uri
                                :request-method :post
-                               :body (json/write-str valid-template))
+                               :body (j/write-value-as-string valid-template))
                       (ltu/body->edn)
                       (ltu/is-status 201)
                       (ltu/location))
@@ -146,7 +146,7 @@
         (-> session-admin
             (request abs-uri
                      :request-method :put
-                     :body (json/write-str updated-template))
+                     :body (j/write-value-as-string updated-template))
             (ltu/body->edn)
             (ltu/is-status 200))
 

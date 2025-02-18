@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.infrastructure-service-vpn-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -11,6 +10,7 @@
     [com.sixsq.nuvla.server.resources.infrastructure-service-template-vpn :as infra-service-tpl-vpn]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -48,7 +48,7 @@
         service-group-id    (-> session-user
                                 (request service-group-base-uri
                                          :request-method :post
-                                         :body (json/write-str valid-service-group))
+                                         :body (j/write-value-as-string valid-service-group))
                                 (ltu/body->edn)
                                 (ltu/is-status 201)
                                 (ltu/location))
@@ -75,7 +75,7 @@
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str valid-create))
+                 :body (j/write-value-as-string valid-create))
         (ltu/body->edn)
         (ltu/is-status 400))
 
@@ -86,7 +86,7 @@
       (let [uri     (-> session
                         (request base-uri
                                  :request-method :post
-                                 :body (json/write-str valid-create))
+                                 :body (j/write-value-as-string valid-create))
                         (ltu/body->edn)
                         (ltu/is-status 201)
                         (ltu/location))

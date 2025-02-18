@@ -2,9 +2,9 @@
   (:require
     [buddy.sign.jws :as jws]
     [clj-http.client :as http]
-    [clojure.data.json :as json]
     [clojure.pprint :refer [pprint]]
-    [clojure.tools.logging :as log]))
+    [clojure.tools.logging :as log]
+    [jsonista.core :as j]))
 
 (defn get-token
   "Perform an HTTP POST to the OIDC/MitreID server to recover a token.
@@ -20,7 +20,7 @@
                                   :client_id     client-id
                                   :client_secret client-secret}})
         :body
-        (json/read-str :key-fn keyword))
+        (j/read-value j/keyword-keys-object-mapper))
     (catch Exception e
       (let [client-secret? (str (boolean client-secret))]
         (if-let [{:keys [status] :as data} (ex-data e)]
@@ -53,9 +53,9 @@
   (try
     (-> (http/get jwks-url {:headers {"Accept" "application/json"}})
         :body
-        (json/read-str :key-fn keyword)
+        (j/read-value j/keyword-keys-object-mapper)
         :keys
-        (->> (some #(when (= (:kid %) kid) (json/write-str %)))))
+        (->> (some #(when (= (:kid %) kid) (j/write-value-as-string %)))))
     (catch Exception e
       (if-let [{:keys [status] :as data} (ex-data e)]
         (log/errorf

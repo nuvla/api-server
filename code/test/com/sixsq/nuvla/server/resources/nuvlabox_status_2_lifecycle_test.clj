@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.nuvlabox-status-2-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [com.sixsq.nuvla.db.impl :as db]
@@ -18,6 +17,7 @@
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
     [com.sixsq.nuvla.server.util.time :as time]
     [com.sixsq.nuvla.utils.log-time :as logt]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [same.compare :refer [compare-ulp]]
@@ -168,7 +168,7 @@
           nuvlabox-id   (-> session-user
                             (request nuvlabox-base-uri
                                      :request-method :post
-                                     :body (json/write-str valid-nuvlabox))
+                                     :body (j/write-value-as-string valid-nuvlabox))
                             (ltu/body->edn)
                             (ltu/is-status 201)
                             (ltu/location))
@@ -181,7 +181,7 @@
       (when-let [status-url (-> session-admin
                                 (request base-uri
                                          :request-method :post
-                                         :body (json/write-str (assoc (select-keys valid-state [:version :status]) :parent nuvlabox-id
+                                         :body (j/write-value-as-string (assoc (select-keys valid-state [:version :status]) :parent nuvlabox-id
                                                                                                                    :acl valid-acl
                                                                                                                    :coe-resources {:docker {:containers []}})))
                                 (ltu/body->edn)
@@ -215,7 +215,7 @@
           nuvlabox-id   (-> session-user
                             (request nuvlabox-base-uri
                                      :request-method :post
-                                     :body (json/write-str valid-nuvlabox))
+                                     :body (j/write-value-as-string valid-nuvlabox))
                             (ltu/body->edn)
                             (ltu/is-status 201)
                             (ltu/location))
@@ -231,7 +231,7 @@
           (-> session
               (request base-uri
                        :request-method :post
-                       :body (json/write-str (assoc valid-state :parent nuvlabox-id
+                       :body (j/write-value-as-string (assoc valid-state :parent nuvlabox-id
                                                                 :acl valid-acl)))
               (ltu/body->edn)
               (ltu/is-status 403))))
@@ -239,7 +239,7 @@
       (when-let [status-id (-> session-admin
                                (request base-uri
                                         :request-method :post
-                                        :body (json/write-str (assoc valid-state :parent nuvlabox-id
+                                        :body (j/write-value-as-string (assoc valid-state :parent nuvlabox-id
                                                                                  :acl valid-acl)))
                                (ltu/body->edn)
                                (ltu/is-status 201)
@@ -263,7 +263,7 @@
                 (is (= (-> session-nb
                            (request status-url
                                     :request-method :put
-                                    :body (json/write-str {:current-time (time/now-str)
+                                    :body (j/write-value-as-string {:current-time (time/now-str)
                                                            :online       true
                                                            :resources    resources-updated}))
                            (ltu/body->edn)
@@ -315,7 +315,7 @@
                   (request status-url
                            :content-type "application/json-patch+json"
                            :request-method :put
-                           :body (json/write-str [{"op" "add" "path" "/tags" "value" new-tags}
+                           :body (j/write-value-as-string [{"op" "add" "path" "/tags" "value" new-tags}
                                                   {"op" "test" "path" "/tags" "value" new-tags}]))
                   (ltu/body->edn)
                   (ltu/is-status 200))
@@ -324,7 +324,7 @@
                     (request status-url
                              :content-type "application/json-patch+json"
                              :request-method :put
-                             :body (json/write-str [{"op" "add" "path" "/description" "value" 1}]))
+                             :body (j/write-value-as-string [{"op" "add" "path" "/description" "value" 1}]))
                     (ltu/body->edn)
                     (ltu/is-status 400)))
               (testing "patch error are returned to the user"
@@ -332,7 +332,7 @@
                     (request status-url
                              :content-type "application/json-patch+json"
                              :request-method :put
-                             :body (json/write-str [{"op" "remove" "path" "/wrong/1" "value" "x"}]))
+                             :body (j/write-value-as-string [{"op" "remove" "path" "/wrong/1" "value" "x"}]))
                     (ltu/body->edn)
                     (ltu/is-status 400)
                     (ltu/message-matches "Json patch exception: no such path in target JSON document"))
@@ -340,7 +340,7 @@
                     (request status-url
                              :content-type "application/json-patch+json"
                              :request-method :put
-                             :body (json/write-str "plain text"))
+                             :body (j/write-value-as-string "plain text"))
                     (ltu/body->edn)
                     (ltu/is-status 400)
                     (ltu/message-matches "Json patch exception: Cannot deserialize value of type")))))
@@ -401,7 +401,7 @@
           nuvlabox-id   (-> session-user
                             (request nuvlabox-base-uri
                                      :request-method :post
-                                     :body (json/write-str valid-nuvlabox))
+                                     :body (j/write-value-as-string valid-nuvlabox))
                             (ltu/body->edn)
                             (ltu/is-status 201)
                             (ltu/location))
@@ -441,7 +441,7 @@
                          (ltu/is-status 200)
                          (ltu/get-op-url :commission))
                      :request-method :put
-                     :body (json/write-str
+                     :body (j/write-value-as-string
                              {:capabilities [nb-utils/capability-job-pull]}))
             (ltu/body->edn)
             (ltu/is-status 200))
@@ -452,7 +452,7 @@
               (-> session-admin
                   (request status-url
                            :request-method :put
-                           :body (json/write-str {}))
+                           :body (j/write-value-as-string {}))
                   (ltu/body->edn)
                   (ltu/is-status 200)
                   (ltu/is-key-value :online nil)
@@ -471,7 +471,7 @@
               (-> session-nb
                   (request status-url
                            :request-method :put
-                           :body (json/write-str {:nuvlabox-engine-version "1.0.2"}))
+                           :body (j/write-value-as-string {:nuvlabox-engine-version "1.0.2"}))
                   (ltu/body->edn)
                   (ltu/is-status 200)
                   (ltu/is-key-value :jobs []))
@@ -504,7 +504,7 @@
           (-> session-nb
               (request status-url
                        :request-method :put
-                       :body (json/write-str {:nuvlabox-engine-version "1.0.2"}))
+                       :body (j/write-value-as-string {:nuvlabox-engine-version "1.0.2"}))
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-key-value count :jobs 1)))
@@ -534,7 +534,7 @@
           (-> session-nb
               (request status-url
                        :request-method :put
-                       :body (json/write-str {:description 1}))
+                       :body (j/write-value-as-string {:description 1}))
               (ltu/body->edn)
               (ltu/is-status 400))
 
@@ -561,7 +561,7 @@
           (-> session-nb
               (request status-url
                        :request-method :put
-                       :body (json/write-str {:description "hello"
+                       :body (j/write-value-as-string {:description "hello"
                                               :wrong       1}))
               (ltu/body->edn)
               (ltu/is-status 200))
@@ -629,7 +629,7 @@
                             (let [nuvlabox     (-> session-user
                                                    (request nuvlabox-base-uri
                                                             :request-method :post
-                                                            :body (json/write-str body))
+                                                            :body (j/write-value-as-string body))
                                                    (ltu/body->edn)
                                                    (ltu/is-status 201))
                                   nuvlabox-id  (ltu/location nuvlabox)
@@ -661,7 +661,7 @@
           status-id       (-> session-admin
                               (request base-uri
                                        :request-method :post
-                                       :body (json/write-str (assoc valid-state :parent nuvlabox-id
+                                       :body (j/write-value-as-string (assoc valid-state :parent nuvlabox-id
                                                                                 :acl valid-acl)))
                               (ltu/body->edn)
                               (ltu/is-status 201)
@@ -674,7 +674,7 @@
       (-> session-nb
           (request status-url
                    :request-method :put
-                   :body (json/write-str {:current-time (time/to-str update-time)
+                   :body (j/write-value-as-string {:current-time (time/to-str update-time)
                                           :online       true
                                           :resources    resources-updated}))
           (ltu/body->edn)
@@ -873,7 +873,7 @@
                                            {:datasets               ["cpu-stats"]
                                             :from                   from
                                             :to                     to
-                                            :custom-es-aggregations (json/write-str
+                                            :custom-es-aggregations (j/write-value-as-string
                                                                       {:agg1 {:date_histogram
                                                                               {:field          "@timestamp"
                                                                                :fixed_interval "1d"
@@ -896,7 +896,7 @@
                                            {:datasets               ["disk-stats"]
                                             :from                   from
                                             :to                     to
-                                            :custom-es-aggregations (json/write-str
+                                            :custom-es-aggregations (j/write-value-as-string
                                                                       {:agg1 {:date_histogram
                                                                               {:field          "@timestamp"
                                                                                :fixed_interval "1d"
@@ -1065,7 +1065,7 @@
                                                 :datasets               ["cpu-stats"]
                                                 :from                   from
                                                 :to                     to
-                                                :custom-es-aggregations (json/write-str
+                                                :custom-es-aggregations (j/write-value-as-string
                                                                           {:agg1 {:date_histogram
                                                                                   {:field          "@timestamp"
                                                                                    :fixed_interval "1d"
@@ -1089,7 +1089,7 @@
               status-id-2        (-> session-admin
                                      (request base-uri
                                               :request-method :post
-                                              :body (json/write-str (assoc valid-state :parent nuvlabox-id-2
+                                              :body (j/write-value-as-string (assoc valid-state :parent nuvlabox-id-2
                                                                                        :acl valid-acl-2)))
                                      (ltu/body->edn)
                                      (ltu/is-status 201)
@@ -1100,7 +1100,7 @@
               _                  (-> session-admin
                                      (request status-url-2
                                               :request-method :put
-                                              :body (json/write-str {:current-time (time/to-str update-time-2)
+                                              :body (j/write-value-as-string {:current-time (time/to-str update-time-2)
                                                                      :online       true
                                                                      :resources    resources-updated}))
                                      (ltu/body->edn)
@@ -1112,7 +1112,7 @@
               nuvlabox-id-4      (-> session-user
                                      (request nuvlabox-base-uri
                                               :request-method :post
-                                              :body (json/write-str valid-nuvlabox))
+                                              :body (j/write-value-as-string valid-nuvlabox))
                                      (ltu/body->edn)
                                      (ltu/is-status 201)
                                      (ltu/location))
@@ -1127,7 +1127,7 @@
                                        (request nuvlabox-data-url
                                                 :request-method :patch
                                                 :headers {:bulk true}
-                                                :body (json/write-str
+                                                :body (j/write-value-as-string
                                                         (cond->
                                                           {:filter  (str "(id='" nuvlabox-id "'"
                                                                          " or id='" nuvlabox-id-2 "'"
@@ -1525,7 +1525,7 @@
     (let [nuvlabox     (-> session
                            (request nuvlabox-base-uri
                                     :request-method :post
-                                    :body (json/write-str body))
+                                    :body (j/write-value-as-string body))
                            (ltu/body->edn)
                            (ltu/is-status 201))
           nuvlabox-id  (ltu/location nuvlabox)
@@ -1604,7 +1604,7 @@
         nuvlabox-id-5      (-> session-user
                                (request nuvlabox-base-uri
                                         :request-method :post
-                                        :body (json/write-str (assoc valid-nuvlabox :created (time/to-str now-5d))))
+                                        :body (j/write-value-as-string (assoc valid-nuvlabox :created (time/to-str now-5d))))
                                (ltu/body->edn)
                                (ltu/is-status 201)
                                (ltu/location))]
@@ -1807,7 +1807,7 @@
                                          (request nuvlabox-data-url
                                                   :request-method :patch
                                                   :headers {:bulk true}
-                                                  :body (json/write-str
+                                                  :body (j/write-value-as-string
                                                           {:filter      (str "(id='" nuvlabox-id-2 "'"
                                                                              " or id='" nuvlabox-id-3 "'"
                                                                              " or id='" nuvlabox-id-4 "'"
@@ -2115,7 +2115,7 @@
                                            (request nuvlabox-data-url
                                                     :request-method :patch
                                                     :headers {:bulk true}
-                                                    :body (json/write-str
+                                                    :body (j/write-value-as-string
                                                             {:dataset     datasets
                                                              :from        (if from (time/to-str from) from-str)
                                                              :to          (if to (time/to-str to) to-str)
@@ -2182,7 +2182,7 @@
           nuvlabox-id   (-> session-user
                             (request nuvlabox-base-uri
                                      :request-method :post
-                                     :body (json/write-str valid-nuvlabox))
+                                     :body (j/write-value-as-string valid-nuvlabox))
                             (ltu/body->edn)
                             (ltu/is-status 201)
                             (ltu/location))
@@ -2207,7 +2207,7 @@
                        (ltu/is-status 200)
                        (ltu/get-op-url :commission))
                    :request-method :put
-                   :body (json/write-str {:swarm-endpoint "https://swarm.example.com"}))
+                   :body (j/write-value-as-string {:swarm-endpoint "https://swarm.example.com"}))
           (ltu/body->edn)
           (ltu/is-status 200))
 
@@ -2230,7 +2230,7 @@
         (-> session-nb
             (request status-url
                      :request-method :put
-                     :body (json/write-str {:orchestrator "swarm"}))
+                     :body (j/write-value-as-string {:orchestrator "swarm"}))
             (ltu/body->edn)
             (ltu/is-status 200))
 
@@ -2244,7 +2244,7 @@
         (-> session-nb
             (request status-url
                      :request-method :put
-                     :body (json/write-str {}))
+                     :body (j/write-value-as-string {}))
             (ltu/body->edn)
             (ltu/is-status 200))
 
@@ -2258,7 +2258,7 @@
         (-> session-nb
             (request status-url
                      :request-method :put
-                     :body (json/write-str {:cluster-node-role "manager"}))
+                     :body (j/write-value-as-string {:cluster-node-role "manager"}))
             (ltu/body->edn)
             (ltu/is-status 200))
 

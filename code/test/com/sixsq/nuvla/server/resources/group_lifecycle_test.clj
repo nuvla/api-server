@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.group-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.set :as set]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [com.sixsq.nuvla.auth.password :as auth-password]
@@ -13,6 +12,7 @@
     [com.sixsq.nuvla.server.resources.group-template :as group-tpl]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]))
 
@@ -99,7 +99,7 @@
           (let [abs-uri     (-> session
                                 (request base-uri
                                          :request-method :post
-                                         :body (json/write-str tpl))
+                                         :body (j/write-value-as-string tpl))
                                 (ltu/body->edn)
                                 (ltu/is-status 201)
                                 (ltu/location-url))
@@ -124,7 +124,7 @@
               (-> session
                   (request abs-uri
                            :request-method :put
-                           :body (json/write-str (assoc body :users users)))
+                           :body (j/write-value-as-string (assoc body :users users)))
                   (ltu/body->edn)
                   (ltu/is-status 200))
 
@@ -140,7 +140,7 @@
                 (-> session
                     (request invite-url
                              :request :put
-                             :body (json/write-str {:username "notexistandnotemail"}))
+                             :body (j/write-value-as-string {:username "notexistandnotemail"}))
                     (ltu/body->edn)
                     (ltu/is-status 400)
                     (ltu/message-matches "invalid email"))
@@ -148,7 +148,7 @@
                 (-> session
                     (request invite-url
                              :request :put
-                             :body (json/write-str {:username tarzan-email}))
+                             :body (j/write-value-as-string {:username tarzan-email}))
                     (ltu/body->edn)
                     (ltu/is-status 400)
                     (ltu/message-matches "user already in group"))
@@ -156,7 +156,7 @@
                 (-> session
                     (request invite-url
                              :request :put
-                             :body (json/write-str {:username "max@example.com"}))
+                             :body (j/write-value-as-string {:username "max@example.com"}))
                     (ltu/body->edn)
                     (ltu/is-status 200)
                     (ltu/message-matches (str "successfully invited to " id)))
@@ -165,7 +165,7 @@
                   (-> session
                       (request invite-url
                                :request :put
-                               :body (json/write-str {:username     "jane@example.com"
+                               :body (j/write-value-as-string {:username     "jane@example.com"
                                                       :redirect-url "https://phishing.com"}))
                       (ltu/body->edn)
                       (ltu/is-status 400)
@@ -207,7 +207,7 @@
       (let [abs-uri (-> session-user
                         (request base-uri
                                  :request-method :post
-                                 :body (json/write-str (valid-create "a")))
+                                 :body (j/write-value-as-string (valid-create "a")))
                         (ltu/body->edn)
                         (ltu/is-status 201)
                         (ltu/location-url))]
@@ -221,7 +221,7 @@
       (let [abs-uri (-> session-group-a
                         (request base-uri
                                  :request-method :post
-                                 :body (json/write-str (valid-create "b")))
+                                 :body (j/write-value-as-string (valid-create "b")))
                         (ltu/body->edn)
                         (ltu/is-status 201)
                         (ltu/location-url))]
@@ -240,7 +240,7 @@
       (let [abs-uri (-> session-group-b
                         (request base-uri
                                  :request-method :post
-                                 :body (json/write-str (valid-create "c")))
+                                 :body (j/write-value-as-string (valid-create "c")))
                         (ltu/body->edn)
                         (ltu/is-status 201)
                         (ltu/location-url))]
@@ -254,14 +254,14 @@
           (-> session-admin
               (request abs-uri
                        :request-method :put
-                       :body (json/write-str {:parents ["change-not-allowed"]}))
+                       :body (j/write-value-as-string {:parents ["change-not-allowed"]}))
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-key-value :parents ["group/a" "group/b"]))
           (-> session-admin
               (request (str abs-uri "?select=parents")
                        :request-method :put
-                       :body (json/write-str {}))
+                       :body (j/write-value-as-string {}))
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-key-value :parents ["group/a" "group/b"])))))
@@ -272,14 +272,14 @@
         (-> session-user
             (request base-uri
                      :request-method :post
-                     :body (json/write-str (valid-create "d")))
+                     :body (j/write-value-as-string (valid-create "d")))
             ltu/body->edn
             (ltu/is-status 201))
         (doseq [group-idx (range 19)]
           (-> session-group-d
               (request base-uri
                        :request-method :post
-                       :body (json/write-str (valid-create (str "d" group-idx))))
+                       :body (j/write-value-as-string (valid-create (str "d" group-idx))))
               ltu/body->edn
               (ltu/is-status 201)))
         (-> session-group-d
@@ -290,7 +290,7 @@
         (-> session-group-d
             (request base-uri
                      :request-method :post
-                     :body (json/write-str (valid-create "d-unwanted1")))
+                     :body (j/write-value-as-string (valid-create "d-unwanted1")))
             ltu/body->edn
             (ltu/is-status 409)
             (ltu/message-matches "A group cannot have more than 19 subgroups!"))))

@@ -1,8 +1,8 @@
 (ns com.sixsq.nuvla.server.middleware.logger
   (:require
     [clojure.string :as str]
-    [taoensso.telemere :as telemere]
-    [com.sixsq.nuvla.server.middleware.authn-info :as auth-info]))
+    [com.sixsq.nuvla.server.middleware.authn-info :as auth-info]
+    [taoensso.telemere :as telemere]))
 
 (defn- request-querystring
   [request]

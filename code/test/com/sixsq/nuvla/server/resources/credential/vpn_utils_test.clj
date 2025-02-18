@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.credential.vpn-utils-test
   (:require
-    [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [is]]
     [com.sixsq.nuvla.server.app.params :as p]
@@ -16,6 +15,7 @@
     [com.sixsq.nuvla.server.resources.infrastructure-service-template-vpn
      :as infra-srvc-tpl-vpn]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -48,7 +48,7 @@
         infra-service-id      (-> session-admin
                                   (request (str p/service-context infra-service/resource-type)
                                            :request-method :post
-                                           :body (json/write-str infra-service-create))
+                                           :body (j/write-value-as-string infra-service-create))
                                   (ltu/body->edn)
                                   (ltu/is-status 201)
                                   (ltu/location))
@@ -100,7 +100,7 @@
       (-> session
           (request base-uri
                    :request-method :post
-                   :body (json/write-str create-import-no-href))
+                   :body (j/write-value-as-string create-import-no-href))
           (ltu/body->edn)
           (ltu/is-status 400)))
 
@@ -108,7 +108,7 @@
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str create-import-href))
+                 :body (j/write-value-as-string create-import-href))
         (ltu/body->edn)
         (ltu/is-status 400))
 
@@ -120,7 +120,7 @@
       (-> session-test
           (request base-uri
                    :request-method :post
-                   :body (json/write-str create-import-href))
+                   :body (j/write-value-as-string create-import-href))
           (ltu/body->edn)
           (ltu/is-status 400)
           (ltu/is-key-value
@@ -129,7 +129,7 @@
       (-> session-admin
           (request (str p/service-context configuration/resource-type)
                    :request-method :post
-                   :body (json/write-str configuration-create))
+                   :body (j/write-value-as-string configuration-create))
           (ltu/body->edn)
           (ltu/is-status 201))
 
@@ -138,7 +138,7 @@
           (request
             base-uri
             :request-method :post
-            :body (json/write-str (assoc-in create-import-href [:template :href] bad-href)))
+            :body (j/write-value-as-string (assoc-in create-import-href [:template :href] bad-href)))
           (ltu/body->edn)
           (ltu/is-key-value :message
                             "Bad infrastructure service scope for selected credential template!")
@@ -148,7 +148,7 @@
       (let [resp    (-> session-test
                         (request base-uri
                                  :request-method :post
-                                 :body (json/write-str create-import-href))
+                                 :body (j/write-value-as-string create-import-href))
                         (ltu/body->edn)
                         (ltu/is-status 201)
                         (ltu/is-key-value :private-key private-key-value)
@@ -198,7 +198,7 @@
         (-> session-test
             (request base-uri
                      :request-method :post
-                     :body (json/write-str create-import-href))
+                     :body (j/write-value-as-string create-import-href))
             (ltu/body->edn)
             (ltu/is-key-value :message (str "Credential VPN already exist for your account on "
                                             "selected VPN infrastructure service!"))

@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.deployment-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
@@ -11,10 +10,11 @@
     [com.sixsq.nuvla.server.resources.deployment :as t]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.module :as module]
-    [com.sixsq.nuvla.server.resources.spec.module :as module-spec]
     [com.sixsq.nuvla.server.resources.module-application :as module-application]
     [com.sixsq.nuvla.server.resources.module-lifecycle-test :refer [create-parent-projects]]
+    [com.sixsq.nuvla.server.resources.spec.module :as module-spec]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -39,7 +39,7 @@
         module-id (-> session-owner
                       (request module-base-uri
                                :request-method :post
-                               :body (json/write-str
+                               :body (j/write-value-as-string
                                        module-data))
                       (ltu/body->edn)
                       (ltu/is-status 201)
@@ -140,7 +140,7 @@
         (-> session-anon
             (request base-uri
                      :request-method :post
-                     :body (json/write-str valid-deployment))
+                     :body (j/write-value-as-string valid-deployment))
             (ltu/body->edn)
             (ltu/is-status 403)))
 
@@ -148,7 +148,7 @@
         (-> session-user
             (request base-uri
                      :request-method :post
-                     :body (json/write-str (assoc valid-deployment
+                     :body (j/write-value-as-string (assoc valid-deployment
                                              :parent "credential/x")))
             (ltu/body->edn)
             (ltu/is-status 404)))
@@ -157,7 +157,7 @@
                              (-> session-user
                                  (request base-uri
                                           :request-method :post
-                                          :body (json/write-str valid-deployment))
+                                          :body (j/write-value-as-string valid-deployment))
                                  (ltu/body->edn)
                                  (ltu/is-status 201)
                                  (ltu/location)))
@@ -204,7 +204,7 @@
             (-> session-user
                 (request deployment-url
                          :request-method :put
-                         :body (json/write-str {:owner        "user/tarzan"
+                         :body (j/write-value-as-string {:owner        "user/tarzan"
                                                 :acl          {:owners ["user/tarzan"]}
                                                 :api-endpoint "http://blah"}))
                 (ltu/body->edn)
@@ -227,7 +227,7 @@
             (-> session-user
                 (request deployment-url
                          :request-method :put
-                         :body (json/write-str {:parent (resource-creation/create-credential-swarm
+                         :body (j/write-value-as-string {:parent (resource-creation/create-credential-swarm
                                                           session-admin
                                                           {})}))
                 (ltu/body->edn)
@@ -246,7 +246,7 @@
               (-> session-user
                   (request deployment-url
                            :request-method :put
-                           :body (json/write-str {:parent credential-id}))
+                           :body (j/write-value-as-string {:parent credential-id}))
                   (ltu/body->edn)
                   (ltu/is-status 200)
                   (ltu/is-key-value :parent credential-id)
@@ -258,7 +258,7 @@
                   (-> session-deployment
                       (request deployment-url
                                :request-method :put
-                               :body (json/write-str {:description "change by deployment session"}))
+                               :body (j/write-value-as-string {:description "change by deployment session"}))
                       (ltu/body->edn)
                       (ltu/is-status 200)
                       (ltu/is-key-value :description "change by deployment session")
@@ -306,7 +306,7 @@
           (let [deployment     (-> session-user
                                    (request deployment-url
                                             :request-method :put
-                                            :body (json/write-str {:owner "user/tarzan"
+                                            :body (j/write-value-as-string {:owner "user/tarzan"
                                                                    :acl   {:owners ["user/tarzan"]}}))
                                    (ltu/body->edn)
                                    (ltu/is-status 200)
@@ -343,7 +343,7 @@
                                                  :required    true}])
                                      (assoc :logo-url new-logo-url)
                                      (assoc-in [:content :commit] "changed logo and add params")
-                                     json/write-str))
+                                     j/write-value-as-string))
                   (ltu/body->edn)
                   (ltu/is-status 200)))
 
@@ -379,7 +379,7 @@
                 (-> session-admin
                     (request deployment-url
                              :request-method :put
-                             :body (json/write-str {:state "STARTED"}))
+                             :body (j/write-value-as-string {:state "STARTED"}))
                     (ltu/body->edn)
                     (ltu/is-status 200)))
 
@@ -400,7 +400,7 @@
                   (-> session-user
                       (request deployment-url
                                :request-method :put
-                               :body (json/write-str {:module {:href (str module-id "_1")}}))
+                               :body (j/write-value-as-string {:module {:href (str module-id "_1")}}))
                       (ltu/body->edn)
                       (ltu/is-status 200))
                   (let [job-url (testing "try to update the deployment and check
@@ -431,7 +431,7 @@
                       (-> session-admin
                           (request deployment-url
                                    :request-method :put
-                                   :body (json/write-str {:state "STARTED"}))
+                                   :body (j/write-value-as-string {:state "STARTED"}))
                           (ltu/body->edn)
                           (ltu/is-status 200)))))
 
@@ -439,7 +439,7 @@
                                 (-> session-user
                                     (request create-log-url
                                              :request-method :post
-                                             :body (json/write-str
+                                             :body (j/write-value-as-string
                                                      {:components ["my-service"]}))
                                     (ltu/body->edn)
                                     (ltu/is-status 201)
@@ -458,7 +458,7 @@
                                         (-> session-admin
                                             (request (str p/service-context "deployment-parameter")
                                                      :request-method :post
-                                                     :body (json/write-str
+                                                     :body (j/write-value-as-string
                                                              {:parent  deployment-id
                                                               :name    "test-parameter"
                                                               :node-id "machine"
@@ -505,7 +505,7 @@
                       (-> session-admin
                           (request deployment-url
                                    :request-method :put
-                                   :body (json/write-str {:state "STOPPED"}))
+                                   :body (j/write-value-as-string {:state "STOPPED"}))
                           (ltu/body->edn)
                           (ltu/is-status 200)))
 
@@ -526,7 +526,7 @@
                         (-> session-user
                             (request deployment-url
                                      :request-method :put
-                                     :body (json/write-str
+                                     :body (j/write-value-as-string
                                              {:acl (update deployment-acl
                                                            :view-data conj "user/shared")}))
                             (ltu/body->edn)
@@ -545,7 +545,7 @@
                       (let [cloned-dep-id   (-> session-user
                                                 (request (str deployment-url "/clone")
                                                          :request-method :post
-                                                         :body (json/write-str {:deployment {:href deployment-id}}))
+                                                         :body (j/write-value-as-string {:deployment {:href deployment-id}}))
                                                 (ltu/body->edn)
                                                 (ltu/is-status 201)
                                                 ltu/location)
@@ -553,7 +553,7 @@
                             cloned-stop-url (-> session-user
                                                 (request cloned-dep-url
                                                          :request-method :put
-                                                         :body (json/write-str {:state "STARTED"}))
+                                                         :body (j/write-value-as-string {:state "STARTED"}))
                                                 (ltu/body->edn)
                                                 (ltu/is-status 200)
                                                 (ltu/is-operation-present :stop)
@@ -570,7 +570,7 @@
                           (let [job-url (-> session-user
                                             (request cloned-stop-url
                                                      :request-method :post
-                                                     :body (json/write-str {:delete true}))
+                                                     :body (j/write-value-as-string {:delete true}))
                                             (ltu/body->edn)
                                             (ltu/is-status 202)
                                             (ltu/location-url))]
@@ -585,7 +585,7 @@
                               (-> session-admin
                                   (request job-url
                                            :request-method :put
-                                           :body (json/write-str {:state "FAILED"}))
+                                           :body (j/write-value-as-string {:state "FAILED"}))
                                   (ltu/body->edn)
                                   (ltu/is-status 200))
                               (-> session-user
@@ -596,20 +596,20 @@
                               (-> session-user
                                   (request cloned-dep-url
                                            :request-method :put
-                                           :body (json/write-str {:state "STARTED"}))
+                                           :body (j/write-value-as-string {:state "STARTED"}))
                                   (ltu/body->edn)
                                   (ltu/is-status 200))
                               (let [job-url (-> session-user
                                                 (request cloned-stop-url
                                                          :request-method :post
-                                                         :body (json/write-str {:delete true}))
+                                                         :body (j/write-value-as-string {:delete true}))
                                                 (ltu/body->edn)
                                                 (ltu/is-status 202)
                                                 (ltu/location-url))]
                                 (-> session-admin
                                     (request job-url
                                              :request-method :put
-                                             :body (json/write-str {:state "SUCCESS"}))
+                                             :body (j/write-value-as-string {:state "SUCCESS"}))
                                     (ltu/body->edn)
                                     (ltu/is-status 200))
                                 (-> session-user
@@ -651,7 +651,7 @@
           (-> session-user
               (request base-uri
                        :request-method :post
-                       :body (json/write-str invalid-deployment))
+                       :body (j/write-value-as-string invalid-deployment))
               (ltu/body->edn)
               (ltu/is-status 404)
               (ltu/message-matches "module/doesnt-exist not found"))))
@@ -661,7 +661,7 @@
               dep-url          (-> session-user
                                    (request base-uri
                                             :request-method :post
-                                            :body (json/write-str (assoc valid-deployment :api-endpoint nuvla-custom-url)))
+                                            :body (j/write-value-as-string (assoc valid-deployment :api-endpoint nuvla-custom-url)))
                                    (ltu/body->edn)
                                    (ltu/is-status 201)
                                    (ltu/location-url))]
@@ -727,7 +727,7 @@
             deployment-id        (-> session-user
                                      (request base-uri
                                               :request-method :post
-                                              :body (json/write-str valid-deployment))
+                                              :body (j/write-value-as-string valid-deployment))
                                      (ltu/body->edn)
                                      (ltu/is-status 201)
                                      (ltu/location))
@@ -740,7 +740,7 @@
             deployment           (-> session-user
                                      (request deployment-url
                                               :request-method :put
-                                              :body (json/write-str deployment))
+                                              :body (j/write-value-as-string deployment))
                                      (ltu/body->edn)
                                      (ltu/is-status 200)
                                      (ltu/body))]
@@ -768,7 +768,7 @@
       (let [deployment-url (-> session-user
                                (request base-uri
                                         :request-method :post
-                                        :body (json/write-str valid-deployment))
+                                        :body (j/write-value-as-string valid-deployment))
                                (ltu/body->edn)
                                (ltu/is-status 201)
                                (ltu/location-url))]
@@ -787,7 +787,7 @@
         (-> session-admin
             (request deployment-url
                      :request-method :put
-                     :body (json/write-str {:state "ERROR"}))
+                     :body (j/write-value-as-string {:state "ERROR"}))
             (ltu/body->edn)
             (ltu/is-status 200))
 
@@ -831,7 +831,7 @@
       (let [deployment-id  (-> session-user
                                (request base-uri
                                         :request-method :post
-                                        :body (json/write-str valid-deployment))
+                                        :body (j/write-value-as-string valid-deployment))
                                (ltu/body->edn)
                                (ltu/is-status 201)
                                (ltu/location))
@@ -852,7 +852,7 @@
         (-> session-user
             (request module-url
                      :request-method :put
-                     :body (json/write-str
+                     :body (j/write-value-as-string
                              (assoc-in module
                                        [:content :image]
                                        {:image-name "ubuntu"
@@ -870,7 +870,7 @@
         (-> session-user
             (request fetch-url
                      :request-method :put
-                     :body (json/write-str {:module-href (str module-id "_10000")}))
+                     :body (j/write-value-as-string {:module-href (str module-id "_10000")}))
             (ltu/body->edn)
             (ltu/is-status 404)
             (ltu/message-matches (str module-id "_10000 not found")))
@@ -878,7 +878,7 @@
         (-> session-user
             (request fetch-url
                      :request-method :put
-                     :body (json/write-str {:module-href (str module-id "_1")}))
+                     :body (j/write-value-as-string {:module-href (str module-id "_1")}))
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-key-value #(-> % :content :image :tag) :module "18.04"))
@@ -907,7 +907,7 @@
           deployment-id      (-> session-user
                                  (request base-uri
                                           :request-method :post
-                                          :body (json/write-str valid-deployment))
+                                          :body (j/write-value-as-string valid-deployment))
                                  (ltu/body->edn)
                                  (ltu/is-status 201)
                                  (ltu/location))
@@ -921,7 +921,7 @@
           module-content-id  (-> session-user
                                  (request module-url
                                           :request-method :put
-                                          :body (json/write-str
+                                          :body (j/write-value-as-string
                                                   (-> module
                                                       (assoc-in [:content :commit] "changed image version")
                                                       (assoc-in
@@ -936,7 +936,7 @@
       (-> session-user
           (request deployment-url
                    :request-method :put
-                   :body (json/write-str {:module {:href latest-module-href}}))
+                   :body (j/write-value-as-string {:module {:href latest-module-href}}))
           ltu/body->edn
           (ltu/is-status 200)
           (ltu/is-key-value :href :module latest-module-href)
@@ -959,7 +959,7 @@
           deployment-id     (-> session-user
                                 (request base-uri
                                          :request-method :post
-                                         :body (json/write-str valid-deployment))
+                                         :body (j/write-value-as-string valid-deployment))
                                 (ltu/body->edn)
                                 (ltu/is-status 201)
                                 (ltu/location))
@@ -995,7 +995,7 @@
           (request (str base-uri "/bulk-update")
                    :request-method :patch
                    :headers {:bulk true}
-                   :body (json/write-str {}))
+                   :body (j/write-value-as-string {}))
           (ltu/body->edn)
           (ltu/is-status 400)
           (ltu/message-matches #"Bulk request should contain a non empty cimi filter."))
@@ -1004,7 +1004,7 @@
           (request (str base-uri "/bulk-update")
                    :request-method :patch
                    :headers {:bulk true}
-                   :body (json/write-str
+                   :body (j/write-value-as-string
                            {:filter "foobar"
                             :other  "hello"}))
           (ltu/body->edn)
@@ -1016,7 +1016,7 @@
                         (request (str base-uri "/bulk-update")
                                  :request-method :patch
                                  :headers {:bulk true}
-                                 :body (json/write-str
+                                 :body (j/write-value-as-string
                                          {:filter "id='foobar'"
                                           :other  "hello"}))
                         (ltu/body->edn)
@@ -1028,7 +1028,7 @@
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-key-value
-              :payload (json/write-str
+              :payload (j/write-value-as-string
                          {:filter     "id='foobar'"
                           :other      "hello"
                           :authn-info {:user-id      "user/jane"
@@ -1042,7 +1042,7 @@
                         (request (str base-uri "/bulk-stop")
                                  :request-method :patch
                                  :headers {:bulk true}
-                                 :body (json/write-str
+                                 :body (j/write-value-as-string
                                          {:filter "id='foobar'"
                                           :other  "hello"}))
                         (ltu/body->edn)
@@ -1054,7 +1054,7 @@
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-key-value
-              :payload (json/write-str
+              :payload (j/write-value-as-string
                          {:filter     "id='foobar'"
                           :other      "hello"
                           :authn-info {:user-id      "user/jane"
@@ -1097,7 +1097,7 @@
         deployment-id    (-> session-owner
                              (request base-uri
                                       :request-method :post
-                                      :body (json/write-str valid-deployment))
+                                      :body (j/write-value-as-string valid-deployment))
                              (ltu/body->edn)
                              (ltu/is-status 201)
                              (ltu/location))
@@ -1106,7 +1106,7 @@
     (-> session-owner
         (request deployment-url
                  :request-method :put
-                 :body (json/write-str (cond->
+                 :body (j/write-value-as-string (cond->
                                          {:name depl-name}
                                          depl-tags (assoc :tags depl-tags))))
         (ltu/body->edn)
@@ -1139,7 +1139,7 @@
           (header "bulk" "yes")
           (request endpoint
                    :request-method :patch
-                   :body (json/write-str (cond-> {:doc {:tags tags}}
+                   :body (j/write-value-as-string (cond-> {:doc {:tags tags}}
                                                  filter (assoc :filter filter))))
           (ltu/is-status 200))
       (run!
@@ -1220,7 +1220,7 @@
         (let [deployment-id        (-> session-user
                                        (request base-uri
                                                 :request-method :post
-                                                :body (json/write-str valid-deployment))
+                                                :body (j/write-value-as-string valid-deployment))
                                        (ltu/body->edn)
                                        (ltu/is-status 201)
                                        (ltu/location))
@@ -1263,7 +1263,7 @@
         (let [deployment-id         (-> session-user
                                         (request base-uri
                                                  :request-method :post
-                                                 :body (json/write-str valid-deployment))
+                                                 :body (j/write-value-as-string valid-deployment))
                                         (ltu/body->edn)
                                         (ltu/is-status 201)
                                         (ltu/location))
@@ -1285,7 +1285,7 @@
               _                     (-> session-user
                                         (request deployment-url
                                                  :request-method :put
-                                                 :body (json/write-str {:state "STARTED"}))
+                                                 :body (j/write-value-as-string {:state "STARTED"}))
                                         (ltu/body->edn)
                                         (ltu/is-status 200))
               update-url            (-> session-user
@@ -1324,7 +1324,7 @@
         (let [deployment-id       (-> session-user
                                       (request base-uri
                                                :request-method :post
-                                               :body (json/write-str valid-deployment))
+                                               :body (j/write-value-as-string valid-deployment))
                                       (ltu/body->edn)
                                       (ltu/is-status 201)
                                       (ltu/location))
@@ -1347,7 +1347,7 @@
                                     (-> session-user
                                         (request deployment-url
                                                  :request-method :put
-                                                 :body (json/write-str {:state "STARTED"}))
+                                                 :body (j/write-value-as-string {:state "STARTED"}))
                                         (ltu/body->edn)
                                         (ltu/is-status 200)))
               stop-url            (-> session-user
@@ -1395,7 +1395,7 @@
         (let [deployment-url (-> session-user
                                  (request base-uri
                                           :request-method :post
-                                          :body (json/write-str valid-deployment))
+                                          :body (j/write-value-as-string valid-deployment))
                                  (ltu/body->edn)
                                  (ltu/is-status 201)
                                  (ltu/location-url))]
@@ -1410,7 +1410,7 @@
               (-> session-user
                   (request deployment-url
                            :request-method :put
-                           :body (json/write-str {:state "STARTED"}))
+                           :body (j/write-value-as-string {:state "STARTED"}))
                   (ltu/body->edn)
                   (ltu/is-status 200)))
             (let [stop-url (-> session-user
@@ -1423,7 +1423,7 @@
                              (-> session-user
                                  (request stop-url
                                           :request-method :put
-                                          :body (json/write-str params))
+                                          :body (j/write-value-as-string params))
                                  (ltu/body->edn)
                                  (ltu/is-status 202)
                                  (ltu/location-url)))]

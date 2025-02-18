@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.email-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -10,6 +9,7 @@
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.resource-metadata :as md]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]))
 
@@ -75,7 +75,7 @@
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str {:address "anon@example.com"}))
+                 :body (j/write-value-as-string {:address "anon@example.com"}))
         (ltu/body->edn)
         (ltu/is-status 403))
 
@@ -83,7 +83,7 @@
     (let [admin-uri     (-> session-admin
                             (request base-uri
                                      :request-method :post
-                                     :body (json/write-str {:address   "admin@example.com"
+                                     :body (j/write-value-as-string {:address   "admin@example.com"
                                                             :validated true}))
                             (ltu/body->edn)
                             (ltu/is-status 201)
@@ -93,7 +93,7 @@
           user-uri      (-> session-user
                             (request base-uri
                                      :request-method :post
-                                     :body (json/write-str {:address   "user@example.com"
+                                     :body (j/write-value-as-string {:address   "user@example.com"
                                                             :validated true}))
                             (ltu/body->edn)
                             (ltu/is-status 201)

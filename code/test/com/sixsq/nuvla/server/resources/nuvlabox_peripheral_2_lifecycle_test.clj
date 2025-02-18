@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.nuvlabox-peripheral-2-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -10,6 +9,7 @@
     [com.sixsq.nuvla.server.resources.nuvlabox :as nb]
     [com.sixsq.nuvla.server.resources.nuvlabox-peripheral :as nb-peripheral]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -83,7 +83,7 @@
          nuvlabox-id   (-> session-owner
                            (request nuvlabox-base-uri
                                     :request-method :post
-                                    :body (json/write-str valid-nuvlabox))
+                                    :body (j/write-value-as-string valid-nuvlabox))
                            (ltu/body->edn)
                            (ltu/is-status 201)
                            (ltu/location))
@@ -94,7 +94,7 @@
      (-> session-anon
          (request base-uri
                   :request-method :post
-                  :body (json/write-str (assoc valid-peripheral :parent nuvlabox-id)))
+                  :body (j/write-value-as-string (assoc valid-peripheral :parent nuvlabox-id)))
          (ltu/body->edn)
          (ltu/is-status 403))
 
@@ -103,7 +103,7 @@
      (when-let [peripheral-url (-> session-nb
                                    (request base-uri
                                             :request-method :post
-                                            :body (json/write-str (assoc valid-peripheral
+                                            :body (j/write-value-as-string (assoc valid-peripheral
                                                                     :parent nuvlabox-id)))
                                    (ltu/body->edn)
                                    (ltu/is-status 201)
@@ -128,7 +128,7 @@
        (-> session-nb
            (request peripheral-url
                     :request-method :put
-                    :body (json/write-str {:interface "BLUETOOTH"}))
+                    :body (j/write-value-as-string {:interface "BLUETOOTH"}))
            (ltu/body->edn)
            (ltu/is-status 200)
            (ltu/is-operation-absent :enable-stream)
@@ -153,7 +153,7 @@
        (-> session-owner
            (request (str p/service-context nuvlabox-id)
                     :request-method :put
-                    :body (json/write-str {:acl {:owners   ["group/nuvla-admin"]
+                    :body (j/write-value-as-string {:acl {:owners   ["group/nuvla-admin"]
                                                  :view-acl [nuvlabox-owner user-beta]}}))
            (ltu/body->edn)
            (ltu/is-status 200))
@@ -175,7 +175,7 @@
      (when-let [peripheral-url (-> session-nb
                                    (request base-uri
                                             :request-method :post
-                                            :body (json/write-str (assoc valid-peripheral
+                                            :body (j/write-value-as-string (assoc valid-peripheral
                                                                     :parent nuvlabox-id)))
                                    (ltu/body->edn)
                                    (ltu/is-status 201)

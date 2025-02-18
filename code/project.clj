@@ -47,7 +47,9 @@
    [expound "0.9.0"]
    [com.draines/postal "2.0.5"]
    [org.clojure/data.csv "1.1.0"]
-   [org.clojure/data.json "2.5.1"]
+   ;; com.fasterxml.jackson is conflicting with org.wololo/jts2geojson "0.18.1"
+   [metosin/jsonista "0.3.13" :exclusions [[com.fasterxml.jackson.core/jackson-core]
+                                           [com.fasterxml.jackson.core/jackson-databind]]]
    [ring/ring-json "0.5.1" :exclusions [[ring/ring-core]]]
    [ring-middleware-accept "2.0.3"]
    [buddy/buddy-core "1.12.0-430"]

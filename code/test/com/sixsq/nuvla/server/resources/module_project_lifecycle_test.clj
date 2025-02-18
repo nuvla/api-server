@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.module-project-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -9,6 +8,7 @@
     [com.sixsq.nuvla.server.resources.module :as module]
     [com.sixsq.nuvla.server.resources.module.utils :as utils]
     [com.sixsq.nuvla.server.resources.spec.module :as module-spec]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -39,7 +39,7 @@
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str valid-entry))
+                 :body (j/write-value-as-string valid-entry))
         (ltu/body->edn)
         (ltu/is-status 403))
 
@@ -63,7 +63,7 @@
     (let [uri     (-> session-user
                       (request base-uri
                                :request-method :post
-                               :body (json/write-str valid-entry))
+                               :body (j/write-value-as-string valid-entry))
                       (ltu/body->edn)
                       (ltu/is-status 201)
                       (ltu/location))
@@ -80,7 +80,7 @@
       (-> session-anon
           (request abs-uri
                    :request-method :put
-                   :body (json/write-str valid-entry))
+                   :body (j/write-value-as-string valid-entry))
           (ltu/body->edn)
           (ltu/is-status 403))
 
@@ -92,7 +92,7 @@
       (-> session-anon
           (request abs-uri
                    :request-method :put
-                   :body (json/write-str valid-entry))
+                   :body (j/write-value-as-string valid-entry))
           (ltu/body->edn)
           (ltu/is-status 403))
 
@@ -119,7 +119,7 @@
       (let [uri         (-> session-user
                             (request base-uri
                                      :request-method :post
-                                     :body (json/write-str valid-entry))
+                                     :body (j/write-value-as-string valid-entry))
                             (ltu/body->edn)
                             (ltu/is-status 201)
                             (ltu/location))
@@ -132,7 +132,7 @@
             app-uri     (-> session-user
                             (request base-uri
                                      :request-method :post
-                                     :body (json/write-str valid-app))
+                                     :body (j/write-value-as-string valid-app))
                             (ltu/body->edn)
                             (ltu/is-status 201)
                             (ltu/location))

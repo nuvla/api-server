@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.user-username-password-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -11,6 +10,7 @@
     [com.sixsq.nuvla.server.resources.user-template :as user-tpl]
     [com.sixsq.nuvla.server.resources.user-template-username-password :as username-password]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]))
 
@@ -78,7 +78,7 @@
         (-> session
             (request base-uri
                      :request-method :post
-                     :body (json/write-str no-href-create))
+                     :body (j/write-value-as-string no-href-create))
             (ltu/body->edn)
             (ltu/is-status 400)))
 
@@ -87,7 +87,7 @@
         (-> session
             (request base-uri
                      :request-method :post
-                     :body (json/write-str invalid-create))
+                     :body (j/write-value-as-string invalid-create))
             (ltu/body->edn)
             (ltu/is-status 404)))
 
@@ -96,7 +96,7 @@
         (-> session
             (request base-uri
                      :request-method :post
-                     :body (json/write-str bad-params-create))
+                     :body (j/write-value-as-string bad-params-create))
             (ltu/body->edn)
             (ltu/is-status 400)))
 
@@ -104,7 +104,7 @@
       (let [resp                                    (-> session-admin
                                                         (request base-uri
                                                                  :request-method :post
-                                                                 :body (json/write-str href-create))
+                                                                 :body (j/write-value-as-string href-create))
                                                         (ltu/body->edn)
                                                         (ltu/is-status 201))
             user-id                                 (get-in resp [:response :body :resource-id])
@@ -180,7 +180,7 @@
         (let [resp    (-> session-admin
                           (request base-uri
                                    :request-method :post
-                                   :body (json/write-str (assoc-in href-create [:template :username] "user/jane")))
+                                   :body (j/write-value-as-string (assoc-in href-create [:template :username] "user/jane")))
                           (ltu/body->edn)
                           (ltu/is-status 409))
               user-id (ltu/body-resource-id resp)]

@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.module-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
@@ -13,6 +12,7 @@
     [com.sixsq.nuvla.server.resources.module :as module]
     [com.sixsq.nuvla.server.resources.module.utils :as utils]
     [com.sixsq.nuvla.server.resources.spec.module :as module-spec]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
@@ -38,7 +38,7 @@
         (-> user
             (request base-uri
                      :request-method :post
-                     :body (json/write-str {:subtype     module-spec/subtype-project
+                     :body (j/write-value-as-string {:subtype     module-spec/subtype-project
                                             :path        path-segment
                                             :parent-path (utils/get-parent-path path-segment)}))
             ltu/body->edn
@@ -73,7 +73,7 @@
     (let [uri              (-> session-user
                                (request base-uri
                                         :request-method :post
-                                        :body (json/write-str valid-entry))
+                                        :body (j/write-value-as-string valid-entry))
                                (ltu/body->edn)
                                (ltu/is-status 201)
                                (ltu/location))
@@ -147,7 +147,7 @@
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str valid-entry))
+                 :body (j/write-value-as-string valid-entry))
         (ltu/body->edn)
         (ltu/is-status 403))
 
@@ -174,7 +174,7 @@
     (-> session-admin
         (request base-uri
                  :request-method :post
-                 :body (json/write-str (assoc valid-entry :subtype "bad-module-subtype")))
+                 :body (j/write-value-as-string (assoc valid-entry :subtype "bad-module-subtype")))
         (ltu/body->edn)
         (ltu/is-status 400))
 
@@ -184,7 +184,7 @@
         (-> session-user
             (request base-uri
                      :request-method :post
-                     :body (json/write-str (dissoc valid-entry :compatibility)))
+                     :body (j/write-value-as-string (dissoc valid-entry :compatibility)))
             (ltu/body->edn)
             (ltu/is-status 400)
             (ltu/message-matches "Application subtype should have compatibility attribute set!"))))
@@ -194,7 +194,7 @@
       (let [uri     (-> session
                         (request base-uri
                                  :request-method :post
-                                 :body (json/write-str valid-entry))
+                                 :body (j/write-value-as-string valid-entry))
                         (ltu/body->edn)
                         (ltu/is-status 201)
                         (ltu/location))
@@ -223,7 +223,7 @@
         (-> session-anon
             (request abs-uri
                      :request-method :put
-                     :body (json/write-str valid-entry))
+                     :body (j/write-value-as-string valid-entry))
             (ltu/body->edn)
             (ltu/is-status 403))
 
@@ -232,14 +232,14 @@
           (-> session-admin
               (request abs-uri
                        :request-method :put
-                       :body (json/write-str valid-entry))
+                       :body (j/write-value-as-string valid-entry))
               (ltu/body->edn)
               (ltu/is-status 200)))
 
         (let [versions (-> session-admin
                            (request abs-uri
                                     :request-method :put
-                                    :body (json/write-str valid-entry))
+                                    :body (j/write-value-as-string valid-entry))
                            (ltu/body->edn)
                            (ltu/is-status 200)
                            (ltu/body)
@@ -353,7 +353,7 @@
           (is (= 7 (-> session-admin
                        (request abs-uri
                                 :request-method :put
-                                :body (json/write-str (dissoc valid-entry :content :path)))
+                                :body (j/write-value-as-string (dissoc valid-entry :content :path)))
                        (ltu/body->edn)
                        (ltu/is-status 200)
                        (ltu/body)
@@ -458,7 +458,7 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str (-> valid-app
+                   :body (j/write-value-as-string (-> valid-app
                                              (assoc :parent-path "")
                                              (assoc :path "app"))))
           ltu/body->edn
@@ -469,7 +469,7 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str (assoc valid-app :path "non-existent-parent/path")))
+                   :body (j/write-value-as-string (assoc valid-app :path "non-existent-parent/path")))
           ltu/body->edn
           (ltu/is-status 400)
           (ltu/message-matches "No parent project found for path: non-existent-parent")))
@@ -479,7 +479,7 @@
       (let [uri (-> session-admin
                     (request base-uri
                              :request-method :post
-                             :body (json/write-str project))
+                             :body (j/write-value-as-string project))
                     ltu/body->edn
                     (ltu/is-status 201)
                     ltu/location-url)]
@@ -488,7 +488,7 @@
         (-> session-user
             (request base-uri
                      :request-method :post
-                     :body (json/write-str valid-app))
+                     :body (j/write-value-as-string valid-app))
             ltu/body->edn
             (ltu/is-status 400)
             (ltu/message-matches "No parent project found for path: example"))
@@ -497,7 +497,7 @@
         (-> session-admin
             (request uri
                      :request-method :put
-                     :body (json/write-str
+                     :body (j/write-value-as-string
                              (assoc project
                                :acl {:owners    ["group/nuvla-admin"]
                                      :view-meta ["user/jane"]
@@ -510,7 +510,7 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str valid-app))
+                   :body (j/write-value-as-string valid-app))
           ltu/body->edn
           (ltu/is-status 403)
           (ltu/message-matches "You do not have edit rights for:")))
@@ -520,19 +520,19 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str (assoc project :path "example2")))
+                   :body (j/write-value-as-string (assoc project :path "example2")))
           ltu/body->edn
           (ltu/is-status 201))
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str (assoc valid-app :path "example2/app")))
+                   :body (j/write-value-as-string (assoc valid-app :path "example2/app")))
           ltu/body->edn
           (ltu/is-status 201))
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str (assoc valid-app :path "example2/app/not-allowed")))
+                   :body (j/write-value-as-string (assoc valid-app :path "example2/app/not-allowed")))
           ltu/body->edn
           (ltu/is-status 403)
           (ltu/message-matches "Parent must be a project!")))
@@ -542,19 +542,19 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str (assoc project :path "grandparent")))
+                   :body (j/write-value-as-string (assoc project :path "grandparent")))
           ltu/body->edn
           (ltu/is-status 201))
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str (assoc project :path "grandparent/parent")))
+                   :body (j/write-value-as-string (assoc project :path "grandparent/parent")))
           ltu/body->edn
           (ltu/is-status 201))
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str (assoc valid-app :path "grandparent/parent/app")))
+                   :body (j/write-value-as-string (assoc valid-app :path "grandparent/parent/app")))
           ltu/body->edn
           (ltu/is-status 201)))
 
@@ -562,7 +562,7 @@
       (-> session-admin
           (request base-uri
                    :request-method :post
-                   :body (json/write-str (assoc valid-app :path "fails")))
+                   :body (j/write-value-as-string (assoc valid-app :path "fails")))
           ltu/body->edn
           (ltu/is-status 400)
           (ltu/message-matches "Application subtype must have a parent project!")))))
@@ -596,7 +596,7 @@
         app-1-create-resp (-> session-user
                               (request base-uri
                                        :request-method :post
-                                       :body (json/write-str valid-app-1))
+                                       :body (j/write-value-as-string valid-app-1))
                               (ltu/body->edn)
                               (ltu/is-status 201))
         app-1-uri         (ltu/location-url app-1-create-resp)
@@ -611,7 +611,7 @@
     (-> session-user
         (request app-1-uri
                  :request-method :put
-                 :body (json/write-str
+                 :body (j/write-value-as-string
                          (update valid-app-1 :content assoc
                                  :docker-compose "content changed"
                                  :commit "second commit")))
@@ -622,7 +622,7 @@
     (let [response   (-> session-user
                          (request base-uri
                                   :request-method :post
-                                  :body (json/write-str valid-entry))
+                                  :body (j/write-value-as-string valid-entry))
                          (ltu/body->edn)
                          (ltu/is-status 201))
           uri        (ltu/location response)

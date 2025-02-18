@@ -1,8 +1,6 @@
 (ns com.sixsq.nuvla.server.resources.lifecycle-test-utils
   (:require
     [clj-test-containers.core :as tc]
-    [clojure.data.json :as json]
-    [clojure.java.io :as io]
     [clojure.pprint :refer [pprint]]
     [clojure.string :as str]
     [clojure.test :refer [is join-fixtures]]
@@ -13,6 +11,7 @@
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.app.routes :as routes]
+    [com.sixsq.nuvla.server.app.server :as server]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [wrap-authn-info]]
     [com.sixsq.nuvla.server.middleware.base-uri :refer [wrap-base-uri]]
     [com.sixsq.nuvla.server.middleware.cimi-params :refer [wrap-cimi-params]]
@@ -24,6 +23,7 @@
     [com.sixsq.nuvla.server.util.kafka :as ka]
     [com.sixsq.nuvla.server.util.zookeeper :as uzk]
     [compojure.core :as cc]
+    [jsonista.core :as j]
     [kinsky.embedded-kraft :as ke]
     [peridot.core :refer [request session]]
     [qbits.spandex :as spandex]
@@ -32,8 +32,7 @@
     [ring.middleware.nested-params :refer [wrap-nested-params]]
     [ring.middleware.params :refer [wrap-params]]
     [ring.util.codec :as codec]
-    [zookeeper :as zk]
-    [com.sixsq.nuvla.server.app.server :as server]))
+    [zookeeper :as zk]))
 
 (def ^:private es-node-client-cache (atom nil))
 
@@ -267,9 +266,9 @@
 (defn body->edn
   [m]
   (if-let [body-content (body m)]
-    (let [updated-body (if (string? body-content)
-                         (json/read-str body-content :key-fn keyword :eof-error? false :eof-value {})
-                         (json/read (io/reader body-content) :key-fn keyword :eof-error? false :eof-value {}))]
+    (let [updated-body (if (str/blank? body-content)
+                         {}
+                         (j/read-value body-content j/keyword-keys-object-mapper))]
       (update-in m [:response :body] (constantly updated-body)))
     m))
 
@@ -551,7 +550,7 @@
           session
           (request uri
                    :request-method method
-                   :body (json/write-str {:dummy "value"}))
+                   :body (j/write-value-as-string {:dummy "value"}))
           (is-status 405)))))
 
 ;;
@@ -623,7 +622,7 @@
   [resource-id expected-events]
   `(let [events# (take (count ~expected-events)
                        (refresh-index-query-events ~resource-id {:orderby [["timestamp" :desc]]
-                                                               :last    (count ~expected-events)}))]
+                                                                 :last    (count ~expected-events)}))]
      (is (= (count ~expected-events) (count events#)))
      (doall (map (fn [expected-event# actual-event#]
                    (is-event expected-event# actual-event#))

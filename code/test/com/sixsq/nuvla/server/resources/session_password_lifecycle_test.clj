@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.session-password-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [com.sixsq.nuvla.auth.password :as auth-password]
@@ -20,6 +19,7 @@
     [com.sixsq.nuvla.server.resources.user :as user]
     [com.sixsq.nuvla.server.resources.user-template :as user-tpl]
     [com.sixsq.nuvla.server.resources.user-template-email-password :as email-password]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]))
 
@@ -58,7 +58,7 @@
       (let [user-id (-> session-admin
                         (request (str p/service-context user/resource-type)
                                  :request-method :post
-                                 :body (json/write-str href-create))
+                                 :body (j/write-value-as-string href-create))
                         (ltu/body->edn)
                         (ltu/is-status 201)
                         (ltu/location))]
@@ -126,7 +126,7 @@
       (-> session-anon
           (request base-uri
                    :request-method :post
-                   :body (json/write-str unauthorized-create))
+                   :body (j/write-value-as-string unauthorized-create))
           (ltu/body->edn)
           (ltu/is-status 403))
       )
@@ -154,7 +154,7 @@
       (let [resp             (-> session-anon
                                  (request base-uri
                                           :request-method :post
-                                          :body (json/write-str valid-create))
+                                          :body (j/write-value-as-string valid-create))
                                  (ltu/body->edn)
                                  (ltu/is-set-cookie)
                                  (ltu/is-status 201))
@@ -274,7 +274,7 @@
         (-> session-anon
             (request base-uri
                      :request-method :post
-                     :body (json/write-str invalid-create))
+                     :body (j/write-value-as-string invalid-create))
             (ltu/body->edn)
             (ltu/is-status 400)))
 
@@ -282,7 +282,7 @@
       (-> session-admin
           (request base-uri
                    :request-method :post
-                   :body (json/write-str invalid-create))
+                   :body (j/write-value-as-string invalid-create))
           (ltu/body->edn)
           (ltu/is-status 400)))
 
@@ -307,7 +307,7 @@
       (-> session-anon
           (request base-uri
                    :request-method :post
-                   :body (json/write-str valid-create))
+                   :body (j/write-value-as-string valid-create))
           (ltu/body->edn)
           (ltu/is-status 403)))))
 
@@ -334,7 +334,7 @@
         session-user       (-> session-anon
                                (request base-uri
                                         :request-method :post
-                                        :body (json/write-str valid-create))
+                                        :body (j/write-value-as-string valid-create))
                                (ltu/body->edn)
                                (ltu/is-set-cookie)
                                (ltu/is-status 201))
@@ -372,7 +372,7 @@
 
     (testing "User cannot switch to a group that he is not part of."
       (-> (apply request session-json
-                 (concat [switch-op-url :body (json/write-str {:claim group-b})
+                 (concat [switch-op-url :body (j/write-value-as-string {:claim group-b})
                           :request-method :post] authn-session-user))
           (ltu/body->edn)
           (ltu/is-status 403)
@@ -390,7 +390,7 @@
           (request (-> session-admin
                        (request (str p/service-context group/resource-type)
                                 :request-method :post
-                                :body (json/write-str
+                                :body (j/write-value-as-string
                                         {:template
                                          {:href             (str group-tpl/resource-type "/generic")
                                           :group-identifier group-a-identifier}}))
@@ -398,11 +398,11 @@
                        (ltu/is-status 201)
                        (ltu/location-url))
                    :request-method :put
-                   :body (json/write-str {:users [user-id]}))
+                   :body (j/write-value-as-string {:users [user-id]}))
           (ltu/body->edn)
           (ltu/is-status 200))
       (let [response              (-> (apply request session-json
-                                             (concat [switch-op-url :body (json/write-str {:claim group-a})
+                                             (concat [switch-op-url :body (j/write-value-as-string {:claim group-a})
                                                       :request-method :post] authn-session-user))
                                       (ltu/body->edn)
                                       (ltu/is-status 200)
@@ -428,7 +428,7 @@
           (binding [config-nuvla/*stripe-api-key* nil]
             (let [nuvlabox-url (-> (apply request session-json
                                           (concat [nb-base-uri
-                                                   :body (json/write-str {})
+                                                   :body (j/write-value-as-string {})
                                                    :request-method :post] authn-session-group-a))
                                    (ltu/body->edn)
                                    (ltu/is-status 201)
@@ -442,7 +442,7 @@
         (testing "switch back to user is possible"
           (is (= user-id
                  (-> (apply request session-json
-                            (concat [switch-op-url :body (json/write-str {:claim user-id})
+                            (concat [switch-op-url :body (j/write-value-as-string {:claim user-id})
                                      :request-method :post] authn-session-group-a))
                      (ltu/body->edn)
                      (ltu/is-status 200)
@@ -457,12 +457,12 @@
           (-> (header session-json authn-info-header (str "user/x " group-a " user/x group/nuvla-user group/nuvla-anon " group-a))
               (request grp-base-uri
                        :request-method :post
-                       :body (json/write-str (valid-create-grp "switch-test-b")))
+                       :body (j/write-value-as-string (valid-create-grp "switch-test-b")))
               (ltu/body->edn)
               (ltu/is-status 201))
 
           (let [response              (-> (apply request session-json
-                                                 (concat [switch-op-url :body (json/write-str {:claim "group/switch-test-b"})
+                                                 (concat [switch-op-url :body (j/write-value-as-string {:claim "group/switch-test-b"})
                                                           :request-method :post] authn-session-user))
                                           (ltu/body->edn)
                                           (ltu/is-status 200)
@@ -487,13 +487,13 @@
 
             (-> (apply request session-json
                        (concat [nb-base-uri
-                                :body (json/write-str {})
+                                :body (j/write-value-as-string {})
                                 :request-method :post] authn-session-group-b))
                 (ltu/body->edn)
                 (ltu/is-status 201)))))
       (testing "switch to subgroup with extended claims"
         (let [response                  (-> (apply request session-json
-                                                   (concat [switch-op-url :body (json/write-str {:claim group-a :extended true})
+                                                   (concat [switch-op-url :body (j/write-value-as-string {:claim group-a :extended true})
                                                             :request-method :post] authn-session-user))
                                             (ltu/body->edn)
                                             (ltu/is-status 200)
@@ -542,32 +542,32 @@
     (-> session-admin
         (request grp-base-uri
                  :request-method :post
-                 :body (json/write-str (valid-create-grp "a")))
+                 :body (j/write-value-as-string (valid-create-grp "a")))
         (ltu/body->edn)
         (ltu/is-status 201))
     (-> session-group-a
         (request grp-base-uri
                  :request-method :post
-                 :body (json/write-str (valid-create-grp "b")))
+                 :body (j/write-value-as-string (valid-create-grp "b")))
         (ltu/body->edn)
         (ltu/is-status 201))
     (-> session-group-a
         (request grp-base-uri
                  :request-method :post
-                 :body (json/write-str (valid-create-grp "b1")))
+                 :body (j/write-value-as-string (valid-create-grp "b1")))
         (ltu/body->edn)
         (ltu/is-status 201))
     (-> session-group-b
         (request grp-base-uri
                  :request-method :post
-                 :body (json/write-str (valid-create-grp "c")))
+                 :body (j/write-value-as-string (valid-create-grp "c")))
         (ltu/body->edn)
         (ltu/is-status 201))
 
     (let [resp            (-> session-anon
                               (request base-uri
                                        :request-method :post
-                                       :body (json/write-str {:template {:href     href
+                                       :body (j/write-value-as-string {:template {:href     href
                                                                          :username "tarzan"
                                                                          :password "TarzanTarzan-0"}}))
                               (ltu/body->edn)
@@ -607,7 +607,7 @@
           (-> session-admin
               (request (str p/service-context "group/b")
                        :request-method :put
-                       :body (json/write-str {:users [user-id]}))
+                       :body (j/write-value-as-string {:users [user-id]}))
               (ltu/body->edn)
               (ltu/is-status 200))
           (-> session-with-id
@@ -628,19 +628,19 @@
           (-> session-admin
               (request (str p/service-context "group/a")
                        :request-method :put
-                       :body (json/write-str {:users [user-id]}))
+                       :body (j/write-value-as-string {:users [user-id]}))
               (ltu/body->edn)
               (ltu/is-status 200))
           (-> session-admin
               (request grp-base-uri
                        :request-method :post
-                       :body (json/write-str (valid-create-grp "z")))
+                       :body (j/write-value-as-string (valid-create-grp "z")))
               (ltu/body->edn)
               (ltu/is-status 201))
           (-> session-admin
               (request (str p/service-context "group/z")
                        :request-method :put
-                       :body (json/write-str {:users [user-id]}))
+                       :body (j/write-value-as-string {:users [user-id]}))
               (ltu/body->edn)
               (ltu/is-status 200))
           (-> session-with-id
@@ -698,7 +698,7 @@
         resp            (-> session-anon
                             (request base-uri
                                      :request-method :post
-                                     :body (json/write-str {:template {:href     href
+                                     :body (j/write-value-as-string {:template {:href     href
                                                                        :username "peer0"
                                                                        :password "Peer0Peer-0"}}))
                             (ltu/body->edn)
@@ -737,12 +737,12 @@
         (request (-> session-admin
                      (request grp-base-uri
                               :request-method :post
-                              :body (json/write-str (valid-create-grp "peers-test-a")))
+                              :body (j/write-value-as-string (valid-create-grp "peers-test-a")))
                      (ltu/body->edn)
                      (ltu/is-status 201)
                      (ltu/location-url))
                  :request-method :put
-                 :body (json/write-str {:users [peer-1 user-id peer-2]}))
+                 :body (j/write-value-as-string {:users [peer-1 user-id peer-2]}))
         (ltu/body->edn)
         (ltu/is-status 200))
 
@@ -762,12 +762,12 @@
           (request (-> session-group-a
                        (request grp-base-uri
                                 :request-method :post
-                                :body (json/write-str (valid-create-grp "peers-test-b")))
+                                :body (j/write-value-as-string (valid-create-grp "peers-test-b")))
                        (ltu/body->edn)
                        (ltu/is-status 201)
                        (ltu/location-url))
                    :request-method :put
-                   :body (json/write-str {:users [peer-3 user-id peer-2]}))
+                   :body (j/write-value-as-string {:users [peer-3 user-id peer-2]}))
           (ltu/body->edn)
           (ltu/is-status 200))
       (-> session-with-id

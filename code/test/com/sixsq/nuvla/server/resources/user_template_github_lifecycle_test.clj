@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.user-template-github-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.auth.external :as ex]
     [com.sixsq.nuvla.auth.github :as auth-github]
@@ -16,6 +15,7 @@
     [com.sixsq.nuvla.server.resources.user-template-minimum :as minimum]
     [com.sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -70,7 +70,7 @@
                               :order  10
                               :hidden false}
                              (merge github/resource)
-                             json/write-str)]
+                             j/write-value-as-string)]
 
       (-> session-admin
           (request user-template-base-uri
@@ -110,7 +110,7 @@
       (-> session-anon
           (request base-uri
                    :request-method :post
-                   :body (json/write-str href-create))
+                   :body (j/write-value-as-string href-create))
           (ltu/body->edn)
           (ltu/message-matches #".*missing or incorrect configuration.*")
           (ltu/is-status 500))
@@ -119,7 +119,7 @@
       (let [cfg-href (-> session-admin
                          (request configuration-base-uri
                                   :request-method :post
-                                  :body (json/write-str configuration-user-github))
+                                  :body (j/write-value-as-string configuration-user-github))
                          (ltu/body->edn)
                          (ltu/is-status 201)
                          (ltu/location))]
@@ -129,7 +129,7 @@
         (let [resp (-> session-anon
                        (request base-uri
                                 :request-method :post
-                                :body (json/write-str href-create))
+                                :body (j/write-value-as-string href-create))
                        (ltu/body->edn)
                        (ltu/is-status 303))
 
@@ -138,7 +138,7 @@
               resp (-> session-anon
                        (request base-uri
                                 :request-method :post
-                                :body (json/write-str href-create-redirect))
+                                :body (j/write-value-as-string href-create-redirect))
                        (ltu/body->edn)
                        (ltu/is-status 303))
               uri2 (-> resp ltu/location)
@@ -148,7 +148,7 @@
                   (-> session-anon
                       (request base-uri
                                :request-method :post
-                               :body (json/write-str href-create-redirect))
+                               :body (j/write-value-as-string href-create-redirect))
                       (ltu/body->edn)
                       (ltu/is-status 400)))
 
@@ -208,7 +208,7 @@
             (-> session-admin
                 (request configuration-base-uri
                          :request-method :post
-                         :body (json/write-str configuration-user-github))
+                         :body (j/write-value-as-string configuration-user-github))
                 (ltu/body->edn)
                 (ltu/is-status 201))
 
@@ -290,6 +290,6 @@
           (-> session-anon
               (request base-uri
                        :request-method :post
-                       :body (json/write-str invalid-create))
+                       :body (j/write-value-as-string invalid-create))
               (ltu/body->edn)
               (ltu/is-status 400)))))))

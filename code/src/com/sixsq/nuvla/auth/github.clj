@@ -1,14 +1,14 @@
 (ns com.sixsq.nuvla.auth.github
   (:require
     [clj-http.client :as http]
-    [clojure.data.json :as json]))
+    [jsonista.core :as j]))
 
 
 (defn parse-github-user
   [user-info]
   (-> user-info
       :body
-      (json/read-str :key-fn keyword)
+      (j/read-value j/keyword-keys-object-mapper)
       (select-keys [:login :email])))
 
 
@@ -26,7 +26,7 @@
   [access-token]
   (let [user-emails-response (http/get "https://api.github.com/user/emails"
                                        {:headers {"Authorization" (str "token " access-token)}})
-        user-emails          (-> user-emails-response :body (json/read-str :key-fn keyword))]
+        user-emails          (-> user-emails-response :body (j/read-value j/keyword-keys-object-mapper))]
     (primary-or-verified user-emails)))
 
 
@@ -45,7 +45,7 @@
                                 :client_secret client-secret
                                 :code          oauth-code}})
       :body
-      (json/read-str :key-fn keyword)
+      (j/read-value j/keyword-keys-object-mapper)
       :access_token))
 
 

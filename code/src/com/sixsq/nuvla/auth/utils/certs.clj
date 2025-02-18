@@ -1,9 +1,9 @@
 (ns com.sixsq.nuvla.auth.utils.certs
   (:require
     [buddy.core.keys :as keys]
-    [clojure.data.json :as json]
     [clojure.tools.logging :as log]
-    [environ.core :as environ]))
+    [environ.core :as environ]
+    [jsonista.core :as j]))
 
 (def ^:const default-session-key-path "/etc/nuvla/session/session.crt")
 (def ^:const default-session-crt-path "/etc/nuvla/session/session.key")
@@ -32,7 +32,7 @@
 (defn parse-jwk-string
   [jwk-string]
   (try
-    (keys/jwk->public-key (json/read-str jwk-string :key-fn keyword))
+    (keys/jwk->public-key (j/read-value jwk-string j/keyword-keys-object-mapper))
     (catch Exception e
       (log/debug "error converting jwk to public key: " (str e))
       nil)))
