@@ -246,6 +246,20 @@ These resources represent a deployment set that regroups deployments.
                                       (not= (:auto-update-interval current) new-auto-update-interval))))
             (assoc-next-refresh))))
 
+(declare recompute-fleet)
+
+(defn recompute-fleet-on-filter-change
+  [resource {{:keys [uuid]} :params :as request}]
+  (if uuid
+    (let [current          (-> (str resource-type "/" uuid)
+                               crud/retrieve-by-id-as-admin)
+          cur-fleet-filter (get-in current [:applications-sets 0 :overwrites 0 :fleet-filter])
+          new-fleet-filter (-> request :body (get-in [:applications-sets 0 :overwrites 0 :fleet-filter]))]
+      (cond-> resource
+              (and (some? new-fleet-filter) (not= cur-fleet-filter new-fleet-filter))
+              (recompute-fleet)))
+    resource))
+
 (defn check-edges-permissions
   [{:keys [id] :as resource}]
   (let [fleet             (get-in resource [:applications-sets 0 :overwrites 0 :fleet])
@@ -283,6 +297,7 @@ These resources represent a deployment set that regroups deployments.
   [resource request]
   (let [apps (utils/check-apps-permissions resource)]
     (-> resource
+        (recompute-fleet-on-filter-change request)
         (check-edges-permissions)
         (check-apps-compatibility apps)
         (assoc-operational-status request)
@@ -483,17 +498,18 @@ These resources represent a deployment set that regroups deployments.
             fleet-filter
             (assoc-in [:applications-sets 0 :overwrites 0 :fleet]
                       (map :id (utils/query-nuvlaboxes-as
-                                 (str fleet-filter (some->> (dg-subtype-filter resource) " and "))
+                                 (str fleet-filter (some->> (dg-subtype-filter resource) (str " and ")))
                                  {:claims       #{owner "group/nuvla-user"}
                                   :user-id      owner
                                   :active-claim owner}))))))
 
 (defmethod crud/do-action [resource-type utils/action-recompute-fleet]
   [request]
-  (-> request
-      load-resource-throw-not-allowed-action
-      recompute-fleet
-      (internal-standard-action request resource->json-response)))
+  (let [current (load-resource-throw-not-allowed-action request)]
+    (-> current
+        recompute-fleet
+        (utils/save-deployment-set current)
+        (internal-standard-action request resource->json-response))))
 
 (defmethod crud/do-action [resource-type utils/action-auto-update]
   [request]
