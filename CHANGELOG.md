@@ -2,6 +2,22 @@
 
 ## Released
 
+## [6.15.0](https://github.com/nuvla/api-server/compare/6.14.0...6.15.0) (2025-02-19)
+
+
+### Features
+
+* **Deployment Group:** Recompute fleet on edit when dynamic fleet filter changes ([#1003](https://github.com/nuvla/api-server/issues/1003)) ([2a11bc9](https://github.com/nuvla/api-server/commit/2a11bc91deb8328fe4e982adeddc0ed4a5a4d26a))
+* **deps:** nuvla ring v2.3.0 ([bcf47d8](https://github.com/nuvla/api-server/commit/bcf47d83db3ed5415247611a835df580335fe351))
+* **json logging:** Logging with telemere ([af65589](https://github.com/nuvla/api-server/commit/af6558900aed3c38f3016174d8606deaf73bb2c0))
+* **Jsonista:** Replace clojure.data/json by metosin/jsonista for performance purpose ([e4b9457](https://github.com/nuvla/api-server/commit/e4b945715ca4629f2b25f8e53788986908aad89b))
+* **NuvlaBox status:** add field "type" to ips of interfaces to distinguish v4 and v6 IPs ([#1000](https://github.com/nuvla/api-server/issues/1000)) ([3eb6a49](https://github.com/nuvla/api-server/commit/3eb6a493cd6044bd078814b2f2d0ed28a82d6586))
+
+
+### Bug Fixes
+
+* **Notification method test:** Disable not needed kafka fixture to avoid polluting the test logs ([5ce83fb](https://github.com/nuvla/api-server/commit/5ce83fb727fafc27fe9740a0683aa8d35ecbcaa7))
+
 ## [6.14.0](https://github.com/nuvla/api-server/compare/6.13.2...6.14.0) (2025-02-07)
 
 
