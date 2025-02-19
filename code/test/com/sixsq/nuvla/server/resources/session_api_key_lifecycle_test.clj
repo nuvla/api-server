@@ -1,9 +1,7 @@
 (ns com.sixsq.nuvla.server.resources.session-api-key-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [are deftest is use-fixtures]]
-    [clojure.tools.logging :as log]
     [com.sixsq.nuvla.auth.cookies :as cookies]
     [com.sixsq.nuvla.auth.utils.sign :as sign]
     [com.sixsq.nuvla.server.app.params :as p]
@@ -17,6 +15,7 @@
     [com.sixsq.nuvla.server.resources.session-template :as st]
     [com.sixsq.nuvla.server.resources.session-template-api-key :as api-key]
     [com.sixsq.nuvla.server.util.time :as time]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -142,7 +141,7 @@
         (-> session-anon
             (request base-uri
                      :request-method :post
-                     :body (json/write-str unauthorized-create))
+                     :body (j/write-value-as-string unauthorized-create))
             (ltu/body->edn)
             (ltu/is-status 403))
 
@@ -158,7 +157,7 @@
         (let [resp        (-> session-anon
                               (request base-uri
                                        :request-method :post
-                                       :body (json/write-str valid-create))
+                                       :body (j/write-value-as-string valid-create))
                               (ltu/body->edn)
                               (ltu/is-set-cookie)
                               (ltu/is-status 201))
@@ -253,6 +252,6 @@
           (-> session-anon
               (request base-uri
                        :request-method :post
-                       :body (json/write-str invalid-create))
+                       :body (j/write-value-as-string invalid-create))
               (ltu/body->edn)
               (ltu/is-status 400)))))))

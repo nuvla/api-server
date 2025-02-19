@@ -1,18 +1,18 @@
 
-Nuvla CIMI Container
+Nuvla Api Container
 ====================
 
-This module contains the definition for the Nuvla CIMI container that
+This module contains the definition for the Nuvla Api container that
 builds from the generic ring container.
 
 When running the build of this repository, it will create a Docker
-container called `nuvla/cimi-container`.
+container called `nuvla/api`.
 
 Configuration
 -------------
 
 The following environmental variables are provided by the parent
-`nuvla/ring-container`: 
+`nuvla/ring`: 
 
  - NUVLA_SERVER_INIT: provides the namespace that will create the ring
    handler for the service.  This is normally set in the Dockerfile.
@@ -20,8 +20,10 @@ The following environmental variables are provided by the parent
    default has been reset to port 8201.
  - NUVLA_SERVER_HOST: defaults to 0.0.0.0 so that the service listens
    on all interfaces.
+ - CLOJURE_TOOLS_LOGGING_TO_TELEMERE: Allow to redirect clojure tools logging to Telemere logging lib.
+ - TAOENSSO_TELEMERE_RT_MIN_LEVEL: Configuration to change the log level and filters.
 
-The following environental variable are used by the CIMI server:
+The following environental variable are used by the api server:
 
  - AUTH_PUBLIC_KEY: provides the path for the public key used for
    authentication.  The public/private key pair is usually generated;
@@ -34,6 +36,7 @@ The following environental variable are used by the CIMI server:
  - EPHEMERAL_DB_BINDING: provides the namespace for the ephemeral
    database binding to use.  Defaults to the Elasticsearch binding:
    `sixsq.nuvla.db.es.loader`.
+ - JSON_LOGGING: provides a boolean to enable json logging.
 
 If you use the Elasticsearch binding, you will also may also need to
 provide the following environmental variables as well:
@@ -45,7 +48,7 @@ provide the following environmental variables as well:
 To run this, do the following:
 
 ```sh
-docker run -p 8201:8201 nuvla/cimi-container
+docker run -p 8201:8201 nuvla/api
 ```
 
 setting any of the environment variables that you need to change.
@@ -54,5 +57,5 @@ setting any of the environment variables that you need to change.
 starting the container.  You probably want to deploy the full system
 with the provided docker-compose file.
 
-The CIMI service will be available on http://localhost:8201/api,
-which should respond with the cloud entry point. 
+The api service will be available on http://localhost:8201/api,
+which should respond with the cloud entry point.

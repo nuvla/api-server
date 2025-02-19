@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.nuvlabox-status-1-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.app.params :as p]
@@ -13,6 +12,7 @@
     [com.sixsq.nuvla.server.resources.nuvlabox-status-1 :as nb-status-1]
     [com.sixsq.nuvla.server.resources.nuvlabox-status-2-lifecycle-test :as nslt]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]))
 
@@ -121,7 +121,7 @@
           nuvlabox-id   (-> session-user
                             (request nuvlabox-base-uri
                                      :request-method :post
-                                     :body (json/write-str valid-nuvlabox))
+                                     :body (j/write-value-as-string valid-nuvlabox))
                             (ltu/body->edn)
                             (ltu/is-status 201)
                             (ltu/location))
@@ -136,7 +136,7 @@
         (-> session
             (request base-uri
                      :request-method :post
-                     :body (json/write-str (assoc valid-state :parent nuvlabox-id
+                     :body (j/write-value-as-string (assoc valid-state :parent nuvlabox-id
                                                               :acl valid-acl)))
             (ltu/body->edn)
             (ltu/is-status 403)))
@@ -145,7 +145,7 @@
       (when-let [state-id (-> session-admin
                               (request base-uri
                                        :request-method :post
-                                       :body (json/write-str (assoc valid-state :parent nuvlabox-id
+                                       :body (j/write-value-as-string (assoc valid-state :parent nuvlabox-id
                                                                                 :acl valid-acl)))
                               (ltu/body->edn)
                               (ltu/is-status 201)
@@ -168,7 +168,7 @@
             (-> session-nb
                 (request status-url
                          :request-method :put
-                         :body (json/write-str {:resources resources-updated}))
+                         :body (j/write-value-as-string {:resources resources-updated}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -184,7 +184,7 @@
             (-> session-nb
                 (request status-url
                          :request-method :put
-                         :body (json/write-str {:resources resources-updated}))
+                         :body (j/write-value-as-string {:resources resources-updated}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 

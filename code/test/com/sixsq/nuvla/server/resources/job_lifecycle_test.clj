@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.job-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
@@ -10,6 +9,7 @@
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
     [com.sixsq.nuvla.server.util.zookeeper :as uzk]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -46,7 +46,7 @@
       (-> session-anon
           (request base-uri
                    :request-method :post
-                   :body (json/write-str valid-job))
+                   :body (j/write-value-as-string valid-job))
           (ltu/body->edn)
           (ltu/is-status 403)))
 
@@ -54,14 +54,14 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str valid-job))
+                   :body (j/write-value-as-string valid-job))
           (ltu/body->edn)
           (ltu/is-status 403)))
 
     (let [abs-uri    (-> session-admin
                          (request base-uri
                                   :request-method :post
-                                  :body (json/write-str valid-job))
+                                  :body (j/write-value-as-string valid-job))
                          (ltu/body->edn)
                          (ltu/is-status 201)
                          (ltu/location-url))
@@ -79,7 +79,7 @@
         (-> session-admin
             (request abs-uri
                      :request-method :put
-                     :body (json/write-str {:status-message "foobar"}))
+                     :body (j/write-value-as-string {:status-message "foobar"}))
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-key-value :status-message "foobar")))
@@ -90,7 +90,7 @@
           (-> session-admin
               (request abs-uri
                        :request-method :put
-                       :body (json/write-str {:status-message big-status-msg}))
+                       :body (j/write-value-as-string {:status-message big-status-msg}))
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-key-value :status-message (str xxx "\n...\n" xxx)))))
@@ -109,7 +109,7 @@
         (-> session-admin
             (request abs-uri
                      :request-method :put
-                     :body (json/write-str {:state "SUCCESS"}))
+                     :body (j/write-value-as-string {:state "SUCCESS"}))
             (ltu/body->edn)
             (ltu/is-status 409)
             (ltu/message-matches "edit is not allowed in final state")))
@@ -123,7 +123,7 @@
       (let [job-url (-> session-admin
                         (request base-uri
                                  :request-method :post
-                                 :body (json/write-str (assoc valid-job :priority 50
+                                 :body (j/write-value-as-string (assoc valid-job :priority 50
                                                                         :created-by "user/alpha")))
                         (ltu/body->edn)
                         (ltu/is-status 201)
@@ -138,7 +138,7 @@
         (testing "Setting state to running will also set the started timestamp"
           (-> session-admin
               (request job-url :request-method :put
-                       :body (json/write-str {:state ju/state-running}))
+                       :body (j/write-value-as-string {:state ju/state-running}))
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-operation-absent ju/action-cancel)
@@ -150,7 +150,7 @@
           (let [bulk-job-resp (-> session-admin
                                   (request base-uri
                                            :request-method :post
-                                           :body (json/write-str (assoc valid-job
+                                           :body (j/write-value-as-string (assoc valid-job
                                                                    :action "bulk-action"
                                                                    :priority 50)))
                                   (ltu/body->edn)
@@ -176,7 +176,7 @@
       (let [job-resp (-> session-admin
                          (request base-uri
                                   :request-method :post
-                                  :body (json/write-str valid-job))
+                                  :body (j/write-value-as-string valid-job))
                          (ltu/body->edn)
                          (ltu/is-status 201))
             job-url  (ltu/location-url job-resp)]
@@ -190,7 +190,7 @@
         (-> session-admin
             (request job-url
                      :request-method :put
-                     :body (json/write-str {:state "RUNNING"}))
+                     :body (j/write-value-as-string {:state "RUNNING"}))
             (ltu/body->edn)
             (ltu/is-status 200))
 

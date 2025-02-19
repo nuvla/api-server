@@ -3,11 +3,8 @@
 These resources represent a deployment set that regroups deployments.
 "
   (:require
-    [clojure.data.json :as json]
     [clojure.set :as set]
     [clojure.string :as str]
-    [com.sixsq.nuvla.server.resources.deployment :as deployment]
-    [com.sixsq.nuvla.server.resources.deployment.utils :as dep-utils]
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
@@ -16,8 +13,10 @@ These resources represent a deployment set that regroups deployments.
     [com.sixsq.nuvla.server.resources.common.state-machine :as sm]
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
+    [com.sixsq.nuvla.server.resources.deployment :as deployment]
     [com.sixsq.nuvla.server.resources.deployment-set.operational-status :as os]
     [com.sixsq.nuvla.server.resources.deployment-set.utils :as utils]
+    [com.sixsq.nuvla.server.resources.deployment.utils :as dep-utils]
     [com.sixsq.nuvla.server.resources.job.interface :as job-interface]
     [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.module :as module]
@@ -30,7 +29,8 @@ These resources represent a deployment set that regroups deployments.
     [com.sixsq.nuvla.server.resources.spec.nuvlabox :as nb-spec]
     [com.sixsq.nuvla.server.util.metadata :as gen-md]
     [com.sixsq.nuvla.server.util.response :as r]
-    [com.sixsq.nuvla.server.util.time :as t]))
+    [com.sixsq.nuvla.server.util.time :as t]
+    [jsonista.core :as j]))
 
 (def ^:const resource-type (u/ns->type *ns*))
 
@@ -342,7 +342,7 @@ These resources represent a deployment set that regroups deployments.
           job-status :status} :body} (job-utils/create-job id (utils/action-job-name action)
                                                            (action-job-acl resource request)
                                                            (auth/current-user-id request)
-                                                           :payload (json/write-str (authn-info-payload resource)))
+                                                           :payload (j/write-value-as-string (authn-info-payload resource)))
         job-msg    (str action " on " id " with async " job-id)]
     (if (not= job-status 201)
       (throw (r/ex-response (format "unable to create async job to %s" job-action) 500 id))

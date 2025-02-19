@@ -1,6 +1,6 @@
 (ns com.sixsq.nuvla.server.resources.nuvlabox.utils-test
   (:require
-    [clojure.test :refer [deftest is are testing]]
+    [clojure.test :refer [are deftest is testing]]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.pricing.payment :as payment]
     [com.sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]

@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.deployment-set-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.server.app.params :as p]
@@ -18,8 +17,9 @@
     [com.sixsq.nuvla.server.resources.module :as module]
     [com.sixsq.nuvla.server.resources.module.utils :as module-utils]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [peridot.core :refer [content-type header request session]]
-    [com.sixsq.nuvla.server.util.time :as time]))
+    [com.sixsq.nuvla.server.util.time :as time]
+    [jsonista.core :as j]
+    [peridot.core :refer [content-type header request session]]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
@@ -186,7 +186,7 @@
 (defn read-payload
   [payload]
   (-> payload
-      json/read-str
+      j/read-value
       (update-in ["authn-info" "claims"] set)
       (update-in ["dg-authn-info" "claims"] set)
       (update-in ["dg-owner-authn-info" "claims"] set)))
@@ -325,7 +325,7 @@
         (-> session-anon
             (request base-uri
                      :request-method :post
-                     :body (json/write-str {}))
+                     :body (j/write-value-as-string {}))
             (ltu/body->edn)
             (ltu/is-status 403))))
 
@@ -335,7 +335,7 @@
                           (-> session-user
                               (request base-uri
                                        :request-method :post
-                                       :body (json/write-str valid-deployment-set))
+                                       :body (j/write-value-as-string valid-deployment-set))
                               (ltu/body->edn)
                               (ltu/is-status 201)))
 
@@ -457,7 +457,7 @@
               (-> session-admin
                   (request dep-set-url
                            :request-method :put
-                           :body (json/write-str {:state utils/state-started}))
+                           :body (j/write-value-as-string {:state utils/state-started}))
                   ltu/body->edn
                   (ltu/is-status 200)
                   (ltu/is-operation-present crud/action-edit)
@@ -474,7 +474,7 @@
             (-> session-user
                 (request dep-set-url
                          :request-method :put
-                         :body (json/write-str {:description "foo"}))
+                         :body (j/write-value-as-string {:description "foo"}))
                 ltu/body->edn
                 (ltu/is-status 200)
                 (ltu/is-key-value :description "foo")
@@ -551,7 +551,7 @@
                 (-> session-user
                     (request dep-set-url
                              :request-method :put
-                             :body (json/write-str {}))
+                             :body (j/write-value-as-string {}))
                     ltu/body->edn
                     (ltu/is-status 200)
                     (ltu/is-key-value :state utils/state-started)
@@ -562,7 +562,7 @@
                   (-> session-user
                       (request dep-set-url
                                :request-method :put
-                               :body (json/write-str {}))
+                               :body (j/write-value-as-string {}))
                       ltu/body->edn
                       (ltu/is-status 200)
                       (ltu/is-key-value :state utils/state-started)
@@ -587,7 +587,7 @@
                 (-> session-user
                     (request dep-set-url
                              :request-method :put
-                             :body (json/write-str {}))
+                             :body (j/write-value-as-string {}))
                     ltu/body->edn
                     (ltu/is-status 200)
                     (ltu/is-key-value :state utils/state-started)
@@ -627,7 +627,7 @@
             (-> session-user
                 (request dep-set-url
                          :request-method :put
-                         :body (json/write-str {:description "bar"}))
+                         :body (j/write-value-as-string {:description "bar"}))
                 ltu/body->edn
                 (ltu/is-status 409)
                 (ltu/message-matches "edit action is not allowed in state [UPDATING]"))))
@@ -787,7 +787,7 @@
                 (-> session-admin
                     (request job-url
                              :request-method :put
-                             :body (json/write-str {:state "FAILED"}))
+                             :body (j/write-value-as-string {:state "FAILED"}))
                     (ltu/body->edn)
                     (ltu/is-status 200)))
               (-> session-user
@@ -805,7 +805,7 @@
                 (-> session-admin
                     (request job-url
                              :request-method :put
-                             :body (json/write-str {:state "SUCCESS"}))
+                             :body (j/write-value-as-string {:state "SUCCESS"}))
                     (ltu/body->edn)
                     (ltu/is-status 200)))
               (-> session-user
@@ -835,7 +835,7 @@
     (-> session-user
         (request (str p/service-context module-id)
                  :request-method :put
-                 :body (json/write-str {:content {:docker-compose "a"
+                 :body (j/write-value-as-string {:content {:docker-compose "a"
                                                   :author         "user/jane"}}))
         ltu/body->edn
         (ltu/is-status 200))
@@ -843,7 +843,7 @@
     (-> session-admin
         (request (str p/service-context module-id-2)
                  :request-method :put
-                 :body (json/write-str {:content {:docker-compose "a"
+                 :body (j/write-value-as-string {:content {:docker-compose "a"
                                                   :author         "user/jane"}}))
         ltu/body->edn
         (ltu/is-status 200))
@@ -852,7 +852,7 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str {:name    dep-set-name,
+                   :body (j/write-value-as-string {:name    dep-set-name,
                                           :start   false,
                                           :modules [module-id module-id-2]
                                           :fleet   fleet}))
@@ -863,7 +863,7 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str {:name    dep-set-name,
+                   :body (j/write-value-as-string {:name    dep-set-name,
                                           :start   false,
                                           :modules [module-id]
                                           :fleet   [ne-id-1 ne-id-2]}))
@@ -873,7 +873,7 @@
     (let [dep-set-url      (-> session-user
                                (request base-uri
                                         :request-method :post
-                                        :body (json/write-str {:name         dep-set-name,
+                                        :body (j/write-value-as-string {:name         dep-set-name,
                                                                :start        false,
                                                                :modules      [module-id]
                                                                :fleet        fleet
@@ -911,7 +911,7 @@
         (-> session-user
             (request dep-set-url
                      :request-method :put
-                     :body (json/write-str (assoc dep-set :modules [module-id]
+                     :body (j/write-value-as-string (assoc dep-set :modules [module-id]
                                                           :fleet-filter fleet-filter)))
             ltu/body->edn
             (ltu/is-status 200))
@@ -931,7 +931,7 @@
         (-> session-admin
             (request dep-set-url
                      :request-method :put
-                     :body (json/write-str (assoc dep-set :modules [module-id]
+                     :body (j/write-value-as-string (assoc dep-set :modules [module-id]
                                                           :fleet-filter fleet-filter)))
             ltu/body->edn
             (ltu/is-status 200))
@@ -980,7 +980,7 @@
       (-> session-user
           (request (str p/service-context module-id)
                    :request-method :put
-                   :body (json/write-str {:content {:docker-compose "a"
+                   :body (j/write-value-as-string {:content {:docker-compose "a"
                                                     :author         "user/jane"}}))
           ltu/body->edn
           (ltu/is-status 200))
@@ -988,7 +988,7 @@
       (let [dep-set-url (-> session-user
                             (request base-uri
                                      :request-method :post
-                                     :body (json/write-str {:name         dep-set-name,
+                                     :body (j/write-value-as-string {:name         dep-set-name,
                                                             :start        false,
                                                             :modules      [module-id]
                                                             :fleet        fleet
@@ -1031,7 +1031,7 @@
           (-> session-user
               (request dep-set-url
                        :request-method :put
-                       :body (json/write-str dep-set))
+                       :body (j/write-value-as-string dep-set))
               ltu/body->edn
               (ltu/is-status 200))
           (let [new-app-set-id (-> session-user
@@ -1055,7 +1055,7 @@
             (-> session-user
                 (request dep-set-url
                          :request-method :put
-                         :body (json/write-str (assoc dep-set :modules [module-id]
+                         :body (j/write-value-as-string (assoc dep-set :modules [module-id]
                                                               :overwrites app-overwrites
                                                               :fleet fleet
                                                               :fleet-filter fleet-filter)))
@@ -1085,7 +1085,7 @@
             (-> session-user
                 (request dep-set-url
                          :request-method :put
-                         :body (json/write-str (assoc dep-set :modules [module-id]
+                         :body (j/write-value-as-string (assoc dep-set :modules [module-id]
                                                               :fleet-filter fleet-filter)))
                 ltu/body->edn
                 (ltu/is-status 200))
@@ -1134,7 +1134,7 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str {:name    dep-set-name,
+                   :body (j/write-value-as-string {:name    dep-set-name,
                                           :subtype "docker-compose"
                                           :start   false,
                                           :modules [helm-module-id-2]}))
@@ -1145,7 +1145,7 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str {:name    dep-set-name,
+                   :body (j/write-value-as-string {:name    dep-set-name,
                                           :subtype "kubernetes"
                                           :start   false,
                                           :modules [compose-module-id]}))
@@ -1156,7 +1156,7 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str {:name    dep-set-name,
+                   :body (j/write-value-as-string {:name    dep-set-name,
                                           :subtype "kubernetes"
                                           :start   false,
                                           :modules [compose-module-id helm-module-id-2]}))
@@ -1168,7 +1168,7 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str {:name    dep-set-name,
+                   :body (j/write-value-as-string {:name    dep-set-name,
                                           :subtype "docker-compose"
                                           :start   false,
                                           :modules [compose-module-id]}))
@@ -1178,7 +1178,7 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str {:name    dep-set-name,
+                   :body (j/write-value-as-string {:name    dep-set-name,
                                           :subtype "kubernetes"
                                           :start   false,
                                           :modules [helm-module-id-2]}))
@@ -1200,7 +1200,7 @@
     (let [dep-set-url (-> session-user
                           (request base-uri
                                    :request-method :post
-                                   :body (json/write-str {:name    dep-set-name,
+                                   :body (j/write-value-as-string {:name    dep-set-name,
                                                           :start   false,
                                                           :modules [module-id]
                                                           :fleet   fleet}))
@@ -1218,7 +1218,7 @@
       (-> session-user
           (request dep-set-url
                    :request-method :put
-                   :body (json/write-str {}))
+                   :body (j/write-value-as-string {}))
           ltu/body->edn
           (ltu/is-status 200)
           ltu/body)
@@ -1248,7 +1248,7 @@
                              (-> session-user
                                  (request base-uri
                                           :request-method :post
-                                          :body (json/write-str valid-deployment-set))
+                                          :body (j/write-value-as-string valid-deployment-set))
                                  (ltu/body->edn)
                                  (ltu/is-status 201)
                                  (ltu/location)))
@@ -1259,7 +1259,7 @@
                              (-> session-user
                                  (request deployment-base-uri
                                           :request-method :post
-                                          :body (json/write-str valid-deployment))
+                                          :body (j/write-value-as-string valid-deployment))
                                  (ltu/body->edn)
                                  (ltu/is-status 201)
                                  (ltu/location-url)))
@@ -1296,7 +1296,7 @@
                              (-> session-user
                                  (request base-uri
                                           :request-method :post
-                                          :body (json/write-str valid-deployment-set))
+                                          :body (j/write-value-as-string valid-deployment-set))
                                  (ltu/body->edn)
                                  (ltu/is-status 201)
                                  (ltu/location)))
@@ -1309,7 +1309,7 @@
                              (-> session-user
                                  (request deployment-base-uri
                                           :request-method :post
-                                          :body (json/write-str valid-deployment))
+                                          :body (j/write-value-as-string valid-deployment))
                                  (ltu/body->edn)
                                  (ltu/is-status 201)
                                  (ltu/location-url)))
@@ -1327,7 +1327,7 @@
           (-> session-user
               (request dep-set-url
                        :request-method :put
-                       :body (json/write-str {:name new-dep-set-name}))
+                       :body (j/write-value-as-string {:name new-dep-set-name}))
               (ltu/body->edn)
               (ltu/is-status 200)))
 
@@ -1352,7 +1352,7 @@
                :response} (-> session-admin
                               (request base-uri
                                        :request-method :post
-                                       :body (json/write-str valid-deployment-set))
+                                       :body (j/write-value-as-string valid-deployment-set))
                               (ltu/body->edn)
                               (ltu/is-status 201))
               dep-set-url          (str p/service-context resource-id)
@@ -1362,7 +1362,7 @@
                                      (-> session-admin
                                          (request deployment-base-uri
                                                   :request-method :post
-                                                  :body (json/write-str valid-deployment))
+                                                  :body (j/write-value-as-string valid-deployment))
                                          (ltu/body->edn)
                                          (ltu/is-status 201)
                                          (ltu/location-url)))
@@ -1400,7 +1400,7 @@
                :response} (-> session-admin
                               (request base-uri
                                        :request-method :post
-                                       :body (json/write-str valid-deployment-set))
+                                       :body (j/write-value-as-string valid-deployment-set))
                               (ltu/body->edn)
                               (ltu/is-status 201))
               dep-set-url         (str p/service-context resource-id)
@@ -1410,7 +1410,7 @@
                                     (-> session-admin
                                         (request deployment-base-uri
                                                  :request-method :post
-                                                 :body (json/write-str valid-deployment))
+                                                 :body (j/write-value-as-string valid-deployment))
                                         (ltu/body->edn)
                                         (ltu/is-status 201)
                                         (ltu/location-url)))
@@ -1462,7 +1462,7 @@
                :response} (-> session-admin
                               (request base-uri
                                        :request-method :post
-                                       :body (json/write-str valid-deployment-set))
+                                       :body (j/write-value-as-string valid-deployment-set))
                               (ltu/body->edn)
                               (ltu/is-status 201))
               dep-set-url         (str p/service-context resource-id)
@@ -1472,7 +1472,7 @@
                                     (-> session-admin
                                         (request deployment-base-uri
                                                  :request-method :post
-                                                 :body (json/write-str valid-deployment))
+                                                 :body (j/write-value-as-string valid-deployment))
                                         (ltu/body->edn)
                                         (ltu/is-status 201)
                                         (ltu/location-url)))
@@ -1480,7 +1480,7 @@
               _                   (-> session-admin
                                       (request dep-url
                                                :request-method :put
-                                               :body (json/write-str {:state "STOPPED"}))
+                                               :body (j/write-value-as-string {:state "STOPPED"}))
                                       (ltu/body->edn)
                                       (ltu/is-status 200))
               start-op-url        (-> session-admin
@@ -1531,7 +1531,7 @@
                :response} (-> session-admin
                               (request base-uri
                                        :request-method :post
-                                       :body (json/write-str valid-deployment-set))
+                                       :body (j/write-value-as-string valid-deployment-set))
                               (ltu/body->edn)
                               (ltu/is-status 201))
               dep-set-url           (str p/service-context resource-id)
@@ -1541,7 +1541,7 @@
                                       (-> session-admin
                                           (request deployment-base-uri
                                                    :request-method :post
-                                                   :body (json/write-str valid-deployment))
+                                                   :body (j/write-value-as-string valid-deployment))
                                           (ltu/body->edn)
                                           (ltu/is-status 201)
                                           (ltu/location-url)))
@@ -1594,7 +1594,7 @@
                :response} (-> session-admin
                               (request base-uri
                                        :request-method :post
-                                       :body (json/write-str valid-deployment-set))
+                                       :body (j/write-value-as-string valid-deployment-set))
                               (ltu/body->edn)
                               (ltu/is-status 201))
               dep-set-url   (str p/service-context resource-id)
@@ -1645,7 +1645,7 @@
                                   (-> session-user
                                       (request (str p/service-context module-id)
                                                :request-method :put
-                                               :body (json/write-str {:content (merge {:docker-compose "a"
+                                               :body (j/write-value-as-string {:content (merge {:docker-compose "a"
                                                                                        :author         "user/jane"}
                                                                                       module1-req)}))
                                       ltu/body->edn
@@ -1653,7 +1653,7 @@
                                   (-> session-user
                                       (request (str p/service-context module-id-2)
                                                :request-method :put
-                                               :body (json/write-str {:content (merge {:docker-compose "a"
+                                               :body (j/write-value-as-string {:content (merge {:docker-compose "a"
                                                                                        :author         "user/jane"}
                                                                                       module2-req)}))
                                       ltu/body->edn
@@ -1662,7 +1662,7 @@
                                                                     (-> session-user
                                                                         (request base-uri
                                                                                  :request-method :post
-                                                                                 :body (json/write-str {:name    dep-set-name
+                                                                                 :body (j/write-value-as-string {:name    dep-set-name
                                                                                                         :modules [module-id module-id-2]
                                                                                                         :fleet   fleet}))
                                                                         ltu/body->edn
@@ -1937,7 +1937,7 @@
     (-> session-user
         (request (str p/service-context module-id)
                  :request-method :put
-                 :body (json/write-str {:content {:docker-compose "a"
+                 :body (j/write-value-as-string {:content {:docker-compose "a"
                                                   :author         "user/jane"}}))
         ltu/body->edn
         (ltu/is-status 200))
@@ -1945,7 +1945,7 @@
     (let [response    (-> session-user
                           (request base-uri
                                    :request-method :post
-                                   :body (json/write-str {:name        dep-set-name,
+                                   :body (j/write-value-as-string {:name        dep-set-name,
                                                           :start       false,
                                                           :modules     [module-id]
                                                           :fleet       fleet
@@ -1969,7 +1969,7 @@
         (-> session-user
             (request dep-set-url
                      :request-method :put
-                     :body (json/write-str {:auto-update-interval 10}))
+                     :body (j/write-value-as-string {:auto-update-interval 10}))
             ltu/body->edn
             (ltu/is-status 200)
             (ltu/is-key-value
@@ -2008,7 +2008,7 @@
         (-> session-admin
             (request dep-set-url
                      :request-method :put
-                     :body (json/write-str {:state utils/state-started}))
+                     :body (j/write-value-as-string {:state utils/state-started}))
             ltu/body->edn
             (ltu/is-status 200)
             (ltu/is-operation-present utils/action-auto-update)
@@ -2018,7 +2018,7 @@
         (-> session-admin
             (request dep-set-url
                      :request-method :put
-                     :body (json/write-str {:auto-update false}))
+                     :body (j/write-value-as-string {:auto-update false}))
             ltu/body->edn
             (ltu/is-status 200)
             (ltu/is-operation-absent utils/action-auto-update))
@@ -2026,7 +2026,7 @@
         (-> session-admin
             (request dep-set-url
                      :request-method :put
-                     :body (json/write-str {:auto-update true}))
+                     :body (j/write-value-as-string {:auto-update true}))
             ltu/body->edn
             (ltu/is-status 200)
             (ltu/is-operation-present utils/action-auto-update)))
@@ -2066,7 +2066,7 @@
                                        (ltu/is-status 200)
                                        ltu/body
                                        (assoc-in [:applications-sets 0 :overwrites 0 :fleet] new-fleet)
-                                       json/write-str))
+                                       j/write-value-as-string))
                     ltu/body->edn
                     (ltu/is-status 200))
 
@@ -2094,7 +2094,7 @@
                                    (ltu/is-status 200)
                                    ltu/body
                                    (assoc-in [:applications-sets 0 :overwrites 0 :fleet-filter] "resource:type='nuvlabox'")
-                                   json/write-str))
+                                   j/write-value-as-string))
                 ltu/body->edn
                 (ltu/is-status 200))
 

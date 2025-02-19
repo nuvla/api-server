@@ -4,7 +4,6 @@ These resources represent the deployment of a component or application within
 a container orchestration engine.
 "
   (:require
-    [clojure.data.json :as json]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.db.impl :as db]
@@ -21,7 +20,8 @@ a container orchestration engine.
     [com.sixsq.nuvla.server.resources.spec.common-body :as common-body]
     [com.sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
     [com.sixsq.nuvla.server.util.metadata :as gen-md]
-    [com.sixsq.nuvla.server.util.response :as r]))
+    [com.sixsq.nuvla.server.util.response :as r]
+    [jsonista.core :as j]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -451,7 +451,7 @@ a container orchestration engine.
 (defmethod job-interface/on-done ["deployment" "stop_deployment"]
   [{:keys [target-resource state payload] :as _job}]
   (when-let [deployment (and (= state job-utils/state-success)
-                             (-> payload json/read-str (get "delete" false))
+                             (-> payload j/read-value (get "delete" false))
                              (some-> target-resource :href crud/retrieve-by-id-as-admin))]
     (db/delete deployment)))
 

@@ -1,11 +1,11 @@
 (ns com.sixsq.nuvla.server.resources.event.test-utils
   (:require
-    [clojure.data.json :as json]
     [clojure.string :as str]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.util.general :as gen-util]
     [com.sixsq.nuvla.server.util.time :as time]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -39,7 +39,7 @@
        (content-type "application/json")
        (header authn-info-header (str/join " " [auth-name " " auth-name "group/nuvla-user" "group/nuvla-anon"]))
        (request (str uri (urlencode-params query-string))
-                :body (some-> body json/write-str)
+                :body (some-> body j/write-value-as-string)
                 :request-method http-verb
                 :content-type "application/json")
        (ltu/body->edn))))

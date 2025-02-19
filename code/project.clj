@@ -1,5 +1,5 @@
 (def parent-version "6.8.0")
-(def nuvla-ring-version "2.2.0")
+(def nuvla-ring-version "2.3.0")
 (def kinsky-version "0.3.1")
 
 (defproject com.sixsq.nuvla/api-server
@@ -47,7 +47,9 @@
    [expound "0.9.0"]
    [com.draines/postal "2.0.5"]
    [org.clojure/data.csv "1.1.0"]
-   [org.clojure/data.json "2.5.1"]
+   ;; com.fasterxml.jackson is conflicting with org.wololo/jts2geojson "0.18.1"
+   [metosin/jsonista "0.3.13" :exclusions [[com.fasterxml.jackson.core/jackson-core]
+                                           [com.fasterxml.jackson.core/jackson-databind]]]
    [ring/ring-json "0.5.1" :exclusions [[ring/ring-core]]]
    [ring-middleware-accept "2.0.3"]
    [buddy/buddy-core "1.12.0-430"]
@@ -82,7 +84,10 @@
    [funcool/promesa "11.0.678"]
    [nrepl "1.3.1"]
    [com.github.java-json-tools/json-patch "1.13"]
-   [io.forward/semver "0.1.0"]]
+   [io.forward/semver "0.1.0"]
+   [org.clojure/tools.reader "1.5.0"]
+   [com.taoensso/telemere "1.0.0-RC2"]
+   [com.taoensso/telemere-slf4j "1.0.0-RC2"]]
 
   :profiles
   {:provided {:dependencies [[org.clojure/clojure "1.12.0"]

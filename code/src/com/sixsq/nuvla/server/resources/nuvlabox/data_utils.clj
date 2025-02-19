@@ -1,7 +1,6 @@
 (ns com.sixsq.nuvla.server.resources.nuvlabox.data-utils
   (:require
     [clojure.data.csv :as csv]
-    [clojure.data.json :as json]
     [clojure.set :as set]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
@@ -17,6 +16,7 @@
     [com.sixsq.nuvla.server.util.response :as r]
     [com.sixsq.nuvla.server.util.time :as time]
     [environ.core :as env]
+    [jsonista.core :as j]
     [promesa.core :as p]
     [promesa.exec :as px]
     [ring.middleware.accept :refer [wrap-accept]])
@@ -280,7 +280,7 @@
                               ")"))}
                       orderby (assoc :orderby orderby))}
       aggregation-clause
-      (assoc :params {:tsds-aggregation (json/write-str aggregation-clause)}))))
+      (assoc :params {:tsds-aggregation (j/write-value-as-string aggregation-clause)}))))
 
 (defn build-availability-query [options]
   ;; return up to 10000 availability state updates
@@ -1274,7 +1274,7 @@
         predefined-aggregations (not (or raw custom-es-aggregations))
         custom-es-aggregations  (cond-> custom-es-aggregations
                                         (string? custom-es-aggregations)
-                                        json/read-str)]
+                                        j/read-value)]
     (-> params
         (assoc :mime-type (:mime accept))
         (assoc :datasets datasets)

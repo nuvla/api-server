@@ -1,7 +1,6 @@
 (ns com.sixsq.nuvla.server.resources.credential.vpn-utils
   (:require
     [clj-http.client :as http]
-    [clojure.data.json :as json]
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.db.filter.parser :as parser]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
@@ -9,7 +8,8 @@
     [com.sixsq.nuvla.server.resources.credential :as credential]
     [com.sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
      :as tpl-customer]
-    [com.sixsq.nuvla.server.util.log :as logu]))
+    [com.sixsq.nuvla.server.util.log :as logu]
+    [jsonista.core :as j]))
 
 
 (defn get-service
@@ -48,7 +48,7 @@
          :socket-timeout     30000
          :connection-timeout 30000})
       :body
-      (json/read-str :key-fn keyword)))
+      (j/read-value j/keyword-keys-object-mapper)))
 
 
 (defn try-generate-credential

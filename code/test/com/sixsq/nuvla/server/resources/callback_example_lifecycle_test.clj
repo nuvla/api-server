@@ -1,12 +1,12 @@
 (ns com.sixsq.nuvla.server.resources.callback-example-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.callback :as callback]
     [com.sixsq.nuvla.server.resources.callback-example :as example]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -31,7 +31,7 @@
         uri-succeeds             (str p/service-context (-> session-admin
                                                             (request base-uri
                                                                      :request-method :post
-                                                                     :body (json/write-str create-callback-succeeds))
+                                                                     :body (j/write-value-as-string create-callback-succeeds))
                                                             (ltu/body->edn)
                                                             (ltu/is-status 201)
                                                             (ltu/body)
@@ -46,7 +46,7 @@
         uri-fails                (str p/service-context (-> session-admin
                                                             (request base-uri
                                                                      :request-method :post
-                                                                     :body (json/write-str create-callback-fails))
+                                                                     :body (j/write-value-as-string create-callback-fails))
                                                             (ltu/body->edn)
                                                             (ltu/is-status 201)
                                                             (ltu/body)
@@ -116,7 +116,7 @@
         uri-succeeds             (str p/service-context (-> session-admin
                                                             (request base-uri
                                                                      :request-method :post
-                                                                     :body (json/write-str create-callback-succeeds))
+                                                                     :body (j/write-value-as-string create-callback-succeeds))
                                                             (ltu/body->edn)
                                                             (ltu/is-status 201)
                                                             (ltu/body)

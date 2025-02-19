@@ -5,9 +5,9 @@
     [com.sixsq.nuvla.server.resources.spec.common :as common]
     [com.sixsq.nuvla.server.resources.spec.core :as core]
     [com.sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
+    [com.sixsq.nuvla.server.resources.spec.deployment :as deployment]
     [com.sixsq.nuvla.server.resources.spec.deployment-set-operational-status :as os]
     [com.sixsq.nuvla.server.resources.spec.module-applications-sets :as module-sets]
-    [com.sixsq.nuvla.server.resources.spec.deployment :as deployment]
     [com.sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 

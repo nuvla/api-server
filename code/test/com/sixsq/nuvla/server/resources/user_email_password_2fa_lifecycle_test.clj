@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.user-email-password-2fa-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
@@ -15,6 +14,7 @@
     [com.sixsq.nuvla.server.resources.user-template-email-password :as email-password]
     [com.sixsq.nuvla.server.util.general :as gen-util]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [one-time.core :as ot]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
@@ -66,7 +66,7 @@
             resp                 (-> session-anon
                                      (request base-uri
                                               :request-method :post
-                                              :body (json/write-str href-create))
+                                              :body (j/write-value-as-string href-create))
                                      (ltu/body->edn)
                                      (ltu/is-status 201))
             user-id              (ltu/body-resource-id resp)
@@ -94,7 +94,7 @@
         (-> session-created-user
             (request enable-2fa-url
                      :request-method :post
-                     :body (json/write-str {}))
+                     :body (j/write-value-as-string {}))
             (ltu/body->edn)
             (ltu/message-matches "resource does not satisfy defined schema")
             (ltu/is-status 400))
@@ -103,7 +103,7 @@
         (-> session-created-user
             (request enable-2fa-url
                      :request-method :post
-                     :body (json/write-str {:method auth-2fa/method-email}))
+                     :body (j/write-value-as-string {:method auth-2fa/method-email}))
             (ltu/body->edn)
             (ltu/is-status 400)
             (ltu/message-matches "User should have a validated email."))
@@ -127,7 +127,7 @@
         (-> session-anon
             (request session-base-url
                      :request-method :post
-                     :body (json/write-str valid-session-create))
+                     :body (j/write-value-as-string valid-session-create))
             (ltu/body->edn)
             (ltu/is-set-cookie)
             (ltu/is-status 201))
@@ -135,7 +135,7 @@
         (let [location (-> session-created-user
                            (request enable-2fa-url
                                     :request-method :post
-                                    :body (json/write-str {:method auth-2fa/method-email}))
+                                    :body (j/write-value-as-string {:method auth-2fa/method-email}))
                            (ltu/body->edn)
                            (ltu/is-status 200)
                            (ltu/location))]
@@ -173,7 +173,7 @@
             (-> session-created-user
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {}))
+                         :body (j/write-value-as-string {}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -181,7 +181,7 @@
             (-> session-anon
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {:token "wrong"}))
+                         :body (j/write-value-as-string {:token "wrong"}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -189,7 +189,7 @@
             (-> session-anon
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {:token user-token}))
+                         :body (j/write-value-as-string {:token user-token}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -203,7 +203,7 @@
             (-> session-created-user
                 (request (str user-url "?select=id,auth-method-2fa")
                          :request-method :put
-                         :body (json/write-str {}))
+                         :body (j/write-value-as-string {}))
                 (ltu/body->edn)
                 (ltu/is-status 200)
                 (ltu/is-key-value :auth-method-2fa auth-2fa/method-email))))
@@ -212,7 +212,7 @@
         (let [location (-> session-anon
                            (request session-base-url
                                     :request-method :post
-                                    :body (json/write-str valid-session-create))
+                                    :body (j/write-value-as-string valid-session-create))
                            (ltu/body->edn)
                            (ltu/is-status 200)
                            (ltu/location))]
@@ -243,7 +243,7 @@
             (-> session-created-user
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {}))
+                         :body (j/write-value-as-string {}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -251,7 +251,7 @@
             (-> session-anon
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {:token "wrong"}))
+                         :body (j/write-value-as-string {:token "wrong"}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -260,7 +260,7 @@
             (let [session-url (-> session-anon
                                   (request callback-exec-url
                                            :request-method :put
-                                           :body (json/write-str {:token user-token}))
+                                           :body (j/write-value-as-string {:token user-token}))
                                   (ltu/body->edn)
                                   (ltu/is-set-cookie)
                                   (ltu/is-status 201)
@@ -276,7 +276,7 @@
               (-> session-anon
                   (request callback-exec-url
                            :request-method :put
-                           :body (json/write-str {:token user-token}))
+                           :body (j/write-value-as-string {:token user-token}))
                   (ltu/body->edn)
                   (ltu/is-status 409)
                   (ltu/message-matches "cannot re-execute callback")))))
@@ -285,7 +285,7 @@
         (let [location (-> session-anon
                            (request session-base-url
                                     :request-method :post
-                                    :body (json/write-str valid-session-create))
+                                    :body (j/write-value-as-string valid-session-create))
                            (ltu/body->edn)
                            (ltu/is-status 200)
                            (ltu/location))]
@@ -310,7 +310,7 @@
             (-> session-created-user
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {}))
+                         :body (j/write-value-as-string {}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -318,7 +318,7 @@
             (-> session-anon
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {:token "wrong"}))
+                         :body (j/write-value-as-string {:token "wrong"}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -326,7 +326,7 @@
             (-> session-anon
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {:token "wrong"}))
+                         :body (j/write-value-as-string {:token "wrong"}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -335,7 +335,7 @@
             (-> session-anon
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {:token user-token}))
+                         :body (j/write-value-as-string {:token user-token}))
                 (ltu/body->edn)
                 (ltu/is-status 409))))
 
@@ -385,7 +385,7 @@
             (-> session-created-user
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {}))
+                         :body (j/write-value-as-string {}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -393,7 +393,7 @@
             (-> session-anon
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {:token "wrong"}))
+                         :body (j/write-value-as-string {:token "wrong"}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -401,7 +401,7 @@
             (-> session-anon
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {:token user-token}))
+                         :body (j/write-value-as-string {:token user-token}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -415,7 +415,7 @@
             (-> session-anon
                 (request session-base-url
                          :request-method :post
-                         :body (json/write-str valid-session-create))
+                         :body (j/write-value-as-string valid-session-create))
                 (ltu/body->edn)
                 (ltu/is-set-cookie)
                 (ltu/is-status 201))
@@ -460,7 +460,7 @@
             resp                 (-> session-anon
                                      (request base-uri
                                               :request-method :post
-                                              :body (json/write-str href-create))
+                                              :body (j/write-value-as-string href-create))
                                      (ltu/body->edn)
                                      (ltu/is-status 201))
             user-id              (ltu/body-resource-id resp)
@@ -490,7 +490,7 @@
         (-> session-created-user
             (request enable-2fa-url
                      :request-method :post
-                     :body (json/write-str {}))
+                     :body (j/write-value-as-string {}))
             (ltu/body->edn)
             (ltu/message-matches "resource does not satisfy defined schema")
             (ltu/is-status 400))
@@ -506,7 +506,7 @@
         (-> session-anon
             (request session-base-url
                      :request-method :post
-                     :body (json/write-str valid-session-create))
+                     :body (j/write-value-as-string valid-session-create))
             (ltu/body->edn)
             (ltu/is-set-cookie)
             (ltu/is-status 201))
@@ -514,7 +514,7 @@
         (let [enable-resp (-> session-created-user
                               (request enable-2fa-url
                                        :request-method :post
-                                       :body (json/write-str
+                                       :body (j/write-value-as-string
                                                {:method auth-2fa/method-totp}))
                               (ltu/body->edn)
                               (ltu/is-status 200)
@@ -552,7 +552,7 @@
             (-> session-created-user
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {}))
+                         :body (j/write-value-as-string {}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -560,7 +560,7 @@
             (-> session-anon
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {:token "wrong"}))
+                         :body (j/write-value-as-string {:token "wrong"}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -568,7 +568,7 @@
             (-> session-anon
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {:token (get-totp @secret)}))
+                         :body (j/write-value-as-string {:token (get-totp @secret)}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -585,7 +585,7 @@
                 (request (str user-url
                               "?select=id,auth-method-2fa,credential-totp")
                          :request-method :put
-                         :body (json/write-str {}))
+                         :body (j/write-value-as-string {}))
                 (ltu/body->edn)
                 (ltu/is-status 200)
                 (ltu/is-key-value :auth-method-2fa auth-2fa/method-totp)
@@ -596,7 +596,7 @@
         (let [location (-> session-anon
                            (request session-base-url
                                     :request-method :post
-                                    :body (json/write-str valid-session-create))
+                                    :body (j/write-value-as-string valid-session-create))
                            (ltu/body->edn)
                            (ltu/is-status 200)
                            (ltu/location))]
@@ -625,7 +625,7 @@
             (-> session-created-user
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {}))
+                         :body (j/write-value-as-string {}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -633,7 +633,7 @@
             (-> session-anon
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {:token "wrong"}))
+                         :body (j/write-value-as-string {:token "wrong"}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -642,7 +642,7 @@
             (let [session-url (-> session-anon
                                   (request callback-exec-url
                                            :request-method :put
-                                           :body (json/write-str {:token user-token}))
+                                           :body (j/write-value-as-string {:token user-token}))
                                   (ltu/body->edn)
                                   (ltu/is-set-cookie)
                                   (ltu/is-status 201)
@@ -658,7 +658,7 @@
               (-> session-anon
                   (request callback-exec-url
                            :request-method :put
-                           :body (json/write-str {:token user-token}))
+                           :body (j/write-value-as-string {:token user-token}))
                   (ltu/body->edn)
                   (ltu/is-status 409)
                   (ltu/message-matches "cannot re-execute callback")))))
@@ -667,7 +667,7 @@
         (let [location (-> session-anon
                            (request session-base-url
                                     :request-method :post
-                                    :body (json/write-str valid-session-create))
+                                    :body (j/write-value-as-string valid-session-create))
                            (ltu/body->edn)
                            (ltu/is-status 200)
                            (ltu/location))]
@@ -689,7 +689,7 @@
             (-> session-created-user
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {}))
+                         :body (j/write-value-as-string {}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -697,7 +697,7 @@
             (-> session-anon
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {:token "wrong"}))
+                         :body (j/write-value-as-string {:token "wrong"}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -705,7 +705,7 @@
             (-> session-anon
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {:token "wrong"}))
+                         :body (j/write-value-as-string {:token "wrong"}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -714,7 +714,7 @@
             (-> session-anon
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {:token (get-totp @secret)}))
+                         :body (j/write-value-as-string {:token (get-totp @secret)}))
                 (ltu/body->edn)
                 (ltu/is-status 409))))
 
@@ -761,7 +761,7 @@
             (-> session-created-user
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {}))
+                         :body (j/write-value-as-string {}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -769,7 +769,7 @@
             (-> session-anon
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {:token "wrong"}))
+                         :body (j/write-value-as-string {:token "wrong"}))
                 (ltu/body->edn)
                 (ltu/is-status 400)
                 (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
@@ -777,7 +777,7 @@
             (-> session-anon
                 (request callback-exec-url
                          :request-method :put
-                         :body (json/write-str {:token (get-totp @secret)}))
+                         :body (j/write-value-as-string {:token (get-totp @secret)}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -791,7 +791,7 @@
             (-> session-anon
                 (request session-base-url
                          :request-method :post
-                         :body (json/write-str valid-session-create))
+                         :body (j/write-value-as-string valid-session-create))
                 (ltu/body->edn)
                 (ltu/is-set-cookie)
                 (ltu/is-status 201))

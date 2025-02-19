@@ -1,7 +1,6 @@
 (ns com.sixsq.nuvla.server.resources.common.std-crud
   "Standard CRUD functions for resources."
   (:require
-    [clojure.data.json :as json]
     [clojure.stacktrace :as st]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
@@ -15,7 +14,8 @@
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
-    [com.sixsq.nuvla.server.util.response :as r])
+    [com.sixsq.nuvla.server.util.response :as r]
+    [jsonista.core :as j])
   (:import (com.fasterxml.jackson.databind JsonNode ObjectMapper)
            (com.github.fge.jsonpatch JsonPatch)))
 
@@ -79,9 +79,9 @@
   (try
     (let [obj-mapper   (ObjectMapper.)
           patches-node ^JsonPatch (.convertValue obj-mapper patches JsonPatch)]
-      (json/read-str (->> (.convertValue obj-mapper obj JsonNode)
-                          (.apply patches-node)
-                          (.writeValueAsString obj-mapper)) :key-fn keyword))
+      (j/read-value (->> (.convertValue obj-mapper obj JsonNode)
+                         (.apply patches-node)
+                         (.writeValueAsString obj-mapper)) j/keyword-keys-object-mapper))
     (catch Exception e
       (log/debug "Json patch exception - ex-message:" (ex-message e) "ex-data:" (ex-data e) "exception:" e "resource:" (prn-str obj) "patches:" (prn-str (vec patches)))
       (throw (r/ex-bad-request (str "Json patch exception: " (ex-message e)))))))

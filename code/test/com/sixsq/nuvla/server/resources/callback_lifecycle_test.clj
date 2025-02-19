@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.callback-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -9,6 +8,7 @@
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -64,7 +64,7 @@
           resp-test            (-> session-admin
                                    (request base-uri
                                             :request-method :post
-                                            :body (json/write-str create-test-callback))
+                                            :body (j/write-value-as-string create-test-callback))
                                    (ltu/body->edn)
                                    (ltu/is-status 201))
 
@@ -130,7 +130,7 @@
       (-> session-admin
           (request base-uri
                    :request-method :put
-                   :body (json/write-str {}))
+                   :body (j/write-value-as-string {}))
           (ltu/body->edn)
           (ltu/is-count 1)
           (ltu/is-status 200))

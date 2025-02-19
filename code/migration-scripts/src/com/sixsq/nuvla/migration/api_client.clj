@@ -1,5 +1,5 @@
 (ns com.sixsq.nuvla.migration.api-client
-  (:require [clojure.data.json :as json]
+  (:require [jsonista.core :as j]
             [clojure.string :as str]
             [environ.core :as env]
             [clj-http.client :as http]
@@ -41,14 +41,14 @@
         _        (prn base-uri username pwd)
         response (http/post (str base-uri "/session")
                             {:headers       {"content-type" "application/json"}
-                             :body          (json/write-str
+                             :body          (j/write-value-as-string
                                               {:template {:username username
                                                           :password pwd
                                                           :href     "session-template/password"}})
                              :cookie-store  cookie-store
                              :cookie-policy :standard
                              :insecure?     true})
-        session  (-> response :body (json/read-str :key-fn keyword))]
+        session  (-> response :body (j/read-value j/keyword-keys-object-mapper))]
     (when-not (= 201 (:status session))
       (throw (ex-info "An error occurred creating session"
                       {:status  (:status session)
@@ -62,13 +62,13 @@
     (let [response (http/post (str base-uri "/" session-id "/switch-group")
                               {:headers       {"content-type" "application/json"}
                                :body          #_"{\"claim\":\"group\\/ekinops-dev\",\"extended\":true}"
-                               (json/write-str
+                               (j/write-value-as-string
                                  {:claim    group
                                   :extended extended})
                                :cookie-store  cookie-store
                                :cookie-policy :standard
                                :insecure?     true})
-          session  (-> response :body (json/read-str :key-fn keyword))]
+          session  (-> response :body (j/read-value j/keyword-keys-object-mapper))]
       (assoc session-data :session session))
     (catch Exception ex (prn ex))))
 
@@ -85,7 +85,7 @@
    (let [response (http/patch (str base-uri "/nuvlabox/data")
                               {:headers      {"content-type" "application/json"
                                               "bulk"         "true"}
-                               :body         (json/write-str
+                               :body         (j/write-value-as-string
                                                (cond->
                                                  {:dataset     dataset
                                                   :from        from
@@ -94,7 +94,7 @@
                                                  filter (assoc :filter filter)))
                                :cookie-store cookie-store
                                :insecure?    true})
-         data     (-> response :body (json/read-str :key-fn keyword))]
+         data     (-> response :body (j/read-value j/keyword-keys-object-mapper))]
      data)))
 
 (defn resources
@@ -110,7 +110,7 @@
                                                     orderby (assoc :orderby orderby))
                               :cookie-store cookie-store
                               :insecure?    true})
-         resources (-> response :body (json/read-str :key-fn keyword))]
+         resources (-> response :body (j/read-value j/keyword-keys-object-mapper))]
      resources)))
 
 (defn get-resource-by-id
@@ -122,7 +122,7 @@
                               {:headers      {"content-type" "application/json"}
                                :cookie-store cookie-store
                                :insecure?    true})
-           resource (-> response :body (json/read-str :key-fn keyword))]
+           resource (-> response :body (j/read-value j/keyword-keys-object-mapper))]
        resource)
      (catch ExceptionInfo ex
        (let [status (:status (ex-data ex))]
@@ -161,7 +161,7 @@
                              {:headers      {"content-type" "application/json"}
                               :cookie-store cookie-store
                               :insecure?    true})
-         resp     (-> response :body (json/read-str :key-fn keyword))]
+         resp     (-> response :body (j/read-value j/keyword-keys-object-mapper))]
      resp)))
 
 (defn edge-set-offline
@@ -172,7 +172,7 @@
                              {:headers      {"content-type" "application/json"}
                               :cookie-store cookie-store
                               :insecure?    true})
-         resp     (-> response :body (json/read-str :key-fn keyword))]
+         resp     (-> response :body (j/read-value j/keyword-keys-object-mapper))]
      resp)))
 
 (defn module
@@ -196,10 +196,10 @@
   ([{:keys [base-uri]} resource-id data]
    (let [response (http/put (str base-uri "/" resource-id)
                             {:headers      {"content-type" "application/json"}
-                             :body         (json/write-str data)
+                             :body         (j/write-value-as-string data)
                              :cookie-store cookie-store
                              :insecure?    true})
-         resp     (-> response :body (json/read-str :key-fn keyword))]
+         resp     (-> response :body (j/read-value j/keyword-keys-object-mapper))]
      resp)))
 
 (comment

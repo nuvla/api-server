@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.data-object-lifecycle-test-utils
   (:require
-    [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [is]]
     [com.sixsq.nuvla.server.app.params :as p]
@@ -15,6 +14,7 @@
     [com.sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
     [com.sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]])
   (:import
     (com.amazonaws AmazonServiceException)))
@@ -86,7 +86,7 @@
         service-group-id    (-> user-session
                                 (request service-group-base-uri
                                          :request-method :post
-                                         :body (json/write-str valid-service-group))
+                                         :body (j/write-value-as-string valid-service-group))
                                 (ltu/body->edn)
                                 (ltu/is-status 201)
                                 (ltu/location))
@@ -109,7 +109,7 @@
         service-id          (-> user-session
                                 (request service-base-uri
                                          :request-method :post
-                                         :body (json/write-str valid-create))
+                                         :body (j/write-value-as-string valid-create))
                                 (ltu/body->edn)
                                 (ltu/is-status 201)
                                 (ltu/location))
@@ -126,7 +126,7 @@
         cred-id             (-> user-session
                                 (request credential-base-uri
                                          :request-method :post
-                                         :body (json/write-str create-import-href))
+                                         :body (j/write-value-as-string create-import-href))
                                 (ltu/body->edn)
                                 (ltu/is-status 201)
                                 (ltu/location))]
@@ -216,7 +216,7 @@
         (-> session-anon
             (request base-uri
                      :request-method :post
-                     :body (json/write-str valid-create))
+                     :body (j/write-value-as-string valid-create))
             (ltu/body->edn)
             (ltu/is-status 403))
 
@@ -227,7 +227,7 @@
           (-> session
               (request base-uri
                        :request-method :post
-                       :body (json/write-str invalid-create))
+                       :body (j/write-value-as-string invalid-create))
               (ltu/body->edn)
               (ltu/is-status 400))
 
@@ -237,7 +237,7 @@
             (-> session
                 (request base-uri
                          :request-method :post
-                         :body (json/write-str valid-create))
+                         :body (j/write-value-as-string valid-create))
                 (ltu/body->edn)
                 (ltu/is-status 503)))
 
@@ -247,7 +247,7 @@
             (let [uri     (-> session
                               (request base-uri
                                        :request-method :post
-                                       :body (json/write-str valid-create))
+                                       :body (j/write-value-as-string valid-create))
                               (ltu/body->edn)
                               (ltu/is-status 201)
                               (ltu/location))
@@ -286,7 +286,7 @@
             (-> session
                 (request base-uri
                          :request-method :post
-                         :body (json/write-str valid-create))
+                         :body (j/write-value-as-string valid-create))
                 (ltu/body->edn)
                 (ltu/is-status 403)))
 
@@ -295,7 +295,7 @@
             (-> session
                 (request base-uri
                          :request-method :post
-                         :body (json/write-str valid-create))
+                         :body (j/write-value-as-string valid-create))
                 (ltu/body->edn)
                 (ltu/is-status 404)))
 
@@ -304,7 +304,7 @@
             (-> session
                 (request base-uri
                          :request-method :post
-                         :body (json/write-str valid-create))
+                         :body (j/write-value-as-string valid-create))
                 (ltu/body->edn)
                 (ltu/is-status 301)))
 
@@ -313,7 +313,7 @@
           (let [uri     (-> session
                             (request base-uri
                                      :request-method :post
-                                     :body (json/write-str valid-create))
+                                     :body (j/write-value-as-string valid-create))
                             (ltu/body->edn)
                             (ltu/is-status 201)
                             (ltu/location))
@@ -322,7 +322,7 @@
             (-> session
                 (request base-uri
                          :request-method :post
-                         :body (json/write-str valid-create))
+                         :body (j/write-value-as-string valid-create))
                 (ltu/body->edn)
                 (ltu/is-status 409))
 
@@ -336,7 +336,7 @@
           (let [uri     (-> session
                             (request base-uri
                                      :request-method :post
-                                     :body (json/write-str valid-create))
+                                     :body (j/write-value-as-string valid-create))
                             (ltu/body->edn)
                             (ltu/is-status 201)
                             (ltu/location))
@@ -382,7 +382,7 @@
               (-> session
                   (request abs-uri
                            :request-method :put
-                           :body (json/write-str updated-eo))
+                           :body (j/write-value-as-string updated-eo))
                   (ltu/body->edn)
                   (ltu/is-status 200)))
 
@@ -567,7 +567,7 @@
                 (-> session
                     (request abs-uri
                              :request-method :delete
-                             :body (json/write-str {:keep-s3-object false :keep-s3-bucket false})) ;;attempt s3 deletion while testing
+                             :body (j/write-value-as-string {:keep-s3-object false :keep-s3-bucket false})) ;;attempt s3 deletion while testing
                     (ltu/body->edn)
                     (ltu/is-status 200)))
 

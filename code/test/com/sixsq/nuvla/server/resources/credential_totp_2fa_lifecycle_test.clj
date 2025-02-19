@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.credential-totp-2fa-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -9,6 +8,7 @@
     [com.sixsq.nuvla.server.resources.credential-template-totp-2fa :as ct-2fa-totp]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -77,7 +77,7 @@
       (-> session
           (request base-uri
                    :request-method :post
-                   :body (json/write-str create-no-href))
+                   :body (j/write-value-as-string create-no-href))
           (ltu/body->edn)
           (ltu/is-status 400)))
 
@@ -85,7 +85,7 @@
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str create-href))
+                 :body (j/write-value-as-string create-href))
         (ltu/body->edn)
         (ltu/is-status 400))
 
@@ -93,14 +93,14 @@
     (-> session-user
         (request base-uri
                  :request-method :post
-                 :body (json/write-str create-href))
+                 :body (j/write-value-as-string create-href))
         (ltu/body->edn)
         (ltu/is-status 400))
 
     (let [resp    (-> session-admin
                       (request base-uri
                                :request-method :post
-                               :body (json/write-str create-href))
+                               :body (j/write-value-as-string create-href))
                       (ltu/body->edn)
                       (ltu/is-status 201))
           id      (ltu/body-resource-id resp)

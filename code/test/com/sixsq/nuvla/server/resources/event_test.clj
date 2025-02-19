@@ -1,12 +1,12 @@
 (ns com.sixsq.nuvla.server.resources.event-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is join-fixtures use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.event :as t]
     [com.sixsq.nuvla.server.resources.event.test-utils :as tu]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -45,7 +45,7 @@
       (-> state
           (request base-uri
                    :request-method :post
-                   :body (json/write-str valid-event))
+                   :body (j/write-value-as-string valid-event))
           (ltu/is-status 201)))
     (ltu/refresh-es-indices))
   (f))

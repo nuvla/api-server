@@ -9,6 +9,7 @@ will send an email to the user with a callback URL to validate the email
 address. When the callback is triggered, the `validated` flag is set to true.
 "
   (:require
+    [clj-stacktrace.repl :as st]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -133,7 +134,7 @@ address. When the callback is triggered, the `validated` flag is set to true.
               (email-utils/send-validation-email address))
           (r/map-response "check your mailbox for a validation message" 202)
           (catch Exception e
-            (.printStackTrace e)))
+            (str "email validation failed!" "\n" (st/pst-str e))))
         (throw (r/ex-bad-request "email address is already validated"))))))
 
 

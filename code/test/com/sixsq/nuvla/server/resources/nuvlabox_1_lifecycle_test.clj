@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.nuvlabox-1-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [are deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
@@ -20,6 +19,7 @@
     [com.sixsq.nuvla.server.resources.nuvlabox :as nb]
     [com.sixsq.nuvla.server.resources.nuvlabox-1 :as nb-1]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]))
 
@@ -85,7 +85,7 @@
       (let [nuvlabox-id  (-> session-owner
                              (request base-uri
                                       :request-method :post
-                                      :body (json/write-str valid-nuvlabox))
+                                      :body (j/write-value-as-string valid-nuvlabox))
                              (ltu/body->edn)
                              (ltu/is-status 201)
                              (ltu/location))
@@ -125,7 +125,7 @@
       (-> session-owner
           (request base-uri
                    :request-method :post
-                   :body (json/write-str (assoc valid-nuvlabox
+                   :body (j/write-value-as-string (assoc valid-nuvlabox
                                            :vpn-server-id "infrastructure-service/fake")))
           (ltu/body->edn)
           (ltu/is-status 404))
@@ -157,7 +157,7 @@
         (let [nuvlabox-id  (-> session
                                (request base-uri
                                         :request-method :post
-                                        :body (json/write-str (assoc valid-nuvlabox
+                                        :body (j/write-value-as-string (assoc valid-nuvlabox
                                                                 :owner nuvlabox-owner)))
                                (ltu/body->edn)
                                (ltu/is-status 201)
@@ -304,7 +304,7 @@
           (-> session-admin
               (request nuvlabox-url
                        :request-method :put
-                       :body (json/write-str (assoc valid-nuvlabox :state "DECOMMISSIONED")))
+                       :body (j/write-value-as-string (assoc valid-nuvlabox :state "DECOMMISSIONED")))
               (ltu/body->edn)
               (ltu/is-status 200))
 
@@ -370,7 +370,7 @@
         (let [nuvlabox-id  (-> session
                                (request base-uri
                                         :request-method :post
-                                        :body (json/write-str (assoc valid-nuvlabox
+                                        :body (j/write-value-as-string (assoc valid-nuvlabox
                                                                 :owner nuvlabox-owner)))
                                (ltu/body->edn)
                                (ltu/is-status 201)
@@ -446,7 +446,7 @@
             (-> session
                 (request commission
                          :request-method :post
-                         :body (json/write-str {:cluster-worker-id   "xyz"
+                         :body (j/write-value-as-string {:cluster-worker-id   "xyz"
                                                 :swarm-token-worker  "abc"
                                                 :swarm-token-manager "def"
                                                 ;:swarm-client-key    "key"
@@ -527,7 +527,7 @@
             (-> session
                 (request commission
                          :request-method :post
-                         :body (json/write-str {:swarm-token-worker     "abc"
+                         :body (j/write-value-as-string {:swarm-token-worker     "abc"
                                                 :swarm-token-manager    "def"
                                                 :swarm-client-key       "key"
                                                 :swarm-client-cert      "cert"
@@ -561,7 +561,7 @@
             (-> session
                 (request commission
                          :request-method :post
-                         :body (json/write-str {:swarm-token-worker  "abc"
+                         :body (j/write-value-as-string {:swarm-token-worker  "abc"
                                                 :swarm-token-manager "def"
                                                 :swarm-client-key    "key-bad"
                                                 :swarm-client-cert   "cert-bad"
@@ -654,7 +654,7 @@
           (-> session-admin
               (request nuvlabox-url
                        :request-method :put
-                       :body (json/write-str {:state "DECOMMISSIONED"}))
+                       :body (j/write-value-as-string {:state "DECOMMISSIONED"}))
               (ltu/body->edn)
               (ltu/is-status 200))
 
@@ -674,7 +674,7 @@
           (-> session-admin
               (request nuvlabox-url
                        :request-method :put
-                       :body (json/write-str {:state "ERROR"}))
+                       :body (j/write-value-as-string {:state "ERROR"}))
               (ltu/body->edn)
               (ltu/is-status 200))
 
@@ -712,7 +712,7 @@
       (let [nuvlabox-id  (-> session-owner
                              (request base-uri
                                       :request-method :post
-                                      :body (json/write-str valid-nuvlabox))
+                                      :body (j/write-value-as-string valid-nuvlabox))
                              (ltu/body->edn)
                              (ltu/is-status 201)
                              (ltu/location))
@@ -769,7 +769,7 @@
           (-> session-owner
               (request commission
                        :request-method :post
-                       :body (json/write-str {:swarm-token-worker     "abc"
+                       :body (j/write-value-as-string {:swarm-token-worker     "abc"
                                               :swarm-token-manager    "def"
                                               :swarm-client-key       "key"
                                               :swarm-client-cert      "cert"
@@ -844,7 +844,7 @@
           (-> session-owner
               (request nuvlabox-url
                        :request-method :put
-                       :body (json/write-str {:acl {:edit-acl [user-beta]}}))
+                       :body (j/write-value-as-string {:acl {:edit-acl [user-beta]}}))
               (ltu/body->edn)
               (ltu/is-status 200))
 
@@ -859,7 +859,7 @@
           (-> session-beta
               (request nuvlabox-url
                        :request-method :put
-                       :body (json/write-str {:acl {:edit-acl [user-beta]}}))
+                       :body (j/write-value-as-string {:acl {:edit-acl [user-beta]}}))
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-key-value :edit-acl :acl [nuvlabox-owner user-beta]))
@@ -918,7 +918,7 @@
       (let [nuvlabox-id      (-> session-owner
                                  (request base-uri
                                           :request-method :post
-                                          :body (json/write-str valid-nuvlabox))
+                                          :body (j/write-value-as-string valid-nuvlabox))
                                  (ltu/body->edn)
                                  (ltu/is-status 201)
                                  (ltu/location))
@@ -980,7 +980,7 @@
           (-> session-nuvlabox
               (request commission
                        :request-method :post
-                       :body (json/write-str {:swarm-token-worker     "abc"
+                       :body (j/write-value-as-string {:swarm-token-worker     "abc"
                                               :swarm-token-manager    "def"
                                               :swarm-client-key       "key"
                                               :swarm-client-cert      "cert"
@@ -1050,7 +1050,7 @@
           (-> session-nuvlabox
               (request commission
                        :request-method :post
-                       :body (json/write-str {:swarm-token-worker     "abc"
+                       :body (j/write-value-as-string {:swarm-token-worker     "abc"
                                               :swarm-token-manager    "def"
                                               :swarm-client-key       "key"
                                               :swarm-client-cert      "cert"
@@ -1110,7 +1110,7 @@
           (-> session-nuvlabox
               (request commission
                        :request-method :post
-                       :body (json/write-str {:swarm-token-worker     "abc"
+                       :body (j/write-value-as-string {:swarm-token-worker     "abc"
                                               :swarm-token-manager    "def"
                                               :swarm-client-key       "key"
                                               :swarm-client-cert      "cert"
@@ -1153,7 +1153,7 @@
             infra-srvc-vpn-id     (-> session-admin
                                       (request (str p/service-context infra-service/resource-type)
                                                :request-method :post
-                                               :body (json/write-str infra-srvc-vpn-create))
+                                               :body (j/write-value-as-string infra-srvc-vpn-create))
                                       (ltu/body->edn)
                                       (ltu/is-status 201)
                                       (ltu/location))
@@ -1168,7 +1168,7 @@
             nuvlabox-id           (-> session-owner
                                       (request base-uri
                                                :request-method :post
-                                               :body (json/write-str
+                                               :body (j/write-value-as-string
                                                        (assoc valid-nuvlabox
                                                          :vpn-server-id infra-srvc-vpn-id)))
                                       (ltu/body->edn)
@@ -1189,7 +1189,7 @@
         (-> session-admin
             (request (str p/service-context configuration/resource-type)
                      :request-method :post
-                     :body (json/write-str conf-vpn-create))
+                     :body (j/write-value-as-string conf-vpn-create))
             (ltu/body->edn)
             (ltu/is-status 201))
 
@@ -1223,7 +1223,7 @@
             (-> session-nuvlabox
                 (request commission
                          :request-method :post
-                         :body (json/write-str {:vpn-csr "foo"}))
+                         :body (j/write-value-as-string {:vpn-csr "foo"}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -1254,7 +1254,7 @@
               (-> session-nuvlabox
                   (request commission
                            :request-method :post
-                           :body (json/write-str {:vpn-csr "foo"}))
+                           :body (j/write-value-as-string {:vpn-csr "foo"}))
                   (ltu/body->edn)
                   (ltu/is-status 200))
 
@@ -1297,7 +1297,7 @@
             infra-srvc-vpn-id     (-> session-admin
                                       (request (str p/service-context infra-service/resource-type)
                                                :request-method :post
-                                               :body (json/write-str infra-srvc-vpn-create))
+                                               :body (j/write-value-as-string infra-srvc-vpn-create))
                                       (ltu/body->edn)
                                       (ltu/is-status 201)
                                       (ltu/location))
@@ -1312,7 +1312,7 @@
             nuvlabox-id           (-> session-owner
                                       (request base-uri
                                                :request-method :post
-                                               :body (json/write-str
+                                               :body (j/write-value-as-string
                                                        (assoc valid-nuvlabox
                                                          :vpn-server-id infra-srvc-vpn-id)))
                                       (ltu/body->edn)
@@ -1333,7 +1333,7 @@
         (-> session-admin
             (request (str p/service-context configuration/resource-type)
                      :request-method :post
-                     :body (json/write-str conf-vpn-create))
+                     :body (j/write-value-as-string conf-vpn-create))
             (ltu/body->edn)
             (ltu/is-status 201))
 
@@ -1374,7 +1374,7 @@
             (-> session-nuvlabox
                 (request commission
                          :request-method :post
-                         :body (json/write-str {:swarm-endpoint "http://foo"}))
+                         :body (j/write-value-as-string {:swarm-endpoint "http://foo"}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -1395,7 +1395,7 @@
             (-> session-nuvlabox
                 (request commission
                          :request-method :post
-                         :body (json/write-str {:swarm-endpoint "http://bar"}))
+                         :body (j/write-value-as-string {:swarm-endpoint "http://bar"}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -1430,7 +1430,7 @@
           nuvlabox-id   (-> session-owner
                             (request base-uri
                                      :request-method :post
-                                     :body (json/write-str valid-nuvlabox))
+                                     :body (j/write-value-as-string valid-nuvlabox))
                             (ltu/body->edn)
                             (ltu/is-status 201)
                             (ltu/location))
@@ -1439,7 +1439,7 @@
       (-> session-admin
           (request nuvlabox-url
                    :request-method :put
-                   :body (json/write-str {:state "COMMISSIONED"}))
+                   :body (j/write-value-as-string {:state "COMMISSIONED"}))
           (ltu/body->edn)
           (ltu/is-status 200))
 
@@ -1486,7 +1486,7 @@
       (let [nuvlabox-id  (-> session-owner
                              (request base-uri
                                       :request-method :post
-                                      :body (json/write-str valid-nuvlabox))
+                                      :body (j/write-value-as-string valid-nuvlabox))
                              (ltu/body->edn)
                              (ltu/is-status 201)
                              (ltu/location))

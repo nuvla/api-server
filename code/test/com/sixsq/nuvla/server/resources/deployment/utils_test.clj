@@ -1,12 +1,12 @@
 (ns com.sixsq.nuvla.server.resources.deployment.utils-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [are deftest is testing]]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.pricing.payment :as payment]
     [com.sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [com.sixsq.nuvla.server.resources.deployment.utils :as t]
-    [com.sixsq.nuvla.server.util.time :as time])
+    [com.sixsq.nuvla.server.util.time :as time]
+    [jsonista.core :as j])
   (:import (clojure.lang ExceptionInfo)))
 
 

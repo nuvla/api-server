@@ -1,15 +1,15 @@
 (ns com.sixsq.nuvla.server.resources.notification-method-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.notification-method :as t]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
-(use-fixtures :once ltu/with-test-server-kafka-fixture)
+(use-fixtures :once ltu/with-test-server-fixture)
 
 (def base-uri (str p/service-context t/resource-type))
 
@@ -45,7 +45,7 @@
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str valid-notif-conf))
+                 :body (j/write-value-as-string valid-notif-conf))
         (ltu/body->edn)
         (ltu/is-status 403))
 
@@ -53,7 +53,7 @@
     (let [user-uri (-> session-user
                        (request base-uri
                                 :request-method :post
-                                :body (json/write-str valid-notif-conf))
+                                :body (j/write-value-as-string valid-notif-conf))
                        (ltu/body->edn)
                        (ltu/is-status 201)
                        (ltu/location))
@@ -75,7 +75,7 @@
         (-> session-user
             (request user-abs-uri
                      :request-method :put
-                     :body (json/write-str updated))
+                     :body (j/write-value-as-string updated))
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/body))
@@ -104,7 +104,7 @@
     (let [user-uri (-> session-user
                        (request base-uri
                                 :request-method :post
-                                :body (json/write-str valid-notif-conf))
+                                :body (j/write-value-as-string valid-notif-conf))
                        (ltu/body->edn)
                        (ltu/is-status 201)
                        (ltu/location))
@@ -127,7 +127,7 @@
         (-> session-user
             (request test-op
                      :request-method :post
-                     :body (json/write-str {}))
+                     :body (j/write-value-as-string {}))
             (ltu/body->edn)
             (ltu/is-status 201)
             (ltu/message-matches t/test-response-message)))

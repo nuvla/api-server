@@ -1,0 +1,5 @@
+{:default :warn
+ ;:slf4j   [["*" :debug]
+ ;          ["org.apache.zookeeper.*" :error]]
+ ;:ns-filter {:disallow "com.sixsq.nuvla.server.middleware.logger"},
+ }

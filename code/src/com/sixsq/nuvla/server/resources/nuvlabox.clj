@@ -5,7 +5,6 @@ all subtypes of this resource. Versioned subclasses define the attributes for a
 particular NuvlaBox release.
 "
   (:require
-    [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.auth.acl-resource :as a]
@@ -17,6 +16,7 @@ particular NuvlaBox release.
     [com.sixsq.nuvla.server.resources.common.event-context :as ectx]
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
+    [com.sixsq.nuvla.server.resources.deployment :as deployment]
     [com.sixsq.nuvla.server.resources.job.interface :as job-interface]
     [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.nuvlabox.data-utils :as data-utils]
@@ -28,9 +28,9 @@ particular NuvlaBox release.
     [com.sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
     [com.sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [com.sixsq.nuvla.server.util.log :as logu]
-    [com.sixsq.nuvla.server.resources.deployment :as deployment]
     [com.sixsq.nuvla.server.util.metadata :as gen-md]
-    [com.sixsq.nuvla.server.util.response :as r]))
+    [com.sixsq.nuvla.server.util.response :as r]
+    [jsonista.core :as j]))
 
 (def ^:const resource-type (u/ns->type *ns*))
 
@@ -678,7 +678,7 @@ particular NuvlaBox release.
                                                                  (a/acl-append :manage id))
                                                              (auth/current-user-id request)
                                                              :priority 50
-                                                             :payload (json/write-str body)
+                                                             :payload (j/write-value-as-string body)
                                                              :execution-mode (utils/get-execution-mode nuvlabox))
           job-msg (str "sending request to NuvlaBox " id " with async " job-id)]
       (when (not= job-status 201)
@@ -732,7 +732,7 @@ particular NuvlaBox release.
                                          (auth/current-user-id request)
                                          :priority 50
                                          :execution-mode (utils/get-execution-mode nuvlabox)
-                                         :payload (json/write-str payload))
+                                         :payload (j/write-value-as-string payload))
           job-msg (str "running cluster action " cluster-action " on NuvlaBox " id
                        ", with async " job-id)]
       (when (not= job-status 201)

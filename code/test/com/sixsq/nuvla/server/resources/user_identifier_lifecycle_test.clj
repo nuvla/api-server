@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.user-identifier-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -9,6 +8,7 @@
     [com.sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
     [environ.core :as env]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -56,7 +56,7 @@
       (-> session
           (request base-uri
                    :request-method :post
-                   :body (json/write-str valid-entry))
+                   :body (j/write-value-as-string valid-entry))
           (ltu/body->edn)
           (ltu/is-status 403)))
 
@@ -90,7 +90,7 @@
     (let [uri     (-> session-admin
                       (request base-uri
                                :request-method :post
-                               :body (json/write-str valid-entry))
+                               :body (j/write-value-as-string valid-entry))
                       (ltu/body->edn)
                       (ltu/is-status 201)
                       (ltu/location))
@@ -127,7 +127,7 @@
       (-> session-admin
           (request base-uri
                    :request-method :post
-                   :body (json/write-str valid-entry))
+                   :body (j/write-value-as-string valid-entry))
           (ltu/body->edn)
           (ltu/is-status 409))
 

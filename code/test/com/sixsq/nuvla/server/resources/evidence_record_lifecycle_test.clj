@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.evidence-record-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is join-fixtures use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -8,6 +7,7 @@
     [com.sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
     [com.sixsq.nuvla.server.resources.evidence-record :as t]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]))
 
@@ -95,7 +95,7 @@
       (-> session-admin
           (request (str p/service-context sn/resource-type)
                    :request-method :post
-                   :body (json/write-str namespace))
+                   :body (j/write-value-as-string namespace))
           (ltu/body->edn)
           (ltu/is-status 201))))
   (f))
@@ -119,7 +119,7 @@
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str valid-entry))
+                 :body (j/write-value-as-string valid-entry))
         (ltu/body->edn)
         (ltu/is-status 403))
 
@@ -133,7 +133,7 @@
     (-> session-user
         (request base-uri
                  :request-method :post
-                 :body (json/write-str entry-wrong-namespace))
+                 :body (j/write-value-as-string entry-wrong-namespace))
         (ltu/is-status 406))
 
     ;; both admin and user should be able to add, query, and delete entries
@@ -141,7 +141,7 @@
       (let [uri     (-> session
                         (request base-uri
                                  :request-method :post
-                                 :body (json/write-str valid-entry))
+                                 :body (j/write-value-as-string valid-entry))
                         (ltu/body->edn)
                         (ltu/is-status 201)
                         (ltu/location))
@@ -155,7 +155,7 @@
         (-> session
             (request abs-uri
                      :request-method :put
-                     :body (json/write-str valid-entry))
+                     :body (j/write-value-as-string valid-entry))
             (ltu/body->edn)
             (ltu/is-status 405))
 
@@ -169,7 +169,7 @@
         (-> session
             (request base-uri
                      :request-method :post
-                     :body (json/write-str invalid-entry))
+                     :body (j/write-value-as-string invalid-entry))
             (ltu/body->edn)
             (ltu/is-status 400))))
 
@@ -177,7 +177,7 @@
     (let [uri     (-> session-admin
                       (request base-uri
                                :request-method :post
-                               :body (json/write-str valid-entry))
+                               :body (j/write-value-as-string valid-entry))
                       (ltu/body->edn)
                       (ltu/is-status 201)
                       (ltu/location))
@@ -267,7 +267,7 @@
     (let [uri     (-> session-user
                       (request base-uri
                                :request-method :post
-                               :body (json/write-str valid-nested-entry))
+                               :body (j/write-value-as-string valid-nested-entry))
                       (ltu/body->edn)
                       (ltu/is-status 201)
                       (ltu/location))
@@ -287,7 +287,7 @@
     (-> session-user
         (request base-uri
                  :request-method :post
-                 :body (json/write-str invalid-nested-entry))
+                 :body (j/write-value-as-string invalid-nested-entry))
         (ltu/body->edn)
         (ltu/is-status 406))))
 
@@ -310,7 +310,7 @@
     (-> session-admin
         (request base-uri
                  :request-method :post
-                 :body (json/write-str valid-entry))
+                 :body (j/write-value-as-string valid-entry))
         (ltu/body->edn)
         (ltu/is-status 201)
         (ltu/location))
@@ -371,7 +371,7 @@
     (-> session-user
         (request base-uri
                  :request-method :post
-                 :body (json/write-str valid-nested-2-levels))
+                 :body (j/write-value-as-string valid-nested-2-levels))
         (ltu/body->edn)
         (ltu/is-status 201)
         (ltu/location))

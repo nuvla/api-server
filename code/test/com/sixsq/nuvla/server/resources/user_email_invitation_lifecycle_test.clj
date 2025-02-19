@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.user-email-invitation-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.auth.password :as auth-password]
     [com.sixsq.nuvla.server.app.params :as p]
@@ -13,6 +12,7 @@
     [com.sixsq.nuvla.server.resources.user-template-email-invitation :as email-invitation]
     [com.sixsq.nuvla.server.util.general :as gen-util]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [ring.util.codec :as codec]))
@@ -97,7 +97,7 @@
           (-> session
               (request base-uri
                        :request-method :post
-                       :body (json/write-str no-href-create))
+                       :body (j/write-value-as-string no-href-create))
               (ltu/body->edn)
               (ltu/is-status 400)))
 
@@ -106,7 +106,7 @@
           (-> session
               (request base-uri
                        :request-method :post
-                       :body (json/write-str invalid-create))
+                       :body (j/write-value-as-string invalid-create))
               (ltu/body->edn)
               (ltu/is-status 404)))
 
@@ -115,7 +115,7 @@
           (-> session
               (request base-uri
                        :request-method :post
-                       :body (json/write-str bad-params-create))
+                       :body (j/write-value-as-string bad-params-create))
               (ltu/body->edn)
               (ltu/is-status 400)))
 
@@ -124,7 +124,7 @@
         (-> session-anon
             (request base-uri
                      :request-method :post
-                     :body (json/write-str href-create))
+                     :body (j/write-value-as-string href-create))
             (ltu/body->edn)
             (ltu/is-status 400))
 
@@ -133,7 +133,7 @@
           (let [resp                 (-> session-user
                                         (request base-uri
                                                  :request-method :post
-                                                 :body (json/write-str href-create))
+                                                 :body (j/write-value-as-string href-create))
                                         (ltu/body->edn)
                                         (ltu/is-status 201))
                user-id              (ltu/body-resource-id resp)
@@ -176,7 +176,7 @@
            (-> session-anon
                (request callback-url
                         :request-method :post
-                        :body (json/write-str {:new-password "VeryDifficult-1"}))
+                        :body (j/write-value-as-string {:new-password "VeryDifficult-1"}))
                (ltu/body->edn)
                (ltu/is-status 200)
                (ltu/message-matches

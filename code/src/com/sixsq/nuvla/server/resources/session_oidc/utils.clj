@@ -1,11 +1,11 @@
 (ns com.sixsq.nuvla.server.resources.session-oidc.utils
   (:require
     [clj-http.client :as http]
-    [clojure.data.json :as json]
     [clojure.string :as str]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.util.general :as gen-util]
-    [com.sixsq.nuvla.server.util.log :as logu]))
+    [com.sixsq.nuvla.server.util.log :as logu]
+    [jsonista.core :as j]))
 
 
 (defn prefix
@@ -142,6 +142,6 @@
                 {:headers      {"Accept" "application/json"}
                  :query-params {::access_token access_token}})
       :body
-      (json/read-str :key-fn keyword)))
+      (j/read-value j/keyword-keys-object-mapper)))
 
 (def geant-instance "geant")

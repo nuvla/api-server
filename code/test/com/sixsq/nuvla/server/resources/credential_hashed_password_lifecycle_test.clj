@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.credential-hashed-password-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -9,6 +8,7 @@
     [com.sixsq.nuvla.server.resources.credential-template-hashed-password :as ct-hashed-password]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -79,7 +79,7 @@
       (-> session
           (request base-uri
                    :request-method :post
-                   :body (json/write-str create-no-href))
+                   :body (j/write-value-as-string create-no-href))
           (ltu/body->edn)
           (ltu/is-status 400)))
 
@@ -87,7 +87,7 @@
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str create-href))
+                 :body (j/write-value-as-string create-href))
         (ltu/body->edn)
         (ltu/is-status 400))
 
@@ -95,7 +95,7 @@
     (let [resp    (-> session-user
                       (request base-uri
                                :request-method :post
-                               :body (json/write-str create-href))
+                               :body (j/write-value-as-string create-href))
                       (ltu/body->edn)
                       (ltu/is-status 201))
           id      (ltu/body-resource-id resp)
@@ -145,14 +145,14 @@
           (-> session-user
               (request check-url
                        :request-method :post
-                       :body (json/write-str {:password plaintext-password}))
+                       :body (j/write-value-as-string {:password plaintext-password}))
               (ltu/body->edn)
               (ltu/is-status 200))
 
           (-> session-user
               (request check-url
                        :request-method :post
-                       :body (json/write-str {:password "WRONG_password_69"}))
+                       :body (j/write-value-as-string {:password "WRONG_password_69"}))
               (ltu/body->edn)
               (ltu/is-status 403))
 
@@ -168,7 +168,7 @@
             (-> session-user
                 (request change-pwd-url
                          :request-method :post
-                         :body (json/write-str {:current-password plaintext-password
+                         :body (j/write-value-as-string {:current-password plaintext-password
                                                 :new-password     new-password}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
@@ -176,7 +176,7 @@
             (-> session-user
                 (request check-url
                          :request-method :post
-                         :body (json/write-str {:password new-password}))
+                         :body (j/write-value-as-string {:password new-password}))
                 (ltu/body->edn)
                 (ltu/is-status 200)))))
 

@@ -18,13 +18,15 @@
     [com.sixsq.nuvla.server.util.zookeeper :as zku]
     [compojure.core :as compojure]
     [environ.core :as env]
+    [jsonista.core :as j]
     [nrepl.server :as nrepl]
     [nrepl.transport :as transport]
     [ring.middleware.cookies :refer [wrap-cookies]]
     [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
     [ring.middleware.keyword-params :refer [wrap-keyword-params]]
     [ring.middleware.nested-params :refer [wrap-nested-params]]
-    [ring.middleware.params :refer [wrap-params]]))
+    [ring.middleware.params :refer [wrap-params]]
+    [taoensso.telemere :as telemere]))
 
 
 (def default-db-binding-ns "com.sixsq.nuvla.db.es.loader")
@@ -38,7 +40,7 @@
 
 
 (defn- create-ring-handler
-  "Creates a ring handler that wraps all of the service routes
+  "Creates a ring handler that wraps all the service routes
    in the necessary ring middleware to handle authentication,
    header treatment, and message formatting."
   []
@@ -91,9 +93,19 @@
     (catch Exception e
       (log/warn "failed removing all instrumentation metrics:" (str e)))))
 
+(defn init-logging
+  []
+  (when (telemere/get-env {:as :edn :default false} [:json-logging :json-logging<.edn>])
+    (telemere/add-handler! ::log-json-handler (telemere/handler:console
+                                                {:output-fn
+                                                 (telemere/pr-signal-fn
+                                                   {:pr-fn j/write-value-as-string})}))
+    (telemere/remove-handler! :default/console)
+    (telemere/log! :info "Logging in json enabled.")))
 
 (defn init
   []
+  (init-logging)
 
   (db-loader/load-and-set-persistent-db-binding
     (env/env :persistent-db-binding-ns default-db-binding-ns))

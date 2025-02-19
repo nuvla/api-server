@@ -1,13 +1,13 @@
 (ns com.sixsq.nuvla.db.es.filter
   (:refer-clojure :exclude [filter])
   (:require
-    [clojure.data.json :as json]
     [clojure.string :as str]
     [com.sixsq.nuvla.db.es.query :as query]
     [com.sixsq.nuvla.server.util.log :as logu]
     [com.sixsq.nuvla.server.util.time :as time]
     [geo.io :as gio]
-    [instaparse.transform :as insta-transform]))
+    [instaparse.transform :as insta-transform]
+    [jsonista.core :as j]))
 
 (defn- strip-quotes
   [s]
@@ -18,7 +18,7 @@
   (try
     (-> (gio/read-wkt v)
         gio/to-geojson
-        (json/read-str :key-fn keyword))
+        (j/read-value j/keyword-keys-object-mapper))
     (catch Exception e
       (logu/log-and-throw-400
         (str "invalid WKT format '" v "'. " (ex-message e) ".")))))

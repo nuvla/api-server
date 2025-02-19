@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.configuration-lifecycle-test-utils
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [is]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -8,6 +7,7 @@
     [com.sixsq.nuvla.server.resources.configuration :as cfg]
     [com.sixsq.nuvla.server.resources.configuration-template :as ct]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 (def base-uri (str p/service-context cfg/resource-type))
@@ -48,7 +48,7 @@
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str valid-create))
+                 :body (j/write-value-as-string valid-create))
         (ltu/body->edn)
         (ltu/is-status 403))
 
@@ -56,7 +56,7 @@
     (-> session-user
         (request base-uri
                  :request-method :post
-                 :body (json/write-str valid-create))
+                 :body (j/write-value-as-string valid-create))
         (ltu/body->edn)
         (ltu/is-status 403))
 
@@ -64,7 +64,7 @@
     (-> session-admin
         (request base-uri
                  :request-method :post
-                 :body (json/write-str invalid-create))
+                 :body (j/write-value-as-string invalid-create))
         (ltu/body->edn)
         (ltu/is-status 400))
 
@@ -72,7 +72,7 @@
     (let [uri     (-> session-admin
                       (request base-uri
                                :request-method :post
-                               :body (json/write-str valid-create))
+                               :body (j/write-value-as-string valid-create))
                       (ltu/body->edn)
                       (ltu/is-status 201)
                       (ltu/is-location)
@@ -132,7 +132,7 @@
             _                 (-> session-admin
                                   (request abs-uri
                                            :request-method :put
-                                           :body (json/write-str new-cfg))
+                                           :body (j/write-value-as-string new-cfg))
                                   (ltu/is-status 200))
             reread-attr-value (-> session-admin
                                   (request abs-uri)
@@ -160,7 +160,7 @@
     (let [uri     (-> session-admin
                       (request base-uri
                                :request-method :post
-                               :body (json/write-str href-create))
+                               :body (j/write-value-as-string href-create))
                       (ltu/body->edn)
                       (ltu/is-status 201)
                       (ltu/location))

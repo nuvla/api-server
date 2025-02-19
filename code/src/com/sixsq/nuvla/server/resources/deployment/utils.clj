@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.deployment.utils
   (:require
-    [clojure.data.json :as json]
     [clojure.set :as set]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
@@ -23,7 +22,8 @@
     [com.sixsq.nuvla.server.resources.nuvlabox.utils :as nuvlabox-utils]
     [com.sixsq.nuvla.server.resources.resource-log :as resource-log]
     [com.sixsq.nuvla.server.util.general :as gen-util]
-    [com.sixsq.nuvla.server.util.response :as r]))
+    [com.sixsq.nuvla.server.util.response :as r]
+    [jsonista.core :as j]))
 
 
 (defn generate-api-key-secret
@@ -131,7 +131,7 @@
                                        :parent-job parent-job
                                        :priority (if low-priority 999 50)
                                        :execution-mode execution-mode
-                                       :payload (when (seq payload) (json/write-str payload)))
+                                       :payload (when (seq payload) (j/write-value-as-string payload)))
         job-msg      (str action " " id " with async " job-id)]
     (when (not= job-status 201)
       (throw (r/ex-response

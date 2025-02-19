@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.job.utils
   (:require
-    [clojure.data.json :as json]
     [clojure.string :as str]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
@@ -10,7 +9,8 @@
     [com.sixsq.nuvla.server.util.general :as util-general]
     [com.sixsq.nuvla.server.util.response :as r]
     [com.sixsq.nuvla.server.util.time :as time]
-    [com.sixsq.nuvla.server.util.zookeeper :as uzk]))
+    [com.sixsq.nuvla.server.util.zookeeper :as uzk]
+    [jsonista.core :as j]))
 
 (def resource-type "job")
 
@@ -145,7 +145,7 @@
   [action-name target-resource request acl payload]
   (let [json-payload (-> payload
                          (assoc :authn-info (auth/current-authentication request))
-                         (json/write-str))
+                         (j/write-value-as-string))
         {{job-id     :resource-id
           job-status :status} :body} (create-job target-resource action-name acl
                                                  (auth/current-user-id request)

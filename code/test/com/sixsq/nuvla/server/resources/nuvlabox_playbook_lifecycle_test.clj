@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.nuvlabox-playbook-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -10,6 +9,7 @@
     [com.sixsq.nuvla.server.resources.nuvlabox :as nb]
     [com.sixsq.nuvla.server.resources.nuvlabox-playbook :as nb-playbook]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -64,7 +64,7 @@
           nuvlabox-id   (-> session-owner
                             (request nuvlabox-base-uri
                                      :request-method :post
-                                     :body (json/write-str valid-nuvlabox))
+                                     :body (j/write-value-as-string valid-nuvlabox))
                             (ltu/body->edn)
                             (ltu/is-status 201)
                             (ltu/location))
@@ -75,7 +75,7 @@
       (-> session-anon
           (request base-uri
                    :request-method :post
-                   :body (json/write-str (assoc valid-playbook :parent nuvlabox-id)))
+                   :body (j/write-value-as-string (assoc valid-playbook :parent nuvlabox-id)))
           (ltu/body->edn)
           (ltu/is-status 403))
 
@@ -83,7 +83,7 @@
       (-> session-user
           (request base-uri
                    :request-method :post
-                   :body (json/write-str (assoc valid-playbook :parent nuvlabox-id)))
+                   :body (j/write-value-as-string (assoc valid-playbook :parent nuvlabox-id)))
           (ltu/body->edn)
           (ltu/is-status 403))
 
@@ -91,7 +91,7 @@
       (-> session-owner
           (request base-uri
                    :request-method :post
-                   :body (json/write-str {}))
+                   :body (j/write-value-as-string {}))
           (ltu/body->edn)
           (ltu/is-status 400))
 
@@ -100,7 +100,7 @@
       (when-let [playbook-url (-> session-owner
                                   (request base-uri
                                            :request-method :post
-                                           :body (json/write-str (assoc valid-playbook
+                                           :body (j/write-value-as-string (assoc valid-playbook
                                                                    :parent nuvlabox-id)))
                                   (ltu/body->edn)
                                   (ltu/is-status 201)
@@ -130,7 +130,7 @@
         (-> session-nb
             (request playbook-url
                      :request-method :put
-                     :body (json/write-str {:output "new output"}))
+                     :body (j/write-value-as-string {:output "new output"}))
             (ltu/body->edn)
             (ltu/is-status 403))
 
@@ -138,7 +138,7 @@
         (-> session-owner
             (request playbook-url
                      :request-method :put
-                     :body (json/write-str {:output "new output"}))
+                     :body (j/write-value-as-string {:output "new output"}))
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-key-value :output "new output"))
@@ -161,7 +161,7 @@
         (-> session-owner
             (request (str p/service-context nuvlabox-id)
                      :request-method :put
-                     :body (json/write-str {:acl {:owners   ["group/nuvla-admin"]
+                     :body (j/write-value-as-string {:acl {:owners   ["group/nuvla-admin"]
                                                   :view-acl [nuvlabox-owner user-beta]}}))
             (ltu/body->edn)
             (ltu/is-status 200))
@@ -183,7 +183,7 @@
           (-> session-nb
               (request save-output-op-url
                        :request-method :post
-                       :body (json/write-str {:output "newest stdout"}))
+                       :body (j/write-value-as-string {:output "newest stdout"}))
               (ltu/body->edn)
               (ltu/is-status 200))
 
@@ -198,7 +198,7 @@
           (-> session-nb
               (request save-output-op-url
                        :request-method :post
-                       :body (json/write-str {:output (apply str (repeat 12500 "g"))}))
+                       :body (j/write-value-as-string {:output (apply str (repeat 12500 "g"))}))
               (ltu/body->edn)
               (ltu/is-status 200))
 
@@ -212,7 +212,7 @@
         (-> session-owner
             (request playbook-url
                      :request-method :put
-                     :body (json/write-str {:output (apply str (repeat 10500 "f"))}))
+                     :body (j/write-value-as-string {:output (apply str (repeat 10500 "f"))}))
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-key-value count :output 10000))

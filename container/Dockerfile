@@ -1,4 +1,4 @@
-FROM nuvla/ring:2.2.0
+FROM nuvla/ring:2.3.0
                 
 ARG GIT_BRANCH
 ARG GIT_COMMIT_ID
@@ -23,6 +23,7 @@ ENV NUVLA_SERVER_INIT=com.sixsq.nuvla.server.app.server/init
 ENV PERSISTENT_DB_BINDING=com.sixsq.nuvla.db.es.loader
 ENV EPHEMERAL_DB_BINDING=com.sixsq.nuvla.db.es.loader
 ENV ES_ENDPOINTS=localhost:9200
+ENV JSON_LOGGING=false
 
 RUN addgroup -S "$USER_GROUP"  \
     && adduser -S "$USER_GROUP" -G "$USER_GROUP" \

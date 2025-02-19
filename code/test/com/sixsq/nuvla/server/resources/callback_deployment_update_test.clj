@@ -1,6 +1,5 @@
 (ns com.sixsq.nuvla.server.resources.callback-deployment-update-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -11,6 +10,7 @@
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.module :as module]
     [com.sixsq.nuvla.server.resources.notification :as notif]
+    [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
@@ -84,7 +84,7 @@
             _project-module  (-> session-user
                                  (request module-base-uri
                                           :request-method :post
-                                          :body (json/write-str
+                                          :body (j/write-value-as-string
                                                   {:subtype "project"
                                                    :path    "a"}))
                                  (ltu/body->edn)
@@ -92,7 +92,7 @@
             module-id        (-> session-user
                                  (request module-base-uri
                                           :request-method :post
-                                          :body (json/write-str
+                                          :body (j/write-value-as-string
                                                   (valid-module subtype valid-component)))
                                  (ltu/body->edn)
                                  (ltu/is-status 201)
@@ -104,7 +104,7 @@
         (let [deployment-id  (-> session-user
                                  (request deployment-base-uri
                                           :request-method :post
-                                          :body (json/write-str valid-deployment))
+                                          :body (j/write-value-as-string valid-deployment))
                                  (ltu/body->edn)
                                  (ltu/is-status 201)
                                  (ltu/location))
@@ -146,7 +146,7 @@
             (-> session-admin
                 (request deployment-url
                          :request-method :put
-                         :body (json/write-str {:state "STARTED"}))
+                         :body (j/write-value-as-string {:state "STARTED"}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -160,7 +160,7 @@
                   callback-id         (-> session-admin
                                           (request callback-base-uri
                                                    :request-method :post
-                                                   :body (json/write-str callback-body))
+                                                   :body (j/write-value-as-string callback-body))
                                           (ltu/body->edn)
                                           (ltu/is-status 201)
                                           (ltu/body)
@@ -176,7 +176,7 @@
                   notification-id     (-> session-admin
                                           (request (str p/service-context notif/resource-type)
                                                    :request-method :post
-                                                   :body (json/write-str create-notification))
+                                                   :body (j/write-value-as-string create-notification))
                                           (ltu/body->edn)
                                           (ltu/is-status 201)
                                           (ltu/body)
@@ -239,7 +239,7 @@
           (-> session-admin
               (request deployment-url
                        :request-method :put
-                       :body (json/write-str {:state "STARTED"}))
+                       :body (j/write-value-as-string {:state "STARTED"}))
               (ltu/body->edn)
               (ltu/is-status 200))
 
@@ -247,7 +247,7 @@
           (-> session-admin
               (request deployment-url
                        :request-method :put
-                       :body (json/write-str {:state "STOPPED"}))
+                       :body (j/write-value-as-string {:state "STOPPED"}))
               (ltu/body->edn)
               (ltu/is-status 200))
 
