@@ -1,5 +1,5 @@
 (def parent-version "6.8.0")
-(def nuvla-ring-version "2.2.0")
+(def nuvla-ring-version "2.2.1-SNAPSHOT")
 (def kinsky-version "0.3.1")
 
 (defproject com.sixsq.nuvla/api-server
@@ -91,9 +91,7 @@
 
   :profiles
   {:provided {:dependencies [[org.clojure/clojure "1.12.0"]
-                             [com.sixsq.nuvla/ring ~nuvla-ring-version
-                              :exclusions [[ch.qos.logback/logback-classic]
-                                           [ch.qos.logback/logback-core]]]
+                             [com.sixsq.nuvla/ring ~nuvla-ring-version]
                              [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
 
    :test     {:dependencies      [[me.raynes/fs "1.4.6"]
