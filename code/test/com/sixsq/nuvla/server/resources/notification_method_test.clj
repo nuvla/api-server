@@ -9,7 +9,7 @@
     [peridot.core :refer [content-type header request session]]))
 
 
-(use-fixtures :once ltu/with-test-server-kafka-fixture)
+(use-fixtures :once ltu/with-test-server-fixture)
 
 (def base-uri (str p/service-context t/resource-type))
 
