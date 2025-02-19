@@ -1,4 +1,4 @@
-FROM nuvladev/ring:logging-telemere
+FROM nuvla/ring:2.3.0
                 
 ARG GIT_BRANCH
 ARG GIT_COMMIT_ID

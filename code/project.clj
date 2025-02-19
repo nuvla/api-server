@@ -1,5 +1,5 @@
 (def parent-version "6.8.0")
-(def nuvla-ring-version "2.2.1-SNAPSHOT")
+(def nuvla-ring-version "2.3.0")
 (def kinsky-version "0.3.1")
 
 (defproject com.sixsq.nuvla/api-server
