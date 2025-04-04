@@ -191,7 +191,7 @@
                                (request base-uri
                                         :request-method :post
                                         :body (j/write-value-as-string (assoc valid-nuvlabox
-                                                                :owner nuvlabox-owner)))
+                                                                         :owner nuvlabox-owner)))
                                (ltu/body->edn)
                                (ltu/is-status 201)
                                (ltu/location))
@@ -416,7 +416,7 @@
                                (request base-uri
                                         :request-method :post
                                         :body (j/write-value-as-string (assoc valid-nuvlabox
-                                                                :owner nuvlabox-owner)))
+                                                                         :owner nuvlabox-owner)))
                                (ltu/body->edn)
                                (ltu/is-status 201)
                                (ltu/location))
@@ -477,7 +477,7 @@
                                (request base-uri
                                         :request-method :post
                                         :body (j/write-value-as-string (assoc valid-nuvlabox
-                                                                :owner nuvlabox-owner)))
+                                                                         :owner nuvlabox-owner)))
                                (ltu/body->edn)
                                (ltu/is-status 201)
                                (ltu/location))
@@ -544,17 +544,17 @@
                 (request commission
                          :request-method :post
                          :body (j/write-value-as-string {:cluster-worker-id   "xyz"
-                                                :swarm-token-worker  "abc"
-                                                :swarm-token-manager "def"
-                                                ;:swarm-client-key    "key"
-                                                ;:swarm-client-cert   "cert"
-                                                ;:swarm-client-ca     "ca"
-                                                :swarm-endpoint      "https://swarm.example.com"
-                                                :tags                tags
-                                                :minio-access-key    "access"
-                                                :minio-secret-key    "secret"
-                                                :minio-endpoint      "https://minio.example.com"
-                                                :capabilities        [utils/capability-job-pull]}))
+                                                         :swarm-token-worker  "abc"
+                                                         :swarm-token-manager "def"
+                                                         ;:swarm-client-key    "key"
+                                                         ;:swarm-client-cert   "cert"
+                                                         ;:swarm-client-ca     "ca"
+                                                         :swarm-endpoint      "https://swarm.example.com"
+                                                         :tags                tags
+                                                         :minio-access-key    "access"
+                                                         :minio-secret-key    "secret"
+                                                         :minio-endpoint      "https://minio.example.com"
+                                                         :capabilities        [utils/capability-job-pull]}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -621,9 +621,9 @@
                 (request commission
                          :request-method :post
                          :body (j/write-value-as-string {:cluster-worker-id "cluster-worker-id"
-                                                :swarm-endpoint    "https://swarm.example.com"
-                                                :tags              tags
-                                                :capabilities      [utils/capability-job-pull]}))
+                                                         :swarm-endpoint    "https://swarm.example.com"
+                                                         :tags              tags
+                                                         :capabilities      [utils/capability-job-pull]}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -678,18 +678,18 @@
                 (request commission
                          :request-method :post
                          :body (j/write-value-as-string {:swarm-token-worker     "abc"
-                                                :swarm-token-manager    "def"
-                                                :swarm-client-key       "key"
-                                                :swarm-client-cert      "cert"
-                                                :swarm-client-ca        "ca"
-                                                :swarm-endpoint         "https://swarm.example.com"
-                                                :minio-access-key       "access"
-                                                :minio-secret-key       "secret"
-                                                :minio-endpoint         "https://minio.example.com"
-                                                :kubernetes-client-key  "key"
-                                                :kubernetes-client-cert "cert"
-                                                :kubernetes-client-ca   "ca"
-                                                :kubernetes-endpoint    "https://k8s.example.com"}))
+                                                         :swarm-token-manager    "def"
+                                                         :swarm-client-key       "key"
+                                                         :swarm-client-cert      "cert"
+                                                         :swarm-client-ca        "ca"
+                                                         :swarm-endpoint         "https://swarm.example.com"
+                                                         :minio-access-key       "access"
+                                                         :minio-secret-key       "secret"
+                                                         :minio-endpoint         "https://minio.example.com"
+                                                         :kubernetes-client-key  "key"
+                                                         :kubernetes-client-cert "cert"
+                                                         :kubernetes-client-ca   "ca"
+                                                         :kubernetes-endpoint    "https://k8s.example.com"}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -706,7 +706,7 @@
                 (ltu/is-key-value :state "COMMISSIONED")
                 (ltu/is-key-value :tags nil)
                 (ltu/is-key-value (partial mapv #(dissoc % :id))
-                                  :coe-list [{:coe-type "swarm"}
+                                  :coe-list [{:coe-type "docker"}
                                              {:coe-type "kubernetes"}]))
 
             ;; check the services again
@@ -728,15 +728,15 @@
                 (request commission
                          :request-method :post
                          :body (j/write-value-as-string {:swarm-token-worker  "abc"
-                                                :swarm-token-manager "def"
-                                                :swarm-client-key    "key-bad"
-                                                :swarm-client-cert   "cert-bad"
-                                                :swarm-client-ca     "ca-bad"
-                                                :swarm-endpoint      "https://swarm.example.com"
-                                                :minio-access-key    "access"
-                                                :minio-secret-key    "secret"
-                                                :minio-endpoint      "https://minio.example.com"
-                                                :capabilities        []}))
+                                                         :swarm-token-manager "def"
+                                                         :swarm-client-key    "key-bad"
+                                                         :swarm-client-cert   "cert-bad"
+                                                         :swarm-client-ca     "ca-bad"
+                                                         :swarm-endpoint      "https://swarm.example.com"
+                                                         :minio-access-key    "access"
+                                                         :minio-secret-key    "secret"
+                                                         :minio-endpoint      "https://minio.example.com"
+                                                         :capabilities        []}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -937,19 +937,19 @@
               (request commission
                        :request-method :post
                        :body (j/write-value-as-string {:cluster-worker-id      "xyz"
-                                              :swarm-token-worker     "abc"
-                                              :swarm-token-manager    "def"
-                                              :swarm-client-key       "key"
-                                              :swarm-client-cert      "cert"
-                                              :swarm-client-ca        "ca"
-                                              :swarm-endpoint         "https://swarm.example.com"
-                                              :minio-access-key       "access"
-                                              :minio-secret-key       "secret"
-                                              :minio-endpoint         "https://minio.example.com"
-                                              :kubernetes-client-key  "key"
-                                              :kubernetes-client-cert "cert"
-                                              :kubernetes-client-ca   "ca"
-                                              :kubernetes-endpoint    "https://k8s.example.com"}))
+                                                       :swarm-token-worker     "abc"
+                                                       :swarm-token-manager    "def"
+                                                       :swarm-client-key       "key"
+                                                       :swarm-client-cert      "cert"
+                                                       :swarm-client-ca        "ca"
+                                                       :swarm-endpoint         "https://swarm.example.com"
+                                                       :minio-access-key       "access"
+                                                       :minio-secret-key       "secret"
+                                                       :minio-endpoint         "https://minio.example.com"
+                                                       :kubernetes-client-key  "key"
+                                                       :kubernetes-client-cert "cert"
+                                                       :kubernetes-client-ca   "ca"
+                                                       :kubernetes-endpoint    "https://k8s.example.com"}))
               (ltu/body->edn)
               (ltu/is-status 200))
 
@@ -1085,7 +1085,7 @@
             (request base-uri
                      :request-method :post
                      :body (j/write-value-as-string (assoc valid-nuvlabox
-                                             :vpn-server-id "infrastructure-service/fake")))
+                                                      :vpn-server-id "infrastructure-service/fake")))
             (ltu/body->edn)
             (ltu/is-status 404)))
 
@@ -1437,7 +1437,7 @@
             (request nuvlabox-url
                      :request-method :put
                      :body (j/write-value-as-string {:state                   "COMMISSIONED"
-                                            :nuvlabox-engine-version "1.0.0"}))
+                                                     :nuvlabox-engine-version "1.0.0"}))
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-operation-absent utils/action-coe-resource-actions)))
@@ -2151,9 +2151,9 @@
                                   (request commission
                                            :request-method :post
                                            :body (j/write-value-as-string {:swarm-endpoint    "http://foo"
-                                                                  :swarm-client-key  "key"
-                                                                  :swarm-client-cert "cert"
-                                                                  :swarm-client-ca   "ca"}))
+                                                                           :swarm-client-key  "key"
+                                                                           :swarm-client-cert "cert"
+                                                                           :swarm-client-ca   "ca"}))
                                   (ltu/body->edn)
                                   (ltu/is-status 200))
           swarm-credential-id (-> session-nuvlabox
@@ -2185,13 +2185,13 @@
           (ltu/is-status 200))
 
       (testing "deployment nuvlabox name was updated accordingly to the new name"
-       (-> session-owner
-           (request (str p/service-context dep-2-id)
-                    :request-method :put
-                    :body (j/write-value-as-string {:parent swarm-credential-id}))
-           (ltu/body->edn)
-           (ltu/is-status 200)
-           (ltu/is-key-value :nuvlabox-name "new-name")))
+        (-> session-owner
+            (request (str p/service-context dep-2-id)
+                     :request-method :put
+                     :body (j/write-value-as-string {:parent swarm-credential-id}))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :nuvlabox-name "new-name")))
 
       (-> session-owner
           (request (str p/service-context dep-1-id))
@@ -2245,7 +2245,7 @@
           (request endpoint
                    :request-method :patch
                    :body (j/write-value-as-string (cond-> {:doc {:tags tags}}
-                                                 filter (assoc :filter filter))))
+                                                          filter (assoc :filter filter))))
           (ltu/is-status 200))
       (run!
         (fn [url]
