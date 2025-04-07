@@ -2,6 +2,13 @@
 
 ## Released
 
+## [6.15.1](https://github.com/nuvla/api-server/compare/6.15.0...6.15.1) (2025-04-07)
+
+
+### Bug Fixes
+
+* **NuvlaEdge:** Commission coe-list bugfix ([e5ea24e](https://github.com/nuvla/api-server/commit/e5ea24ea309d46d0abb6b81d5203d6e4dc410f83))
+
 ## [6.15.0](https://github.com/nuvla/api-server/compare/6.14.0...6.15.0) (2025-02-19)
 
 
