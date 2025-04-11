@@ -1,11 +1,13 @@
 (ns com.sixsq.nuvla.server.resources.email.sending
   (:require
+    [clj-http.client :as http]
     [clojure.java.io :as io]
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [com.sixsq.nuvla.server.util.response :as r]
     [java-time :as t]
+    [jsonista.core :as j]
     [postal.core :as postal]
     [selmer.parser :as tmpl]))
 
@@ -13,17 +15,89 @@
 (def trial-html (slurp (io/resource "sixsq/nuvla/html-template/trial.html")))
 (def trial-txt (slurp (io/resource "sixsq/nuvla/txt-template/trial.txt")))
 
-(defn extract-smtp-cfg
-  "Extracts the SMTP configuration from the server's configuration resource.
-   Note that this assumes a standard URL for the configuration resource."
-  [nuvla-config]
-  (when-let [{:keys [smtp-host smtp-port smtp-ssl
-                     smtp-username smtp-password]} nuvla-config]
+(def access-token-response! (atom nil))
+(def xoauth2-config! (atom nil))
+(def xoauth2-future! (atom nil))
+
+(defn post-google-refresh-access-token
+  []
+  (let [{:keys [client-id client-secret refresh-token]} @xoauth2-config!]
+    (try
+      (let [response (-> (http/post "https://accounts.google.com/o/oauth2/token"
+                                    {:headers     {"Accept" "application/json"}
+                                     :form-params {:client_id     client-id
+                                                   :client_secret client-secret
+                                                   :refresh_token refresh-token
+                                                   :grant_type    "refresh_token"}})
+                         :body
+                         j/read-value)]
+        (log/info "Refresh SMTP google access token response: "
+                  (update response "access_token" #(str (subs % 0 3) "[...]")))
+        (reset! access-token-response! response))
+      (catch Exception ex
+        (log/error "SMTP GOOGLE XOAUTH2 failed to refresh token!" (ex-data ex))))))
+
+
+(defn next-refresh-token
+  [expires_in]
+  (let [expires-in-ms    (some-> expires_in (* 10000))
+        before-expire-ms (when expires-in-ms
+                           (max (- expires-in-ms 30000) 0))]
+    (or before-expire-ms 10000)))
+
+(defn schedule-refresh-token-before-expiry
+  []
+  (let [{:strs [expires_in]} access-token-response!
+        next-refresh-ms (next-refresh-token expires_in)]
+    (reset!
+      xoauth2-future!
+      (future
+        (while true
+          (log/debug "SMTP xoauth2 will be automatically refreshed in:" next-refresh-ms)
+          (^[long] Thread/sleep next-refresh-ms)
+          (post-google-refresh-access-token))))))
+
+(defn refresh-token-when-no-access-token-or-on-config-change!
+  [smtp-xoauth-config]
+  (when (or (not @access-token-response!)
+            (not= @xoauth2-config! smtp-xoauth-config))
+    (reset! xoauth2-config! smtp-xoauth-config)
+    (when @xoauth2-future! (future-cancel @xoauth2-config!))
+    (post-google-refresh-access-token)
+    (schedule-refresh-token-before-expiry)))
+
+(defn get-google-access-token
+  [{:keys [client-id client-secret refresh-token] :as smtp-xoauth-config}]
+  (if (and client-id client-secret refresh-token)
+    (do
+      (refresh-token-when-no-access-token-or-on-config-change! smtp-xoauth-config)
+      (get @access-token-response! "access_token"))
+    (log/error "SMTP xoauth2 config must have 'client-id client-secret refresh-token' defined!")))
+
+(defmulti extract-smtp-cfg :smtp-xoauth2)
+
+(defmethod extract-smtp-cfg :default
+  [{:keys [smtp-host smtp-port smtp-ssl
+           smtp-username smtp-password smtp-xoauth2] :as nuvla-config}]
+  (if (and nuvla-config (nil? smtp-xoauth2))
     {:host smtp-host
      :port smtp-port
      :ssl  smtp-ssl
      :user smtp-username
-     :pass smtp-password}))
+     :pass smtp-password}
+    (when (some? smtp-xoauth2)
+      (log/error "smtp xoauth2 not found!"))))
+
+(defmethod extract-smtp-cfg "google"
+  [nuvla-config]
+  (when-let [{:keys [smtp-host smtp-port smtp-ssl
+                     smtp-username smtp-xoauth-config]} nuvla-config]
+    {:host            smtp-host
+     :port            smtp-port
+     :ssl             smtp-ssl
+     :user            smtp-username
+     :pass            (get-google-access-token smtp-xoauth-config)
+     :auth.mechanisms "XOAUTH2"}))
 
 (defn dispatch
   [nuvla-config email-data]

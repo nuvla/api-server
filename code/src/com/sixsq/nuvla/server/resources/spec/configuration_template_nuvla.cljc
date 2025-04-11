@@ -63,6 +63,33 @@
 
              :json-schema/order 25)))
 
+(s/def ::smtp-xoauth2
+  (-> (st/spec #{"google"})
+      (assoc :name "smtp-xoauth2"
+             :json-schema/type "string"
+             :json-schema/display-name "xoauth provider"
+             :json-schema/description "enable XOAUTH2 authorization mechanism")))
+
+(s/def ::smtp-xoauth2-config
+  (-> (st/spec (s/map-of keyword? string?))
+      (assoc :name "smtp-xoauth2-options"
+             :json-schema/type "map"
+             :json-schema/description "SMTP XOAUTH 2 options"
+             :json-schema/indexed false)))
+;
+;(s/def ::smtp-xoauth2-client-secret
+;  (-> (st/spec boolean?)
+;      (assoc :name "smtp-xoauth2"
+;             :json-schema/type "boolean"
+;             :json-schema/display-name "enable XOAUTH2?"
+;             :json-schema/description "enable XOAUTH2 authorization mechanism")))
+;
+;(s/def ::smtp-xoauth2-refresh-token
+;  (-> (st/spec boolean?)
+;      (assoc :name "smtp-xoauth2"
+;             :json-schema/type "boolean"
+;             :json-schema/display-name "enable XOAUTH2?"
+;             :json-schema/description "enable XOAUTH2 authorization mechanism")))
 
 (s/def ::support-email
   (-> (st/spec ::core/email)
@@ -133,6 +160,8 @@
             ::smtp-port
             ::smtp-ssl
             ::smtp-debug
+            ::smtp-xoauth2
+            ::smtp-xoauth2-config
             ::support-email
             ::stripe-api-key
             ::stripe-client-id
