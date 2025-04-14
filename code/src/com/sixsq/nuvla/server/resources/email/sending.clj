@@ -62,19 +62,19 @@
         (post-google-refresh-access-token)))))
 
 (defn refresh-token-when-no-access-token-or-on-config-change!
-  [smtp-xoauth-config]
+  [smtp-xoauth2-config]
   (when (or (nil? @access-token-response!)
-            (not= @xoauth2-config! smtp-xoauth-config))
-    (reset! xoauth2-config! smtp-xoauth-config)
+            (not= @xoauth2-config! smtp-xoauth2-config))
+    (reset! xoauth2-config! smtp-xoauth2-config)
     (when @xoauth2-future! (future-cancel @xoauth2-config!))
     (post-google-refresh-access-token)
     (schedule-refresh-token-before-expiry)))
 
 (defn get-google-access-token
-  [{:keys [client-id client-secret refresh-token] :as smtp-xoauth-config}]
+  [{:keys [client-id client-secret refresh-token] :as smtp-xoauth2-config}]
   (if (and client-id client-secret refresh-token)
     (do
-      (refresh-token-when-no-access-token-or-on-config-change! smtp-xoauth-config)
+      (refresh-token-when-no-access-token-or-on-config-change! smtp-xoauth2-config)
       (get @access-token-response! "access_token"))
     (log/error "SMTP xoauth2 config must have 'client-id client-secret refresh-token' defined!")))
 
@@ -95,12 +95,12 @@
 (defmethod extract-smtp-cfg "google"
   [nuvla-config]
   (when-let [{:keys [smtp-host smtp-port smtp-ssl
-                     smtp-username smtp-xoauth-config]} nuvla-config]
+                     smtp-username smtp-xoauth2-config]} nuvla-config]
     {:host            smtp-host
      :port            smtp-port
      :ssl             smtp-ssl
      :user            smtp-username
-     :pass            (get-google-access-token smtp-xoauth-config)
+     :pass            (get-google-access-token smtp-xoauth2-config)
      :auth.mechanisms "XOAUTH2"}))
 
 (defn dispatch
