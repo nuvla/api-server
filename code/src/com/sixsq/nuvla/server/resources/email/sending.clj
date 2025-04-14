@@ -57,7 +57,7 @@
     (future
       (while true
         (let [next-refresh-ms (compute-next-refresh-ms @access-token-response!)]
-          (log/error "SMTP xoauth2 will be automatically refreshed in:" next-refresh-ms)
+          (log/info "SMTP xoauth2 will be automatically refreshed in:" next-refresh-ms)
           (sleep next-refresh-ms))
         (post-google-refresh-access-token)))))
 
