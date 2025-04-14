@@ -76,20 +76,6 @@
              :json-schema/type "map"
              :json-schema/description "SMTP XOAUTH 2 options"
              :json-schema/indexed false)))
-;
-;(s/def ::smtp-xoauth2-client-secret
-;  (-> (st/spec boolean?)
-;      (assoc :name "smtp-xoauth2"
-;             :json-schema/type "boolean"
-;             :json-schema/display-name "enable XOAUTH2?"
-;             :json-schema/description "enable XOAUTH2 authorization mechanism")))
-;
-;(s/def ::smtp-xoauth2-refresh-token
-;  (-> (st/spec boolean?)
-;      (assoc :name "smtp-xoauth2"
-;             :json-schema/type "boolean"
-;             :json-schema/display-name "enable XOAUTH2?"
-;             :json-schema/description "enable XOAUTH2 authorization mechanism")))
 
 (s/def ::support-email
   (-> (st/spec ::core/email)
