@@ -35,31 +35,35 @@
                   (update response "access_token" #(str (subs % 0 3) "[...]")))
         (reset! access-token-response! response))
       (catch Exception ex
+        (reset! access-token-response! nil)
         (log/error "SMTP GOOGLE XOAUTH2 failed to refresh token!" (ex-data ex))))))
 
+(defn compute-next-refresh-ms
+  [access-token-response-value]
+  (-> access-token-response-value
+      (get "expires_in" 0)
+      (* 1000)
+      (- 30000)
+      (max 5000)))
 
-(defn next-refresh-token
-  [expires_in]
-  (let [expires-in-ms    (some-> expires_in (* 10000))
-        before-expire-ms (when expires-in-ms
-                           (max (- expires-in-ms 30000) 0))]
-    (or before-expire-ms 10000)))
+(defn sleep
+  [ms]
+  (^[long] Thread/sleep ms))
 
 (defn schedule-refresh-token-before-expiry
   []
-  (let [{:strs [expires_in]} access-token-response!
-        next-refresh-ms (next-refresh-token expires_in)]
-    (reset!
-      xoauth2-future!
-      (future
-        (while true
-          (log/debug "SMTP xoauth2 will be automatically refreshed in:" next-refresh-ms)
-          (^[long] Thread/sleep next-refresh-ms)
-          (post-google-refresh-access-token))))))
+  (reset!
+    xoauth2-future!
+    (future
+      (while true
+        (let [next-refresh-ms (compute-next-refresh-ms @access-token-response!)]
+          (log/error "SMTP xoauth2 will be automatically refreshed in:" next-refresh-ms)
+          (sleep next-refresh-ms))
+        (post-google-refresh-access-token)))))
 
 (defn refresh-token-when-no-access-token-or-on-config-change!
   [smtp-xoauth-config]
-  (when (or (not @access-token-response!)
+  (when (or (nil? @access-token-response!)
             (not= @xoauth2-config! smtp-xoauth-config))
     (reset! xoauth2-config! smtp-xoauth-config)
     (when @xoauth2-future! (future-cancel @xoauth2-config!))

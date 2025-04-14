@@ -78,4 +78,26 @@
                       (reset! t/access-token-response! {"access_token" "foo-bar"}))]
         (is (= (t/get-google-access-token config) "foo-bar"))))))
 
+(deftest compute-next-refresh-ms
+  (is (= (t/compute-next-refresh-ms {}) 5000))
+  (is (= (t/compute-next-refresh-ms {"expires_in" 1}) 5000))
+  (is (= (t/compute-next-refresh-ms {"expires_in" 30}) 5000))
+  (is (= (t/compute-next-refresh-ms {"expires_in" 36}) 6000))
+  (is (= (t/compute-next-refresh-ms {"expires_in" 3600}) 3570000)))
 
+(deftest schedule-refresh-token-before-expiry
+  (let [sleep-args            (atom [])
+        elements-to-check     3
+        wait-for-two-elements #(let [f (future
+                                         (while (< (count @sleep-args) elements-to-check)
+                                           (Thread/sleep 10)))]
+                                 (deref f 2000 nil))]
+    (with-redefs [t/access-token-response!           (atom nil)
+                  t/xoauth2-future!                  (atom nil)
+                  t/sleep                            #(swap! sleep-args conj %)
+                  t/post-google-refresh-access-token #(reset! t/access-token-response! {"expires_in" 60})]
+      (t/schedule-refresh-token-before-expiry)
+      (is (some? @t/xoauth2-future!))
+      (wait-for-two-elements)
+      (future-cancel @t/xoauth2-future!)
+      (is (= (take elements-to-check @sleep-args) [5000 30000 30000])))))
