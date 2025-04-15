@@ -60,15 +60,6 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
         id: project_version
 
-      - name: Debug issue with lifecycletest deployment
-        working-directory: code
-        shell: bash
-        run:  |
-          export JAVA_OPTS="-Xms6g -Xmx6g"
-          export ES_JAVA_OPTS="-Xms6g -Xmx6g"
-          lein test
-
-
       - name: Setup Sonar Scanner
         uses: warchant/setup-sonar-scanner@v7
         with:
