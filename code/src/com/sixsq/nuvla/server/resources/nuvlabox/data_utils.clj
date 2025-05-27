@@ -131,7 +131,7 @@
     (mapv (fn [data] {:power-consumption (select-keys data [:metric-name :energy-consumption :unit])}) power-consumption)))
 
 (defn nuvlabox-status->bulk-insert-metrics-request-body
-  [{:keys [parent current-time] :as nuvlabox-status} from-telemetry]
+  [{:keys [parent] :as nuvlabox-status} from-telemetry]
   (let [nb (crud/retrieve-by-id-as-admin parent)]
     (->> [:cpu :ram :disk :network :power-consumption]
          (map (fn [metric]
@@ -139,7 +139,7 @@
                      (map #(merge
                              {:nuvlaedge-id parent
                               :metric       (name metric)
-                              :timestamp    current-time}
+                              :timestamp    (time/now-str)}
                              %)))))
          (apply concat))))
 
