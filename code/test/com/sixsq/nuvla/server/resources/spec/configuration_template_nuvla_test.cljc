@@ -27,6 +27,8 @@
                    :smtp-port                   465
                    :smtp-ssl                    true
                    :smtp-debug                  true
+                   :smtp-xoauth2                "google"
+                   :smtp-xoauth2-config         {}
 
                    :support-email               "admin@example.org"
 
@@ -46,5 +48,5 @@
     ;; optional keys
     (doseq [k #{:smtp-username :smtp-password :smtp-host :smtp-port :smtp-ssl :smtp-debug
                 :support-email :stripe-api-key :external-vulnerabilities-db :conditions-url
-                :email-header-img-url :authorized-redirect-urls}]
+                :email-header-img-url :authorized-redirect-urls :smtp-xoauth2}]
       (stu/is-valid ::ct-nuvla/schema (dissoc cfg k)))))
