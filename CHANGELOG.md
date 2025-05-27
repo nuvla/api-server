@@ -2,6 +2,13 @@
 
 ## Released
 
+## [6.15.2](https://github.com/nuvla/api-server/compare/6.15.1...6.15.2) (2025-05-27)
+
+
+### Bug Fixes
+
+* **NuvlaEdge metrics:** NE should be able to register metrics even if NE system time is wrong ([#1012](https://github.com/nuvla/api-server/issues/1012)) ([d995245](https://github.com/nuvla/api-server/commit/d9952454d03f6d6174e25f3641e97b4a4fbe1a12))
+
 ## [6.15.1](https://github.com/nuvla/api-server/compare/6.15.0...6.15.1) (2025-04-07)
 
 
