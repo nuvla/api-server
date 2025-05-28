@@ -118,10 +118,20 @@
 (s/def :coe-resource-actions/action #{"pull" "remove"})
 (s/def :coe-resource-actions/id string?)
 
+(s/def ::coe-resource-credential
+  (-> (st/spec ::credential-href)
+      (assoc :name "coe-resource-credential"
+             :json-schema/type "string"
+             :json-schema/display-name "COE resource credential"
+             :json-schema/description "identifier of the associated coe credential resource")))
+
+(s/def :coe-resource-actions/credential ::coe-resource-credential)
+
 (s/def :coe-resource-actions/action-info
   (su/only-keys-maps {:req-un [:coe-resource-actions/resource
                                :coe-resource-actions/action
-                               :coe-resource-actions/id]}))
+                               :coe-resource-actions/id]
+                      :opt-un [:coe-resource-actions/credential]}))
 
 (s/def :coe-resource-actions/docker (s/coll-of :coe-resource-actions/action-info))
 
