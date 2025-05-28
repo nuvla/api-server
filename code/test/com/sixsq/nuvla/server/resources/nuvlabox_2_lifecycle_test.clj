@@ -11,7 +11,10 @@
     [com.sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [com.sixsq.nuvla.server.resources.configuration-template :as configuration-tpl]
     [com.sixsq.nuvla.server.resources.configuration-template-vpn-api :as configuration-tpl-vpn]
+    [com.sixsq.nuvla.server.resources.credential :as cred]
     [com.sixsq.nuvla.server.resources.credential :as credential]
+    [com.sixsq.nuvla.server.resources.credential-template :as cred-tpl]
+    [com.sixsq.nuvla.server.resources.credential-template-infrastructure-service-registry :as cred-tpl-registry]
     [com.sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
     [com.sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [com.sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
@@ -1467,7 +1470,62 @@
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-key-value :action "coe_resource_actions")
-            (ltu/is-key-value :payload "{\"docker\":[{\"action\":\"remove\",\"id\":\"xyz\",\"resource\":\"image\"}]}"))))))
+            (ltu/is-key-value :payload "{\"docker\":[{\"action\":\"remove\",\"id\":\"xyz\",\"resource\":\"image\"}]}")))
+
+      (testing "coe resource action with credential"
+        (let [cred-uri        (str p/service-context credential/resource-type)
+              cred-acl        {:owners   ["group/nuvla-admin"]
+                               :view-acl ["user/jane"]}
+              tpl-href        (str cred-tpl/resource-type "/" cred-tpl-registry/method)
+              cred-body       {:name        "cred-name"
+                               :description "cred-desc"
+                               :template    {:href     tpl-href
+                                             :parent   "infrastructure-service/service-1"
+                                             :username "username"
+                                             :password "password"}}
+              admin-cred-id   (-> session-admin
+                                  (request cred-uri
+                                           :request-method :post
+                                           :body (j/write-value-as-string cred-body))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 201)
+                                  (ltu/body-resource-id))
+              cred-id         (-> session-owner
+                                  (request cred-uri
+                                           :request-method :post
+                                           :body (j/write-value-as-string cred-body))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 201)
+                                  (ltu/body-resource-id))
+              coe-actions-url (-> session-owner
+                                  (request nuvlabox-url)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/is-operation-present utils/action-coe-resource-actions)
+                                  (ltu/get-op-url utils/action-coe-resource-actions))]
+          (testing "User must have read rights onn credentials"
+            (-> session-owner
+                (request coe-actions-url
+                         :request-method :post
+                         :body (j/write-value-as-string {:docker [{:action "remove" :id "xyz" :resource "image" :credential admin-cred-id}]}))
+                (ltu/body->edn)
+                (ltu/is-status 403)))
+          (testing "Job created successfully for coe resource actions with credentials"
+            (let [job-url (-> session-owner
+                              (request coe-actions-url
+                                       :request-method :post
+                                       :body (j/write-value-as-string {:docker [{:action "remove" :id "xyz" :resource "image" :credential cred-id}]}))
+                              (ltu/body->edn)
+                              (ltu/is-status 202)
+                              (ltu/location-url))]
+              (-> session-admin
+                  (request job-url)
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/is-key-value :action "coe_resource_actions")
+                  (ltu/is-key-value :payload (str "{\"docker\":[{\"action\":\"remove\",\"id\":\"xyz\",\"resource\":\"image\","
+                                                  "\"credential\":\"" cred-id "\""
+                                                  "}]}"))))))))))
 
 
 (deftest create-activate-assemble-playbooks-emergency-lifecycle
