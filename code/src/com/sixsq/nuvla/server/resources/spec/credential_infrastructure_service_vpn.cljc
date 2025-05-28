@@ -22,7 +22,7 @@
              :json-schema/description "vpn intermediate ca certificates"
              :json-schema/indexed false)))
 
-
+;; should be encrypted
 (s/def ::vpn-certificate
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "certificate"

@@ -29,7 +29,7 @@ Spec for credentials of Container Orchestration Engine (COE).
              :json-schema/order 41
              :json-schema/editable false)))
 
-
+;; should be encrypted
 (s/def ::key
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "key"

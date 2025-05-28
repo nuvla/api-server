@@ -14,6 +14,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
     [com.sixsq.nuvla.server.resources.resource-metadata :as md]
     [com.sixsq.nuvla.server.resources.spec.credential :as credential]
     [com.sixsq.nuvla.server.util.log :as logu]
+    [com.sixsq.nuvla.server.resources.credential.encrypt-utils :as eu]
     [com.sixsq.nuvla.server.util.metadata :as gen-md]
     [com.sixsq.nuvla.server.util.response :as r]
     [com.sixsq.nuvla.server.util.time :as time]))
@@ -244,8 +245,10 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 
         response   (-> request
                        (assoc :body (merge body desc-attrs))
+                       eu/encrypt-body-secrets
                        add-impl
-                       (update-in [:body] merge create-resp))
+                       (update-in [:body] merge create-resp)
+                       eu/decrypt-body-secrets)
 
         id         (-> response :body :resource-id)
         cred       (assoc body :id id)]
@@ -284,12 +287,14 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 
 (def edit-impl (std-crud/edit-fn resource-type))
 
-
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params body :body :as request}]
   (let [subtype (-> (str resource-type "/" uuid)
                     crud/retrieve-by-id-as-admin
                     :subtype)]
+    ;; get encryption key
+    ;; generate nonce
+    ;; encrypt stored password
     (-> body
         (assoc :subtype subtype)
         (dissoc :last-check)
@@ -311,7 +316,8 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 (defmethod crud/retrieve resource-type
   [request]
-  (retrieve-impl request))
+  (retrieve-impl request)
+  eu/decrypt-body-secrets)
 
 
 (defmethod crud/delete resource-type

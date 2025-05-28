@@ -17,6 +17,7 @@
              :json-schema/order 30)))
 
 
+;; should be encrypted
 (s/def ::token
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "token"
