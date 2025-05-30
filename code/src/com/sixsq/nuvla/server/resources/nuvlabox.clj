@@ -5,6 +5,7 @@ all subtypes of this resource. Versioned subclasses define the attributes for a
 particular NuvlaBox release.
 "
   (:require
+    [cheshire.core :as json]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.auth.acl-resource :as acl-resource]
@@ -713,6 +714,23 @@ particular NuvlaBox release.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
+(defn get-context-coe-resource-actions
+  [{:keys [target-resource payload] :as _job}]
+  (let [nuvlabox-owner-req (some-> target-resource :href crud/retrieve-by-id-as-admin auth/get-owner-request)
+        docker-actions     (some-> payload (j/read-value j/keyword-keys-object-mapper) :docker)
+        credential-ids     (some->> docker-actions (keep :credential) set)
+        credentials        (for [credential-id credential-ids
+                                 :let [credential (some-> credential-id crud/retrieve-by-id-as-admin)]
+                                 :when credential]
+                             (do
+                               (prn :cred credential :owner nuvlabox-owner-req)
+                               (acl-resource/throw-cannot-view credential nuvlabox-owner-req)
+                               credential))]
+    (apply job-interface/get-context->response credentials)))
+
+(defmethod job-interface/get-context ["nuvlabox" "coe_resource_actions"]
+  [resource]
+  (get-context-coe-resource-actions resource))
 
 ;;
 ;; Cluster action

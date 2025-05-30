@@ -1477,12 +1477,14 @@
               cred-acl        {:owners   ["group/nuvla-admin"]
                                :view-acl ["user/jane"]}
               tpl-href        (str cred-tpl/resource-type "/" cred-tpl-registry/method)
+              username        "username"
+              password        "password"
               cred-body       {:name        "cred-name"
                                :description "cred-desc"
                                :template    {:href     tpl-href
                                              :parent   "infrastructure-service/service-1"
-                                             :username "username"
-                                             :password "password"}}
+                                             :username username
+                                             :password password}}
               admin-cred-id   (-> session-admin
                                   (request cred-uri
                                            :request-method :post
@@ -1511,21 +1513,63 @@
                 (ltu/body->edn)
                 (ltu/is-status 403)))
           (testing "Job created successfully for coe resource actions with credentials"
-            (let [job-url (-> session-owner
-                              (request coe-actions-url
-                                       :request-method :post
-                                       :body (j/write-value-as-string {:docker [{:action "remove" :id "xyz" :resource "image" :credential cred-id}]}))
-                              (ltu/body->edn)
-                              (ltu/is-status 202)
-                              (ltu/location-url))]
+            (let [job-url          (-> session-owner
+                                       (request coe-actions-url
+                                                :request-method :post
+                                                :body (j/write-value-as-string {:docker [{:action "remove" :id "xyz" :resource "image" :credential cred-id}]}))
+                                       (ltu/body->edn)
+                                       (ltu/is-status 202)
+                                       (ltu/location-url))
+                  job-resp         (-> session-admin
+                                       (request job-url)
+                                       (ltu/body->edn)
+                                       (ltu/is-status 200)
+                                       (ltu/is-key-value :action "coe_resource_actions")
+                                       (ltu/is-key-value :payload (str "{\"docker\":[{\"action\":\"remove\",\"id\":\"xyz\",\"resource\":\"image\","
+                                                                       "\"credential\":\"" cred-id "\""
+                                                                       "}]}")))
+                  get-context-url  (-> job-resp
+                                       (ltu/is-operation-present :get-context)
+                                       (ltu/get-op-url :get-context))
+                  get-context-body (-> session-admin
+                                       (request get-context-url)
+                                       (ltu/body->edn)
+                                       (ltu/is-status 200)
+                                       (ltu/body))]
+              (is (= (keyword cred-id) (ffirst get-context-body)))
+              (is (= username (-> get-context-body first second :username)))
+              (is (= password (-> get-context-body first second :password)))))
+          (testing "get-context must fail if nuvlabox owner does not have access to credentials in payload"
+            (let [admin-cred-id   (-> session-admin
+                                      (request cred-uri
+                                               :request-method :post
+                                               :body (j/write-value-as-string cred-body))
+                                      (ltu/body->edn)
+                                      (ltu/is-status 201)
+                                      (ltu/body-resource-id))
+                  job-url         (-> session-admin
+                                      (request coe-actions-url
+                                               :request-method :post
+                                               :body (j/write-value-as-string {:docker [{:action "remove" :id "xyz" :resource "image" :credential admin-cred-id}]}))
+                                      (ltu/body->edn)
+                                      (ltu/is-status 202)
+                                      (ltu/location-url))
+                  job-resp        (-> session-admin
+                                      (request job-url)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      (ltu/is-key-value :action "coe_resource_actions")
+                                      (ltu/is-key-value :payload (str "{\"docker\":[{\"action\":\"remove\",\"id\":\"xyz\",\"resource\":\"image\","
+                                                                      "\"credential\":\"" admin-cred-id "\""
+                                                                      "}]}")))
+                  get-context-url (-> job-resp
+                                      (ltu/is-operation-present :get-context)
+                                      (ltu/get-op-url :get-context))]
               (-> session-admin
-                  (request job-url)
+                  (request get-context-url)
                   (ltu/body->edn)
-                  (ltu/is-status 200)
-                  (ltu/is-key-value :action "coe_resource_actions")
-                  (ltu/is-key-value :payload (str "{\"docker\":[{\"action\":\"remove\",\"id\":\"xyz\",\"resource\":\"image\","
-                                                  "\"credential\":\"" cred-id "\""
-                                                  "}]}"))))))))))
+                  (ltu/is-status 403)
+                  (ltu/is-key-value :message (str "invalid credentials for '" admin-cred-id "'"))))))))))
 
 
 (deftest create-activate-assemble-playbooks-emergency-lifecycle
