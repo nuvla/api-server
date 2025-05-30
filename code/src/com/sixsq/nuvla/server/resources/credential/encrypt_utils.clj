@@ -36,10 +36,10 @@
       codecs/bytes->str))
 
 (defn encrypt-request-body-secrets
-  [{:keys [body] :as request}]
+  [{{:keys [:initialization-vector] :as body} :body :as request}]
   (if ENCRYPTION-KEY
     (let [secrets-entries   (select-keys body secret-keys)
-          iv                (generate-iv)
+          iv                (or (some-> initialization-vector codecs/b64->bytes) (generate-iv))
           encrypted-entries (reduce-kv (fn [acc k v]
                                          (assoc acc k (str encrypted-starter-indicator (encrypt v ENCRYPTION-KEY iv))))
                                        {}

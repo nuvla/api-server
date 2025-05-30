@@ -247,8 +247,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
                        (assoc :body (merge body desc-attrs))
                        eu/encrypt-request-body-secrets
                        add-impl
-                       (update-in [:body] merge create-resp)
-                       eu/decrypt-response-body-secrets)
+                       (update-in [:body] merge create-resp))
 
         id         (-> response :body :resource-id)
         cred       (assoc body :id id)]
@@ -289,18 +288,16 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params body :body :as request}]
-  (let [subtype (-> (str resource-type "/" uuid)
-                    crud/retrieve-by-id-as-admin
-                    :subtype)]
-    ;; get encryption key
-    ;; generate nonce
-    ;; encrypt stored password
+  (let [cred-subtype-iv (-> (str resource-type "/" uuid)
+                            crud/retrieve-by-id-as-admin
+                            (select-keys [:subtype :initialization-vector]))]
     (-> body
-        (assoc :subtype subtype)
+        (merge cred-subtype-iv)
         (dissoc :last-check)
         (cond-> (:status body) (assoc :last-check (time/now-str)))
         (special-edit request)
         (->> (assoc request :body)
+             eu/encrypt-request-body-secrets
              (edit-impl)))))
 
 
@@ -316,8 +313,8 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 (defmethod crud/retrieve resource-type
   [request]
-  (retrieve-impl request)
-  eu/decrypt-response-body-secrets)
+  (-> (retrieve-impl request)
+      eu/decrypt-response-body-secrets))
 
 
 (defmethod crud/delete resource-type
