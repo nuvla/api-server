@@ -14,6 +14,7 @@
              :json-schema/order 20)))
 
 
+;; should be encrypted
 (s/def ::secret-key
   (-> (st/spec string?)
       (assoc :name "password"

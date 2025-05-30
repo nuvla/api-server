@@ -14,6 +14,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
     [com.sixsq.nuvla.server.resources.resource-metadata :as md]
     [com.sixsq.nuvla.server.resources.spec.credential :as credential]
     [com.sixsq.nuvla.server.util.log :as logu]
+    [com.sixsq.nuvla.server.resources.credential.encrypt-utils :as eu]
     [com.sixsq.nuvla.server.util.metadata :as gen-md]
     [com.sixsq.nuvla.server.util.response :as r]
     [com.sixsq.nuvla.server.util.time :as time]))
@@ -244,6 +245,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 
         response   (-> request
                        (assoc :body (merge body desc-attrs))
+                       eu/encrypt-request-body-secrets
                        add-impl
                        (update-in [:body] merge create-resp))
 
@@ -284,18 +286,18 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 
 (def edit-impl (std-crud/edit-fn resource-type))
 
-
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params body :body :as request}]
-  (let [subtype (-> (str resource-type "/" uuid)
-                    crud/retrieve-by-id-as-admin
-                    :subtype)]
+  (let [cred-subtype-iv (-> (str resource-type "/" uuid)
+                            crud/retrieve-by-id-as-admin
+                            (select-keys [:subtype :initialization-vector]))]
     (-> body
-        (assoc :subtype subtype)
+        (merge cred-subtype-iv)
         (dissoc :last-check)
         (cond-> (:status body) (assoc :last-check (time/now-str)))
         (special-edit request)
         (->> (assoc request :body)
+             eu/encrypt-request-body-secrets
              (edit-impl)))))
 
 
@@ -311,7 +313,8 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 (defmethod crud/retrieve resource-type
   [request]
-  (retrieve-impl request))
+  (-> (retrieve-impl request)
+      eu/decrypt-response-body-secrets))
 
 
 (defmethod crud/delete resource-type
