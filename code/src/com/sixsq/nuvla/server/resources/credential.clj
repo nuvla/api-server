@@ -245,10 +245,10 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 
         response   (-> request
                        (assoc :body (merge body desc-attrs))
-                       eu/encrypt-body-secrets
+                       eu/encrypt-request-body-secrets
                        add-impl
                        (update-in [:body] merge create-resp)
-                       eu/decrypt-body-secrets)
+                       eu/decrypt-response-body-secrets)
 
         id         (-> response :body :resource-id)
         cred       (assoc body :id id)]
@@ -317,7 +317,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 (defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request)
-  eu/decrypt-body-secrets)
+  eu/decrypt-response-body-secrets)
 
 
 (defmethod crud/delete resource-type
