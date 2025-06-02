@@ -16,7 +16,6 @@
 
              :json-schema/order 20)))
 
-;; should be encrypted
 (s/def ::private-key
   (-> (st/spec ::core/nonblank-string)
     (assoc :name "private-key"

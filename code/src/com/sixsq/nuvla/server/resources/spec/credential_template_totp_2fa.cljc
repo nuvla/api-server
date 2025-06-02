@@ -6,7 +6,6 @@
     [com.sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
-;;should be encrypted
 (s/def ::secret
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "secret"

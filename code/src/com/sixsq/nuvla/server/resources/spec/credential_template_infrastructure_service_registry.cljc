@@ -15,7 +15,6 @@
              :json-schema/order 21
              :json-schema/sensitive true)))
 
-;; should be encrypted
 (s/def ::password
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "password"

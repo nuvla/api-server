@@ -7,7 +7,7 @@
             [environ.core :as env]))
 
 (def encrypted-starter-indicator "***ENCRYPTED***")
-(def secret-keys [:secret :password])
+(def secret-keys [:secret :password :vpn-certificate :key :private-key :token :secret-key])
 
 (defn throw-invalid-credential-encryption-key
   [key]
