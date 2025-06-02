@@ -1474,8 +1474,6 @@
 
       (testing "coe resource action with credential"
         (let [cred-uri        (str p/service-context credential/resource-type)
-              cred-acl        {:owners   ["group/nuvla-admin"]
-                               :view-acl ["user/jane"]}
               tpl-href        (str cred-tpl/resource-type "/" cred-tpl-registry/method)
               username        "username"
               password        "password"
@@ -1505,7 +1503,7 @@
                                   (ltu/is-status 200)
                                   (ltu/is-operation-present utils/action-coe-resource-actions)
                                   (ltu/get-op-url utils/action-coe-resource-actions))]
-          (testing "User must have read rights onn credentials"
+          (testing "User must have read rights on credentials"
             (-> session-owner
                 (request coe-actions-url
                          :request-method :post

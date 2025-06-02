@@ -723,7 +723,6 @@ particular NuvlaBox release.
                                  :let [credential (some-> credential-id crud/retrieve-by-id-as-admin)]
                                  :when credential]
                              (do
-                               (prn :cred credential :owner nuvlabox-owner-req)
                                (acl-resource/throw-cannot-view credential nuvlabox-owner-req)
                                credential))]
     (apply job-interface/get-context->response credentials)))
