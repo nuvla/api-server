@@ -20,7 +20,7 @@
 (def response-encrypted-body-test {:body encrypted-credential})
 
 (deftest throw-invalid-credential-encryption-key
-  (is (thrown-with-msg? Exception #"Credential encryption key size must be bigger than 31 characters!" (t/throw-invalid-credential-encryption-key "tooshort")))
+  (is (= (t/throw-invalid-credential-encryption-key "tooshort`") nil))
   (let [k "123456789012345678901234567890ab"]
     (is (= (t/throw-invalid-credential-encryption-key k) k))))
 

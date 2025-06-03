@@ -4,6 +4,7 @@
             [buddy.core.hash :as hash]
             [buddy.core.nonce :as nonce]
             [clojure.string :as str]
+            [clojure.tools.logging :as log]
             [environ.core :as env]))
 
 (def encrypted-starter-indicator "***ENCRYPTED***")
@@ -13,7 +14,7 @@
   [key]
   (if (> (count key) 31)
     key
-    (throw (ex-info "Credential encryption key size must be bigger than 31 characters!" {}))))
+    (log/error "Credential encryption key size must be bigger than 31 characters!")))
 
 (defonce ENCRYPTION-KEY (some-> (env/env :credential-encryption-key) throw-invalid-credential-encryption-key hash/sha256))
 
@@ -51,14 +52,14 @@
   [{:keys [initialization-vector] :as credential}]
   (if initialization-vector
     (let [iv                (codecs/b64->bytes initialization-vector)
-         secrets-entries   (->> (select-keys credential secret-keys)
-                                (filter (fn [[_ v]] (str/starts-with? v encrypted-starter-indicator)))
-                                (into {}))
-         decrypted-entries (reduce-kv (fn [acc k v]
-                                        (assoc acc k (decrypt (subs v (count "***ENCRYPTED***")) ENCRYPTION-KEY iv)))
-                                      {}
-                                      secrets-entries)]
-     (merge credential decrypted-entries))
+          secrets-entries   (->> (select-keys credential secret-keys)
+                                 (filter (fn [[_ v]] (str/starts-with? v encrypted-starter-indicator)))
+                                 (into {}))
+          decrypted-entries (reduce-kv (fn [acc k v]
+                                         (assoc acc k (decrypt (subs v (count "***ENCRYPTED***")) ENCRYPTION-KEY iv)))
+                                       {}
+                                       secrets-entries)]
+      (merge credential decrypted-entries))
     credential))
 
 (defn decrypt-response-body-secrets
