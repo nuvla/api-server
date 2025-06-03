@@ -66,7 +66,7 @@
   (when (or (nil? @access-token-response!)
             (not= @xoauth2-config! smtp-xoauth2-config))
     (reset! xoauth2-config! smtp-xoauth2-config)
-    (when @xoauth2-future! (future-cancel @xoauth2-config!))
+    (when @xoauth2-future! (future-cancel @xoauth2-future!))
     (post-google-refresh-access-token)
     (schedule-refresh-token-before-expiry)))
 
