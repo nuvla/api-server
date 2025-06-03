@@ -2,6 +2,18 @@
 
 ## Released
 
+## [6.16.0](https://github.com/nuvla/api-server/compare/6.15.1...6.16.0) (2025-06-03)
+
+
+### Features
+
+* **emailing:** Support OAUTH2 SMTP config, authentication and refresh token in a generic way ([#1011](https://github.com/nuvla/api-server/issues/1011)) ([a31658e](https://github.com/nuvla/api-server/commit/a31658e8c9008f521775a378b831c6384bf0abff))
+
+
+### Bug Fixes
+
+* **NuvlaEdge metrics:** NE should be able to register metrics even if NE system time is wrong ([#1012](https://github.com/nuvla/api-server/issues/1012)) ([d995245](https://github.com/nuvla/api-server/commit/d9952454d03f6d6174e25f3641e97b4a4fbe1a12))
+
 ## [6.15.1](https://github.com/nuvla/api-server/compare/6.15.0...6.15.1) (2025-04-07)
 
 
