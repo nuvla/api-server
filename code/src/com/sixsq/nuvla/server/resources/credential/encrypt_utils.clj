@@ -47,16 +47,28 @@
       (update request :body merge encrypted-entries {:initialization-vector (codecs/bytes->b64-str iv)}))
     request))
 
-(defn decrypt-response-body-secrets
-  [{{:keys [:initialization-vector] :as body} :body :as response}]
-  (if (and ENCRYPTION-KEY initialization-vector)
+(defn decrypt-credential-secrets
+  [{:keys [initialization-vector] :as credential}]
+  (if initialization-vector
     (let [iv                (codecs/b64->bytes initialization-vector)
-          secrets-entries   (->> (select-keys body secret-keys)
-                                 (filter (fn [[_ v]] (str/starts-with? v encrypted-starter-indicator)))
-                                 (into {}))
-          decrypted-entries (reduce-kv (fn [acc k v]
-                                         (assoc acc k (decrypt (subs v (count "***ENCRYPTED***")) ENCRYPTION-KEY iv)))
-                                       {}
-                                       secrets-entries)]
-      (update response :body merge decrypted-entries))
+         secrets-entries   (->> (select-keys credential secret-keys)
+                                (filter (fn [[_ v]] (str/starts-with? v encrypted-starter-indicator)))
+                                (into {}))
+         decrypted-entries (reduce-kv (fn [acc k v]
+                                        (assoc acc k (decrypt (subs v (count "***ENCRYPTED***")) ENCRYPTION-KEY iv)))
+                                      {}
+                                      secrets-entries)]
+     (merge credential decrypted-entries))
+    credential))
+
+(defn decrypt-response-body-secrets
+  [response]
+  (if ENCRYPTION-KEY
+    (update response :body decrypt-credential-secrets)
+    response))
+
+(defn decrypt-response-query-credentials
+  [{{:keys [resources]} :body :as response}]
+  (if ENCRYPTION-KEY
+    (assoc-in response [:body :resources] (map decrypt-credential-secrets resources))
     response))

@@ -298,7 +298,8 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
         (special-edit request)
         (->> (assoc request :body)
              eu/encrypt-request-body-secrets
-             (edit-impl)))))
+             (edit-impl)
+             eu/decrypt-response-body-secrets))))
 
 
 (defn update-credential
@@ -328,4 +329,4 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 (defmethod crud/query resource-type
   [request]
-  (query-impl request))
+  (eu/decrypt-response-query-credentials (query-impl request)))

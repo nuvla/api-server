@@ -1,6 +1,6 @@
 (ns com.sixsq.nuvla.server.resources.credential-infrastructure-service-registry-lifecycle-test
   (:require
-    [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.test :refer [deftest is use-fixtures testing]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.credential :as credential]
@@ -105,6 +105,11 @@
                       (ltu/location))
           abs-uri (str p/service-context uri)]
 
+      (-> session-user
+          (request base-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
       ;; resource id and the uri (location) should be the same
       (is (= id uri))
 
@@ -133,6 +138,15 @@
         (is (= username username-value))
         (is (= password password-value))
         (is (= parent parent-value))
+
+        (testing "user can update the registry password"
+          (-> session-user
+              (request abs-uri
+                       :request-method :put
+                       :body (j/write-value-as-string {:password "something"}))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :password "something")))
 
         ;; ensure that the check action works
         (let [op-url    (ltu/get-op credential "check")
