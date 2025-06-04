@@ -17,6 +17,9 @@
    :dev-alb {:base-uri         "https://159.100.246.22/api"
              :username-env-var :dev-alb-username
              :password-env-var :dev-alb-password}
+   :dev-kb {:base-uri-env-var :dev-kb-base-uri
+            :username-env-var :dev-kb-username
+            :password-env-var :dev-kb-password}
    :local   {:base-uri         "http://localhost:8200/api"
              :username-env-var :local-username
              :password-env-var :local-password}})
@@ -35,7 +38,8 @@
 
 (defn user-session
   [env-key]
-  (let [{:keys [base-uri username-env-var password-env-var]} (get envs env-key)
+  (let [{:keys [base-uri base-uri-env-var username-env-var password-env-var]} (get envs env-key)
+        base-uri (or base-uri (env/env base-uri-env-var))
         username (env/env username-env-var)
         pwd      (env/env password-env-var)
         _        (prn base-uri username pwd)
@@ -146,6 +150,12 @@
    (deployment-groups @session opts))
   ([session opts]
    (resources session "deployment-set" opts)))
+
+(defn credentials
+  ([opts]
+   (credentials @session opts))
+  ([session opts]
+   (resources session "credential" opts)))
 
 (defn infrastructure-services
   ([opts]

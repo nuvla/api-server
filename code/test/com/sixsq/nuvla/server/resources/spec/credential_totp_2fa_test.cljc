@@ -8,24 +8,28 @@
 
 
 (def valid-acl
-  {:owners   ["group/nuvla-admin"]})
+  {:owners ["group/nuvla-admin"]})
 
 
 (deftest check-credential-service-docker
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        tpl       {:id            (str cred/resource-type "/uuid")
-                   :resource-type cred/resource-type
-                   :created       timestamp
-                   :updated       timestamp
-                   :acl           valid-acl
+        tpl       {:id                    (str cred/resource-type "/uuid")
+                   :resource-type         cred/resource-type
+                   :created               timestamp
+                   :updated               timestamp
+                   :acl                   valid-acl
 
-                   :subtype       tmpl-totp/credential-subtype
-                   :method        tmpl-totp/method
+                   :subtype               tmpl-totp/credential-subtype
+                   :method                tmpl-totp/method
 
-                   :secret        "some-secret"}]
+                   :secret                "some-secret"
+                   :initialization-vector "something"}]
 
     (stu/is-valid ::totp-spec/schema tpl)
 
     ;; mandatory keywords
-    (doseq [k (-> tpl keys set)]
-      (stu/is-invalid ::totp-spec/schema (dissoc tpl k)))))
+    (doseq [k (-> tpl (dissoc :initialization-vector) keys set)]
+      (stu/is-invalid ::totp-spec/schema (dissoc tpl k)))
+
+    (doseq [k #{:initialization-vector}]
+      (stu/is-valid ::totp-spec/schema (dissoc tpl k)))))

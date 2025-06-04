@@ -53,11 +53,19 @@
 
     :json-schema/value-scope {:values ["VALID", "INVALID", "UNKNOWN"]}))
 
+(s/def ::initialization-vector
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "initialization-vector"
+             :json-schema/type "string"
+             :json-schema/display-name "Initialization Vector"
+             :json-schema/description "Encryption initialization vector")))
+
 (def credential-keys-spec (su/merge-keys-specs
                             [common/common-attrs
                              {:req-un [::subtype
                                        ::method]
-                              :opt-un [::last-check
+                              :opt-un [::initialization-vector
+                                       ::last-check
                                        ::status]}]))
 
 (def credential-template-regex #"^credential-template/[a-zA-Z0-9]([a-zA-Z0-9_-]*[a-zA-Z0-9])?$")
