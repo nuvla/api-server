@@ -19,6 +19,7 @@
     [com.sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [com.sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [com.sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
+    [com.sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
     [com.sixsq.nuvla.server.resources.infrastructure-service-template-vpn :as infra-srvc-tpl-vpn]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.nuvlabox :as nb]
@@ -1473,36 +1474,60 @@
             (ltu/is-key-value :payload "{\"docker\":[{\"action\":\"remove\",\"id\":\"xyz\",\"resource\":\"image\"}]}")))
 
       (testing "coe resource action with credential"
-        (let [cred-uri        (str p/service-context credential/resource-type)
-              tpl-href        (str cred-tpl/resource-type "/" cred-tpl-registry/method)
-              username        "username"
-              password        "password"
-              cred-body       {:name        "cred-name"
-                               :description "cred-desc"
-                               :template    {:href     tpl-href
-                                             :parent   "infrastructure-service/service-1"
-                                             :username username
-                                             :password password}}
-              admin-cred-id   (-> session-admin
-                                  (request cred-uri
-                                           :request-method :post
-                                           :body (j/write-value-as-string cred-body))
-                                  (ltu/body->edn)
-                                  (ltu/is-status 201)
-                                  (ltu/body-resource-id))
-              cred-id         (-> session-owner
-                                  (request cred-uri
-                                           :request-method :post
-                                           :body (j/write-value-as-string cred-body))
-                                  (ltu/body->edn)
-                                  (ltu/is-status 201)
-                                  (ltu/body-resource-id))
-              coe-actions-url (-> session-owner
-                                  (request nuvlabox-url)
-                                  (ltu/body->edn)
-                                  (ltu/is-status 200)
-                                  (ltu/is-operation-present utils/action-coe-resource-actions)
-                                  (ltu/get-op-url utils/action-coe-resource-actions))]
+        (let [cred-uri                 (str p/service-context credential/resource-type)
+              tpl-href                 (str cred-tpl/resource-type "/" cred-tpl-registry/method)
+              username                 "username"
+              password                 "password"
+              infra-service-group-uri  (str p/service-context isg/resource-type)
+              infra-service-group-body {:name "test-infra-service-group"}
+              infra-service-group-id   (-> session-owner
+                                           (request infra-service-group-uri
+                                                    :request-method :post
+                                                    :body (j/write-value-as-string infra-service-group-body))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 201)
+                                           (ltu/body-resource-id))
+              is-generic-tpl-href      (str infra-service-tpl/resource-type "/" infra-service-tpl-generic/method)
+              infra-service-uri        (str p/service-context infra-service/resource-type)
+              endpoint                 "https://test.registry.com"
+              infra-service-body       {:name     "test-registry"
+                                        :template {:href     is-generic-tpl-href
+                                                   :parent   infra-service-group-id
+                                                   :endpoint endpoint}}
+              infra-service-id         (-> session-owner
+                                           (request infra-service-uri
+                                                    :request-method :post
+                                                    :body (j/write-value-as-string infra-service-body))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 201)
+                                           (ltu/dump)
+                                           (ltu/body-resource-id))
+              cred-body                {:name        "cred-name"
+                                        :description "cred-desc"
+                                        :template    {:href     tpl-href
+                                                      :parent   infra-service-id
+                                                      :username username
+                                                      :password password}}
+              admin-cred-id            (-> session-admin
+                                           (request cred-uri
+                                                    :request-method :post
+                                                    :body (j/write-value-as-string cred-body))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 201)
+                                           (ltu/body-resource-id))
+              cred-id                  (-> session-owner
+                                           (request cred-uri
+                                                    :request-method :post
+                                                    :body (j/write-value-as-string cred-body))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 201)
+                                           (ltu/body-resource-id))
+              coe-actions-url          (-> session-owner
+                                           (request nuvlabox-url)
+                                           (ltu/body->edn)
+                                           (ltu/is-status 200)
+                                           (ltu/is-operation-present utils/action-coe-resource-actions)
+                                           (ltu/get-op-url utils/action-coe-resource-actions))]
           (testing "User must have read rights on credentials"
             (-> session-owner
                 (request coe-actions-url
@@ -1534,9 +1559,11 @@
                                        (ltu/body->edn)
                                        (ltu/is-status 200)
                                        (ltu/body))]
-              (is (= (keyword cred-id) (ffirst get-context-body)))
-              (is (= username (-> get-context-body first second :username)))
-              (is (= password (-> get-context-body first second :password)))))
+              (is (contains? get-context-body (keyword infra-service-id)))
+              (is (contains? get-context-body (keyword cred-id)))
+              (is (= endpoint (get-in get-context-body [(keyword infra-service-id) :endpoint])))
+              (is (= username (get-in get-context-body [(keyword cred-id) :username])))
+              (is (= password (get-in get-context-body [(keyword cred-id) :password])))))
           (testing "get-context must fail if nuvlabox owner does not have access to credentials in payload"
             (let [admin-cred-id   (-> session-admin
                                       (request cred-uri

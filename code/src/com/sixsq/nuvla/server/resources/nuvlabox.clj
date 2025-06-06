@@ -724,8 +724,14 @@ particular NuvlaBox release.
                                  :when credential]
                              (do
                                (acl-resource/throw-cannot-view credential nuvlabox-owner-req)
-                               credential))]
-    (apply job-interface/get-context->response credentials)))
+                               credential))
+        infra-services     (for [infra-service-id (set (map :parent credentials))
+                                 :let [infra-service (some-> infra-service-id crud/retrieve-by-id-as-admin)]
+                                 :when infra-service]
+                             (do
+                               (acl-resource/throw-cannot-view infra-service nuvlabox-owner-req)
+                               infra-service))]
+    (apply job-interface/get-context->response (concat credentials infra-services))))
 
 (defmethod job-interface/get-context ["nuvlabox" "coe_resource_actions"]
   [resource]
