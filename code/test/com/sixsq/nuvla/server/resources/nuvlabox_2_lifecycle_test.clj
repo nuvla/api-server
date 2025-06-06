@@ -11,11 +11,15 @@
     [com.sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [com.sixsq.nuvla.server.resources.configuration-template :as configuration-tpl]
     [com.sixsq.nuvla.server.resources.configuration-template-vpn-api :as configuration-tpl-vpn]
+    [com.sixsq.nuvla.server.resources.credential :as cred]
     [com.sixsq.nuvla.server.resources.credential :as credential]
+    [com.sixsq.nuvla.server.resources.credential-template :as cred-tpl]
+    [com.sixsq.nuvla.server.resources.credential-template-infrastructure-service-registry :as cred-tpl-registry]
     [com.sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
     [com.sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [com.sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [com.sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
+    [com.sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
     [com.sixsq.nuvla.server.resources.infrastructure-service-template-vpn :as infra-srvc-tpl-vpn]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.nuvlabox :as nb]
@@ -1467,7 +1471,130 @@
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-key-value :action "coe_resource_actions")
-            (ltu/is-key-value :payload "{\"docker\":[{\"action\":\"remove\",\"id\":\"xyz\",\"resource\":\"image\"}]}"))))))
+            (ltu/is-key-value :payload "{\"docker\":[{\"action\":\"remove\",\"id\":\"xyz\",\"resource\":\"image\"}]}")))
+
+      (testing "coe resource action with credential"
+        (let [cred-uri                 (str p/service-context credential/resource-type)
+              tpl-href                 (str cred-tpl/resource-type "/" cred-tpl-registry/method)
+              username                 "username"
+              password                 "password"
+              infra-service-group-uri  (str p/service-context isg/resource-type)
+              infra-service-group-body {:name "test-infra-service-group"}
+              infra-service-group-id   (-> session-owner
+                                           (request infra-service-group-uri
+                                                    :request-method :post
+                                                    :body (j/write-value-as-string infra-service-group-body))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 201)
+                                           (ltu/body-resource-id))
+              is-generic-tpl-href      (str infra-service-tpl/resource-type "/" infra-service-tpl-generic/method)
+              infra-service-uri        (str p/service-context infra-service/resource-type)
+              endpoint                 "https://test.registry.com"
+              infra-service-body       {:name     "test-registry"
+                                        :template {:href     is-generic-tpl-href
+                                                   :parent   infra-service-group-id
+                                                   :endpoint endpoint}}
+              infra-service-id         (-> session-owner
+                                           (request infra-service-uri
+                                                    :request-method :post
+                                                    :body (j/write-value-as-string infra-service-body))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 201)
+                                           (ltu/dump)
+                                           (ltu/body-resource-id))
+              cred-body                {:name        "cred-name"
+                                        :description "cred-desc"
+                                        :template    {:href     tpl-href
+                                                      :parent   infra-service-id
+                                                      :username username
+                                                      :password password}}
+              admin-cred-id            (-> session-admin
+                                           (request cred-uri
+                                                    :request-method :post
+                                                    :body (j/write-value-as-string cred-body))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 201)
+                                           (ltu/body-resource-id))
+              cred-id                  (-> session-owner
+                                           (request cred-uri
+                                                    :request-method :post
+                                                    :body (j/write-value-as-string cred-body))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 201)
+                                           (ltu/body-resource-id))
+              coe-actions-url          (-> session-owner
+                                           (request nuvlabox-url)
+                                           (ltu/body->edn)
+                                           (ltu/is-status 200)
+                                           (ltu/is-operation-present utils/action-coe-resource-actions)
+                                           (ltu/get-op-url utils/action-coe-resource-actions))]
+          (testing "User must have read rights on credentials"
+            (-> session-owner
+                (request coe-actions-url
+                         :request-method :post
+                         :body (j/write-value-as-string {:docker [{:action "remove" :id "xyz" :resource "image" :credential admin-cred-id}]}))
+                (ltu/body->edn)
+                (ltu/is-status 403)))
+          (testing "Job created successfully for coe resource actions with credentials"
+            (let [job-url          (-> session-owner
+                                       (request coe-actions-url
+                                                :request-method :post
+                                                :body (j/write-value-as-string {:docker [{:action "remove" :id "xyz" :resource "image" :credential cred-id}]}))
+                                       (ltu/body->edn)
+                                       (ltu/is-status 202)
+                                       (ltu/location-url))
+                  job-resp         (-> session-admin
+                                       (request job-url)
+                                       (ltu/body->edn)
+                                       (ltu/is-status 200)
+                                       (ltu/is-key-value :action "coe_resource_actions")
+                                       (ltu/is-key-value :payload (str "{\"docker\":[{\"action\":\"remove\",\"id\":\"xyz\",\"resource\":\"image\","
+                                                                       "\"credential\":\"" cred-id "\""
+                                                                       "}]}")))
+                  get-context-url  (-> job-resp
+                                       (ltu/is-operation-present :get-context)
+                                       (ltu/get-op-url :get-context))
+                  get-context-body (-> session-admin
+                                       (request get-context-url)
+                                       (ltu/body->edn)
+                                       (ltu/is-status 200)
+                                       (ltu/body))]
+              (is (contains? get-context-body (keyword infra-service-id)))
+              (is (contains? get-context-body (keyword cred-id)))
+              (is (= endpoint (get-in get-context-body [(keyword infra-service-id) :endpoint])))
+              (is (= username (get-in get-context-body [(keyword cred-id) :username])))
+              (is (= password (get-in get-context-body [(keyword cred-id) :password])))))
+          (testing "get-context must fail if nuvlabox owner does not have access to credentials in payload"
+            (let [admin-cred-id   (-> session-admin
+                                      (request cred-uri
+                                               :request-method :post
+                                               :body (j/write-value-as-string cred-body))
+                                      (ltu/body->edn)
+                                      (ltu/is-status 201)
+                                      (ltu/body-resource-id))
+                  job-url         (-> session-admin
+                                      (request coe-actions-url
+                                               :request-method :post
+                                               :body (j/write-value-as-string {:docker [{:action "remove" :id "xyz" :resource "image" :credential admin-cred-id}]}))
+                                      (ltu/body->edn)
+                                      (ltu/is-status 202)
+                                      (ltu/location-url))
+                  job-resp        (-> session-admin
+                                      (request job-url)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      (ltu/is-key-value :action "coe_resource_actions")
+                                      (ltu/is-key-value :payload (str "{\"docker\":[{\"action\":\"remove\",\"id\":\"xyz\",\"resource\":\"image\","
+                                                                      "\"credential\":\"" admin-cred-id "\""
+                                                                      "}]}")))
+                  get-context-url (-> job-resp
+                                      (ltu/is-operation-present :get-context)
+                                      (ltu/get-op-url :get-context))]
+              (-> session-admin
+                  (request get-context-url)
+                  (ltu/body->edn)
+                  (ltu/is-status 403)
+                  (ltu/is-key-value :message (str "invalid credentials for '" admin-cred-id "'"))))))))))
 
 
 (deftest create-activate-assemble-playbooks-emergency-lifecycle

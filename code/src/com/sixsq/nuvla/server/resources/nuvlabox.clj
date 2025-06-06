@@ -5,8 +5,10 @@ all subtypes of this resource. Versioned subclasses define the attributes for a
 particular NuvlaBox release.
 "
   (:require
+    [cheshire.core :as json]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
+    [com.sixsq.nuvla.auth.acl-resource :as acl-resource]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.auth.utils.acl :as acl-utils]
@@ -443,13 +445,13 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params :as request}]
   (let [id (str resource-type "/" uuid)]
     (try
-      (let [nuvlabox     (-> (crud/retrieve-by-id-as-admin id)
-                             (a/throw-cannot-manage request)
-                             (u/throw-cannot-do-action
-                               utils/can-commission? "commission")
-                             u/update-timestamps
-                             (commission request)
-                             crud/validate)]
+      (let [nuvlabox (-> (crud/retrieve-by-id-as-admin id)
+                         (a/throw-cannot-manage request)
+                         (u/throw-cannot-do-action
+                           utils/can-commission? "commission")
+                         u/update-timestamps
+                         (commission request)
+                         crud/validate)]
 
         (let [resp (db/edit nuvlabox)]
           (ka-crud/publish-on-edit resource-type resp))
@@ -692,6 +694,13 @@ particular NuvlaBox release.
 (def validate-coe-resource-actions-body (u/create-spec-validation-request-body-fn
                                           ::nuvlabox/coe-resource-actions-body))
 
+(defn throw-credentials-not-allowed
+  [resource {{docker-actions :docker} :body :as request}]
+  (doseq [{credential-id :credential} docker-actions]
+    (when-let [credential (some-> credential-id crud/retrieve-by-id-as-admin)]
+      (acl-resource/throw-cannot-view credential request)))
+  resource)
+
 (defmethod crud/do-action [resource-type utils/action-coe-resource-actions]
   [{{uuid :uuid} :params :as request}]
   (try
@@ -700,10 +709,33 @@ particular NuvlaBox release.
         crud/retrieve-by-id-as-admin
         (a/throw-cannot-manage request)
         (u/throw-cannot-do-action utils/can-coe-resource-actions? utils/action-coe-resource-actions)
+        (throw-credentials-not-allowed request)
         (coe-resource-actions request))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
+(defn get-context-coe-resource-actions
+  [{:keys [target-resource payload] :as _job}]
+  (let [nuvlabox-owner-req (some-> target-resource :href crud/retrieve-by-id-as-admin auth/get-owner-request)
+        docker-actions     (some-> payload (j/read-value j/keyword-keys-object-mapper) :docker)
+        credential-ids     (some->> docker-actions (keep :credential) set)
+        credentials        (for [credential-id credential-ids
+                                 :let [credential (some-> credential-id crud/retrieve-by-id-as-admin)]
+                                 :when credential]
+                             (do
+                               (acl-resource/throw-cannot-view credential nuvlabox-owner-req)
+                               credential))
+        infra-services     (for [infra-service-id (set (map :parent credentials))
+                                 :let [infra-service (some-> infra-service-id crud/retrieve-by-id-as-admin)]
+                                 :when infra-service]
+                             (do
+                               (acl-resource/throw-cannot-view infra-service nuvlabox-owner-req)
+                               infra-service))]
+    (apply job-interface/get-context->response (concat credentials infra-services))))
+
+(defmethod job-interface/get-context ["nuvlabox" "coe_resource_actions"]
+  [resource]
+  (get-context-coe-resource-actions resource))
 
 ;;
 ;; Cluster action

@@ -10,7 +10,7 @@
 (deftest check-coe-resource-actions-body
   (stu/is-invalid ::nb/coe-resource-actions-body {})
   (stu/is-valid ::nb/coe-resource-actions-body {:docker []})
-  (stu/is-valid ::nb/coe-resource-actions-body {:docker [{:action "pull" :resource "image" :id "hello-world"}
+  (stu/is-valid ::nb/coe-resource-actions-body {:docker [{:action "pull" :resource "image" :id "hello-world" :credential "credential/123-abc"}
                                                          {:action "remove" :resource "volume" :id "some-volume"}
                                                          {:action "remove" :resource "network" :id "some-net"}
                                                          {:action "remove" :resource "container" :id "some-container"}
