@@ -22,7 +22,6 @@
              :json-schema/description "vpn intermediate ca certificates"
              :json-schema/indexed false)))
 
-
 (s/def ::vpn-certificate
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "certificate"
