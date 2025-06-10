@@ -10,7 +10,6 @@
 (def clear-credential {:secret         "this-is-secret"
                        :password       "c0mplicat3d p0ssw0rd"
                        :something-else "abc"})
-(def clear-credential-iv (assoc clear-credential :initialization-vector iv-test))
 (def encrypted-credential {:initialization-vector "QjPVV2kO+C1mmwTZPZw9Yg=="
                            :password              "***ENCRYPTED***cgs8XEn2APNIXsxfjc+IOhy/CvmYU/2mf/TWMNMEWV0u6FWB2mOfF7qrL8Q1FlAK"
                            :secret                "***ENCRYPTED***KiSgzk2AzJzzUIOLVsD2blmyaKbdE8AQ0jHFg/pKovU="
@@ -35,7 +34,7 @@
   (with-redefs [t/generate-iv (constantly (codecs/b64->bytes iv-test))
                 t/ENCRYPTION-KEY key-test]
     (let [result (t/decrypt-credential-secrets encrypted-credential)]
-      (is (= clear-credential-iv result))))
+      (is (= clear-credential result))))
   (testing "When no initialization-vector is set, decrypt-credential-secrets is a passthrough function"
     (let [result (t/decrypt-credential-secrets {:whatever 1})]
       (is (= {:whatever 1} result)))))
@@ -71,7 +70,7 @@
       (is (= empty-query-response (t/decrypt-response-query-credentials empty-query-response)))
 
       (let [query-response {:body {:resources [encrypted-credential {:whatever 1} encrypted-credential]}}
-            result {:body {:resources [clear-credential-iv {:whatever 1} clear-credential-iv]}}]
+            result {:body {:resources [clear-credential {:whatever 1} clear-credential]}}]
         (is (= result (t/decrypt-response-query-credentials query-response))))))
 
   (with-redefs [t/ENCRYPTION-KEY nil]

@@ -56,10 +56,12 @@
                                  (filter (fn [[_ v]] (str/starts-with? v encrypted-starter-indicator)))
                                  (into {}))
           decrypted-entries (reduce-kv (fn [acc k v]
-                                         (assoc acc k (decrypt (subs v (count "***ENCRYPTED***")) ENCRYPTION-KEY iv)))
+                                         (assoc acc k (decrypt (subs v (count encrypted-starter-indicator)) ENCRYPTION-KEY iv)))
                                        {}
                                        secrets-entries)]
-      (merge credential decrypted-entries))
+      (-> credential
+          (dissoc :initialization-vector)
+          (merge decrypted-entries)))
     credential))
 
 (defn decrypt-response-body-secrets
