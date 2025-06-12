@@ -2,6 +2,21 @@
 
 ## Released
 
+## [6.16.0](https://github.com/nuvla/api-server/compare/6.15.1...6.16.0) (2025-06-12)
+
+
+### Features
+
+* **credentials:** Support encryption ([40cd510](https://github.com/nuvla/api-server/commit/40cd5105eb6fdec5a5d9285a1336439a829bc3f3))
+* **emailing:** Support OAUTH2 SMTP config, authentication and refresh token in a generic way ([#1011](https://github.com/nuvla/api-server/issues/1011)) ([a31658e](https://github.com/nuvla/api-server/commit/a31658e8c9008f521775a378b831c6384bf0abff))
+* **NuvlaEdge:** Coe resource action pull image support for private registries ([03576dd](https://github.com/nuvla/api-server/commit/03576dd7b0941977676dfc289f6401c3361601bc))
+
+
+### Bug Fixes
+
+* **Credential migration:** Multithread migration to make it run in some minutes instead of hours ([a0ada3e](https://github.com/nuvla/api-server/commit/a0ada3eef255ee5b5026dff859a5d0760c517fc9))
+* **NuvlaEdge metrics:** NE should be able to register metrics even if NE system time is wrong ([#1012](https://github.com/nuvla/api-server/issues/1012)) ([d995245](https://github.com/nuvla/api-server/commit/d9952454d03f6d6174e25f3641e97b4a4fbe1a12))
+
 ## [6.15.1](https://github.com/nuvla/api-server/compare/6.15.0...6.15.1) (2025-04-07)
 
 
