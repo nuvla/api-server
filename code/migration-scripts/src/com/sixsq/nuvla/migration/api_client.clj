@@ -104,14 +104,15 @@
 (defn resources
   ([resource-type opts]
    (resources @session resource-type opts))
-  ([{:keys [base-uri]} resource-type {:keys [filter last select orderby]}]
+  ([{:keys [base-uri]} resource-type {:keys [filter last select orderby aggregation]}]
    (let [response  (http/put (str base-uri "/" resource-type)
                              {:headers      {"content-type" "application/json"}
                               :form-params  (cond-> {}
                                                     filter (assoc :filter filter)
                                                     last (assoc :last last)
                                                     select (assoc :select (str/join "," (map name select)))
-                                                    orderby (assoc :orderby orderby))
+                                                    orderby (assoc :orderby orderby)
+                                                    aggregation (assoc :aggregation aggregation))
                               :cookie-store cookie-store
                               :insecure?    true})
          resources (-> response :body (j/read-value j/keyword-keys-object-mapper))]
