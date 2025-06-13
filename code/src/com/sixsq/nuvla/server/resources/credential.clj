@@ -310,6 +310,10 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
                  :body        body}]
     (crud/edit request)))
 
+(defmethod crud/retrieve-by-id resource-type
+  [id & [request]]
+  (-> (crud/retrieve-by-id-default id request)
+      eu/decrypt-credential-secrets))
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 (defmethod crud/retrieve resource-type
@@ -325,8 +329,15 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
       (a/throw-cannot-delete request)
       (special-delete request)))
 
+(defmethod crud/query-collection resource-type
+  [collection-id options]
+  (let [[metadata entries] (crud/query-collection-default collection-id options)]
+    [metadata (if eu/ENCRYPTION-KEY
+                (map eu/decrypt-credential-secrets entries)
+                entries)]))
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
+
 (defmethod crud/query resource-type
   [request]
   (eu/decrypt-response-query-credentials (query-impl request)))
