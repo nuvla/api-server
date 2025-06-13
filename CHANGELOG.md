@@ -2,6 +2,13 @@
 
 ## Released
 
+## [6.16.1](https://github.com/nuvla/api-server/compare/6.16.0...6.16.1) (2025-06-13)
+
+
+### Bug Fixes
+
+* **Credential:** Fix retrive-by-id and query-collection for credential ([#1017](https://github.com/nuvla/api-server/issues/1017)) ([b41a08d](https://github.com/nuvla/api-server/commit/b41a08d483e3d9d51f3fa99e584ee1f5e7a0736a))
+
 ## [6.16.0](https://github.com/nuvla/api-server/compare/6.15.1...6.16.0) (2025-06-12)
 
 
