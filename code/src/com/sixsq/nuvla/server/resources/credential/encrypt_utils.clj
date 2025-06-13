@@ -50,7 +50,7 @@
 
 (defn decrypt-credential-secrets
   [{:keys [initialization-vector] :as credential}]
-  (if initialization-vector
+  (if (and ENCRYPTION-KEY initialization-vector)
     (let [iv                (codecs/b64->bytes initialization-vector)
           secrets-entries   (->> (select-keys credential secret-keys)
                                  (filter (fn [[_ v]] (str/starts-with? v encrypted-starter-indicator)))
@@ -66,9 +66,7 @@
 
 (defn decrypt-response-body-secrets
   [response]
-  (if ENCRYPTION-KEY
-    (update response :body decrypt-credential-secrets)
-    response))
+  (update response :body decrypt-credential-secrets))
 
 (defn decrypt-response-query-credentials
   [{{:keys [resources]} :body :as response}]

@@ -46,11 +46,21 @@
   (throw (r/ex-bad-method request)))
 
 
+(defmulti query-collection (fn [collection-id _] collection-id))
+
+(defn query-collection-default
+  [collection-id options]
+  (db/query collection-id (assoc options :nuvla/authn auth/internal-identity)))
+
+(defmethod query-collection :default
+  [collection-id options]
+  (query-collection-default collection-id options))
+
 (defn query-as-admin
   "Calls the database query with the administrator user identity merged
    into the given options."
   [collection-id options]
-  (db/query collection-id (assoc options :nuvla/authn auth/internal-identity) ))
+  (query-collection collection-id options))
 
 (defn query-native
   "Executes the database query as a native query."
@@ -83,12 +93,15 @@
 
 (defmulti retrieve-by-id resource-id-dispatch)
 
-
-(defmethod retrieve-by-id :default
-  [resource-id & [request]]
+(defn retrieve-by-id-default
+  [resource-id request]
   (some-> resource-id
           db/retrieve
           (a/throw-cannot-view request)))
+
+(defmethod retrieve-by-id :default
+  [resource-id & [request]]
+  (retrieve-by-id-default resource-id request))
 
 
 (defn retrieve-by-id-as-admin
@@ -102,10 +115,11 @@
   "Same as `retrieve-by-id-as-admin` but if the resource is not found returns nil
    instead of throwing an exception."
   [resource-id]
-  (try (retrieve-by-id-as-admin resource-id)
-       (catch Exception ex
-         (when-not (= 404 (:status (ex-data ex)))
-           (throw ex)))))
+  (try
+    (retrieve-by-id-as-admin resource-id)
+    (catch Exception ex
+      (when-not (= 404 (:status (ex-data ex)))
+        (throw ex)))))
 
 
 (defn id->user-request
