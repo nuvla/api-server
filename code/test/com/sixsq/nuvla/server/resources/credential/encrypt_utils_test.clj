@@ -30,13 +30,13 @@
         encrypted-secret (t/encrypt clear-secret key iv)]
     (is (= clear-secret (t/decrypt encrypted-secret key iv)))))
 
-(deftest decrypt-credential-secrets
+(deftest decrypt-credential-secrets-and-remove-iv
   (with-redefs [t/generate-iv (constantly (codecs/b64->bytes iv-test))
                 t/ENCRYPTION-KEY key-test]
-    (let [result (t/decrypt-credential-secrets encrypted-credential)]
+    (let [result (t/decrypt-credential-secrets-and-remove-iv encrypted-credential)]
       (is (= clear-credential result))))
   (testing "When no initialization-vector is set, decrypt-credential-secrets is a passthrough function"
-    (let [result (t/decrypt-credential-secrets {:whatever 1})]
+    (let [result (t/decrypt-credential-secrets-and-remove-iv {:whatever 1})]
       (is (= {:whatever 1} result)))))
 
 (deftest encrypt-request-body-secrets
