@@ -1,6 +1,6 @@
 (ns com.sixsq.nuvla.server.resources.callback-2fa-deactivation
   "
-Allow a user to deactivate two factor authentication.
+Allow a user to deactivate two-factor authentication.
 "
   (:require
     [clojure.tools.logging :as log]
@@ -27,9 +27,9 @@ Allow a user to deactivate two factor authentication.
     (utils/callback-dec-tries callback-id)
     (let [user           (crud/retrieve-by-id-as-admin user-id)
           current-method (:auth-method-2fa user)
+          cred-id        (:credential-totp user)
           secret         (when (= current-method auth-2fa/method-totp)
-                           (some-> user
-                                   :credential-totp
+                           (some-> cred-id
                                    crud/retrieve-by-id-as-admin
                                    :secret))
           callback       (cond-> callback
@@ -38,6 +38,7 @@ Allow a user to deactivate two factor authentication.
         (let [msg (str "2FA with method '" current-method "' deactivated for "
                        user-id ". Callback successfully executed.")]
           (user-utils/update-user user-id {:auth-method-2fa method})
+          (when cred-id (user-utils/delete-credential cred-id))
           (log/info msg)
           (utils/callback-succeeded! callback-id)
           (r/map-response msg 200 user-id))
