@@ -1,9 +1,11 @@
 (ns com.sixsq.nuvla.server.resources.user.utils
   (:require
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.server.resources.callback.email-utils :as callback-email-utils]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
+    [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.credential :as credential]
     [com.sixsq.nuvla.server.resources.credential-hashed-password :as hashed-password]
     [com.sixsq.nuvla.server.resources.credential-template :as credential-template]
@@ -114,11 +116,20 @@
 (defn delete-user
   [user-id]
   (let [request {:params      {:resource-name resource-url
-                               :uuid          (second (str/split user-id #"/"))}
+                               :uuid          (u/id->uuid user-id)}
                  :nuvla/authn auth/internal-identity}
         {:keys [status body]} (crud/delete request)]
     (when (not= status 200)
       (throw (ex-info "" body)))))
+
+(defn delete-credential
+  [cred-id]
+  (let [request {:params      {:resource-name credential/resource-type
+                               :uuid          (u/id->uuid cred-id)}
+                 :nuvla/authn auth/internal-identity}
+        {:keys [status body]} (crud/delete request)]
+    (when (not= status 200)
+      (log/error "Delete" cred-id "failed!: " body))))
 
 
 (defn create-user-subresources
