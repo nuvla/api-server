@@ -1,7 +1,7 @@
 (ns com.sixsq.nuvla.server.resources.user-email-password-2fa-lifecycle-test
   (:require
     [clojure.string :as str]
-    [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.test :refer [deftest is use-fixtures testing]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.email.sending :as email-sending]
@@ -17,8 +17,7 @@
     [jsonista.core :as j]
     [one-time.core :as ot]
     [peridot.core :refer [content-type header request session]]
-    [postal.core :as postal]
-    [ring.util.codec :as codec]))
+    [postal.core :as postal]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -780,6 +779,17 @@
                          :body (j/write-value-as-string {:token (get-totp @secret)}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
+
+            (testing "credential totp should be delete at deactivation"
+              (let [cred-totp (-> session-created-user
+                                 (request user-url)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 :credential-totp)]
+                (-> session-admin
+                    (request (str p/service-context cred-totp))
+                    (ltu/body->edn)
+                    (ltu/is-status 404))))
 
             ;; user 2FA method should be set to none
             (-> session-created-user

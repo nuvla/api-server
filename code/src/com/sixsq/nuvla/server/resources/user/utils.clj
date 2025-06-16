@@ -124,7 +124,7 @@
 
 (defn delete-credential
   [cred-id]
-  (let [request {:params      {:resource-name resource-url
+  (let [request {:params      {:resource-name credential/resource-type
                                :uuid          (u/id->uuid cred-id)}
                  :nuvla/authn auth/internal-identity}
         {:keys [status body]} (crud/delete request)]
