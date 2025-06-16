@@ -1500,7 +1500,6 @@
                                                     :body (j/write-value-as-string infra-service-body))
                                            (ltu/body->edn)
                                            (ltu/is-status 201)
-                                           (ltu/dump)
                                            (ltu/body-resource-id))
               cred-body                {:name        "cred-name"
                                         :description "cred-desc"

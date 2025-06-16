@@ -59,17 +59,19 @@
                                          (assoc acc k (decrypt (subs v (count encrypted-starter-indicator)) ENCRYPTION-KEY iv)))
                                        {}
                                        secrets-entries)]
-      (-> credential
-          (dissoc :initialization-vector)
-          (merge decrypted-entries)))
+      (merge credential decrypted-entries))
     credential))
+
+(defn decrypt-credential-secrets-and-remove-iv
+  [credential]
+  (dissoc (decrypt-credential-secrets credential) :initialization-vector))
 
 (defn decrypt-response-body-secrets
   [response]
-  (update response :body decrypt-credential-secrets))
+  (update response :body decrypt-credential-secrets-and-remove-iv))
 
 (defn decrypt-response-query-credentials
   [{{:keys [resources]} :body :as response}]
   (if ENCRYPTION-KEY
-    (assoc-in response [:body :resources] (map decrypt-credential-secrets resources))
+    (assoc-in response [:body :resources] (map decrypt-credential-secrets-and-remove-iv resources))
     response))
