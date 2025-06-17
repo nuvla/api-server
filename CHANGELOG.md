@@ -2,6 +2,14 @@
 
 ## Released
 
+## [6.16.3](https://github.com/nuvla/api-server/compare/6.16.2...6.16.3) (2025-06-17)
+
+
+### Bug Fixes
+
+* **callback-2fa-deactivation:** Delete credential on deactivation. ([#1024](https://github.com/nuvla/api-server/issues/1024)) ([a82f55d](https://github.com/nuvla/api-server/commit/a82f55d013d57fd056b696b13c4782ecd5d5cdf0))
+* **Credential:** Enhance behavior when there is an issue in decryption ([#1026](https://github.com/nuvla/api-server/issues/1026)) ([7af6d11](https://github.com/nuvla/api-server/commit/7af6d11aa01c545ea2e8e3f578df642c416e1684))
+
 ## [6.16.2](https://github.com/nuvla/api-server/compare/6.16.1...6.16.2) (2025-06-16)
 
 
