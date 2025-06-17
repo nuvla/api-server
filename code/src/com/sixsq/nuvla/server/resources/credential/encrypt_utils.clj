@@ -37,7 +37,7 @@
       codecs/bytes->str))
 
 (defn encrypt-request-body-secrets
-  [{{:keys [:initialization-vector] :as body} :body :as request}]
+  [{{:keys [initialization-vector] :as body} :body :as request}]
   (if ENCRYPTION-KEY
     (let [secrets-entries   (select-keys body secret-keys)
           iv                (or (some-> initialization-vector codecs/b64->bytes) (generate-iv))
@@ -49,18 +49,27 @@
     request))
 
 (defn decrypt-credential-secrets
-  [{:keys [initialization-vector] :as credential}]
-  (if (and ENCRYPTION-KEY initialization-vector)
-    (let [iv                (codecs/b64->bytes initialization-vector)
-          secrets-entries   (->> (select-keys credential secret-keys)
-                                 (filter (fn [[_ v]] (str/starts-with? v encrypted-starter-indicator)))
-                                 (into {}))
-          decrypted-entries (reduce-kv (fn [acc k v]
-                                         (assoc acc k (decrypt (subs v (count encrypted-starter-indicator)) ENCRYPTION-KEY iv)))
-                                       {}
-                                       secrets-entries)]
-      (merge credential decrypted-entries))
-    credential))
+  [{:keys [id initialization-vector] :as credential}]
+  (let [iv (try
+             (codecs/b64->bytes initialization-vector)
+             (catch AssertionError e
+               (log/error "Failed initialization-vector encoding " id ":" (ex-message e))))]
+    (if (and ENCRYPTION-KEY iv)
+     (let [secrets-entries   (->> (select-keys credential secret-keys)
+                                  (filter (fn [[_ v]] (str/starts-with? v encrypted-starter-indicator)))
+                                  (into {}))
+           decrypted-entries (reduce-kv (fn [acc k v]
+                                          (let [encrypted-text (subs v (count encrypted-starter-indicator))
+                                                decrypt-result (try
+                                                                 (decrypt encrypted-text ENCRYPTION-KEY iv)
+                                                                 (catch Exception e
+                                                                   (log/error "Failed to decrypt " id k ":" (ex-message e))
+                                                                   v))]
+                                            (assoc acc k decrypt-result)))
+                                        {}
+                                        secrets-entries)]
+       (merge credential decrypted-entries))
+     credential)))
 
 (defn decrypt-credential-secrets-and-remove-iv
   [credential]
