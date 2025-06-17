@@ -1,19 +1,22 @@
 (ns com.sixsq.nuvla.server.resources.credential-infrastructure-service-swarm-lifecycle-test
   (:require
+    [clojure.string :as str]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.credential :as credential]
     [com.sixsq.nuvla.server.resources.credential-template :as ct]
     [com.sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as cred-tpl]
+    [com.sixsq.nuvla.server.resources.credential.encrypt-utils :as eu]
     [com.sixsq.nuvla.server.resources.job :as job]
+    [com.sixsq.nuvla.server.resources.credential.encrypt-utils-test :as ceut]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
     [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]))
 
 
-(use-fixtures :once ltu/with-test-server-fixture)
+(use-fixtures :each ltu/with-test-server-fixture)
 
 
 (def base-uri (str p/service-context credential/resource-type))
@@ -158,3 +161,75 @@
                    :request-method :delete)
           (ltu/body->edn)
           (ltu/is-status 200)))))
+
+(deftest lifecycle-encrypted
+  (with-redefs [eu/ENCRYPTION-KEY ceut/key-test]
+    (let [session               (-> (ltu/ring-app)
+                                   session
+                                   (content-type "application/json"))
+         session-user          (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
+
+         name-attr             "name"
+         description-attr      "description"
+         tags-attr             ["one", "two"]
+
+         ca-value              "my-ca-certificate"
+         cert-value            "my-public-certificate"
+         key-value             "my-private-key"
+
+         parent-value          "infrastructure-service/alpha"
+
+         href                  (str ct/resource-type "/" cred-tpl/method)
+
+         create-import-href    {:name        name-attr
+                                :description description-attr
+                                :tags        tags-attr
+                                :template    {:href   href
+                                              :parent parent-value
+                                              :ca     ca-value
+                                              :cert   cert-value
+                                              :key    key-value}}]
+
+
+     (let [resp    (testing "Create a credential with encryption enabled as a normal user"
+                     (-> session-user
+                         (request base-uri
+                                  :request-method :post
+                                  :body (j/write-value-as-string create-import-href))
+                         (ltu/body->edn)
+                         (ltu/is-status 201)))
+           id      (ltu/body-resource-id resp)
+           uri     (-> resp
+                       (ltu/location))
+           abs-uri (str p/service-context uri)]
+
+       ;; resource id and the uri (location) should be the same
+       (is (= id uri))
+
+       (testing "Ensure credential contains correct information"
+         (-> session-user
+             (request abs-uri)
+             (ltu/body->edn)
+             (ltu/is-status 200)
+             (ltu/is-key-value :name name-attr)
+             (ltu/is-key-value :description description-attr)
+             (ltu/is-key-value :tags tags-attr)
+             (ltu/is-key-value :ca ca-value)
+             (ltu/is-key-value :cert cert-value)
+             (ltu/is-key-value :key key-value)
+             (ltu/is-key-value :parent parent-value)))
+
+       (testing "Ensure credential can always be retrieved encrypted even if there is an issue"
+         (with-redefs [eu/ENCRYPTION-KEY ceut/wrong-key-test]
+           (-> session-user
+               (request abs-uri)
+               (ltu/body->edn)
+               (ltu/is-status 200)
+               (ltu/is-key-value :name name-attr)
+               (ltu/is-key-value :description description-attr)
+               (ltu/is-key-value :tags tags-attr)
+               (ltu/is-key-value :ca ca-value)
+               (ltu/is-key-value :cert cert-value)
+               (ltu/is-key-value #(str/starts-with? % eu/encrypted-starter-indicator) :key true)
+               (ltu/is-key-value :parent parent-value))))
+       ))))
