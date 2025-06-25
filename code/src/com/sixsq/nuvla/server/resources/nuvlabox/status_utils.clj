@@ -214,18 +214,26 @@
    {:name  "helm-revision",
     :value (get helmrelase :revision "")}])
 
+(defn get-docker-deployment-containers
+  [{:keys [id] :as _deployment} nb-status]
+  (->> (get-in nb-status [:coe-resources :docker :containers])
+       (filter #(= (get-in % [:Labels :com.docker.compose.project]) (u/id->uuid id)))))
+
+(defn get-docker-deployment-services
+  [{:keys [id] :as _deployment} nb-status]
+  (->> (get-in nb-status [:coe-resources :docker :services])
+       (filter #(= (get-in % [:Spec :Labels :com.docker.stack.namespace]) (u/id->uuid id)))))
+
 (defmulti get-docker-state (fn [{{:keys [compatibility]} :module :as _deployment} _nb-status] compatibility))
 
 (defmethod get-docker-state module-spec/compatibility-swarm
-  [{:keys [id] :as _deployment} nb-status]
-  (->> (get-in nb-status [:coe-resources :docker :services])
-       (filter #(= (get-in % [:Spec :Labels :com.docker.stack.namespace]) (u/id->uuid id)))
+  [deployment nb-status]
+  (->> (get-docker-deployment-services deployment nb-status)
        (mapcat docker-swarm-service-params)))
 
 (defmethod get-docker-state module-spec/compatibility-docker-compose
-  [{:keys [id] :as _deployment} nb-status]
-  (->> (get-in nb-status [:coe-resources :docker :containers])
-       (filter #(= (get-in % [:Labels :com.docker.compose.project]) (u/id->uuid id)))
+  [deployment nb-status]
+  (->> (get-docker-deployment-containers deployment nb-status)
        (mapcat docker-compose-container-params)))
 
 (defn get-k8s-state
@@ -270,6 +278,70 @@
                   global-params
                   (get-deployment-state deployment nuvlabox-status))))
             ne-deployments)))
+
+(defn get-docker-containers-images
+  [containers nb-status]
+  (let [all-images (get-in nb-status [:coe-resources :docker :images])
+        image-ids  (set (map :ImageID containers))]
+    (->> all-images
+         (filter #(contains? image-ids (:Id %))))))
+
+(defn get-docker-containers-volumes
+  [containers nb-status]
+  (let [all-volumes (get-in nb-status [:coe-resources :docker :volumes])
+        volume-ids  (->> containers
+                         (mapcat :Mounts)
+                         (filter #(= "volume" (:Type %)))
+                         (map :Name)
+                         set)]
+    (->> all-volumes
+         (filter #(contains? volume-ids (:Name %))))))
+
+(defn get-docker-containers-networks
+  [containers nb-status]
+  (let [all-networks (get-in nb-status [:coe-resources :docker :networks])
+        network-ids  (->> containers
+                          (mapcat (comp vals :Networks :NetworkSettings))
+                          (map :NetworkID)
+                          set)]
+    (->> all-networks
+         (filter #(contains? network-ids (:Id %))))))
+
+(defmulti get-ne-deployment-coe-resources (fn [{{:keys [compatibility]} :module :as _deployment} _nb-status] compatibility))
+
+(defmethod get-ne-deployment-coe-resources module-spec/compatibility-swarm
+  [_deployment _nb-status]
+  ;; Not supported for now, returning empty response
+  {})
+
+(defmethod get-ne-deployment-coe-resources module-spec/compatibility-docker-compose
+  [deployment nb-status]
+  (let [containers (get-docker-deployment-containers deployment nb-status)
+        images     (get-docker-containers-images containers nb-status)
+        volumes    (get-docker-containers-volumes containers nb-status)
+        networks   (get-docker-containers-networks containers nb-status)]
+    {:docker (cond-> {}
+                     (seq containers) (assoc :containers containers)
+                     (seq images) (assoc :images images)
+                     (seq volumes) (assoc :volumes volumes)
+                     (seq networks) (assoc :networks networks))}))
+
+(defmulti get-deployment-coe-resources (fn [{{:keys [subtype]} :module :as _deployment} _nb-status]
+                                         subtype))
+
+(defmethod get-deployment-coe-resources module-spec/subtype-app-docker
+  [deployment nb-status]
+  (get-ne-deployment-coe-resources deployment nb-status))
+
+(defmethod get-deployment-coe-resources module-spec/subtype-app-k8s
+  [deployment nb-status]
+  ;; not yet supported
+  )
+
+(defmethod get-deployment-coe-resources module-spec/subtype-app-helm
+  [_deployment _nb-status]
+  ;; not yet supported
+  )
 
 (defn old-docker-detector
   [nuvlabox-status {{:keys [subtype compatibility]} :module id :id :as _deployment}]

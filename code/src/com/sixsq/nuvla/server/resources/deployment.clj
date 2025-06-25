@@ -16,6 +16,7 @@ a container orchestration engine.
     [com.sixsq.nuvla.server.resources.job.interface :as job-interface]
     [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.module.utils :as module-utils]
+    [com.sixsq.nuvla.server.resources.nuvlabox.status-utils :as nuvlabox-status-utils]
     [com.sixsq.nuvla.server.resources.resource-metadata :as md]
     [com.sixsq.nuvla.server.resources.spec.common-body :as common-body]
     [com.sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
@@ -243,18 +244,19 @@ a container orchestration engine.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [start-op        (u/action-map id :start)
-        stop-op         (u/action-map id :stop)
-        update-op       (u/action-map id :update)
-        create-log-op   (u/action-map id :create-log)
-        clone-op        (u/action-map id :clone)
-        check-dct-op    (u/action-map id :check-dct)
-        fetch-module-op (u/action-map id :fetch-module)
-        force-delete-op (u/action-map id :force-delete)
-        detach-op       (u/action-map id :detach)
-        can-manage?     (a/can-manage? resource request)
-        can-edit-data?  (a/can-edit-data? resource request)
-        can-clone?      (a/can-view-data? resource request)]
+  (let [start-op               (u/action-map id :start)
+        stop-op                (u/action-map id :stop)
+        update-op              (u/action-map id :update)
+        create-log-op          (u/action-map id :create-log)
+        clone-op               (u/action-map id :clone)
+        check-dct-op           (u/action-map id :check-dct)
+        fetch-module-op        (u/action-map id :fetch-module)
+        fetch-coe-resources-op (u/action-map id :fetch-coe-resources)
+        force-delete-op        (u/action-map id :force-delete)
+        detach-op              (u/action-map id :detach)
+        can-manage?            (a/can-manage? resource request)
+        can-edit-data?         (a/can-edit-data? resource request)
+        can-clone?             (a/can-view-data? resource request)]
     (cond-> (crud/set-standard-operations resource request)
 
             (and can-manage? (utils/can-start? resource)) (update :operations conj start-op)
@@ -275,6 +277,8 @@ a container orchestration engine.
             (and can-manage? (utils/can-detach? resource)) (update :operations conj detach-op)
 
             (and can-manage? can-edit-data?) (update :operations conj fetch-module-op)
+
+            (and can-manage? can-edit-data?) (update :operations conj fetch-coe-resources-op)
 
             (a/can-delete? resource request) (update :operations conj force-delete-op)
 
@@ -534,6 +538,19 @@ a container orchestration engine.
                               :resource-name resource-type}
                 :body        (assoc-in deployment [:module :href] module-href)
                 :nuvla/authn (auth/current-authentication request)})))
+
+(defmethod crud/do-action [resource-type "fetch-coe-resources"]
+  [{{uuid :uuid} :params :as request}]
+  (let [id        (str resource-type "/" uuid)
+        {nuvlabox-id :nuvlabox :as deployment} (-> (crud/retrieve-by-id-as-admin id)
+                                                   (a/throw-cannot-view-data request)
+                                                   (utils/throw-when-payment-required request))
+        resp-body (if nuvlabox-id
+                    (let [{nuvlabox-status-id :nuvlabox-status :as _nuvlabox} (crud/retrieve-by-id-as-admin nuvlabox-id)
+                          nuvlabox-status (crud/retrieve-by-id-as-admin nuvlabox-status-id)]
+                      (nuvlabox-status-utils/get-deployment-coe-resources deployment nuvlabox-status))
+                    {})]
+    (r/json-response resp-body)))
 
 ;;
 ;; Events
