@@ -145,16 +145,6 @@ how the object can be accessed.
     (cond-> (dissoc resource :operations)
             (seq ops) (assoc :operations ops))))
 
-
-;;
-;; Generate ID.
-;;
-
-(defmethod crud/new-identifier resource-type
-  [{:keys [object bucket] :as resource} resource-name]
-  (when-let [new-id (u/from-data-uuid (str object bucket))]
-    (assoc resource :id (str resource-name "/" new-id))))
-
 ;;
 ;; template processing
 ;;
