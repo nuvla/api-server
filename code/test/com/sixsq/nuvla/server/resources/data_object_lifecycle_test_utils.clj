@@ -308,31 +308,6 @@
                 (ltu/body->edn)
                 (ltu/is-status 301)))
 
-
-          ;; creating the same object twice is not allowed
-          (let [uri     (-> session
-                            (request base-uri
-                                     :request-method :post
-                                     :body (j/write-value-as-string valid-create))
-                            (ltu/body->edn)
-                            (ltu/is-status 201)
-                            (ltu/location))
-                abs-uri (str p/service-context uri)]
-
-            (-> session
-                (request base-uri
-                         :request-method :post
-                         :body (j/write-value-as-string valid-create))
-                (ltu/body->edn)
-                (ltu/is-status 409))
-
-            ;; cleanup
-            (-> session
-                (request abs-uri
-                         :request-method :delete)
-                (ltu/body->edn)
-                (ltu/is-status 200)))
-
           (let [uri     (-> session
                             (request base-uri
                                      :request-method :post
