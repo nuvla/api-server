@@ -2,6 +2,18 @@
 
 ## Released
 
+## [6.17.0](https://github.com/nuvla/api-server/compare/6.16.3...6.17.0) (2025-06-30)
+
+
+### Features
+
+* **fetch-coe-resources:** New deployment action fetch-coe-resources ([#1029](https://github.com/nuvla/api-server/issues/1029)) ([25e7287](https://github.com/nuvla/api-server/commit/25e7287f0678346ba796ef9a181b30a8ab187bb2))
+
+
+### Bug Fixes
+
+* **data-object:** Conflict id should not happen when using different infra-service. ([#1030](https://github.com/nuvla/api-server/issues/1030)) ([de762da](https://github.com/nuvla/api-server/commit/de762da5d238c914ca17f7c7181532cae0542520))
+
 ## [6.16.3](https://github.com/nuvla/api-server/compare/6.16.2...6.16.3) (2025-06-17)
 
 
