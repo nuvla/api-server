@@ -742,3 +742,28 @@
                            "internal"
                            :execution-mode
                            "push")])))))
+
+(deftest get-deployment-coe-resources
+  (is (= #{[:containers
+            '({:Id     "cd377e4afc0843f6f964d7f4f1d79f368a7096234ed29310cbbc054af7178eef"
+               :Image  "nuvladev/nuvlaedge:detect-nuvla-coe-resources-slim-docker"
+               :Labels {:com.docker.compose.project "b3b70820-2de4-4a11-b00c-a79661c3d433"
+                        :com.docker.compose.service "agent"}
+               :Ports  [{:IP          "0.0.0.0"
+                         :PrivatePort 8000
+                         :Type        "tcp"}
+                        {:IP          "0.0.0.0"
+                         :PrivatePort 80
+                         :PublicPort  32786
+                         :Type        "tcp"}
+                        {:IP          "0.0.0.0"
+                         :PrivatePort 8080
+                         :PublicPort  33783
+                         :Type        "udp"}]})]}
+         (set (:docker (t/get-deployment-coe-resources
+                         {:id     "deployment/b3b70820-2de4-4a11-b00c-a79661c3d433"
+                          :module {:compatibility "docker-compose"
+                                   :subtype       "application"}}
+                         nb-status-coe-docker-compose))))))
+
+
