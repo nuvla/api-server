@@ -226,7 +226,624 @@
                                                                 :updated     "2024-11-13 11:13:42.534312596 +0000 UTC",
                                                                 :status      "deployed",
                                                                 :chart       "hello-world-0.1.0",
-                                                                :app_version "1.16.0"}]}},
+                                                                :app_version "1.16.0"}]
+                                                :pods         [{:spec
+                                                                {:overhead                         nil,
+                                                                 :automount_service_account_token  nil,
+                                                                 :restart_policy                   "Always",
+                                                                 :set_hostname_as_fqdn             nil,
+                                                                 :host_users                       nil,
+                                                                 :ephemeral_containers             nil,
+                                                                 :dns_policy                       "ClusterFirst",
+                                                                 :security_context
+                                                                 {:sysctls                nil,
+                                                                  :run_as_non_root        nil,
+                                                                  :fs_group               nil,
+                                                                  :windows_options        nil,
+                                                                  :run_as_user            nil,
+                                                                  :supplemental_groups    nil,
+                                                                  :fs_group_change_policy nil,
+                                                                  :se_linux_options       nil,
+                                                                  :seccomp_profile        nil,
+                                                                  :run_as_group           nil},
+                                                                 :host_network                     nil,
+                                                                 :scheduling_gates                 nil,
+                                                                 :termination_grace_period_seconds 30,
+                                                                 :priority_class_name              nil,
+                                                                 :readiness_gates                  nil,
+                                                                 :node_selector                    nil,
+                                                                 :preemption_policy                "PreemptLowerPriority",
+                                                                 :service_account                  "default",
+                                                                 :host_aliases                     nil,
+                                                                 :affinity                         nil,
+                                                                 :image_pull_secrets               nil,
+                                                                 :hostname                         nil,
+                                                                 :containers
+                                                                 [{:args                       nil,
+                                                                   :stdin                      nil,
+                                                                   :startup_probe              nil,
+                                                                   :tty                        nil,
+                                                                   :security_context           nil,
+                                                                   :volume_mounts
+                                                                   [{:name              "kube-api-access-jxzwj",
+                                                                     :sub_path          nil,
+                                                                     :read_only         true,
+                                                                     :mount_propagation nil,
+                                                                     :sub_path_expr     nil,
+                                                                     :mount_path        "/var/run/secrets/kubernetes.io/serviceaccount"}],
+                                                                   :name                       "nginx",
+                                                                   :stdin_once                 nil,
+                                                                   :env_from                   nil,
+                                                                   :command                    nil,
+                                                                   :lifecycle                  nil,
+                                                                   :image_pull_policy          "Always",
+                                                                   :env                        nil,
+                                                                   :working_dir                nil,
+                                                                   :termination_message_policy "File",
+                                                                   :ports
+                                                                   [{:protocol       "TCP",
+                                                                     :name           nil,
+                                                                     :host_port      nil,
+                                                                     :container_port 80,
+                                                                     :host_ip        nil}],
+                                                                   :termination_message_path   "/dev/termination-log",
+                                                                   :image                      "nginx:latest",
+                                                                   :readiness_probe            nil,
+                                                                   :volume_devices             nil,
+                                                                   :resources                  {:claims nil, :requests nil, :limits nil},
+                                                                   :liveness_probe             nil}],
+                                                                 :share_process_namespace          nil,
+                                                                 :volumes
+                                                                 [{:config_map              nil,
+                                                                   :gce_persistent_disk     nil,
+                                                                   :glusterfs               nil,
+                                                                   :storageos               nil,
+                                                                   :flex_volume             nil,
+                                                                   :ephemeral               nil,
+                                                                   :azure_disk              nil,
+                                                                   :projected
+                                                                   {:sources
+                                                                    [{:config_map   nil,
+                                                                      :secret       nil,
+                                                                      :service_account_token
+                                                                      {:path "token", :audience nil, :expiration_seconds 3607},
+                                                                      :downward_api nil}
+                                                                     {:config_map
+                                                                      {:name     "kube-root-ca.crt",
+                                                                       :optional nil,
+                                                                       :items    [{:path "ca.crt", :key "ca.crt", :mode nil}]},
+                                                                      :secret                nil,
+                                                                      :service_account_token nil,
+                                                                      :downward_api          nil}
+                                                                     {:config_map            nil,
+                                                                      :secret                nil,
+                                                                      :service_account_token nil,
+                                                                      :downward_api
+                                                                      {:items
+                                                                       [{:path               "namespace",
+                                                                         :mode               nil,
+                                                                         :field_ref
+                                                                         {:field_path "metadata.namespace", :api_version "v1"},
+                                                                         :resource_field_ref nil}]}}],
+                                                                    :default_mode 420},
+                                                                   :rbd                     nil,
+                                                                   :nfs                     nil,
+                                                                   :flocker                 nil,
+                                                                   :portworx_volume         nil,
+                                                                   :name                    "kube-api-access-jxzwj",
+                                                                   :empty_dir               nil,
+                                                                   :quobyte                 nil,
+                                                                   :azure_file              nil,
+                                                                   :iscsi                   nil,
+                                                                   :secret                  nil,
+                                                                   :cinder                  nil,
+                                                                   :csi                     nil,
+                                                                   :vsphere_volume          nil,
+                                                                   :cephfs                  nil,
+                                                                   :host_path               nil,
+                                                                   :aws_elastic_block_store nil,
+                                                                   :git_repo                nil,
+                                                                   :photon_persistent_disk  nil,
+                                                                   :persistent_volume_claim nil,
+                                                                   :fc                      nil,
+                                                                   :scale_io                nil,
+                                                                   :downward_api            nil}],
+                                                                 :subdomain                        nil,
+                                                                 :resource_claims                  nil,
+                                                                 :runtime_class_name               nil,
+                                                                 :priority                         0,
+                                                                 :scheduler_name                   "default-scheduler",
+                                                                 :active_deadline_seconds          nil,
+                                                                 :node_name                        "minikube",
+                                                                 :host_ipc                         nil,
+                                                                 :enable_service_links             true,
+                                                                 :os                               nil,
+                                                                 :dns_config                       nil,
+                                                                 :init_containers                  nil,
+                                                                 :host_pid                         nil,
+                                                                 :topology_spread_constraints      nil,
+                                                                 :tolerations
+                                                                 [{:key                "node.kubernetes.io/not-ready",
+                                                                   :value              nil,
+                                                                   :toleration_seconds 300,
+                                                                   :operator           "Exists",
+                                                                   :effect             "NoExecute"}
+                                                                  {:key                "node.kubernetes.io/unreachable",
+                                                                   :value              nil,
+                                                                   :toleration_seconds 300,
+                                                                   :operator           "Exists",
+                                                                   :effect             "NoExecute"}],
+                                                                 :service_account_name             "default"},
+                                                                :status
+                                                                {:nominated_node_name          nil,
+                                                                 :pod_ip                       "10.244.0.34",
+                                                                 :qos_class                    "BestEffort",
+                                                                 :start_time                   "2025-07-01T16:34:38+00:00",
+                                                                 :phase                        "Running",
+                                                                 :ephemeral_container_statuses nil,
+                                                                 :reason                       nil,
+                                                                 :pod_i_ps                     [{:ip "10.244.0.34"}],
+                                                                 :conditions
+                                                                 [{:last_transition_time "2025-07-01T16:34:48+00:00",
+                                                                   :type                 "PodReadyToStartContainers",
+                                                                   :reason               nil,
+                                                                   :status               "True",
+                                                                   :last_probe_time      nil,
+                                                                   :message              nil}
+                                                                  {:last_transition_time "2025-07-01T16:34:38+00:00",
+                                                                   :type                 "Initialized",
+                                                                   :reason               nil,
+                                                                   :status               "True",
+                                                                   :last_probe_time      nil,
+                                                                   :message              nil}
+                                                                  {:last_transition_time "2025-07-01T16:34:48+00:00",
+                                                                   :type                 "Ready",
+                                                                   :reason               nil,
+                                                                   :status               "True",
+                                                                   :last_probe_time      nil,
+                                                                   :message              nil}
+                                                                  {:last_transition_time "2025-07-01T16:34:48+00:00",
+                                                                   :type                 "ContainersReady",
+                                                                   :reason               nil,
+                                                                   :status               "True",
+                                                                   :last_probe_time      nil,
+                                                                   :message              nil}
+                                                                  {:last_transition_time "2025-07-01T16:34:38+00:00",
+                                                                   :type                 "PodScheduled",
+                                                                   :reason               nil,
+                                                                   :status               "True",
+                                                                   :last_probe_time      nil,
+                                                                   :message              nil}],
+                                                                 :container_statuses
+                                                                 [{:started       true,
+                                                                   :ready         true,
+                                                                   :name          "nginx",
+                                                                   :state
+                                                                   {:running    {:started_at "2025-07-01T16:34:47+00:00"},
+                                                                    :waiting    nil,
+                                                                    :terminated nil},
+                                                                   :last_state    {:running nil, :waiting nil, :terminated nil},
+                                                                   :restart_count 0,
+                                                                   :image         "nginx:latest",
+                                                                   :container_id
+                                                                   "docker://90a431e48ada2b028edc0c03ea138df38d35ce90943beb0c7a287db40efb2e9b",
+                                                                   :image_id
+                                                                   "docker-pullable://nginx@sha256:93230cd54060f497430c7a120e2347894846a81b6a5dd2110f7362c5423b4abc"}],
+                                                                 :host_ip                      "192.168.49.2",
+                                                                 :message                      nil,
+                                                                 :init_container_statuses      nil},
+                                                                :kind        nil,
+                                                                :api_version nil,
+                                                                :metadata
+                                                                {:labels
+                                                                 {:pod-template-hash      "77d9cd8fb4",
+                                                                  :nuvla.application.name "819b9a9e-010f-4c26-82d5-aa395bbb6179",
+                                                                  :nuvla.deployment.uuid  "819b9a9e-010f-4c26-82d5-aa395bbb6179",
+                                                                  :app                    "nginx"},
+                                                                 :generation                    1,
+                                                                 :deletion_timestamp            nil,
+                                                                 :uid                           "a9f0929d-a15b-4b73-94f8-a826176a3e8e",
+                                                                 :name                          "nginx-deployment-77d9cd8fb4-qm89s",
+                                                                 :deletion_grace_period_seconds nil,
+                                                                 :finalizers                    nil,
+                                                                 :owner_references
+                                                                 [{:controller           true,
+                                                                   :uid                  "e264256c-bc65-46e9-a8bf-954cba0f81c3",
+                                                                   :name                 "nginx-deployment-77d9cd8fb4",
+                                                                   :kind                 "ReplicaSet",
+                                                                   :api_version          "apps/v1",
+                                                                   :block_owner_deletion true}],
+                                                                 :self_link                     nil,
+                                                                 :annotations                   nil,
+                                                                 :generate_name                 "nginx-deployment-77d9cd8fb4-",
+                                                                 :creation_timestamp            "2025-07-01T16:34:38+00:00",
+                                                                 :namespace                     "188d515b-6bac-4732-a16e-87e8cbda249f",
+                                                                 :resource_version              "14992"}}]
+                                                :configmaps   [{:binary_data nil,
+                                                                :kind        nil,
+                                                                :immutable   nil,
+                                                                :api_version nil,
+                                                                :metadata
+                                                                {:labels                        nil,
+                                                                 :generation                    nil,
+                                                                 :deletion_timestamp            nil,
+                                                                 :uid                           "fc87fcee-5e6f-4977-81bb-33b9f354f80d",
+                                                                 :name                          "extension-apiserver-authentication",
+                                                                 :deletion_grace_period_seconds nil,
+                                                                 :finalizers                    nil,
+                                                                 :owner_references              nil,
+                                                                 :self_link                     nil,
+                                                                 :annotations                   nil,
+                                                                 :generate_name                 nil,
+                                                                 :creation_timestamp            "2025-07-01T12:26:15+00:00",
+                                                                 :namespace                     "kube-system",
+                                                                 :resource_version              "22"},
+                                                                :data
+                                                                {:requestheader-extra-headers-prefix "",
+                                                                 :requestheader-group-headers        "",
+                                                                 :requestheader-client-ca-file       "",
+                                                                 :requestheader-allowed-names        "",
+                                                                 :client-ca-file                     "",
+                                                                 :requestheader-username-headers     ""}}
+                                                               {:binary_data nil,
+                                                                :kind        nil,
+                                                                :immutable   nil,
+                                                                :api_version nil,
+                                                                :metadata
+                                                                {:labels                        nil,
+                                                                 :generation                    nil,
+                                                                 :deletion_timestamp            nil,
+                                                                 :uid                           "0ec55192-878e-4e19-bc4f-c2e88498c595",
+                                                                 :name                          "kube-apiserver-legacy-service-account-token-tracking",
+                                                                 :deletion_grace_period_seconds nil,
+                                                                 :finalizers                    nil,
+                                                                 :owner_references              nil,
+                                                                 :self_link                     nil,
+                                                                 :annotations                   nil,
+                                                                 :generate_name                 nil,
+                                                                 :creation_timestamp            "2025-07-01T12:26:15+00:00",
+                                                                 :namespace                     "kube-system",
+                                                                 :resource_version              "45"},
+                                                                :data        {:since ""}}
+                                                               {:binary_data nil,
+                                                                :kind        nil,
+                                                                :immutable   nil,
+                                                                :api_version nil,
+                                                                :metadata
+                                                                {:labels                        nil,
+                                                                 :generation                    nil,
+                                                                 :deletion_timestamp            nil,
+                                                                 :uid                           "7a4fe685-5a15-4fae-bdd6-e9fa8d6ab45e",
+                                                                 :name                          "cluster-info",
+                                                                 :deletion_grace_period_seconds nil,
+                                                                 :finalizers                    nil,
+                                                                 :owner_references              nil,
+                                                                 :self_link                     nil,
+                                                                 :annotations                   nil,
+                                                                 :generate_name                 nil,
+                                                                 :creation_timestamp            "2025-07-01T12:26:16+00:00",
+                                                                 :namespace                     "kube-public",
+                                                                 :resource_version              "358"},
+                                                                :data        {:kubeconfig "", :jws-kubeconfig-02zlb8 ""}}
+                                                               {:binary_data nil,
+                                                                :kind        nil,
+                                                                :immutable   nil,
+                                                                :api_version nil,
+                                                                :metadata
+                                                                {:labels                        nil,
+                                                                 :generation                    nil,
+                                                                 :deletion_timestamp            nil,
+                                                                 :uid                           "85747ff2-0bb9-432d-ade6-2a1a976c2f89",
+                                                                 :name                          "kubeadm-config",
+                                                                 :deletion_grace_period_seconds nil,
+                                                                 :finalizers                    nil,
+                                                                 :owner_references              nil,
+                                                                 :self_link                     nil,
+                                                                 :annotations                   nil,
+                                                                 :generate_name                 nil,
+                                                                 :creation_timestamp            "2025-07-01T12:26:16+00:00",
+                                                                 :namespace                     "kube-system",
+                                                                 :resource_version              "246"},
+                                                                :data        {:ClusterConfiguration ""}}
+                                                               {:binary_data nil,
+                                                                :kind        nil,
+                                                                :immutable   nil,
+                                                                :api_version nil,
+                                                                :metadata
+                                                                {:labels                        nil,
+                                                                 :generation                    nil,
+                                                                 :deletion_timestamp            nil,
+                                                                 :uid                           "ccaa77c9-beae-4989-af8d-5ba6fbafdb32",
+                                                                 :name                          "kubelet-config",
+                                                                 :deletion_grace_period_seconds nil,
+                                                                 :finalizers                    nil,
+                                                                 :owner_references              nil,
+                                                                 :self_link                     nil,
+                                                                 :annotations                   nil,
+                                                                 :generate_name                 nil,
+                                                                 :creation_timestamp            "2025-07-01T12:26:16+00:00",
+                                                                 :namespace                     "kube-system",
+                                                                 :resource_version              "249"},
+                                                                :data        {:kubelet ""}}
+                                                               {:binary_data nil,
+                                                                :kind        nil,
+                                                                :immutable   nil,
+                                                                :api_version nil,
+                                                                :metadata
+                                                                {:labels                        nil,
+                                                                 :generation                    nil,
+                                                                 :deletion_timestamp            nil,
+                                                                 :uid                           "f4941bcb-5df0-4617-a90c-de5a24884e15",
+                                                                 :name                          "coredns",
+                                                                 :deletion_grace_period_seconds nil,
+                                                                 :finalizers                    nil,
+                                                                 :owner_references              nil,
+                                                                 :self_link                     nil,
+                                                                 :annotations                   nil,
+                                                                 :generate_name                 nil,
+                                                                 :creation_timestamp            "2025-07-01T12:26:17+00:00",
+                                                                 :namespace                     "kube-system",
+                                                                 :resource_version              "263"},
+                                                                :data        {:Corefile ""}}
+                                                               {:binary_data nil,
+                                                                :kind        nil,
+                                                                :immutable   nil,
+                                                                :api_version nil,
+                                                                :metadata
+                                                                {:labels                        {:app "kube-proxy"},
+                                                                 :generation                    nil,
+                                                                 :deletion_timestamp            nil,
+                                                                 :uid                           "cfdf56db-26e2-4df2-b974-6b70e17eb4a6",
+                                                                 :name                          "kube-proxy",
+                                                                 :deletion_grace_period_seconds nil,
+                                                                 :finalizers                    nil,
+                                                                 :owner_references              nil,
+                                                                 :self_link                     nil,
+                                                                 :annotations                   nil,
+                                                                 :generate_name                 nil,
+                                                                 :creation_timestamp            "2025-07-01T12:26:17+00:00",
+                                                                 :namespace                     "kube-system",
+                                                                 :resource_version              "291"},
+                                                                :data        {:kubeconfig.conf "", :config.conf ""}}
+                                                               {:binary_data nil,
+                                                                :kind        nil,
+                                                                :immutable   nil,
+                                                                :api_version nil,
+                                                                :metadata
+                                                                {:labels                        nil,
+                                                                 :generation                    nil,
+                                                                 :deletion_timestamp            nil,
+                                                                 :uid                           "33ac23f6-373d-48ef-8985-ec5fc5219219",
+                                                                 :name                          "kube-root-ca.crt",
+                                                                 :deletion_grace_period_seconds nil,
+                                                                 :finalizers                    nil,
+                                                                 :owner_references              nil,
+                                                                 :self_link                     nil,
+                                                                 :annotations
+                                                                 {:description
+                                                                  "Contains a CA bundle that can be used to verify the kube-apiserver when using internal endpoints such as the internal service IP or kubernetes.default.svc. No other usage is guaranteed across distributions of Kubernetes clusters."},
+                                                                 :generate_name                 nil,
+                                                                 :creation_timestamp            "2025-07-01T12:26:23+00:00",
+                                                                 :namespace                     "default",
+                                                                 :resource_version              "362"},
+                                                                :data        {:ca.crt ""}}
+                                                               {:binary_data nil,
+                                                                :kind        nil,
+                                                                :immutable   nil,
+                                                                :api_version nil,
+                                                                :metadata
+                                                                {:labels                        nil,
+                                                                 :generation                    nil,
+                                                                 :deletion_timestamp            nil,
+                                                                 :uid                           "adb7bdd6-3deb-41fa-9f81-608fc104a2bf",
+                                                                 :name                          "kube-root-ca.crt",
+                                                                 :deletion_grace_period_seconds nil,
+                                                                 :finalizers                    nil,
+                                                                 :owner_references              nil,
+                                                                 :self_link                     nil,
+                                                                 :annotations
+                                                                 {:description
+                                                                  "Contains a CA bundle that can be used to verify the kube-apiserver when using internal endpoints such as the internal service IP or kubernetes.default.svc. No other usage is guaranteed across distributions of Kubernetes clusters."},
+                                                                 :generate_name                 nil,
+                                                                 :creation_timestamp            "2025-07-01T12:26:23+00:00",
+                                                                 :namespace                     "kube-node-lease",
+                                                                 :resource_version              "363"},
+                                                                :data        {:ca.crt ""}}
+                                                               {:binary_data nil,
+                                                                :kind        nil,
+                                                                :immutable   nil,
+                                                                :api_version nil,
+                                                                :metadata
+                                                                {:labels                        nil,
+                                                                 :generation                    nil,
+                                                                 :deletion_timestamp            nil,
+                                                                 :uid                           "246abc98-0eba-446a-b26d-7e95113f4cc0",
+                                                                 :name                          "kube-root-ca.crt",
+                                                                 :deletion_grace_period_seconds nil,
+                                                                 :finalizers                    nil,
+                                                                 :owner_references              nil,
+                                                                 :self_link                     nil,
+                                                                 :annotations
+                                                                 {:description
+                                                                  "Contains a CA bundle that can be used to verify the kube-apiserver when using internal endpoints such as the internal service IP or kubernetes.default.svc. No other usage is guaranteed across distributions of Kubernetes clusters."},
+                                                                 :generate_name                 nil,
+                                                                 :creation_timestamp            "2025-07-01T12:26:23+00:00",
+                                                                 :namespace                     "kube-public",
+                                                                 :resource_version              "364"},
+                                                                :data        {:ca.crt ""}}
+                                                               {:binary_data nil,
+                                                                :kind        nil,
+                                                                :immutable   nil,
+                                                                :api_version nil,
+                                                                :metadata
+                                                                {:labels                        nil,
+                                                                 :generation                    nil,
+                                                                 :deletion_timestamp            nil,
+                                                                 :uid                           "1a7e1104-c349-490b-8769-8f6eabd56759",
+                                                                 :name                          "kube-root-ca.crt",
+                                                                 :deletion_grace_period_seconds nil,
+                                                                 :finalizers                    nil,
+                                                                 :owner_references              nil,
+                                                                 :self_link                     nil,
+                                                                 :annotations
+                                                                 {:description
+                                                                  "Contains a CA bundle that can be used to verify the kube-apiserver when using internal endpoints such as the internal service IP or kubernetes.default.svc. No other usage is guaranteed across distributions of Kubernetes clusters."},
+                                                                 :generate_name                 nil,
+                                                                 :creation_timestamp            "2025-07-01T12:26:23+00:00",
+                                                                 :namespace                     "kube-system",
+                                                                 :resource_version              "365"},
+                                                                :data        {:ca.crt ""}}
+                                                               {:binary_data nil,
+                                                                :kind        nil,
+                                                                :immutable   nil,
+                                                                :api_version nil,
+                                                                :metadata
+                                                                {:labels                        nil,
+                                                                 :generation                    nil,
+                                                                 :deletion_timestamp            nil,
+                                                                 :uid                           "87340dd0-472a-4c55-877d-44a6906c4054",
+                                                                 :name                          "kube-root-ca.crt",
+                                                                 :deletion_grace_period_seconds nil,
+                                                                 :finalizers                    nil,
+                                                                 :owner_references              nil,
+                                                                 :self_link                     nil,
+                                                                 :annotations
+                                                                 {:description
+                                                                  "Contains a CA bundle that can be used to verify the kube-apiserver when using internal endpoints such as the internal service IP or kubernetes.default.svc. No other usage is guaranteed across distributions of Kubernetes clusters."},
+                                                                 :generate_name                 nil,
+                                                                 :creation_timestamp            "2025-07-01T16:27:32+00:00",
+                                                                 :namespace                     "nuvlabox-3ba7df6c-369f-4cbe-95a6-950d06218a3b",
+                                                                 :resource_version              "14359"},
+                                                                :data        {:ca.crt ""}}
+                                                               {:binary_data nil,
+                                                                :kind        nil,
+                                                                :immutable   nil,
+                                                                :api_version nil,
+                                                                :metadata
+                                                                {:labels                        nil,
+                                                                 :generation                    nil,
+                                                                 :deletion_timestamp            nil,
+                                                                 :uid                           "44eeff89-8b01-45aa-85dc-1211e5209a22",
+                                                                 :name                          "kube-root-ca.crt",
+                                                                 :deletion_grace_period_seconds nil,
+                                                                 :finalizers                    nil,
+                                                                 :owner_references              nil,
+                                                                 :self_link                     nil,
+                                                                 :annotations
+                                                                 {:description
+                                                                  "Contains a CA bundle that can be used to verify the kube-apiserver when using internal endpoints such as the internal service IP or kubernetes.default.svc. No other usage is guaranteed across distributions of Kubernetes clusters."},
+                                                                 :generate_name                 nil,
+                                                                 :creation_timestamp            "2025-07-01T16:34:38+00:00",
+                                                                 :namespace                     "188d515b-6bac-4732-a16e-87e8cbda249f",
+                                                                 :resource_version              "14952"},
+                                                                :data        {:ca.crt ""}}],
+                                                :images       [{:names
+                                                                ["alpine/socat:latest"
+                                                                 "alpine/socat@sha256:6f6b7799b7280bc128cfbd55aae1deca507b71c7371969c62c2773302f1834ce"],
+                                                                :size_bytes 10058623}
+                                                               {:names
+                                                                ["busybox:latest"
+                                                                 "busybox@sha256:f85340bf132ae937d2c2a763b8335c9bab35d6e8293f70f606b9c6178d84f42b"],
+                                                                :size_bytes 4042190}
+                                                               {:names
+                                                                ["curlimages/curl:latest"
+                                                                 "curlimages/curl@sha256:9a1ed35addb45476afa911696297f8e115993df459278ed036182dd2cd22b67b"],
+                                                                :size_bytes 24437827}
+                                                               {:names
+                                                                ["gcr.io/k8s-minikube/storage-provisioner:v5"
+                                                                 "gcr.io/k8s-minikube/storage-provisioner@sha256:18eb69d1418e854ad5a19e399310e52808a8321e4c441c1dddad8977a0d7a944"],
+                                                                :size_bytes 29032448}
+                                                               {:names
+                                                                ["nginx:latest"
+                                                                 "nginx@sha256:93230cd54060f497430c7a120e2347894846a81b6a5dd2110f7362c5423b4abc"],
+                                                                :size_bytes 197642500}
+                                                               {:names
+                                                                ["registry.k8s.io/coredns/coredns:v1.12.0"
+                                                                 "registry.k8s.io/coredns/coredns@sha256:40384aa1f5ea6bfdc77997d243aec73da05f27aed0c5e9d65bfa98933c519d97"],
+                                                                :size_bytes 68392336}
+                                                               {:names
+                                                                ["registry.k8s.io/etcd:3.5.21-0"
+                                                                 "registry.k8s.io/etcd@sha256:d58c035df557080a27387d687092e3fc2b64c6d0e3162dc51453a115f847d121"],
+                                                                :size_bytes 146133049}
+                                                               {:names
+                                                                ["registry.k8s.io/kube-apiserver:v1.33.1"
+                                                                 "registry.k8s.io/kube-apiserver@sha256:d8ae2fb01c39aa1c7add84f3d54425cf081c24c11e3946830292a8cfa4293548"],
+                                                                :size_bytes 97087431}
+                                                               {:names
+                                                                ["registry.k8s.io/kube-controller-manager:v1.33.1"
+                                                                 "registry.k8s.io/kube-controller-manager@sha256:7c9bea694e3a3c01ed6a5ee02d55a6124cc08e0b2eec6caa33f2c396b8cbc3f8"],
+                                                                :size_bytes 90534181}
+                                                               {:names
+                                                                ["registry.k8s.io/kube-proxy:v1.33.1"
+                                                                 "registry.k8s.io/kube-proxy@sha256:7ddf379897139ae8ade8b33cb9373b70c632a4d5491da6e234f5d830e0a50807"],
+                                                                :size_bytes 99683741}
+                                                               {:names
+                                                                ["registry.k8s.io/kube-scheduler:v1.33.1"
+                                                                 "registry.k8s.io/kube-scheduler@sha256:395b7de7cdbdcc3c3a3db270844a3f71d757e2447a1e4db76b4cce46fba7fd55"],
+                                                                :size_bytes 70545701}
+                                                               {:names
+                                                                ["registry.k8s.io/pause:3.10"
+                                                                 "registry.k8s.io/pause@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"],
+                                                                :size_bytes 514000}
+                                                               {:names
+                                                                ["sixsq/nuvlaedge:2.18.0"
+                                                                 "sixsq/nuvlaedge@sha256:82f41a6d2810811c529ade7030a6cdc65653055780f017a1fccc2ae0b280804a"],
+                                                                :size_bytes 179704064}],
+                                                :secrets      [{:type        "bootstrap.kubernetes.io/token",
+                                                                :string_data nil,
+                                                                :kind        nil,
+                                                                :immutable   nil,
+                                                                :api_version nil,
+                                                                :metadata
+                                                                {:labels                        nil,
+                                                                 :generation                    nil,
+                                                                 :deletion_timestamp            nil,
+                                                                 :uid                           "af11fe0d-a395-4354-ba98-1b43fd8b4c0e",
+                                                                 :name                          "bootstrap-token-02zlb8",
+                                                                 :deletion_grace_period_seconds nil,
+                                                                 :finalizers                    nil,
+                                                                 :owner_references              nil,
+                                                                 :self_link                     nil,
+                                                                 :annotations                   nil,
+                                                                 :generate_name                 nil,
+                                                                 :creation_timestamp            "2025-07-01T12:26:16+00:00",
+                                                                 :namespace                     "kube-system",
+                                                                 :resource_version              "254"},
+                                                                :data
+                                                                {:expiration                     "",
+                                                                 :token-id                       "",
+                                                                 :token-secret                   "",
+                                                                 :auth-extra-groups              "",
+                                                                 :usage-bootstrap-authentication "",
+                                                                 :usage-bootstrap-signing        ""}}
+                                                               {:type        "helm.sh/release.v1",
+                                                                :string_data nil,
+                                                                :kind        nil,
+                                                                :immutable   nil,
+                                                                :api_version nil,
+                                                                :metadata
+                                                                {:labels
+                                                                 {:name       "nuvlabox-3ba7df6c-369f-4cbe-95a6-950d06218a3b",
+                                                                  :status     "deployed",
+                                                                  :modifiedAt "1751387252",
+                                                                  :version    "1",
+                                                                  :owner      "helm"},
+                                                                 :generation                    nil,
+                                                                 :deletion_timestamp            nil,
+                                                                 :uid                           "7973af6d-10b3-4924-8df8-95685032a701",
+                                                                 :name
+                                                                 "sh.helm.release.v1.nuvlabox-3ba7df6c-369f-4cbe-95a6-950d06218a3b.v1",
+                                                                 :deletion_grace_period_seconds nil,
+                                                                 :finalizers                    nil,
+                                                                 :owner_references              nil,
+                                                                 :self_link                     nil,
+                                                                 :annotations                   nil,
+                                                                 :generate_name                 nil,
+                                                                 :creation_timestamp            "2025-07-01T16:27:32+00:00",
+                                                                 :namespace                     "default",
+                                                                 :resource_version              "14376"},
+                                                                :data        {:release ""}}]
+                                                }},
                                :network       {:ips {:public "143.233.127.6",
                                                      :swarm  "10.160.3.194",
                                                      :vpn    "10.0.133.172",
@@ -764,6 +1381,11 @@
                          {:id     "deployment/b3b70820-2de4-4a11-b00c-a79661c3d433"
                           :module {:compatibility "docker-compose"
                                    :subtype       "application"}}
-                         nb-status-coe-docker-compose))))))
+                         nb-status-coe-docker-compose)))))
+  (let [k8s-resources (:kubernetes (t/get-deployment-coe-resources
+                                     {:id     "deployment/819b9a9e-010f-4c26-82d5-aa395bbb6179"
+                                      :module {:subtype "application_kubernetes"}}
+                                     nb-status-coe-kubernetes))]
+    (is (= "Running" (-> k8s-resources :pods first :status :phase)))))
 
 
