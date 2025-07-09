@@ -339,11 +339,18 @@
     (or (= (get-in resource [:metadata :labels :nuvla.deployment.uuid]) uuid)
         (= (get-in resource [:metadata :namespace]) uuid))))
 
+(defn ensure-image-tag
+  [image-name]
+  (if (str/includes? image-name ":")
+    image-name
+    (str image-name ":latest")))
+
 (defn get-k8s-pods-images
   [pods nb-status]
   (let [all-images  (get-in nb-status [:coe-resources :kubernetes :images])
         image-names (->> pods
-                         (mapcat #(->> % :spec :containers (map :image))))]
+                         (mapcat #(->> % :spec :containers (map :image)))
+                         (map ensure-image-tag))]
     (->> all-images
          (filter #(some (set (:names %)) image-names)))))
 
