@@ -92,28 +92,18 @@ that start with 'nuvla-' are reserved for the server.
 
 (defn tpl->group
   [{:keys [group-identifier] :as resource} request]
-  (let [id           (str resource-type "/" group-identifier)
-        active-claim (auth/current-active-claim request)
-        inherit?     (and
-                       (not= "group/nuvla-admin" active-claim)
-                       (str/starts-with? active-claim "group/"))
-        {parent-id :id
-         parents   :parents
-         :as       _group} (when inherit?
-                             (crud/retrieve-by-id-as-admin active-claim))
-        user-id      (auth/current-user-id request)]
+  (let [id      (str resource-type "/" group-identifier)
+        user-id (auth/current-user-id request)]
     (-> resource
         (dissoc :group-identifier)
         (assoc :id id :users (cond-> []
-                                     (not= "internal" user-id) (conj user-id)))
-        (cond-> inherit? (assoc :parents (conj parents parent-id))))))
+                                     (not= "internal" user-id) (conj user-id))))))
 
 
 
 (defn add-impl
   [{{:keys [id] :as body} :body :as request}]
   (a/throw-cannot-add collection-acl request)
-  (throw-subgroups-limit-reached request)
   (-> body
       u/strip-service-attrs
       (assoc :id id
@@ -197,11 +187,14 @@ that start with 'nuvla-' are reserved for the server.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [invite-op      (u/action-map id :invite)
-        can-manage?    (a/can-manage? resource request)
-        can-edit-data? (a/can-edit-data? resource request)]
+  (let [invite-op        (u/action-map id :invite)
+        add-subgroup-op  (u/action-map id :add-subgroup)
+        can-manage?      (a/can-manage? resource request)
+        can-edit-data?   (a/can-edit-data? resource request)
+        can-manage-edit? (and can-manage? can-edit-data?)]
     (cond-> (crud/set-standard-operations resource request)
-            (and can-manage? can-edit-data?) (update :operations conj invite-op))))
+            can-manage-edit? (update :operations conj invite-op)
+            can-manage-edit? (update :operations conj add-subgroup-op))))
 
 
 (defn throw-is-already-in-group
@@ -249,6 +242,27 @@ that start with 'nuvla-' are reserved for the server.
                          callback-url)]
       (email-utils/send-join-group-email id invited-by invite-url email)
       (r/map-response (format "successfully invited to %s" id) 200 id))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+(defmethod crud/do-action [resource-type "add-subgroup"]
+  [{{:keys [name description group-identifier]} :body {:keys [uuid]} :params :as request}]
+  (try
+    (let [parent-id        (str resource-type "/" uuid)
+          {parents :parents :as _parent-group} (-> (crud/retrieve-by-id-as-admin parent-id)
+                                                   (throw-cannot-manage request "add-subgroup"))
+          subgroup-parents (conj parents parent-id)
+          id               (str resource-type "/" group-identifier)
+          user-id          (auth/current-user-id request)
+          body             (cond-> {:id      id
+                                    :parents subgroup-parents
+                                    :users   (cond-> []
+                                                     (not= "internal" user-id) (conj user-id))}
+                                   (not (str/blank? name)) (assoc :name name)
+                                   (not (str/blank? description)) (assoc :description description))]
+      (-> (assoc request :body body)
+          throw-subgroups-limit-reached
+          add-impl))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

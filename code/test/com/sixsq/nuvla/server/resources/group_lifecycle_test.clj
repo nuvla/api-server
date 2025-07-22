@@ -166,7 +166,7 @@
                       (request invite-url
                                :request :put
                                :body (j/write-value-as-string {:username     "jane@example.com"
-                                                      :redirect-url "https://phishing.com"}))
+                                                               :redirect-url "https://phishing.com"}))
                       (ltu/body->edn)
                       (ltu/is-status 400)
                       (ltu/message-matches config-nuvla/error-msg-not-authorised-redirect-url)))
@@ -204,67 +204,67 @@
                                                        :group-identifier group-id}})]
 
     (testing "A user should be able to create a group and see it"
-      (let [abs-uri (-> session-user
-                        (request base-uri
-                                 :request-method :post
-                                 :body (j/write-value-as-string (valid-create "a")))
-                        (ltu/body->edn)
-                        (ltu/is-status 201)
-                        (ltu/location-url))]
-        (-> session-user
-            (request abs-uri)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :parents nil))))
+      (let [abs-uri-grp-a      (-> session-user
+                                   (request base-uri
+                                            :request-method :post
+                                            :body (j/write-value-as-string (valid-create "a")))
+                                   (ltu/body->edn)
+                                   (ltu/is-status 201)
+                                   (ltu/location-url))
+            add-subgroup-a-url (-> session-user
+                                   (request abs-uri-grp-a)
+                                   (ltu/body->edn)
+                                   (ltu/is-status 200)
+                                   (ltu/is-key-value :parents nil)
+                                   (ltu/is-operation-present :add-subgroup)
+                                   (ltu/get-op-url :add-subgroup))]
 
-    (testing "A group should be able to create a subgroup and see it"
-      (let [abs-uri (-> session-group-a
-                        (request base-uri
-                                 :request-method :post
-                                 :body (j/write-value-as-string (valid-create "b")))
-                        (ltu/body->edn)
-                        (ltu/is-status 201)
-                        (ltu/location-url))]
-        (-> session-group-a
-            (request abs-uri)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :parents ["group/a"]))
-        (testing "subgroup is able to see himself"
-          (-> session-group-b
-              (request abs-uri)
-              (ltu/body->edn)
-              (ltu/is-status 200)))))
+        (testing "A user should be able to create a subgroup level 1 and see it"
+          (let [abs-uri-grp-b      (-> session-user
+                                       (request add-subgroup-a-url
+                                                :request-method :put
+                                                :body (j/write-value-as-string {:group-identifier "b"}))
+                                       (ltu/body->edn)
+                                       (ltu/is-status 201)
+                                       (ltu/location-url))
+                add-subgroup-b-url (-> session-user
+                                       (request abs-uri-grp-b)
+                                       (ltu/body->edn)
+                                       (ltu/is-status 200)
+                                       (ltu/is-key-value :parents ["group/a"])
+                                       (ltu/is-operation-present :add-subgroup)
+                                       (ltu/get-op-url :add-subgroup))]
 
-    (testing "A group should be able to create a subgroup and see it with all parents"
-      (let [abs-uri (-> session-group-b
-                        (request base-uri
-                                 :request-method :post
-                                 :body (j/write-value-as-string (valid-create "c")))
-                        (ltu/body->edn)
-                        (ltu/is-status 201)
-                        (ltu/location-url))]
-        (-> session-group-b
-            (request abs-uri)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :parents ["group/a" "group/b"]))
+            (testing "A user should be able to create a subgroup level 2 and see it with all parents"
+              (let [abs-uri-grp-c (-> session-user
+                                      (request add-subgroup-b-url
+                                               :request-method :put
+                                               :body (j/write-value-as-string {:group-identifier "c"}))
+                                      (ltu/body->edn)
+                                      (ltu/is-status 201)
+                                      (ltu/location-url))]
+                (-> session-group-b
+                    (request abs-uri-grp-c)
+                    (ltu/body->edn)
+                    (ltu/is-status 200)
+                    (ltu/is-key-value :parents ["group/a" "group/b"])
+                    (ltu/is-operation-present :add-subgroup))
 
-        (testing "parents field cannot be updated"
-          (-> session-admin
-              (request abs-uri
-                       :request-method :put
-                       :body (j/write-value-as-string {:parents ["change-not-allowed"]}))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value :parents ["group/a" "group/b"]))
-          (-> session-admin
-              (request (str abs-uri "?select=parents")
-                       :request-method :put
-                       :body (j/write-value-as-string {}))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value :parents ["group/a" "group/b"])))))
+                (testing "parents field cannot be updated"
+                  (-> session-admin
+                      (request abs-uri-grp-c
+                               :request-method :put
+                               :body (j/write-value-as-string {:parents ["change-not-allowed"]}))
+                      (ltu/body->edn)
+                      (ltu/is-status 200)
+                      (ltu/is-key-value :parents ["group/a" "group/b"]))
+                  (-> session-admin
+                      (request (str abs-uri-grp-c "?select=parents")
+                               :request-method :put
+                               :body (j/write-value-as-string {}))
+                      (ltu/body->edn)
+                      (ltu/is-status 200)
+                      (ltu/is-key-value :parents ["group/a" "group/b"])))))))))
 
     (testing "A user should not be able to create the 19th group of a group"
       (let [session-group-d (header session-json authn-info-header
@@ -272,25 +272,26 @@
         (-> session-user
             (request base-uri
                      :request-method :post
-                     :body (j/write-value-as-string (valid-create "d")))
+                     :body (j/write-value-as-string (valid-create "d1")))
             ltu/body->edn
             (ltu/is-status 201))
-        (doseq [group-idx (range 19)]
-          (-> session-group-d
-              (request base-uri
+        (doseq [group-idx (range 2 21)]
+          (-> session-user
+              (request (str base-uri (str "/d" (dec group-idx)) "/add-subgroup")
                        :request-method :post
-                       :body (j/write-value-as-string (valid-create (str "d" group-idx))))
+                       :body (j/write-value-as-string {:group-identifier (str "d" group-idx)}))
               ltu/body->edn
               (ltu/is-status 201)))
-        (-> session-group-d
-            (request (str base-uri "?filter=parents='group/d'&last=0")
+        (-> session-user
+            (request (str base-uri "?filter=parents='group/d1'&last=0")
                      :request-method :put)
             ltu/body->edn
-            (ltu/is-status 200))
-        (-> session-group-d
-            (request base-uri
-                     :request-method :post
-                     :body (j/write-value-as-string (valid-create "d-unwanted1")))
+            (ltu/is-status 200)
+            (ltu/is-count 19))
+        (-> session-user
+            (request (str base-uri "/d20/add-subgroup")
+                     :request-method :put
+                     :body (j/write-value-as-string {:group-identifier "d-unwanted1"}))
             ltu/body->edn
             (ltu/is-status 409)
             (ltu/message-matches "A group cannot have more than 19 subgroups!"))))
