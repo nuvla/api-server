@@ -17,7 +17,7 @@
     [postal.core :as postal]))
 
 
-(use-fixtures :once ltu/with-test-server-fixture)
+(use-fixtures :each ltu/with-test-server-fixture)
 
 
 (def base-uri (str p/service-context t/resource-type))
@@ -188,8 +188,6 @@
         session-json     (content-type (session app) "application/json")
         session-admin    (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon group/nuvla-admin")
         session-user     (header session-json authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
-        session-group-a  (header session-json authn-info-header "user/jane group/a user/jane group/nuvla-user group/nuvla-anon group/a")
-        session-group-b  (header session-json authn-info-header "user/jane group/b user/jane group/nuvla-user group/nuvla-anon group/b")
 
         href             (str group-tpl/resource-type "/generic")
 
@@ -243,7 +241,7 @@
                                       (ltu/body->edn)
                                       (ltu/is-status 201)
                                       (ltu/location-url))]
-                (-> session-group-b
+                (-> session-user
                     (request abs-uri-grp-c)
                     (ltu/body->edn)
                     (ltu/is-status 200)
@@ -267,34 +265,32 @@
                       (ltu/is-key-value :parents ["group/a" "group/b"])))))))))
 
     (testing "A user should not be able to create the 19th group of a group"
-      (let [session-group-d (header session-json authn-info-header
-                                    "user/jane group/d user/jane group/nuvla-user group/nuvla-anon group/d")]
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (j/write-value-as-string (valid-create "d1")))
+          ltu/body->edn
+          (ltu/is-status 201))
+      (doseq [group-idx (range 2 21)]
         (-> session-user
-            (request base-uri
+            (request (str base-uri (str "/d" (dec group-idx)) "/add-subgroup")
                      :request-method :post
-                     :body (j/write-value-as-string (valid-create "d1")))
+                     :body (j/write-value-as-string {:group-identifier (str "d" group-idx)}))
             ltu/body->edn
-            (ltu/is-status 201))
-        (doseq [group-idx (range 2 21)]
-          (-> session-user
-              (request (str base-uri (str "/d" (dec group-idx)) "/add-subgroup")
-                       :request-method :post
-                       :body (j/write-value-as-string {:group-identifier (str "d" group-idx)}))
-              ltu/body->edn
-              (ltu/is-status 201)))
-        (-> session-user
-            (request (str base-uri "?filter=parents='group/d1'&last=0")
-                     :request-method :put)
-            ltu/body->edn
-            (ltu/is-status 200)
-            (ltu/is-count 19))
-        (-> session-user
-            (request (str base-uri "/d20/add-subgroup")
-                     :request-method :put
-                     :body (j/write-value-as-string {:group-identifier "d-unwanted1"}))
-            ltu/body->edn
-            (ltu/is-status 409)
-            (ltu/message-matches "A group cannot have more than 19 subgroups!"))))
+            (ltu/is-status 201)))
+      (-> session-user
+          (request (str base-uri "?filter=parents='group/d1'&last=0")
+                   :request-method :put)
+          ltu/body->edn
+          (ltu/is-status 200)
+          (ltu/is-count 19))
+      (-> session-user
+          (request (str base-uri "/d20/add-subgroup")
+                   :request-method :put
+                   :body (j/write-value-as-string {:group-identifier "d-unwanted1"}))
+          ltu/body->edn
+          (ltu/is-status 409)
+          (ltu/message-matches "A group cannot have more than 19 subgroups!")))
 
     (testing "delete group that have children is not allowed"
       (-> session-admin

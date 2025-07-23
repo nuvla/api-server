@@ -80,6 +80,12 @@
               :name             (str "Group " group-id)
               :description      (str "Group " group-id " description")}})
 
+(defn valid-create-subgrp
+  [group-id]
+  {:group-identifier group-id
+   :name             (str "Group " group-id)
+   :description      (str "Group " group-id " description")})
+
 (deftest lifecycle
 
   (let [app              (ltu/ring-app)
@@ -128,8 +134,7 @@
                    :request-method :post
                    :body (j/write-value-as-string unauthorized-create))
           (ltu/body->edn)
-          (ltu/is-status 403))
-      )
+          (ltu/is-status 403)))
 
 
     ;; anon with valid activated user can create session
@@ -452,12 +457,11 @@
                      handler
                      auth/current-authentication
                      :active-claim))))
-
         (testing "switch to subgroup is possible"
-          (-> (header session-json authn-info-header (str "user/x " group-a " user/x group/nuvla-user group/nuvla-anon " group-a))
-              (request grp-base-uri
-                       :request-method :post
-                       :body (j/write-value-as-string (valid-create-grp "switch-test-b")))
+          (-> session-admin
+              (request (str p/service-context group-a "/add-subgroup")
+                       :request-method :put
+                       :body (j/write-value-as-string (valid-create-subgrp "switch-test-b")))
               (ltu/body->edn)
               (ltu/is-status 201))
 
@@ -525,51 +529,66 @@
 
 
 (deftest get-groups-lifecycle-test
-  (let [app             (ltu/ring-app)
-        session-json    (content-type (session app) "application/json")
-        session-anon    (header session-json authn-info-header "user/unknown user/unknown group/nuvla-anon")
-        session-admin   (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon group/nuvla-admin")
-        user-id         (create-user session-admin
-                                     :username "tarzan"
-                                     :password "TarzanTarzan-0"
-                                     :activated? true
-                                     :email "tarzan@example.org")
-        session-user    (header session-json authn-info-header (str user-id user-id " group/nuvla-user group/nuvla-anon"))
-        session-group-a (header session-json authn-info-header "user/x group/a user/x group/nuvla-user group/nuvla-anon group/a")
-        session-group-b (header session-json authn-info-header "user/x group/b user/x group/nuvla-user group/nuvla-anon group/b")
-        href            (str st/resource-type "/password")]
+  (let [app           (ltu/ring-app)
+        session-json  (content-type (session app) "application/json")
+        session-anon  (header session-json authn-info-header "user/unknown user/unknown group/nuvla-anon")
+        session-admin (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon group/nuvla-admin")
+        user-id       (create-user session-admin
+                                   :username "tarzan"
+                                   :password "TarzanTarzan-0"
+                                   :activated? true
+                                   :email "tarzan@example.org")
+        session-user  (header session-json authn-info-header (str user-id user-id " group/nuvla-user group/nuvla-anon"))
+        href          (str st/resource-type "/password")]
 
-    (-> session-admin
-        (request grp-base-uri
-                 :request-method :post
-                 :body (j/write-value-as-string (valid-create-grp "a")))
-        (ltu/body->edn)
-        (ltu/is-status 201))
-    (-> session-group-a
-        (request grp-base-uri
-                 :request-method :post
-                 :body (j/write-value-as-string (valid-create-grp "b")))
-        (ltu/body->edn)
-        (ltu/is-status 201))
-    (-> session-group-a
-        (request grp-base-uri
-                 :request-method :post
-                 :body (j/write-value-as-string (valid-create-grp "b1")))
-        (ltu/body->edn)
-        (ltu/is-status 201))
-    (-> session-group-b
-        (request grp-base-uri
-                 :request-method :post
-                 :body (j/write-value-as-string (valid-create-grp "c")))
-        (ltu/body->edn)
-        (ltu/is-status 201))
+    (let [grp-a-url          (-> session-admin
+                                 (request grp-base-uri
+                                          :request-method :post
+                                          :body (j/write-value-as-string (valid-create-grp "a")))
+                                 (ltu/body->edn)
+                                 (ltu/is-status 201)
+                                 (ltu/location-url))
+          grp-a-add-subgroup (-> session-admin
+                                 (request grp-a-url)
+                                 (ltu/is-status 200)
+                                 (ltu/body->edn)
+                                 (ltu/is-operation-present :add-subgroup)
+                                 (ltu/get-op-url :add-subgroup))
+          grp-b-url          (-> session-admin
+                                 (request grp-a-add-subgroup
+                                          :request-method :put
+                                          :body (j/write-value-as-string (valid-create-subgrp "b")))
+                                 (ltu/body->edn)
+                                 (ltu/is-status 201)
+                                 (ltu/location-url))
+          grp-b-add-subgroup (-> session-admin
+                                 (request grp-b-url)
+                                 (ltu/is-status 200)
+                                 (ltu/body->edn)
+                                 (ltu/is-operation-present :add-subgroup)
+                                 (ltu/get-op-url :add-subgroup))]
+
+
+
+      (-> session-admin
+          (request grp-a-add-subgroup
+                   :request-method :put
+                   :body (j/write-value-as-string (valid-create-subgrp "b1")))
+          (ltu/body->edn)
+          (ltu/is-status 201))
+      (-> session-admin
+          (request grp-b-add-subgroup
+                   :request-method :put
+                   :body (j/write-value-as-string (valid-create-subgrp "c")))
+          (ltu/body->edn)
+          (ltu/is-status 201)))
 
     (let [resp            (-> session-anon
                               (request base-uri
                                        :request-method :post
                                        :body (j/write-value-as-string {:template {:href     href
-                                                                         :username "tarzan"
-                                                                         :password "TarzanTarzan-0"}}))
+                                                                                  :username "tarzan"
+                                                                                  :password "TarzanTarzan-0"}}))
                               (ltu/body->edn)
                               (ltu/is-set-cookie)
                               (ltu/is-status 201))
@@ -667,51 +686,54 @@
 
 
 (deftest get-peers-lifecycle-test
-  (let [app             (ltu/ring-app)
-        session-json    (content-type (session app) "application/json")
-        session-anon    (header session-json authn-info-header "user/unknown user/unknown group/nuvla-anon")
-        session-admin   (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon group/nuvla-admin")
-        user-id         (create-user session-admin
-                                     :username "peer0"
-                                     :password "Peer0Peer-0"
-                                     :activated? true
-                                     :email "peer-0@example.org")
-        peer-1          (create-user session-admin
-                                     :username "peer1"
-                                     :password "Peer1Peer-1"
-                                     :activated? true
-                                     :email "peer-1@example.org")
-        peer-2          (create-user session-admin
-                                     :username "peer2"
-                                     :password "Peer2Peer-2"
-                                     :activated? false
-                                     :email "peer-2@example.org")
-        peer-3          (create-user session-admin
-                                     :username "peer3"
-                                     :password "Peer3Peer-3"
-                                     :activated? true
-                                     :email "peer-3@example.org")
-        session-user    (header session-json authn-info-header (str user-id user-id " group/nuvla-user group/nuvla-anon"))
-        session-group-a (header session-json authn-info-header "user/x group/peers-test-a user/x group/nuvla-user group/nuvla-anon group/peers-test-a")
-        href            (str st/resource-type "/password")
+  (let [app                      (ltu/ring-app)
+        session-json             (content-type (session app) "application/json")
+        session-anon             (header session-json authn-info-header "user/unknown user/unknown group/nuvla-anon")
+        session-admin            (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon group/nuvla-admin")
+        user-id                  (create-user session-admin
+                                              :username "peer0"
+                                              :password "Peer0Peer-0"
+                                              :activated? true
+                                              :email "peer-0@example.org")
+        peer-1                   (create-user session-admin
+                                              :username "peer1"
+                                              :password "Peer1Peer-1"
+                                              :activated? true
+                                              :email "peer-1@example.org")
+        peer-2                   (create-user session-admin
+                                              :username "peer2"
+                                              :password "Peer2Peer-2"
+                                              :activated? false
+                                              :email "peer-2@example.org")
+        peer-3                   (create-user session-admin
+                                              :username "peer3"
+                                              :password "Peer3Peer-3"
+                                              :activated? true
+                                              :email "peer-3@example.org")
+        grp-a-id                 "group/peers-test-a"
+        user-authn-header        (str user-id " " user-id " group/nuvla-user group/nuvla-anon")
+        session-user             (header session-json authn-info-header user-authn-header)
+        href                     (str st/resource-type "/password")
 
-        resp            (-> session-anon
-                            (request base-uri
-                                     :request-method :post
-                                     :body (j/write-value-as-string {:template {:href     href
-                                                                       :username "peer0"
-                                                                       :password "Peer0Peer-0"}}))
-                            (ltu/body->edn)
-                            (ltu/is-set-cookie)
-                            (ltu/is-status 201))
-        id              (ltu/body-resource-id resp)
-        abs-uri         (ltu/location-url resp)
-        session-with-id (header session-json authn-info-header (str user-id user-id " group/nuvla-user group/nuvla-anon " id))
-        get-peers-url   (-> session-user
-                            (header authn-info-header (str user-id " " user-id " group/nuvla-user group/nuvla-anon " id))
-                            (request abs-uri)
-                            (ltu/body->edn)
-                            (ltu/get-op-url :get-peers))]
+        resp                     (-> session-anon
+                                     (request base-uri
+                                              :request-method :post
+                                              :body (j/write-value-as-string {:template {:href     href
+                                                                                         :username "peer0"
+                                                                                         :password "Peer0Peer-0"}}))
+                                     (ltu/body->edn)
+                                     (ltu/is-set-cookie)
+                                     (ltu/is-status 201))
+        id                       (ltu/body-resource-id resp)
+        abs-uri                  (ltu/location-url resp)
+        user-authn-header-with-id (str user-authn-header " " id)
+
+        session-with-id          (header session-json authn-info-header user-authn-header-with-id)
+        get-peers-url            (-> session-with-id
+                                     (request abs-uri)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/get-op-url :get-peers))]
 
     (testing "admin should get all users with validated emails"
       (-> session-admin
@@ -732,9 +754,8 @@
           (ltu/body)
           (= {})
           (is "Get peers body should be empty")))
-
-    (-> session-admin
-        (request (-> session-admin
+    (-> session-with-id
+        (request (-> session-with-id
                      (request grp-base-uri
                               :request-method :post
                               :body (j/write-value-as-string (valid-create-grp "peers-test-a")))
@@ -758,11 +779,11 @@
           (is "Get peers body should be himself and peer-1")))
 
     (testing "user should get peers of subgroup also"
-      (-> session-admin
-          (request (-> session-group-a
-                       (request grp-base-uri
-                                :request-method :post
-                                :body (j/write-value-as-string (valid-create-grp "peers-test-b")))
+      (-> session-user
+          (request (-> session-user
+                       (request (str p/service-context grp-a-id "/add-subgroup")
+                                :request-method :put
+                                :body (j/write-value-as-string (valid-create-subgrp "peers-test-b")))
                        (ltu/body->edn)
                        (ltu/is-status 201)
                        (ltu/location-url))
