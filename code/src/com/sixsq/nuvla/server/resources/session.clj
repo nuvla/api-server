@@ -81,6 +81,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
   (:require
     [clojure.set :as set]
     [clojure.string :as str]
+    [com.sixsq.nuvla.auth.acl-resource :as acl-resource]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.cookies :as cookies]
     [com.sixsq.nuvla.auth.utils :as auth]
@@ -401,8 +402,10 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 
 (defn resolve-user-groups
-  [{:keys [user] :as session}]
-  (let [root-groups (query-group (str "users='" user "'"))
+  [{:keys [user] :as session} request]
+  (let [root-groups (if (acl-resource/is-admin-request? request)
+                      (query-group "parent=null")
+                      (query-group (str "users='" user "'")))
         subgroups   (if (seq root-groups)
                       (->> root-groups
                            (mapv :id)
@@ -443,7 +446,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
     (-> request
         retrieve-session
         (a/throw-cannot-manage request)
-        resolve-user-groups
+        (resolve-user-groups request)
         :user-groups
         build-group-hierarchy
         r/json-response)
@@ -470,7 +473,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
     (-> (str resource-type "/" uuid)
         db/retrieve
         (a/throw-cannot-edit request)
-        (resolve-user-groups)
+        (resolve-user-groups request)
         (throw-switch-group-not-authorized request)
         (update-cookie-session request))
     (catch Exception e
@@ -483,7 +486,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
     (let [{:keys [root-groups subgroups]} (-> request
                                               retrieve-session
                                               (a/throw-cannot-manage request)
-                                              resolve-user-groups
+                                              (resolve-user-groups request)
                                               :user-groups)
           filter-validated "validated=true"
           filter-emails    (if (a/is-admin-request? request)
