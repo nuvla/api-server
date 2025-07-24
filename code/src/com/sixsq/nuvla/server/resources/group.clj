@@ -114,38 +114,40 @@ that start with 'nuvla-' are reserved for the server.
       crud/validate
       db/add))
 
-
 (defmethod crud/add resource-type
-  [{:keys [body] :as request}]
-  (a/throw-cannot-add collection-acl request)
-  (let [authn-info (auth/current-authentication request)
-        desc-attrs (u/select-desc-keys body)
-        body       (-> body
-                       (assoc :resource-type create-type)
-                       (std-crud/resolve-hrefs authn-info)
-                       (update-in [:template] merge desc-attrs) ;; validate desc attrs
-                       (crud/validate)
-                       :template
-                       (tpl->group request))]
-    (add-impl (assoc request :body body))))
+  [{:keys [body] :as original-request}]
+  (let [request (auth/request-as-user original-request)]
+    (a/throw-cannot-add collection-acl request)
+    (let [authn-info (auth/current-authentication request)
+          desc-attrs (u/select-desc-keys body)
+          body       (-> body
+                         (assoc :resource-type create-type)
+                         (std-crud/resolve-hrefs authn-info)
+                         (update-in [:template] merge desc-attrs) ;; validate desc attrs
+                         (crud/validate)
+                         :template
+                         (tpl->group request))]
+      (add-impl (assoc request :body body)))))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 
 
 (defmethod crud/retrieve resource-type
-  [request]
-  (retrieve-impl request))
+  [original-request]
+  (let [request (auth/request-as-user original-request)]
+    (retrieve-impl request)))
 
 
 (def edit-impl (std-crud/edit-fn resource-type))
 
 
 (defmethod crud/edit resource-type
-  [request]
-  (let [id    (str resource-type "/" (-> request :params :uuid))
-        users (get-in request [:body :users] [])
-        acl   (get-in request [:body :acl] (:acl (crud/retrieve-by-id-as-admin id)))]
+  [original-request]
+  (let [request (auth/request-as-user original-request)
+        id      (str resource-type "/" (-> request :params :uuid))
+        users   (get-in request [:body :users] [])
+        acl     (get-in request [:body :acl] (:acl (crud/retrieve-by-id-as-admin id)))]
     (-> request
         (assoc-in [:body :acl] acl)
         (update-in [:body :acl :view-meta] (comp vec set concat) (conj users id))
@@ -174,10 +176,11 @@ that start with 'nuvla-' are reserved for the server.
 
 
 (defmethod crud/delete resource-type
-  [request]
-  (-> request
-      throw-when-have-child
-      delete-impl))
+  [original-request]
+  (let [request (auth/request-as-user original-request)]
+    (-> request
+        throw-when-have-child
+        delete-impl)))
 
 
 ;;
@@ -212,59 +215,64 @@ that start with 'nuvla-' are reserved for the server.
 
 
 (defmethod crud/do-action [resource-type "invite"]
-  [{base-uri :base-uri {username         :username
-                        redirect-url     :redirect-url
-                        set-password-url :set-password-url} :body {uuid :uuid} :params :as request}]
-  (try
-    (config-nuvla/throw-is-not-authorised-redirect-url redirect-url)
-    (let [id           (str resource-type "/" uuid)
-          user-id      (auth-password/identifier->user-id username)
-          _group       (-> (crud/retrieve-by-id-as-admin id)
-                           (throw-cannot-manage request "invite")
-                           (throw-is-already-in-group user-id))
-          invited-by   (auth-password/invited-by request)
-          email        (if-let [email-address (some-> user-id auth-password/user-id->email)]
-                         email-address
-                         (if (s/valid? ::spec-core/email username)
-                           username
-                           (throw (r/ex-response (str "invalid email '" username "'") 400))))
-          callback-url (callback-join-group/create-callback
-                         base-uri id
-                         :data (cond-> {:email email}
-                                       user-id (assoc :user-id user-id)
-                                       redirect-url (assoc :redirect-url redirect-url)
-                                       set-password-url (assoc :set-password-url set-password-url))
-                         :expires (u/ttl->timestamp 2592000)) ;; expire after one month
-          invite-url   (if (and (nil? user-id) set-password-url)
-                         (str set-password-url "?callback=" (gen-util/encode-uri-component callback-url)
-                              "&type=" (gen-util/encode-uri-component "invitation")
-                              "&username=" (gen-util/encode-uri-component email))
-                         callback-url)]
-      (email-utils/send-join-group-email id invited-by invite-url email)
-      (r/map-response (format "successfully invited to %s" id) 200 id))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
+  [original-request]
+  (let [{base-uri                             :base-uri
+         {username         :username
+          redirect-url     :redirect-url
+          set-password-url :set-password-url} :body
+         {uuid :uuid}                         :params :as request} (auth/request-as-user original-request)]
+    (try
+      (config-nuvla/throw-is-not-authorised-redirect-url redirect-url)
+      (let [id           (str resource-type "/" uuid)
+            user-id      (auth-password/identifier->user-id username)
+            _group       (-> (crud/retrieve-by-id-as-admin id)
+                             (throw-cannot-manage request "invite")
+                             (throw-is-already-in-group user-id))
+            invited-by   (auth-password/invited-by request)
+            email        (if-let [email-address (some-> user-id auth-password/user-id->email)]
+                           email-address
+                           (if (s/valid? ::spec-core/email username)
+                             username
+                             (throw (r/ex-response (str "invalid email '" username "'") 400))))
+            callback-url (callback-join-group/create-callback
+                           base-uri id
+                           :data (cond-> {:email email}
+                                         user-id (assoc :user-id user-id)
+                                         redirect-url (assoc :redirect-url redirect-url)
+                                         set-password-url (assoc :set-password-url set-password-url))
+                           :expires (u/ttl->timestamp 2592000)) ;; expire after one month
+            invite-url   (if (and (nil? user-id) set-password-url)
+                           (str set-password-url "?callback=" (gen-util/encode-uri-component callback-url)
+                                "&type=" (gen-util/encode-uri-component "invitation")
+                                "&username=" (gen-util/encode-uri-component email))
+                           callback-url)]
+        (email-utils/send-join-group-email id invited-by invite-url email)
+        (r/map-response (format "successfully invited to %s" id) 200 id))
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
 
 (defmethod crud/do-action [resource-type "add-subgroup"]
-  [{{:keys [name description group-identifier]} :body {:keys [uuid]} :params :as request}]
-  (try
-    (let [parent-id        (str resource-type "/" uuid)
-          {parents :parents :as _parent-group} (-> (crud/retrieve-by-id-as-admin parent-id)
-                                                   (throw-cannot-manage request "add-subgroup"))
-          subgroup-parents (conj parents parent-id)
-          id               (str resource-type "/" group-identifier)
-          user-id          (auth/current-user-id request)
-          body             (cond-> {:id      id
-                                    :parents subgroup-parents
-                                    :users   (cond-> []
-                                                     (not= "internal" user-id) (conj user-id))}
-                                   (not (str/blank? name)) (assoc :name name)
-                                   (not (str/blank? description)) (assoc :description description))]
-      (-> (assoc request :body body)
-          throw-subgroups-limit-reached
-          add-impl))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
+  [original-request]
+  (let [{{:keys [name description group-identifier]} :body
+         {:keys [uuid]}                              :params :as request} (auth/request-as-user original-request)]
+    (try
+      (let [parent-id        (str resource-type "/" uuid)
+            {parents :parents :as _parent-group} (-> (crud/retrieve-by-id-as-admin parent-id)
+                                                     (throw-cannot-manage request "add-subgroup"))
+            subgroup-parents (conj parents parent-id)
+            id               (str resource-type "/" group-identifier)
+            user-id          (auth/current-user-id request)
+            body             (cond-> {:id      id
+                                      :parents subgroup-parents
+                                      :users   (cond-> []
+                                                       (not= "internal" user-id) (conj user-id))}
+                                     (not (str/blank? name)) (assoc :name name)
+                                     (not (str/blank? description)) (assoc :description description))]
+        (-> (assoc request :body body)
+            throw-subgroups-limit-reached
+            add-impl))
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
 
 
 ;;
@@ -275,8 +283,9 @@ that start with 'nuvla-' are reserved for the server.
 
 
 (defmethod crud/query resource-type
-  [request]
-  (query-impl request))
+  [original-request]
+  (let [request (auth/request-as-user original-request)]
+    (query-impl request)))
 
 
 ;;

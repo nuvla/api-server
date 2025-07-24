@@ -183,7 +183,6 @@
 
 
 (deftest lifecycle-subgroup-creation
-
   (let [app              (ltu/ring-app)
         session-json     (content-type (session app) "application/json")
         session-admin    (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon group/nuvla-admin")
