@@ -307,14 +307,14 @@
     (->> all-networks
          (filter #(contains? network-ids (:Id %))))))
 
-(defmulti get-ne-deployment-coe-resources (fn [{{:keys [compatibility]} :module :as _deployment} _nb-status] compatibility))
+(defmulti get-ne-deployment-docker-resources (fn [{{:keys [compatibility]} :module :as _deployment} _nb-status] compatibility))
 
-(defmethod get-ne-deployment-coe-resources module-spec/compatibility-swarm
+(defmethod get-ne-deployment-docker-resources module-spec/compatibility-swarm
   [_deployment _nb-status]
   ;; Not supported for now, returning empty response
   {})
 
-(defmethod get-ne-deployment-coe-resources module-spec/compatibility-docker-compose
+(defmethod get-ne-deployment-docker-resources module-spec/compatibility-docker-compose
   [deployment nb-status]
   (let [containers (get-docker-deployment-containers deployment nb-status)
         images     (get-docker-containers-images containers nb-status)
@@ -331,17 +331,86 @@
 
 (defmethod get-deployment-coe-resources module-spec/subtype-app-docker
   [deployment nb-status]
-  (get-ne-deployment-coe-resources deployment nb-status))
+  (get-ne-deployment-docker-resources deployment nb-status))
+
+(defn k8s-deployment-resource?
+  [{:keys [id] :as _deployment} resource]
+  (let [uuid (u/id->uuid id)]
+    (or (= (get-in resource [:metadata :labels :nuvla.deployment.uuid]) uuid)
+        (= (get-in resource [:metadata :namespace]) uuid))))
+
+(defn ensure-image-tag
+  [image-name]
+  (if (str/includes? image-name ":")
+    image-name
+    (str image-name ":latest")))
+
+(defn get-k8s-pods-images
+  [pods nb-status]
+  (let [all-images  (get-in nb-status [:coe-resources :kubernetes :images])
+        image-names (->> pods
+                         (mapcat #(->> % :spec :containers (map :image)))
+                         (map ensure-image-tag))]
+    (->> all-images
+         (filter #(some (set (:names %)) image-names)))))
+
+(defn get-k8s-pods-nodes
+  [pods nb-status]
+  (let [all-nodes  (get-in nb-status [:coe-resources :kubernetes :nodes])
+        node-names (->> pods
+                        (map #(->> % :spec :node_name))
+                        set)]
+    (->> all-nodes
+         (filter #(contains? node-names (-> % :metadata :name))))))
+
+(defn get-k8s-deployment-resources
+  [deployment nb-status kind]
+  (->> (get-in nb-status [:coe-resources :kubernetes kind])
+       (filter (partial k8s-deployment-resource? deployment))))
+
+(defn get-ne-deployment-k8s-resources
+  [deployment nb-status]
+  (let [namespaces             (get-k8s-deployment-resources deployment nb-status :namespaces)
+        pods                   (get-k8s-deployment-resources deployment nb-status :pods)
+        images                 (get-k8s-pods-images pods nb-status)
+        nodes                  (get-k8s-pods-nodes pods nb-status)
+        secrets                (get-k8s-deployment-resources deployment nb-status :secrets)
+        config-maps            (get-k8s-deployment-resources deployment nb-status :configmaps)
+        deployments            (get-k8s-deployment-resources deployment nb-status :deployments)
+        statefulsets           (get-k8s-deployment-resources deployment nb-status :statefulsets)
+        daemonsets             (get-k8s-deployment-resources deployment nb-status :daemonsets)
+        services               (get-k8s-deployment-resources deployment nb-status :services)
+        jobs                   (get-k8s-deployment-resources deployment nb-status :jobs)
+        cronjobs               (get-k8s-deployment-resources deployment nb-status :cronjobs)
+        persistentvolumes      (get-k8s-deployment-resources deployment nb-status :persistentvolumes)
+        persistentvolumeclaims (get-k8s-deployment-resources deployment nb-status :persistentvolumeclaims)
+        ingresses              (get-k8s-deployment-resources deployment nb-status :ingresses)
+        helmreleases           (get-k8s-deployment-resources deployment nb-status :helmreleases)]
+    {:kubernetes (cond-> {}
+                         (seq namespaces) (assoc :namespaces namespaces)
+                         (seq pods) (assoc :pods pods)
+                         (seq images) (assoc :images images)
+                         (seq nodes) (assoc :nodes nodes)
+                         (seq secrets) (assoc :secrets secrets)
+                         (seq config-maps) (assoc :configmaps config-maps)
+                         (seq deployments) (assoc :deployments deployments)
+                         (seq statefulsets) (assoc :statefulsets statefulsets)
+                         (seq daemonsets) (assoc :daemonsets daemonsets)
+                         (seq services) (assoc :services services)
+                         (seq jobs) (assoc :jobs jobs)
+                         (seq cronjobs) (assoc :cronjobs cronjobs)
+                         (seq persistentvolumes) (assoc :persistentvolumes persistentvolumes)
+                         (seq persistentvolumeclaims) (assoc :persistentvolumeclaims persistentvolumeclaims)
+                         (seq ingresses) (assoc :ingresses ingresses)
+                         (seq helmreleases) (assoc :helmreleases helmreleases))}))
 
 (defmethod get-deployment-coe-resources module-spec/subtype-app-k8s
   [deployment nb-status]
-  ;; not yet supported
-  )
+  (get-ne-deployment-k8s-resources deployment nb-status))
 
 (defmethod get-deployment-coe-resources module-spec/subtype-app-helm
-  [_deployment _nb-status]
-  ;; not yet supported
-  )
+  [deployment nb-status]
+  (get-ne-deployment-k8s-resources deployment nb-status))
 
 (defn old-docker-detector
   [nuvlabox-status {{:keys [subtype compatibility]} :module id :id :as _deployment}]
