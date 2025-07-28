@@ -180,6 +180,18 @@
                   :conditions-url conditions-url
                   :header-img     email-header-img-url})}]))
 
+(defn group-invitation-email-body
+  [group invited-email email-header-img-url]
+  (let [msg  (format "Your invitation to group %s has been accepted by %s." group invited-email)]
+    [:alternative
+     {:type    "text/plain"
+      :content msg}
+     {:type    "text/html; charset=utf-8"
+      :content (sending/render-content
+                 {:title          (format "Invitation to group %s has been accepted" group)
+                  :text-1         msg
+                  :header-img     email-header-img-url})}]))
+
 
 (defn send-password-set-email
   [set-password-url address]
@@ -209,6 +221,21 @@
         msg  {:from    (or smtp-username "administrator")
               :to      [address]
               :subject (format "You’re invited to join %s" group)
+              :body    body}]
+
+    (sending/dispatch nuvla-config msg)))
+
+(defn send-group-invitation-accepted
+  [group invited-email address]
+  (let [{:keys [smtp-username email-header-img-url]
+         :as   nuvla-config} (crud/retrieve-by-id-as-admin
+                               config-nuvla/config-instance-url)
+
+        body (group-invitation-email-body group invited-email email-header-img-url)
+
+        msg  {:from    (or smtp-username "administrator")
+              :to      [address]
+              :subject (format "Invitation to group %s has been accepted" group)
               :body    body}]
 
     (sending/dispatch nuvla-config msg)))
