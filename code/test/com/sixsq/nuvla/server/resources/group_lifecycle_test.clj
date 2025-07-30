@@ -92,8 +92,8 @@
 
     ;; test lifecycle of new group
     (with-redefs [auth-password/user-id->email (fn [_] "jane@example.com")
-                  auth-password/invited-by (fn [_] "jane")
-                  postal/send-message      (fn [_ _] {:code 0, :error :SUCCESS, :message "OK"})]
+                  auth-password/invited-by     (fn [_] "jane")
+                  postal/send-message          (fn [_ _] {:code 0, :error :SUCCESS, :message "OK"})]
       (doseq [session [session-user session-admin]]
         (doseq [tpl [valid-create valid-create-no-href]]
           (let [abs-uri     (-> session
@@ -128,14 +128,20 @@
                   (ltu/body->edn)
                   (ltu/is-status 200))
 
-              (let [response   (-> session
-                                   (request abs-uri)
-                                   (ltu/body->edn))
+              (let [response                (-> session
+                                                (request abs-uri)
+                                                (ltu/body->edn))
                     {updated-users :users
                      acl           :acl} (ltu/body response)
-                    invite-url (-> response
-                                   (ltu/is-operation-present :invite)
-                                   (ltu/get-op-url :invite))]
+                    invite-url              (-> response
+                                                (ltu/is-operation-present :invite)
+                                                (ltu/get-op-url :invite))
+                    pending-invitations-url (-> response
+                                                (ltu/is-operation-present :get-pending-invitations)
+                                                (ltu/get-op-url :get-pending-invitations))
+                    revoke-invitation-url   (-> response
+                                                (ltu/is-operation-present :revoke-invitation)
+                                                (ltu/get-op-url :revoke-invitation))]
 
                 (-> session
                     (request invite-url
@@ -153,18 +159,49 @@
                     (ltu/is-status 400)
                     (ltu/message-matches "user already in group"))
 
+                (testing "no pending invitations"
+                  (is (-> session
+                          (request pending-invitations-url)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          ltu/body
+                          count
+                          zero?)))
+
                 (-> session
                     (request invite-url
-                             :request :put
                              :body (j/write-value-as-string {:username "max@example.com"}))
                     (ltu/body->edn)
                     (ltu/is-status 200)
                     (ltu/message-matches (str "successfully invited to " id)))
 
+                (testing "should be one pending invitations"
+                  (is (-> session
+                          (request pending-invitations-url)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          ltu/body
+                          count
+                          (= 1))))
+                (-> session
+                    (request revoke-invitation-url
+                             :body (j/write-value-as-string {:email "max@example.com"}))
+                    (ltu/body->edn)
+                    (ltu/is-status 200))
+
+
+                (testing "should be zero pending invitations"
+                  (is (-> session
+                          (request pending-invitations-url)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          ltu/body
+                          count
+                          zero?)))
+
                 (binding [config-nuvla/*authorized-redirect-urls* ["https://nuvla.io"]]
                   (-> session
                       (request invite-url
-                               :request :put
                                :body (j/write-value-as-string {:username     "jane@example.com"
                                                                :redirect-url "https://phishing.com"}))
                       (ltu/body->edn)
