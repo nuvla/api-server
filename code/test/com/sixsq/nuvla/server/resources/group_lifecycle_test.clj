@@ -28,7 +28,6 @@
 
 
 (deftest lifecycle
-
   (let [app                     (ltu/ring-app)
         session-json            (content-type (session app) "application/json")
         session-admin           (header session-json authn-info-header "user/jane group/nuvla-admin group/nuvla-user group/nuvla-anon group/nuvla-admin")
@@ -92,7 +91,8 @@
         (ltu/is-status 403))
 
     ;; test lifecycle of new group
-    (with-redefs [auth-password/invited-by (fn [_] "jane")
+    (with-redefs [auth-password/user-id->email (fn [_] "jane@example.com")
+                  auth-password/invited-by (fn [_] "jane")
                   postal/send-message      (fn [_ _] {:code 0, :error :SUCCESS, :message "OK"})]
       (doseq [session [session-user session-admin]]
         (doseq [tpl [valid-create valid-create-no-href]]

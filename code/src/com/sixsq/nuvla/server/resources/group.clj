@@ -228,6 +228,7 @@ that start with 'nuvla-' are reserved for the server.
             _group       (-> (crud/retrieve-by-id-as-admin id)
                              (throw-cannot-manage request "invite")
                              (throw-is-already-in-group user-id))
+            inviter-email (-> request auth/current-user-id auth-password/user-id->email)
             invited-by   (auth-password/invited-by request)
             email        (if-let [email-address (some-> user-id auth-password/user-id->email)]
                            email-address
@@ -239,7 +240,8 @@ that start with 'nuvla-' are reserved for the server.
                            :data (cond-> {:email email}
                                          user-id (assoc :user-id user-id)
                                          redirect-url (assoc :redirect-url redirect-url)
-                                         set-password-url (assoc :set-password-url set-password-url))
+                                         set-password-url (assoc :set-password-url set-password-url)
+                                         inviter-email (assoc :inviter-email inviter-email))
                            :expires (u/ttl->timestamp 2592000)) ;; expire after one month
             invite-url   (if (and (nil? user-id) set-password-url)
                            (str set-password-url "?callback=" (gen-util/encode-uri-component callback-url)
