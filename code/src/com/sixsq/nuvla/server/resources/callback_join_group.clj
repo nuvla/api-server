@@ -13,6 +13,7 @@ visited, the email identifier is marked as validated.
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.credential-hashed-password :as hashed-password]
+    [com.sixsq.nuvla.server.resources.email.utils :as email-utils]
     [com.sixsq.nuvla.server.resources.user-template :as p]
     [com.sixsq.nuvla.server.resources.user-template-minimum :as user-minimum]
     [com.sixsq.nuvla.server.resources.user.utils :as user-utils]
@@ -57,6 +58,7 @@ visited, the email identifier is marked as validated.
   [{callback-id                      :id
     {existing-user-id :user-id
      email            :email
+     inviter-email    :inviter-email
      redirect-url     :redirect-url} :data
     {group-id :href}                 :target-resource :as _callback-resource}
    {{:keys [new-password]} :body :as _request}]
@@ -67,6 +69,8 @@ visited, the email identifier is marked as validated.
           msg     (format "'%s' successfully joined '%s'" user-id group-id)]
       (add-user-to-group group-id user-id)
       (utils/callback-succeeded! callback-id)
+      (when inviter-email
+        (email-utils/send-group-invitation-accepted group-id email inviter-email))
       (if (and existing-user-id redirect-url)
         (r/map-response msg 303 callback-id redirect-url)
         (r/map-response msg 200)))
