@@ -19,3 +19,8 @@
                         false {:state "SUCCEEDED", :expires past}
                         false {:state "SUCCEEDED"}
                         false {})))
+
+(deftest callback-ui-url
+  (are [expected arg] (= expected (t/callback-ui-url arg))
+                      "https://nuid.localhost/ui/callback?callback-url=https%3A%2F%2Fnuid.localhost%2Fapi%2Fcallback%2Fa1f08e95-7caf-4f84-8b62-dfa621eaad34%2Fexecute" "https://nuid.localhost/api/callback/a1f08e95-7caf-4f84-8b62-dfa621eaad34/execute"
+                      "https://nuvla.io/ui/callback?callback-url=https%3A%2F%2Fnuvla.io%2Fapi%2Fcallback%2Fa1f08e95-7caf-4f84-8b62-dfa621eaad34%2Fexecute" "https://nuvla.io/api/callback/a1f08e95-7caf-4f84-8b62-dfa621eaad34/execute"))

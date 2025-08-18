@@ -13,6 +13,7 @@ that start with 'nuvla-' are reserved for the server.
     [com.sixsq.nuvla.db.filter.parser :as parser]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.resources.callback-join-group :as callback-join-group]
+    [com.sixsq.nuvla.server.resources.callback.utils :as callback-utils]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
@@ -246,7 +247,7 @@ that start with 'nuvla-' are reserved for the server.
                          (str set-password-url "?callback=" (gen-util/encode-uri-component callback-url)
                               "&type=" (gen-util/encode-uri-component "invitation")
                               "&username=" (gen-util/encode-uri-component email))
-                         callback-url)]
+                         (callback-utils/callback-ui-url callback-url))]
       (email-utils/send-join-group-email id invited-by invite-url email)
       (r/map-response (format "successfully invited to %s" id) 200 id))
     (catch Exception e
