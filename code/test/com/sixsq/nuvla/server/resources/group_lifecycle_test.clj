@@ -284,11 +284,18 @@
                     (ltu/is-key-value :parents ["group/a" "group/b"])
                     (ltu/is-operation-present :add-subgroup))
 
-                (testing "parents field cannot be updated"
-                  (-> session-admin
+                (testing "parents field can be updated only by admin"
+                  (-> session-user
                       (request abs-uri-grp-c
                                :request-method :put
                                :body (j/write-value-as-string {:parents ["change-not-allowed"]}))
+                      (ltu/body->edn)
+                      (ltu/is-status 200)
+                      (ltu/is-key-value :parents ["group/a" "group/b"]))
+                  (-> session-user
+                      (request (str abs-uri-grp-c "?select=parents")
+                               :request-method :put
+                               :body (j/write-value-as-string {}))
                       (ltu/body->edn)
                       (ltu/is-status 200)
                       (ltu/is-key-value :parents ["group/a" "group/b"]))
@@ -296,6 +303,13 @@
                       (request (str abs-uri-grp-c "?select=parents")
                                :request-method :put
                                :body (j/write-value-as-string {}))
+                      (ltu/body->edn)
+                      (ltu/is-status 200)
+                      (ltu/is-key-value :parents nil))
+                  (-> session-admin
+                      (request abs-uri-grp-c
+                               :request-method :put
+                               :body (j/write-value-as-string {:parents ["group/a" "group/b"]}))
                       (ltu/body->edn)
                       (ltu/is-status 200)
                       (ltu/is-key-value :parents ["group/a" "group/b"])))))))))

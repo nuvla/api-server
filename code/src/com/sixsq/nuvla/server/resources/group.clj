@@ -151,8 +151,9 @@ that start with 'nuvla-' are reserved for the server.
     (-> request
         (assoc-in [:body :acl] acl)
         (update-in [:body :acl :view-meta] (comp vec set concat) (conj users id))
-        (update :body dissoc :parents)
-        (update-in [:cimi-params :select] disj "parents")
+        (cond-> (not (a/is-admin-request? request))
+                (-> (update :body dissoc :parents)
+                    (update-in [:cimi-params :select] disj "parents")))
         (edit-impl))))
 
 
