@@ -31,7 +31,7 @@
 
 
 (deftest lifecycle-email
-  (let [email-body    (atom nil)
+  (let [email-msg     (atom nil)
         session       (-> (ltu/ring-app)
                           session
                           (content-type "application/json"))
@@ -46,8 +46,8 @@
                                                :pass "password"})
 
                   ;; WARNING: This is a fragile Regex matching to recover callback URL.
-                  postal/send-message (fn [_ {:keys [body]}]
-                                        (reset! email-body body)
+                  postal/send-message (fn [_ msg]
+                                        (reset! email-msg msg)
                                         {:code 0, :error :SUCCESS, :message "OK"})]
 
       (let [href                 (str user-tpl/resource-type "/" email-password/registration-method)
@@ -78,10 +78,9 @@
                                      (ltu/is-operation-present :enable-2fa)
                                      (ltu/is-operation-absent :disable-2fa)
                                      (ltu/get-op-url :enable-2fa))
-
-            validation-link      (->> @email-body second :content
-                                      (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*")
-                                      second)
+            validation-link      (ltu/extract-msg-callback-url @email-msg)
+            get-user-token       #(->> @email-msg :body second :content
+                                       (re-find #"\d+"))
 
             session-base-url     (str p/service-context session/resource-type)
             valid-session-create {:template {:href     (str st/resource-type "/password")
@@ -152,8 +151,7 @@
                                        (re-matches #"http.*(\/api.*)\/execute")
                                        second)
                 callback-exec-url (str callback-url "/execute")
-                user-token        (->> @email-body second :content
-                                       (re-find #"\d+"))]
+                user-token        (get-user-token)]
 
             (-> session-admin
                 (request callback-url)
@@ -222,8 +220,7 @@
                                        (re-matches #"http.*(\/api.*)\/execute")
                                        second)
                 callback-exec-url (str callback-url "/execute")
-                user-token        (->> @email-body second :content
-                                       (re-find #"\d+"))]
+                user-token        (get-user-token)]
 
             (-> session-admin
                 (request callback-url)
@@ -295,8 +292,7 @@
                                        (re-matches #"http.*(\/api.*)\/execute")
                                        second)
                 callback-exec-url (str callback-url "/execute")
-                user-token        (->> @email-body second :content
-                                       (re-find #"\d+"))]
+                user-token        (get-user-token)]
 
             (-> session-admin
                 (request callback-url)
@@ -364,8 +360,7 @@
                                        (re-matches #"http.*(\/api.*)\/execute")
                                        second)
                 callback-exec-url (str callback-url "/execute")
-                user-token        (->> @email-body second :content
-                                       (re-find #"\d+"))]
+                user-token        (get-user-token)]
 
             (-> session-admin
                 (request callback-url)
@@ -424,7 +419,7 @@
 
 
 (deftest lifecycle-totp
-  (let [email-body    (atom nil)
+  (let [email-msg     (atom nil)
         session       (-> (ltu/ring-app)
                           session
                           (content-type "application/json"))
@@ -439,8 +434,8 @@
                                                :pass "password"})
 
                   ;; WARNING: This is a fragile Regex matching to recover callback URL.
-                  postal/send-message (fn [_ {:keys [body]}]
-                                        (reset! email-body body)
+                  postal/send-message (fn [_ msg]
+                                        (reset! email-msg msg)
                                         {:code 0, :error :SUCCESS, :message "OK"})]
 
       (let [href                 (str user-tpl/resource-type "/" email-password/registration-method)
@@ -473,9 +468,7 @@
                                      (ltu/is-operation-absent :disable-2fa)
                                      (ltu/get-op-url :enable-2fa))
 
-            validation-link      (->> @email-body second :content
-                                      (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*")
-                                      second)
+            validation-link      (ltu/extract-msg-callback-url @email-msg)
 
             session-base-url     (str p/service-context session/resource-type)
             valid-session-create {:template {:href     (str st/resource-type "/password")
@@ -782,10 +775,10 @@
 
             (testing "credential totp should be delete at deactivation"
               (let [cred-totp (-> session-created-user
-                                 (request user-url)
-                                 (ltu/body->edn)
-                                 (ltu/is-status 200)
-                                 :credential-totp)]
+                                  (request user-url)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  :credential-totp)]
                 (-> session-admin
                     (request (str p/service-context cred-totp))
                     (ltu/body->edn)
