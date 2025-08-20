@@ -2,6 +2,14 @@
 
 ## Released
 
+## [6.18.0](https://github.com/nuvla/api-server/compare/6.17.0...6.18.0) (2025-07-24)
+
+
+### Features
+
+* **fetch-coe-resources:** Add support for k8s resources to fetch-coe-resources deployment action ([#1033](https://github.com/nuvla/api-server/issues/1033)) ([d8f18cf](https://github.com/nuvla/api-server/commit/d8f18cfaed290d9cef77dbf43b8caa3b43b84251))
+* **fetch-coe-resources:** When filtering images assume latest as default tag ([d8f18cf](https://github.com/nuvla/api-server/commit/d8f18cfaed290d9cef77dbf43b8caa3b43b84251))
+
 ## [6.17.0](https://github.com/nuvla/api-server/compare/6.16.3...6.17.0) (2025-06-30)
 
 
