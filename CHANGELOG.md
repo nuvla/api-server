@@ -2,6 +2,28 @@
 
 ## Released
 
+## [6.19.0](https://github.com/nuvla/api-server/compare/6.18.0...6.19.0) (2025-08-21)
+
+
+### Features
+
+* **callback:** Protect callback url from email scanners ([5380505](https://github.com/nuvla/api-server/commit/53805051f327e61c406f55041d18366afb605b14))
+* **group:** get pending invitations ([5380505](https://github.com/nuvla/api-server/commit/53805051f327e61c406f55041d18366afb605b14))
+* **group:** revoke invitation ([5380505](https://github.com/nuvla/api-server/commit/53805051f327e61c406f55041d18366afb605b14))
+
+
+### Bug Fixes
+
+* **callback join group:** By default give view member permission to invited user ([dba71df](https://github.com/nuvla/api-server/commit/dba71dfe7019dc949928b5bbdb0b11755a734d2a))
+* **callback join group:** notify group manager when a user accept his invitation ([5380505](https://github.com/nuvla/api-server/commit/53805051f327e61c406f55041d18366afb605b14))
+* **CI:** Use latest sonar-scanner version 5.0.2.4997 and new sonar clj lang patterns ([5380505](https://github.com/nuvla/api-server/commit/53805051f327e61c406f55041d18366afb605b14))
+* **email utils:** Refactor and add unit tests ([5380505](https://github.com/nuvla/api-server/commit/53805051f327e61c406f55041d18366afb605b14))
+* **group:** act on groups always with my user-id even if I switched my active claim to a group. Excluding special groups. ([5380505](https://github.com/nuvla/api-server/commit/53805051f327e61c406f55041d18366afb605b14))
+* **Group:** Admin can update subgroup parents attribute ([5380505](https://github.com/nuvla/api-server/commit/53805051f327e61c406f55041d18366afb605b14))
+* **group:** Create a subgroup from an operation on parent group inste… ([#1034](https://github.com/nuvla/api-server/issues/1034)) ([5380505](https://github.com/nuvla/api-server/commit/53805051f327e61c406f55041d18366afb605b14))
+* **group:** Create a subgroup from an operation on parent group instead of using an add template ([5380505](https://github.com/nuvla/api-server/commit/53805051f327e61c406f55041d18366afb605b14))
+* **session:** Get all groups when admin allowing to see full hierarchy and switch to any group from admin ([5380505](https://github.com/nuvla/api-server/commit/53805051f327e61c406f55041d18366afb605b14))
+
 ## [6.18.0](https://github.com/nuvla/api-server/compare/6.17.0...6.18.0) (2025-07-24)
 
 
