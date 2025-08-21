@@ -68,15 +68,17 @@ that start with 'nuvla-' are reserved for the server.
 
 (defmethod crud/add-acl resource-type
   [{:keys [id] :as resource} request]
-  (-> resource
-      (a/add-acl request)
-      (a/acl-append-resource :view-data "group/nuvla-vpn")
-      (a/acl-append-resource :view-acl id)))
-
+  (let [user-id (auth/current-user-id request)]
+    (-> resource
+        (a/add-acl request)
+        (a/acl-append-resource :view-data "group/nuvla-vpn")
+        (a/acl-append-resource :view-acl id)
+        (cond-> (not= "internal" user-id) (a/acl-append-resource :owners user-id)))))
 
 ;;
 ;; "Implementations" of multimethod declared in crud namespace
 ;;
+
 (defn throw-subgroups-limit-reached
   [{{:keys [parents]} :body :as request}]
   (if (and (seq parents)
@@ -90,17 +92,20 @@ that start with 'nuvla-' are reserved for the server.
     (throw (r/ex-response "A group cannot have more than 19 subgroups!" 409))
     request))
 
+(defn init-users
+  [request]
+  (let [user-id (auth/current-user-id request)]
+    (if (= "internal" user-id)
+      []
+      [user-id])))
 
 (defn tpl->group
   [{:keys [group-identifier] :as resource} request]
-  (let [id      (str resource-type "/" group-identifier)
-        user-id (auth/current-user-id request)]
+  (let [id (str resource-type "/" group-identifier)]
     (-> resource
         (dissoc :group-identifier)
-        (assoc :id id :users (cond-> []
-                                     (not= "internal" user-id) (conj user-id))))))
-
-
+        (assoc :id id
+               :users (init-users request)))))
 
 (defn add-impl
   [{{:keys [id] :as body} :body :as request}]
@@ -255,7 +260,7 @@ that start with 'nuvla-' are reserved for the server.
                             (str set-password-url "?callback=" (gen-util/encode-uri-component callback-url)
                                  "&type=" (gen-util/encode-uri-component "invitation")
                                  "&username=" (gen-util/encode-uri-component email))
-                         (callback-utils/callback-ui-url callback-url))]
+                            (callback-utils/callback-ui-url callback-url))]
         (email-utils/send-join-group-email id invited-by invite-url email)
         (r/map-response (format "successfully invited to %s" id) 200 id))
       (catch Exception e
@@ -271,11 +276,9 @@ that start with 'nuvla-' are reserved for the server.
                                                      (throw-cannot-manage request "add-subgroup"))
             subgroup-parents (conj parents parent-id)
             id               (str resource-type "/" group-identifier)
-            user-id          (auth/current-user-id request)
             body             (cond-> {:id      id
                                       :parents subgroup-parents
-                                      :users   (cond-> []
-                                                       (not= "internal" user-id) (conj user-id))}
+                                      :users   (init-users request)}
                                      (not (str/blank? name)) (assoc :name name)
                                      (not (str/blank? description)) (assoc :description description))]
         (-> (assoc request :body body)

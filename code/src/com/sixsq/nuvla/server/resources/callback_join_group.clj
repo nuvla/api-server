@@ -5,6 +5,7 @@ action link to the email address to be verified. When the execute link is
 visited, the email identifier is marked as validated.
 "
   (:require
+    [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.password :as auth-password]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.server.resources.callback :as callback]
@@ -41,12 +42,13 @@ visited, the email identifier is marked as validated.
 
 (defn add-user-to-group
   [group-id user-id]
-  (let [{:keys [users]} (crud/retrieve-by-id-as-admin group-id)
+  (let [{:keys [users acl]} (crud/retrieve-by-id-as-admin group-id)
         {:keys [status body]} (crud/edit
                                 {:params      {:uuid          (u/id->uuid group-id)
                                                :resource-name (u/id->resource-type group-id)}
                                  :nuvla/authn auth/internal-identity
-                                 :body        {:users (-> users (conj user-id) distinct vec)}})]
+                                 :body        {:users (-> users (conj user-id) distinct vec)
+                                               :acl   (a/acl-append acl :view-data user-id)}})]
     (if (= 200 status)
       body
       (let [msg (str (format "adding %s to %s failed:" user-id group-id)
