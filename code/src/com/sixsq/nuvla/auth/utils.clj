@@ -48,3 +48,14 @@
        :claims
        (filter #(str/starts-with? % "session/"))
        first))
+
+(defn request-as-user
+  [request]
+  (let [user-id      (current-user-id request)
+        active-claim (current-active-claim request)]
+    (if (and
+          (str/starts-with? active-claim "group/")
+          (not (#{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"} active-claim)))
+      (update request :nuvla/authn merge {:active-claim user-id
+                                          :claims       #{user-id "group/nuvla-user" "group/nuvla-anon"}})
+      request)))

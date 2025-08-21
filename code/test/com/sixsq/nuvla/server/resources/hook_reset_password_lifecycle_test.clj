@@ -8,21 +8,16 @@
     [com.sixsq.nuvla.server.resources.hook-reset-password :as hrp]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.session-password-lifecycle-test :as password-test]
-    [com.sixsq.nuvla.server.resources.session-template :as st]
     [com.sixsq.nuvla.server.util.general :as gen-util]
     [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]
-    [postal.core :as postal]
-    [ring.util.codec :as codec]))
+    [postal.core :as postal]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
 
 (def base-uri (str p/service-context t/resource-type "/" hrp/action))
-
-
-(def session-template-base-uri (str p/service-context st/resource-type))
 
 (deftest lifecycle
 

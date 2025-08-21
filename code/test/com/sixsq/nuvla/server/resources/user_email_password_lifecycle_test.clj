@@ -46,12 +46,8 @@
                                                :user "admin"
                                                :pass "password"})
 
-                  ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
-                  postal/send-message (fn [_ {:keys [body]}]
-                                        (let [url (->> body second :content
-                                                       (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*")
-                                                       second)]
-                                          (reset! validation-link url))
+                  postal/send-message (fn [_ msg]
+                                        (reset! validation-link (ltu/extract-msg-callback-url msg))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
 
       (let [template           (-> session-admin

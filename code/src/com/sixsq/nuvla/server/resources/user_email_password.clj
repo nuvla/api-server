@@ -6,6 +6,7 @@ address and password.
   (:require
     [com.sixsq.nuvla.server.resources.callback :as callback]
     [com.sixsq.nuvla.server.resources.callback-user-email-validation :as user-email-callback]
+    [com.sixsq.nuvla.server.resources.callback.utils :as callback-utils]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.email.utils :as email-utils]
     [com.sixsq.nuvla.server.resources.spec.user-template-email-password :as spec-email-password]
@@ -61,6 +62,7 @@ address and password.
                                            :password password
                                            :customer customer)
       (-> (create-user-email-callback base-uri id :data callback-data)
+          callback-utils/callback-ui-url
           (email-utils/send-validation-email email)))
     (catch Exception e
       (user-utils/delete-user id)
