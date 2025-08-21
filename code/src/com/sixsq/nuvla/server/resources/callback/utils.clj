@@ -1,8 +1,10 @@
 (ns com.sixsq.nuvla.server.resources.callback.utils
   (:require
+    [clojure.string :as str]
     [com.sixsq.nuvla.db.impl :as db]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
-    [com.sixsq.nuvla.server.resources.common.utils :as u]))
+    [com.sixsq.nuvla.server.resources.common.utils :as u]
+    [com.sixsq.nuvla.server.util.general :as gen-util]))
 
 
 (defn executable?
@@ -37,3 +39,8 @@
         db/edit)
     (catch Exception e
       (or (ex-data e) (throw e)))))
+
+(defn callback-ui-url
+  [callback-url]
+  (let [base-uri (first (str/split callback-url #"api/callback"))]
+    (str base-uri "ui/callback?callback-url=" (gen-util/encode-uri-component callback-url))))

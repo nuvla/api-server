@@ -15,15 +15,9 @@
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]))
 
-
 (use-fixtures :once ltu/with-test-server-fixture)
 
-
 (def base-uri (str p/service-context session/resource-type))
-
-
-(def session-template-base-uri (str p/service-context st/resource-type))
-
 
 (defn create-user
   [session-admin & {:keys [username password email activated?]}]
@@ -41,11 +35,8 @@
                                                :user "admin"
                                                :pass "password"})
 
-                  ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
-                  postal/send-message (fn [_ {:keys [body]}]
-                                        (let [url (->> body second :content
-                                                       (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*")
-                                                       second)]
+                  postal/send-message (fn [_ msg]
+                                        (let [url (ltu/extract-msg-callback-url msg)]
                                           (reset! validation-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
 

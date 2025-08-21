@@ -8,6 +8,7 @@
     [com.sixsq.nuvla.server.resources.email.sending :as email-sending]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.nuvla.server.resources.resource-metadata :as md]
+    [com.sixsq.nuvla.server.util.general :as gen-util]
     [com.sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
     [jsonista.core :as j]
     [peridot.core :refer [content-type header request session]]
@@ -140,11 +141,8 @@
                                                      :pass "password"})
 
                         ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
-                        postal/send-message (fn [_ {:keys [body]}]
-                                              (let [url (->> body second :content
-                                                             (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*")
-                                                             second)]
-                                                (reset! validation-link url))
+                        postal/send-message (fn [_ msg]
+                                              (reset! validation-link (ltu/extract-msg-callback-url msg))
                                               {:code 0, :error :SUCCESS, :message "OK"})]
 
             (-> session-anon

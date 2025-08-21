@@ -20,6 +20,7 @@
     [com.sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
     [com.sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
     [com.sixsq.nuvla.server.resources.event.utils :as event-utils]
+    [com.sixsq.nuvla.server.util.general :as gen-util]
     [com.sixsq.nuvla.server.util.kafka :as ka]
     [com.sixsq.nuvla.server.util.zookeeper :as uzk]
     [compojure.core :as cc]
@@ -628,3 +629,10 @@
                    (is-event expected-event# actual-event#))
                  ~expected-events
                  events#))))
+
+(defn extract-msg-callback-url
+  [{:keys [body] :as _msg}]
+  (->> body second :content
+       (re-matches #"(?s).*visit:\n\n\s+.*callback-url=(.*?)\n.*")
+       second
+       gen-util/decode-uri-component))

@@ -15,6 +15,7 @@ address. When the callback is triggered, the `validated` flag is set to true.
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.email.utils :as email-utils]
+    [com.sixsq.nuvla.server.resources.callback.utils :as callback-utils]
     [com.sixsq.nuvla.server.resources.resource-metadata :as md]
     [com.sixsq.nuvla.server.resources.spec.email :as email]
     [com.sixsq.nuvla.server.util.metadata :as gen-md]
@@ -131,6 +132,7 @@ address. When the callback is triggered, the `validated` flag is set to true.
       (if-not validated
         (try
           (-> (email-utils/create-callback id base-uri)
+              callback-utils/callback-ui-url
               (email-utils/send-validation-email address))
           (r/map-response "check your mailbox for a validation message" 202)
           (catch Exception e
