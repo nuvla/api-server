@@ -3,6 +3,7 @@
     [clojure.spec.alpha :as s]
     [com.sixsq.nuvla.server.resources.spec.common :as common]
     [com.sixsq.nuvla.server.resources.spec.core :as core]
+    [com.sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
     [com.sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -25,8 +26,14 @@
 
              :json-schema/order 31)))
 
+(s/def ::mqtt-cred
+  (assoc cred-spec/credential-id-spec
+    :name "mqtt-cred"
+    :json-schema/description "Mqtt credential"))
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      {:req-un [::method
-                               ::destination]}))
+                               ::destination]}
+                     {:opt-un [::mqtt-cred]}))
+
