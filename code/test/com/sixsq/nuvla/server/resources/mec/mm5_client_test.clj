@@ -167,10 +167,10 @@
         (mm5/query-resources "https://mepm.example.com:8443" {:retry-attempts 1})
         (mm5/get-platform-info "https://mepm.example.com:8443" {:retry-attempts 1})
         
-        (is (= "https://mepm.example.com:8443/health" (first @captured-urls)))
-        (is (= "https://mepm.example.com:8443/capabilities" (second @captured-urls)))
-        (is (= "https://mepm.example.com:8443/resources" (nth @captured-urls 2)))
-        (is (= "https://mepm.example.com:8443/info" (nth @captured-urls 3)))))))
+        (is (= "https://mepm.example.com:8443/mm5/health" (first @captured-urls)))
+        (is (= "https://mepm.example.com:8443/mm5/capabilities" (second @captured-urls)))
+        (is (= "https://mepm.example.com:8443/mm5/resources" (nth @captured-urls 2)))
+        (is (= "https://mepm.example.com:8443/mm5/platform-info" (nth @captured-urls 3)))))))
 
 
 (deftest test-http-options
