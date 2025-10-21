@@ -8,6 +8,24 @@ This repository contains the code and configuration for the Nuvla API
 server, packaged as a Docker container.  The API is inspired by the
 CIMI specification from DMTF.
 
+## MEC Orchestrator (MEO) Positioning
+
+The Nuvla API Server functions as a **MEC Orchestrator (MEO)** as defined in 
+[ETSI GS MEC 003](https://www.etsi.org/deliver/etsi_gs/MEC/001_099/003/). 
+It provides system-level orchestration for edge applications across distributed 
+Multi-access Edge Computing (MEC) infrastructure.
+
+**Key MEC Capabilities:**
+- **System Orchestration** - Multi-host application lifecycle management
+- **Application Package Management** - On-boarding, validation, and distribution
+- **Resource Management** - Placement decisions and infrastructure coordination
+- **Standard Interfaces** - MEC-compliant APIs (Mm2, Mm3, Mm5, Mm9)
+
+For detailed MEC architecture mapping and implementation documentation, see:
+- [MEC 003 Architectural Mapping](docs/5g-emerge/MEC-003-architectural-mapping.md)
+- [MEC Terminology Guide](docs/5g-emerge/MEC-terminology-guide.md)
+- [MEC Implementation Plans](docs/5g-emerge/)
+
 ## Artifacts
 
  - `nuvla/api:<version>`. A Docker container that can be obtained from
