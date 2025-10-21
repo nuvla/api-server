@@ -98,6 +98,7 @@
                                   [org.testcontainers/testcontainers "1.20.4"]
                                   [peridot "0.5.4"]
                                   [clj-test-containers "0.7.4"]
+                                  [ring/ring-jetty-adapter "1.12.2"]
                                   [org.clojure/test.check "1.1.1"]
                                   [com.cemerick/url "0.1.1"]
                                   [org.clojars.konstan/kinsky-test-jar ~kinsky-version]

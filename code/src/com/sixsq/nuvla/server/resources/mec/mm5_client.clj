@@ -138,7 +138,7 @@
                 :or {retry-attempts default-retry-attempts}
                 :as options}]]
   (log/info "Mm5: Checking health of MEPM at" endpoint)
-  (let [url (str endpoint "/health")
+  (let [url (str endpoint "/mm5/health")
         http-opts (build-http-options endpoint options)]
     (retry-request
       (fn []
@@ -172,8 +172,8 @@
   [endpoint & [{:keys [retry-attempts]
                 :or {retry-attempts default-retry-attempts}
                 :as options}]]
-  (log/info "Mm5: Querying capabilities of MEPM at" endpoint)
-  (let [url (str endpoint "/capabilities")
+  (log/info "Mm5: Querying capabilities from MEPM at" endpoint)
+  (let [url (str endpoint "/mm5/capabilities")
         http-opts (build-http-options endpoint options)]
     (retry-request
       (fn []
@@ -207,8 +207,8 @@
   [endpoint & [{:keys [retry-attempts]
                 :or {retry-attempts default-retry-attempts}
                 :as options}]]
-  (log/info "Mm5: Querying resources of MEPM at" endpoint)
-  (let [url (str endpoint "/resources")
+  (log/info "Mm5: Querying resources from MEPM at" endpoint)
+  (let [url (str endpoint "/mm5/resources")
         http-opts (build-http-options endpoint options)]
     (retry-request
       (fn []
@@ -244,7 +244,7 @@
                        :or {retry-attempts default-retry-attempts}
                        :as options}]]
   (log/info "Mm5: Configuring MEPM at" endpoint "with config:" config)
-  (let [url (str endpoint "/configure")
+  (let [url (str endpoint "/mm5/configure")
         http-opts (merge (build-http-options endpoint options)
                          {:body (json/write-value-as-string config)})]
     (retry-request
@@ -280,7 +280,7 @@
                 :or {retry-attempts default-retry-attempts}
                 :as options}]]
   (log/info "Mm5: Getting platform info from MEPM at" endpoint)
-  (let [url (str endpoint "/info")
+  (let [url (str endpoint "/mm5/platform-info")
         http-opts (build-http-options endpoint options)]
     (retry-request
       (fn []
@@ -290,6 +290,147 @@
             (parse-response response))
           (catch Exception e
             (log/error e "Mm5: Failed to get platform info")
+            {:success? false
+             :error    :connection-error
+             :message  (.getMessage e)
+             :exception e})))
+      retry-attempts)))
+
+
+;;
+;; Application Lifecycle Operations
+;;
+
+(defn create-app-instance
+  "Create a new application instance via Mm5 interface.
+   
+   ETSI MEC 003: Mm5 application instantiation operation
+   
+   Parameters:
+   - endpoint: MEPM base URL
+   - app-descriptor: Application descriptor map
+   - options: HTTP client options (optional)
+   
+   Returns:
+   - {:success? true :status 201 :data {:id \"...\" :status \"...\"}}
+   - {:success? false :error :xxx :message \"...\"}"
+  [endpoint app-descriptor & [{:keys [retry-attempts]
+                               :or {retry-attempts default-retry-attempts}
+                               :as options}]]
+  (log/info "Mm5: Creating app instance on MEPM at" endpoint)
+  (let [url (str endpoint "/mm5/app-instances")
+        http-opts (build-http-options endpoint options)
+        http-opts (assoc http-opts :body (json/write-value-as-string app-descriptor)
+                                   :content-type :json)]
+    (retry-request
+      (fn []
+        (try
+          (let [response (http/post url http-opts)]
+            (log/debug "Mm5 create app instance response:" response)
+            (parse-response response))
+          (catch Exception e
+            (log/error e "Mm5: Failed to create app instance")
+            {:success? false
+             :error    :connection-error
+             :message  (.getMessage e)
+             :exception e})))
+      retry-attempts)))
+
+
+(defn get-app-instance
+  "Get application instance status via Mm5 interface.
+   
+   ETSI MEC 003: Mm5 application query operation
+   
+   Parameters:
+   - endpoint: MEPM base URL
+   - app-id: Application instance identifier
+   - options: HTTP client options (optional)
+   
+   Returns:
+   - {:success? true :status 200 :data {:id \"...\" :status \"...\"}}
+   - {:success? false :error :xxx :message \"...\"}"
+  [endpoint app-id & [{:keys [retry-attempts]
+                       :or {retry-attempts default-retry-attempts}
+                       :as options}]]
+  (log/info "Mm5: Getting app instance" app-id "from MEPM at" endpoint)
+  (let [url (str endpoint "/mm5/app-instances/" app-id)
+        http-opts (build-http-options endpoint options)]
+    (retry-request
+      (fn []
+        (try
+          (let [response (http/get url http-opts)]
+            (log/debug "Mm5 get app instance response:" response)
+            (parse-response response))
+          (catch Exception e
+            (log/error e "Mm5: Failed to get app instance")
+            {:success? false
+             :error    :connection-error
+             :message  (.getMessage e)
+             :exception e})))
+      retry-attempts)))
+
+
+(defn list-app-instances
+  "List all application instances via Mm5 interface.
+   
+   ETSI MEC 003: Mm5 application listing operation
+   
+   Parameters:
+   - endpoint: MEPM base URL
+   - options: HTTP client options (optional)
+   
+   Returns:
+   - {:success? true :status 200 :data {:instances [...]}}
+   - {:success? false :error :xxx :message \"...\"}"
+  [endpoint & [{:keys [retry-attempts]
+                :or {retry-attempts default-retry-attempts}
+                :as options}]]
+  (log/info "Mm5: Listing app instances from MEPM at" endpoint)
+  (let [url (str endpoint "/mm5/app-instances")
+        http-opts (build-http-options endpoint options)]
+    (retry-request
+      (fn []
+        (try
+          (let [response (http/get url http-opts)]
+            (log/debug "Mm5 list app instances response:" response)
+            (parse-response response))
+          (catch Exception e
+            (log/error e "Mm5: Failed to list app instances")
+            {:success? false
+             :error    :connection-error
+             :message  (.getMessage e)
+             :exception e})))
+      retry-attempts)))
+
+
+(defn delete-app-instance
+  "Delete (terminate) an application instance via Mm5 interface.
+   
+   ETSI MEC 003: Mm5 application termination operation
+   
+   Parameters:
+   - endpoint: MEPM base URL
+   - app-id: Application instance identifier
+   - options: HTTP client options (optional)
+   
+   Returns:
+   - {:success? true :status 204}
+   - {:success? false :error :xxx :message \"...\"}"
+  [endpoint app-id & [{:keys [retry-attempts]
+                       :or {retry-attempts default-retry-attempts}
+                       :as options}]]
+  (log/info "Mm5: Deleting app instance" app-id "from MEPM at" endpoint)
+  (let [url (str endpoint "/mm5/app-instances/" app-id)
+        http-opts (build-http-options endpoint options)]
+    (retry-request
+      (fn []
+        (try
+          (let [response (http/delete url http-opts)]
+            (log/debug "Mm5 delete app instance response:" response)
+            (parse-response response))
+          (catch Exception e
+            (log/error e "Mm5: Failed to delete app instance")
             {:success? false
              :error    :connection-error
              :message  (.getMessage e)
