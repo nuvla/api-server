@@ -5,6 +5,7 @@
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [com.sixsq.nuvla.server.resources.mec.mm5-client :as mm5]
     [com.sixsq.nuvla.server.resources.mepm :as mepm]
     [jsonista.core :as json]
     [peridot.core :refer [content-type header request session]]))
@@ -35,13 +36,31 @@
 
 
 (deftest lifecycle
-  (let [session-anon  (-> (ltu/ring-app)
-                          session
-                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header
-                              "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user  (header session-anon authn-info-header
-                              "user/jane user/jane group/nuvla-user group/nuvla-anon")]
+  ;; Mock Mm5 client responses for testing
+  (with-redefs [mm5/check-health (fn [_endpoint & [_opts]]
+                                    {:success? true
+                                     :status 200
+                                     :data {:status "healthy" :uptime-seconds 86400}})
+                mm5/query-capabilities (fn [_endpoint & [_opts]]
+                                         {:success? true
+                                          :status 200
+                                          :data {:platforms ["x86_64" "arm64"]
+                                                 :services ["mec-service-1" "mec-service-2"]
+                                                 :api-version "v2"}})
+                mm5/query-resources (fn [_endpoint & [_opts]]
+                                      {:success? true
+                                       :status 200
+                                       :data {:cpu-cores 64
+                                              :memory-gb 256
+                                              :storage-gb 1000
+                                              :gpu-count 2}})]
+    (let [session-anon  (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+          session-admin (header session-anon authn-info-header
+                                "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-user  (header session-anon authn-info-header
+                                "user/jane user/jane group/nuvla-user group/nuvla-anon")]
 
     ;; Anonymous query should fail
     (-> session-anon
@@ -163,7 +182,7 @@
       (-> session-user
           (request uri)
           (ltu/body->edn)
-          (ltu/is-status 404)))))
+          (ltu/is-status 404))))))
 
 
 (deftest bad-methods

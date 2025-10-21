@@ -22,6 +22,7 @@ with multiple MEPMs across distributed edge infrastructure.
     [com.sixsq.nuvla.server.resources.common.event-context :as ectx]
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
+    [com.sixsq.nuvla.server.resources.mec.mm5-client :as mm5]
     [com.sixsq.nuvla.server.resources.resource-metadata :as md]
     [com.sixsq.nuvla.server.resources.spec.mepm :as mepm-spec]
     [com.sixsq.nuvla.server.util.metadata :as gen-md]
@@ -178,15 +179,40 @@ with multiple MEPMs across distributed edge infrastructure.
 (defmethod crud/do-action [resource-type "check-health"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id      (str resource-type "/" uuid)
-          mepm    (crud/retrieve-by-id-as-admin id)
-          current-time (time/now-str)]
-      ;; TODO: Implement actual Mm5 health check when Mm5 client is ready
-      ;; For now, just update last-check timestamp
-      (db/edit (assoc mepm :last-check current-time :updated current-time))
-      (r/map-response "MEPM health check completed" 200 id))
+    (let [id           (str resource-type "/" uuid)
+          mepm         (crud/retrieve-by-id-as-admin id)
+          endpoint     (:endpoint mepm)
+          current-time (time/now-str)
+          
+          ;; Perform actual Mm5 health check
+          health-result (mm5/check-health endpoint)]
+      
+      (if (:success? health-result)
+        (do
+          ;; Update last-check timestamp and status based on health check
+          (db/edit (assoc mepm 
+                          :last-check current-time
+                          :status "ONLINE"
+                          :updated current-time))
+          (log/info "MEPM" id "health check successful")
+          (r/map-response {:message "MEPM health check completed"
+                           :status "ONLINE"
+                           :last-check current-time
+                           :health-data (:data health-result)}
+                          200 id))
+        (do
+          ;; Mark as degraded/offline if health check fails
+          (db/edit (assoc mepm
+                          :last-check current-time
+                          :status "DEGRADED"
+                          :updated current-time))
+          (log/warn "MEPM" id "health check failed:" (:message health-result))
+          (r/map-response {:message (str "Health check failed: " (:message health-result))
+                           :status "DEGRADED"
+                           :error (:error health-result)}
+                          503 id))))
     (catch Exception e
-      (log/error "Failed to check MEPM health:" (.getMessage e))
+      (log/error e "Failed to check MEPM health")
       (r/map-response (str "Health check failed: " (.getMessage e)) 500))))
 
 
@@ -197,13 +223,29 @@ with multiple MEPMs across distributed edge infrastructure.
 (defmethod crud/do-action [resource-type "query-capabilities"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id   (str resource-type "/" uuid)
-          mepm (crud/retrieve-by-id-as-admin id)]
-      ;; TODO: Implement actual Mm5 capabilities query when Mm5 client is ready
-      ;; For now, just return stored capabilities
-      (r/map-response (:capabilities mepm) 200 id))
+    (let [id       (str resource-type "/" uuid)
+          mepm     (crud/retrieve-by-id-as-admin id)
+          endpoint (:endpoint mepm)
+          
+          ;; Perform actual Mm5 capabilities query
+          cap-result (mm5/query-capabilities endpoint)]
+      
+      (if (:success? cap-result)
+        (let [capabilities (:data cap-result)]
+          ;; Update stored capabilities with fresh data from MEPM
+          (db/edit (assoc mepm 
+                          :capabilities capabilities
+                          :updated (time/now-str)))
+          (log/info "MEPM" id "capabilities queried successfully")
+          (r/map-response capabilities 200 id))
+        (do
+          (log/warn "MEPM" id "capabilities query failed:" (:message cap-result))
+          (r/map-response {:message (str "Capabilities query failed: " (:message cap-result))
+                           :error (:error cap-result)
+                           :cached-capabilities (:capabilities mepm)}
+                          503 id))))
     (catch Exception e
-      (log/error "Failed to query MEPM capabilities:" (.getMessage e))
+      (log/error e "Failed to query MEPM capabilities")
       (r/map-response (str "Capabilities query failed: " (.getMessage e)) 500))))
 
 
@@ -214,11 +256,27 @@ with multiple MEPMs across distributed edge infrastructure.
 (defmethod crud/do-action [resource-type "query-resources"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id   (str resource-type "/" uuid)
-          mepm (crud/retrieve-by-id-as-admin id)]
-      ;; TODO: Implement actual Mm5 resources query when Mm5 client is ready
-      ;; For now, just return stored resources
-      (r/map-response (:resources mepm) 200 id))
+    (let [id       (str resource-type "/" uuid)
+          mepm     (crud/retrieve-by-id-as-admin id)
+          endpoint (:endpoint mepm)
+          
+          ;; Perform actual Mm5 resources query
+          res-result (mm5/query-resources endpoint)]
+      
+      (if (:success? res-result)
+        (let [resources (:data res-result)]
+          ;; Update stored resources with fresh data from MEPM
+          (db/edit (assoc mepm 
+                          :resources resources
+                          :updated (time/now-str)))
+          (log/info "MEPM" id "resources queried successfully")
+          (r/map-response resources 200 id))
+        (do
+          (log/warn "MEPM" id "resources query failed:" (:message res-result))
+          (r/map-response {:message (str "Resources query failed: " (:message res-result))
+                           :error (:error res-result)
+                           :cached-resources (:resources mepm)}
+                          503 id))))
     (catch Exception e
-      (log/error "Failed to query MEPM resources:" (.getMessage e))
+      (log/error e "Failed to query MEPM resources")
       (r/map-response (str "Resources query failed: " (.getMessage e)) 500))))
