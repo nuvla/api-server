@@ -29,6 +29,7 @@
     [com.sixsq.nuvla.server.resources.mec.app-lcm-op-occ :as app-lcm-op-occ]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-subscription :as subscription]
     [com.sixsq.nuvla.server.resources.mec.lifecycle-handler :as lifecycle]
+    [com.sixsq.nuvla.server.resources.mec.query-filter :as qf]
     [com.sixsq.nuvla.server.util.response :as r]))
 
 
@@ -106,12 +107,22 @@
 
 
 (defn list-app-instances-handler
-  "GET /app_lcm/v2/app_instances - List all app instances"
+  "GET /app_lcm/v2/app_instances - List all app instances
+   
+   Supports MEC 010-2 query parameters:
+   - filter:  FIQL-like filter expression (e.g., (eq,appName,my-app))
+   - page:    Page number (1-based, default 1)
+   - size:    Page size (default 20, max 100)
+   - fields:  Comma-separated field names for field selection"
   [request]
   (try
-    (let [params   (:params request)]
-      ;; TODO: Integrate with deployment CRUD query
-      (r/json-response {:count 0 :items []}))
+    (let [params   (:params request)
+          ;; TODO: Replace with actual deployment CRUD query
+          ;; For now, return empty collection with query processing
+          resources []]
+      (r/json-response (qf/process-query resources
+                                         (merge params
+                                                {:base-uri (str "/" base-uri "/app_instances")}))))
     (catch Exception e
       (log/error e "Failed to list app instances")
       (r/json-response (validation-error (ex-message e)) 400))))
@@ -230,11 +241,22 @@
 ;;
 
 (defn list-app-lcm-op-occs-handler
-  "GET /app_lcm/v2/app_lcm_op_occs - List all operation occurrences"
+  "GET /app_lcm/v2/app_lcm_op_occs - List all operation occurrences
+   
+   Supports MEC 010-2 query parameters:
+   - filter:  FIQL-like filter expression (e.g., (eq,operationType,INSTANTIATE))
+   - page:    Page number (1-based, default 1)
+   - size:    Page size (default 20, max 100)
+   - fields:  Comma-separated field names for field selection"
   [request]
   (try
-    ;; TODO: Integrate with job CRUD query
-    (r/json-response {:count 0 :items []})
+    (let [params   (:params request)
+          ;; TODO: Replace with actual job CRUD query
+          ;; For now, return empty collection with query processing
+          resources []]
+      (r/json-response (qf/process-query resources
+                                         (merge params
+                                                {:base-uri (str "/" base-uri "/app_lcm_op_occs")}))))
     (catch Exception e
       (log/error e "Failed to list operation occurrences")
       (r/json-response (validation-error (ex-message e)) 400))))
@@ -309,32 +331,33 @@
 
 
 (defn list-subscriptions-handler
-  "GET /app_lcm/v2/subscriptions - List subscriptions"
+  "GET /app_lcm/v2/subscriptions - List subscriptions
+   
+   Supports MEC 010-2 query parameters:
+   - filter:  FIQL-like filter expression (e.g., (eq,subscriptionType,AppInstanceStateChangeNotification))
+   - page:    Page number (1-based, default 1)
+   - size:    Page size (default 20, max 100)
+   - fields:  Comma-separated field names for field selection
+   
+   Also supports legacy parameters for backward compatibility:
+   - subscriptionType: Filter by subscription type (deprecated, use filter parameter instead)
+   - limit/offset: Pagination (deprecated, use page/size instead)"
   [request]
   (try
     (let [query-params      (:params request)
-          subscription-type (:subscriptionType query-params)
           user-id           (get-in request [:identity :user-id])
-          limit             (or (some-> (:limit query-params) Integer/parseInt) 100)
-          offset            (or (some-> (:offset query-params) Integer/parseInt) 0)
           
-          subs              (subscription/query-subscriptions
-                              @subscription-store
-                              {:subscription-type subscription-type
-                               :owner            user-id
-                               :active           true
-                               :limit            limit
-                               :offset           offset})
-          
-          total             (count (filter (fn [s]
-                                             (and (:active s)
-                                                  (or (nil? user-id)
-                                                      (= (:owner s) user-id))))
-                                           @subscription-store))]
+          ;; Filter subscriptions by user and active status
+          active-user-subs  (filter (fn [s]
+                                      (and (:active s)
+                                           (or (nil? user-id)
+                                               (= (:owner s) user-id))))
+                                    @subscription-store)]
       
-      (r/json-response {:count total
-                        :items (vec subs)
-                        :_links {:self {:href (str "/" base-uri "/subscriptions")}}}))
+      ;; Apply query processing (filter, pagination, field selection)
+      (r/json-response (qf/process-query (vec active-user-subs)
+                                         (merge query-params
+                                                {:base-uri (str "/" base-uri "/subscriptions")}))))
     
     (catch Exception e
       (log/error e "Failed to list subscriptions")
