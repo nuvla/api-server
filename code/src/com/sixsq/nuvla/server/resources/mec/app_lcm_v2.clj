@@ -23,6 +23,7 @@
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.mec.app-instance :as app-instance]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-op-occ :as app-lcm-op-occ]
+    [com.sixsq.nuvla.server.resources.mec.lifecycle-handler :as lifecycle]
     [com.sixsq.nuvla.server.util.response :as r]))
 
 
@@ -141,12 +142,26 @@
   (let [app-instance-id (get-in request [:params :id])
         body            (:body request)]
     (try
-      ;; TODO: Integrate with job CRUD create
-      (r/json-response {:message "App instantiation pending integration"
-                        :appInstanceId app-instance-id} 501)
-      (catch Exception e
+      (log/info "Instantiate request for" app-instance-id)
+      
+      ;; Execute instantiation via lifecycle handler
+      (let [op-occ (lifecycle/instantiate app-instance-id body)]
+        (log/info "Instantiation operation created:" (:lcmOpOccId op-occ))
+        
+        ;; Return operation occurrence with 202 Accepted
+        (r/json-response op-occ 202))
+      
+      (catch clojure.lang.ExceptionInfo e
         (log/error e "Failed to instantiate app instance" app-instance-id)
-        (r/json-response (validation-error (ex-message e)) 400)))))
+        (r/json-response (validation-error (ex-message e)) 400))
+      (catch Exception e
+        (log/error e "Unexpected error during instantiation" app-instance-id)
+        (r/json-response (problem-details
+                           "about:blank"
+                           "Internal Server Error"
+                           500
+                           :detail (ex-message e)
+                           :instance app-instance-id) 500)))))
 
 
 (defn terminate-app-instance-handler
@@ -155,33 +170,54 @@
   (let [app-instance-id (get-in request [:params :id])
         body            (:body request)]
     (try
-      ;; TODO: Integrate with job CRUD create
-      (r/json-response {:message "App termination pending integration"
-                        :appInstanceId app-instance-id} 501)
-      (catch Exception e
+      (log/info "Terminate request for" app-instance-id)
+      
+      ;; Execute termination via lifecycle handler
+      (let [op-occ (lifecycle/terminate app-instance-id body)]
+        (log/info "Termination operation created:" (:lcmOpOccId op-occ))
+        
+        ;; Return operation occurrence with 202 Accepted
+        (r/json-response op-occ 202))
+      
+      (catch clojure.lang.ExceptionInfo e
         (log/error e "Failed to terminate app instance" app-instance-id)
-        (r/json-response (validation-error (ex-message e)) 400)))))
+        (r/json-response (validation-error (ex-message e)) 400))
+      (catch Exception e
+        (log/error e "Unexpected error during termination" app-instance-id)
+        (r/json-response (problem-details
+                           "about:blank"
+                           "Internal Server Error"
+                           500
+                           :detail (ex-message e)
+                           :instance app-instance-id) 500)))))
 
 
 (defn operate-app-instance-handler
   "POST /app_lcm/v2/app_instances/{id}/operate - Start/Stop an app"
   [request]
   (let [app-instance-id (get-in request [:params :id])
-        body            (:body request)
-        change-state-to (:changeStateTo body)]
+        body            (:body request)]
     (try
-      ;; Validate operation type
-      (when-not (#{:STARTED :STOPPED "STARTED" "STOPPED"} change-state-to)
-        (throw (ex-info "Invalid changeStateTo value" {:value change-state-to})))
+      (log/info "Operate request for" app-instance-id "changeStateTo" (:changeStateTo body))
       
-      ;; TODO: Integrate with job CRUD create
-      (r/json-response {:message "App operate pending integration"
-                        :appInstanceId app-instance-id
-                        :changeStateTo change-state-to} 501)
+      ;; Execute operate via lifecycle handler
+      (let [op-occ (lifecycle/operate app-instance-id body)]
+        (log/info "Operate operation created:" (:lcmOpOccId op-occ))
+        
+        ;; Return operation occurrence with 202 Accepted
+        (r/json-response op-occ 202))
       
-      (catch Exception e
+      (catch clojure.lang.ExceptionInfo e
         (log/error e "Failed to operate app instance" app-instance-id)
-        (r/json-response (validation-error (ex-message e)) 400)))))
+        (r/json-response (validation-error (ex-message e)) 400))
+      (catch Exception e
+        (log/error e "Unexpected error during operate" app-instance-id)
+        (r/json-response (problem-details
+                           "about:blank"
+                           "Internal Server Error"
+                           500
+                           :detail (ex-message e)
+                           :instance app-instance-id) 500)))))
 
 
 ;;
