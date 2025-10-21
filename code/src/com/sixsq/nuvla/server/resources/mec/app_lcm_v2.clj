@@ -14,6 +14,10 @@
    - POST   /app_lcm/v2/app_instances/{id}/operate     - Start/Stop
    - GET    /app_lcm/v2/app_lcm_op_occs        - List operations
    - GET    /app_lcm/v2/app_lcm_op_occs/{id}   - Get operation
+   - POST   /app_lcm/v2/subscriptions          - Create subscription
+   - GET    /app_lcm/v2/subscriptions          - List subscriptions
+   - GET    /app_lcm/v2/subscriptions/{id}     - Get subscription
+   - DELETE /app_lcm/v2/subscriptions/{id}     - Delete subscription
    
    Standard: ETSI GS MEC 010-2 v2.2.1"
   (:require
@@ -23,6 +27,7 @@
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.mec.app-instance :as app-instance]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-op-occ :as app-lcm-op-occ]
+    [com.sixsq.nuvla.server.resources.mec.app-lcm-subscription :as subscription]
     [com.sixsq.nuvla.server.resources.mec.lifecycle-handler :as lifecycle]
     [com.sixsq.nuvla.server.util.response :as r]))
 
@@ -244,6 +249,182 @@
 
 
 ;;
+;; Subscription Endpoints
+;;
+
+;; In-memory subscription store (TODO: Replace with persistent storage)
+(def subscription-store (atom []))
+
+(defn create-subscription-handler
+  "POST /app_lcm/v2/subscriptions - Create a new subscription"
+  [request]
+  (try
+    (let [body              (:body request)
+          subscription-type (:subscriptionType body)
+          callback-uri      (:callbackUri body)
+          filter-opts       (or (:appInstanceFilter body)
+                                (:appLcmOpOccFilter body)
+                                {})
+          user-id           (or (get-in request [:identity :user-id])
+                                "user/anonymous")]
+      
+      ;; Validate subscription type
+      (when-not (contains? subscription/subscription-types subscription-type)
+        (throw (ex-info "Invalid subscription type"
+                        {:status 400
+                         :subscription-type subscription-type})))
+      
+      ;; Create subscription
+      (let [sub (subscription/create-subscription
+                  subscription-type
+                  callback-uri
+                  filter-opts
+                  user-id)]
+        
+        ;; Validate subscription
+        (let [validation (subscription/validate-subscription sub)]
+          (when-not (:valid? validation)
+            (throw (ex-info "Invalid subscription"
+                            {:status 400
+                             :errors (:errors validation)}))))
+        
+        ;; Store subscription
+        (swap! subscription-store conj sub)
+        
+        (log/info "Created subscription" (:id sub) "for user" user-id)
+        (r/json-response sub 201)))
+    
+    (catch clojure.lang.ExceptionInfo e
+      (let [data (ex-data e)]
+        (log/error e "Failed to create subscription")
+        (r/json-response (validation-error (ex-message e))
+                         (or (:status data) 400))))
+    (catch Exception e
+      (log/error e "Unexpected error creating subscription")
+      (r/json-response (problem-details
+                         "about:blank"
+                         "Internal Server Error"
+                         500
+                         :detail (ex-message e)) 500))))
+
+
+(defn list-subscriptions-handler
+  "GET /app_lcm/v2/subscriptions - List subscriptions"
+  [request]
+  (try
+    (let [query-params      (:params request)
+          subscription-type (:subscriptionType query-params)
+          user-id           (get-in request [:identity :user-id])
+          limit             (or (some-> (:limit query-params) Integer/parseInt) 100)
+          offset            (or (some-> (:offset query-params) Integer/parseInt) 0)
+          
+          subs              (subscription/query-subscriptions
+                              @subscription-store
+                              {:subscription-type subscription-type
+                               :owner            user-id
+                               :active           true
+                               :limit            limit
+                               :offset           offset})
+          
+          total             (count (filter (fn [s]
+                                             (and (:active s)
+                                                  (or (nil? user-id)
+                                                      (= (:owner s) user-id))))
+                                           @subscription-store))]
+      
+      (r/json-response {:count total
+                        :items (vec subs)
+                        :_links {:self {:href (str "/" base-uri "/subscriptions")}}}))
+    
+    (catch Exception e
+      (log/error e "Failed to list subscriptions")
+      (r/json-response (problem-details
+                         "about:blank"
+                         "Internal Server Error"
+                         500
+                         :detail (ex-message e)) 500))))
+
+
+(defn get-subscription-handler
+  "GET /app_lcm/v2/subscriptions/{id} - Get a specific subscription"
+  [request]
+  (try
+    (let [subscription-id (get-in request [:params :id])
+          user-id         (get-in request [:identity :user-id])
+          sub             (subscription/get-subscription-by-id
+                            @subscription-store
+                            subscription-id)]
+      
+      (cond
+        (nil? sub)
+        (r/json-response (not-found-error subscription-id) 404)
+        
+        (and user-id (not= (:owner sub) user-id))
+        (r/json-response (problem-details
+                           "https://docs.nuvla.io/mec/errors/forbidden"
+                           "Access Forbidden"
+                           403
+                           :detail "You do not have permission to access this subscription"
+                           :instance subscription-id) 403)
+        
+        :else
+        (r/json-response sub)))
+    
+    (catch Exception e
+      (log/error e "Failed to get subscription")
+      (r/json-response (problem-details
+                         "about:blank"
+                         "Internal Server Error"
+                         500
+                         :detail (ex-message e)) 500))))
+
+
+(defn delete-subscription-handler
+  "DELETE /app_lcm/v2/subscriptions/{id} - Delete a subscription"
+  [request]
+  (try
+    (let [subscription-id (get-in request [:params :id])
+          user-id         (get-in request [:identity :user-id])
+          sub             (subscription/get-subscription-by-id
+                            @subscription-store
+                            subscription-id)]
+      
+      (cond
+        (nil? sub)
+        (r/json-response (not-found-error subscription-id) 404)
+        
+        (and user-id (not= (:owner sub) user-id))
+        (r/json-response (problem-details
+                           "https://docs.nuvla.io/mec/errors/forbidden"
+                           "Access Forbidden"
+                           403
+                           :detail "You do not have permission to delete this subscription"
+                           :instance subscription-id) 403)
+        
+        :else
+        (do
+          ;; Deactivate subscription (soft delete)
+          (swap! subscription-store
+                 (fn [subs]
+                   (mapv (fn [s]
+                           (if (= (:id s) subscription-id)
+                             (subscription/deactivate-subscription s)
+                             s))
+                         subs)))
+          
+          (log/info "Deleted subscription" subscription-id)
+          (r/json-response nil 204))))
+    
+    (catch Exception e
+      (log/error e "Failed to delete subscription")
+      (r/json-response (problem-details
+                         "about:blank"
+                         "Internal Server Error"
+                         500
+                         :detail (ex-message e)) 500))))
+
+
+;;
 ;; Route Definitions
 ;;
 
@@ -284,7 +465,21 @@
    ;; Operation Occurrence Item
    [(str "/" base-uri "/app_lcm_op_occs/:id")
     {:get {:handler get-app-lcm-op-occ-handler
-           :summary "Get operation occurrence"}}]])
+           :summary "Get operation occurrence"}}]
+   
+   ;; Subscription Collection
+   [(str "/" base-uri "/subscriptions")
+    {:get  {:handler list-subscriptions-handler
+            :summary "List subscriptions"}
+     :post {:handler create-subscription-handler
+            :summary "Create subscription"}}]
+   
+   ;; Subscription Item
+   [(str "/" base-uri "/subscriptions/:id")
+    {:get    {:handler get-subscription-handler
+              :summary "Get subscription"}
+     :delete {:handler delete-subscription-handler
+              :summary "Delete subscription"}}]])
 
 
 ;;
