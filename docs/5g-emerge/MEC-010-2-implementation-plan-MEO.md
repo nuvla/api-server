@@ -48,7 +48,7 @@ This document outlines an implementation plan for **MEC 010-2 Application Lifecy
 - Resource-aware scheduling
 - Multi-host coordination
 
-✅ **Mm5 Interface (MEO ↔ MEPM)**
+✅ **Mm3 Interface (MEO ↔ MEPM)**
 - Query MEPM capabilities
 - Delegate instantiation requests
 - Monitor application status
@@ -145,7 +145,7 @@ This document outlines an implementation plan for **MEC 010-2 Application Lifecy
 
 **Pattern 3: MEPM Delegation**
 - MEO selects target host (placement algorithm)
-- MEO delegates to MEPM via Mm5 interface
+- MEO delegates to MEPM via Mm3 interface
 - MEPM handles actual deployment on host
 
 ---
@@ -211,7 +211,7 @@ This document outlines an implementation plan for **MEC 010-2 Application Lifecy
 **Deliverables:**
 - ✅ 3 lifecycle operation endpoints
 - ✅ Operation occurrence tracking
-- ✅ Basic Mm5 interface
+- ✅ Basic Mm3 interface
 - ✅ MEPM registry functional
 
 **Effort:** 120 hours (2 developers × 3 weeks)
@@ -300,7 +300,7 @@ This document outlines an implementation plan for **MEC 010-2 Application Lifecy
 4. Select highest-scoring host
 5. Delegate to host's MEPM via Mm5
 
-### 5.3 Mm5 Interface
+### 5.3 Mm3 Interface
 
 **MEO → MEPM Operations:**
 - `GET /mm5/capabilities` - Query MEPM capabilities
@@ -354,7 +354,7 @@ This document outlines an implementation plan for **MEC 010-2 Application Lifecy
 - ✅ AppInstance lifecycle operations working
 - ✅ Operation occurrence tracking functional
 - ✅ Multi-host orchestration operational
-- ✅ Mm5 interface for MEPM delegation
+- ✅ Mm3 interface for MEPM delegation
 - ✅ Placement algorithm making smart decisions
 
 ### 7.2 Compliance Targets

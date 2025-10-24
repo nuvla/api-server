@@ -168,7 +168,7 @@
 
 **Critical (Must Have):**
 1. ✅ Application Lifecycle Management API (MEC 010-2)
-2. ✅ MEO-MEPM Communication (Mm5 interface)
+2. ✅ MEO-MEPM Communication (Mm3 interface)
 3. ✅ Host Selection for App Placement
 4. ✅ Operation Tracking & History
 
@@ -216,7 +216,7 @@
 | Requirement | Status | Compliance | Gap |
 |-------------|--------|------------|-----|
 | **MEC 010-2 API** | ⚠️ Partial | 95% | Different API, needs MEC layer |
-| **Mm5 Interface** | ⚠️ Partial | 100% | Needs formalization |
+| **Mm3 Interface** | ⚠️ Partial | 100% | Needs formalization |
 | **Basic Placement** | ✅ Implemented | 100% | Resource-based working |
 | **Operation Tracking** | ⚠️ Partial | 90% | Needs MEC format |
 | **Package Integrity (DCT)** | ❌ Missing | 0% | Security gap |
@@ -241,7 +241,7 @@
 - ~6,800 lines of implementation
 - 141 unit tests + 8 integration tests
 
-**2. Mm5 Interface (100% functional)**
+**2. Mm3 Interface (100% functional)**
 - HTTP client for MEPM communication
 - 5 core operations implemented
 - Retry logic and error handling
@@ -265,7 +265,7 @@
 - Need: MEC-compliant wrapper/facade
 - Effort: 4-6 weeks
 
-**2. Formal Mm5 Interface**
+**2. Formal Mm3 Interface**
 - Existing implementation works but not formalized
 - Need: Standard compliance documentation
 - Effort: 1-2 weeks
@@ -292,7 +292,7 @@
 - **Solution:** Create MEC API layer that delegates to existing deployment system
 - **Status:** 95% implemented, needs format alignment
 
-**Gap 2: Mm5 Interface Formalization**
+**Gap 2: Mm3 Interface Formalization**
 - **Current:** Working MEPM communication, not formally documented as Mm5
 - **Required:** Standard Mm5 operations and documentation
 - **Solution:** Formalize existing implementation, add compliance documentation
@@ -322,7 +322,7 @@
 
 **1. Technical Feasibility ✅**
 - MEC 010-2 API: Compatible with Nuvla architecture
-- Mm5 Interface: Already partially implemented
+- Mm3 Interface: Already partially implemented
 - DCT Integration: Plugin available, tested successfully
 - OPA Integration: Tested with Nuvla IaC, confirmed compatibility
 
@@ -352,7 +352,7 @@
 - **Timeline:** 6-8 weeks
 - **Deliverables:**
   - MEC 010-2 API (9 endpoints)
-  - Formal Mm5 interface
+  - Formal Mm3 interface
   - Basic placement algorithm
   - Operation tracking
 - **Outcome:** Ready for MECwiki registration
@@ -425,7 +425,7 @@ Milestones:
 - HATEOAS navigation
 - 100+ unit tests
 
-**Week 7-8: Mm5 Interface**
+**Week 7-8: Mm3 Interface**
 - Formalize existing MEPM client
 - Document as Mm5 compliant
 - Add missing operations if any
@@ -851,7 +851,7 @@ A: Nuvla core team. MEC code integrates with existing codebase, not separate mai
 
 ## Appendix B: Mm5 Operations Details
 
-**Mm5 Interface (MEO ↔ MEPM):**
+**Mm3 Interface (MEO ↔ MEPM):**
 
 1. **Health Check**
    - `GET /health`
@@ -887,7 +887,7 @@ A: Nuvla core team. MEC code integrates with existing codebase, not separate mai
 - API endpoint tests (40 tests)
 - Data model validation (25 tests)
 - State management (18 tests)
-- Mm5 client operations (26 tests)
+- Mm3 client operations (26 tests)
 - Error handling (15 tests)
 - Subscription system (17 tests)
 
@@ -922,7 +922,7 @@ A: Nuvla core team. MEC code integrates with existing codebase, not separate mai
 - **API:** REST with JSON payloads
 - **Documentation:** OpenAPI 3.0
 - **Error Format:** RFC 7807 ProblemDetails
-- **Mm5 Client:** HTTP client with retry logic
+- **Mm3 Client:** HTTP client with retry logic
 
 **Security (Phase 2):**
 - **DCT:** Docker Content Trust + Notary

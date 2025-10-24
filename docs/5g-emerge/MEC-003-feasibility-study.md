@@ -78,7 +78,7 @@ ETSI MEC 003 Reference Architecture        Nuvla Mapping
 | Requirement | Description | Nuvla Status |
 |-------------|-------------|--------------|
 | **System-level management** | Manage apps across multiple hosts | ✅ Existing |
-| **Mm5 interface** | Communicate with MEPMs | ⚠️ Generic API exists |
+| **Mm3 interface** | Communicate with MEPMs | ⚠️ Generic API exists |
 | **Mm2 interface** | Query VIM resources | ✅ Via infrastructure-service |
 | **Mm3 interface** | Customer-facing services | ✅ REST API + UI |
 | **Mm8 interface** | Federation (MEO to MEO) | ❌ Not implemented |
@@ -163,7 +163,7 @@ ETSI MEC 003 Reference Architecture        Nuvla Mapping
 
 ### 2.3 Gaps
 
-🔴 **Mm5 Interface**
+🔴 **Mm3 Interface**
 - Current API is generic Nuvla protocol
 - Need MEC-specific Mm5 operations
 - Missing MEPM discovery/registration
@@ -214,9 +214,9 @@ The beauty of positioning Nuvla as MEO only is that **most work is documentation
 
 ### 3.2 Implementation Components
 
-#### Component 1: Mm5 Interface Specification
+#### Component 1: Mm3 Interface Specification
 
-The Mm5 interface defines how Nuvla MEO communicates with external MEPMs:
+The Mm3 interface defines how Nuvla MEO communicates with external MEPMs:
 
 **Key Operations:**
 - Query MEPM capabilities
@@ -255,7 +255,7 @@ System configuration defining Nuvla's role as MEO:
 - Deployment model: Distributed multi-host
 
 **Component Mapping:**
-- MEO: Nuvla API Server with Mm2, Mm3, Mm5 interfaces
+- MEO: Nuvla API Server with Mm2, Mm3, Mm3 interfaces
 - MEPM: External (can be NuvlaBox agent or third-party)
 - MEP: External (delegated to external MEC platforms)
 - VIM: Infrastructure Service resource
@@ -328,7 +328,7 @@ in ETSI GS MEC 003.
 
 ---
 
-### Phase 2: Mm5 Interface & MEPM Registry (Weeks 3-4)
+### Phase 2: Mm3 Interface & MEPM Registry (Weeks 3-4)
 
 **Objective:** Implement basic Mm5 protocol and MEPM registration
 
@@ -340,7 +340,7 @@ in ETSI GS MEC 003.
 
 2. Implement Mm5 operations (Week 4)
    - Define Mm5 API specification
-   - Create Mm5 client for MEPM communication
+   - Create Mm3 client for MEPM communication
    - Add MEPM discovery logic
 
 3. Update orchestration logic
@@ -350,7 +350,7 @@ in ETSI GS MEC 003.
 
 **Deliverables:**
 - ✅ MEPM resource
-- ✅ Mm5 interface specification
+- ✅ Mm3 interface specification
 - ✅ Basic MEPM integration
 
 **Effort:** 60 hours (1-2 developers × 2 weeks)
@@ -575,7 +575,7 @@ in ETSI GS MEC 003.
 ### 9.3 Functional
 
 - ✅ MEPM resource operational
-- ✅ Mm5 interface basics working
+- ✅ Mm3 interface basics working
 - ✅ Integration with at least one MEPM validated
 - ✅ Orchestration logic MEC-aware
 
@@ -664,7 +664,7 @@ in ETSI GS MEC 003.
 
 **Deliverables:**
 - MEPM resource
-- Mm5 interface specification
+- Mm3 interface specification
 - Basic integration logic
 
 ### Week 5-6: Validation Phase
@@ -709,7 +709,7 @@ in ETSI GS MEC 003.
 ### Appendix C: Integration Readiness Checklist
 
 **For External MEPM Integration:**
-- ✅ MEPM supports Mm5 interface (HTTP/REST)
+- ✅ MEPM supports Mm3 interface (HTTP/REST)
 - ✅ MEPM exposes capabilities API
 - ✅ MEPM can accept application deployment requests
 - ✅ MEPM provides status updates

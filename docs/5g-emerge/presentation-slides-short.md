@@ -47,8 +47,8 @@
 │  │   REST API   │  │  Event Bus   │  │   Job Queue  │  │
 │  └──────────────┘  └──────────────┘  └──────────────┘  │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │   Modules    │  │ Deployments  │  │   NuvlaBox   │  │
-│  │  (Catalog)   │  │ (Lifecycle)  │  │  (Devices)   │  │
+│  │   Modules    │  │ Credentials  │  │   NuvlaBox   │  │
+│  │  (Catalog)   │  │   (Config)   │  │  (Devices)   │  │
 │  └──────────────┘  └──────────────┘  └──────────────┘  │
 └─────────────────────────────────────────────────────────┘
                            │
@@ -63,8 +63,8 @@
 **Core Capabilities Today:**
 - ✅ Application catalog & versioning
 - ✅ Device inventory & monitoring
-- ✅ Deployment orchestration
 - ✅ Multi-device management
+- ✅ Credentials & configuration management
 - ✅ User & access control
 
 ---
@@ -93,7 +93,7 @@
         ┌───────────▼───────────┐
         │   MEO (Orchestrator)  │  ← Nuvla Target
         └───┬───────────────┬───┘
-            │ Mm5           │ Mm3
+            │ Mm3           │ Mm3 (Customer API)
     ┌───────▼─────┐     ┌───▼──────────┐
     │    MEPM     │     │   Customer   │
     └───┬─────────┘     └──────────────┘
@@ -122,7 +122,7 @@
 - Operate (start/stop) applications
 - Track operation history
 
-**2. MEO-MEPM Communication (Mm5 Interface)**
+**2. MEO-MEPM Communication (Mm3 Interface)**
 - Query platform capabilities
 - Query available resources
 - Delegate deployment to platform manager
@@ -179,12 +179,6 @@
 - Health checking and status
 - Multi-device orchestration
 
-**✅ Lifecycle Operations**
-- Application deployment
-- Start/stop/restart operations
-- Termination and cleanup
-- State tracking
-
 **✅ Foundation Components**
 - REST API framework
 - Job system for async operations
@@ -201,7 +195,7 @@
 |-----------|---------------|------------------|
 | **API Format** | ✅ Custom Nuvla API | ❌ MEC 010-2 compliant endpoints |
 | **Data Models** | ✅ Nuvla resources | ❌ MEC data models (AppInstanceInfo, etc.) |
-| **Mm5 Interface** | ⚠️ Direct deployment | ❌ Formal MEPM communication protocol |
+| **Mm3 Interface** | ⚠️ Direct deployment | ❌ Formal MEPM communication protocol |
 | **Operation Tracking** | ⚠️ Job system | ❌ AppLcmOpOcc format |
 | **Error Handling** | ✅ Custom errors | ❌ RFC 7807 ProblemDetails |
 | **Host Selection** | ✅ User selects | ❌ Automatic resource-based placement |
@@ -209,14 +203,14 @@
 **Summary:**
 - Strong foundation exists ✅
 - Need MEC-compliant API layer ❌
-- Need formal Mm5 interface ❌
+- Need formal Mm3 interface ❌
 - Need standardized tracking ❌
 
 ---
 
 ## Slide 10: Implementation Strategy
 
-**Approach: Build MEC Layer on Top of Nuvla**
+**Approach: MEO with Mm3 Delegation to MEPM**
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -225,21 +219,33 @@
 │  - MEC data models                          │
 │  - RFC 7807 errors                          │
 └────────────────┬────────────────────────────┘
-                 │ delegates to
+                 │ delegates lifecycle ops
 ┌────────────────▼────────────────────────────┐
-│      Existing Nuvla Components              │
-│  - Module resources                         │
-│  - Deployment resources                     │
-│  - Job system                               │
-│  - Event system                             │
+│      Mm3 Client Interface (NEW)             │
+│  - Query MEPM capabilities                  │
+│  - Query MEPM resources                     │
+│  - Create/delete app instances              │
+│  - Get app instance status                  │
+└────────────────┬────────────────────────────┘
+                 │ communicates with
+┌────────────────▼────────────────────────────┐
+│      MEPM (External Platform Manager)       │
+│  - Actual deployment execution              │
+│  - Platform-level management                │
+│  - MEC Platform (MEP) integration           │
 └─────────────────────────────────────────────┘
+
+Leverages existing Nuvla components for:
+  • Module resources (app catalog - Mm9)
+  • Job system (operation tracking)
+  • Event system (notifications)
 ```
 
 **Benefits:**
-- Reuse existing, proven components
-- Non-breaking changes to Nuvla
-- Parallel MEC API for standards compliance
-- Existing deployments unaffected
+- Correct MEO architecture per ETSI MEC 003
+- MEO orchestrates, MEPM executes (via Mm3)
+- Reuse existing components where applicable
+- Standards-compliant separation of concerns
 
 ---
 
@@ -261,7 +267,7 @@
 - HATEOAS navigation
 - Comprehensive testing (100+ tests)
 
-**Week 7-8: Mm5 Interface & Integration**
+**Week 7-8: Mm3 Interface & Integration**
 - MEPM communication client
 - Resource-based host selection
 - Operation tracking (AppLcmOpOcc format)
@@ -282,14 +288,14 @@
 **Phase 2: Lifecycle Operations (Weeks 5-6)**
 - Implement 3 lifecycle endpoints (instantiate, terminate, operate)
 - Implement request data models
-- Integrate with existing deployment system
+- Integrate with Mm3 client for MEPM delegation
 - State transition validation
 - Unit tests (30+ tests)
 
 **Phase 3: Tracking & Integration (Weeks 7-8)**
 - Implement 2 operation tracking endpoints
 - AppLcmOpOcc implementation
-- Mm5 client for MEPM communication
+- Mm3 client for MEPM communication
 - Basic placement algorithm
 - RFC 7807 error responses
 - Integration tests (10+ tests)
@@ -464,7 +470,7 @@ Week 7-8:   ████ Integration & Testing
 **Scope:**
 - 6-8 weeks development timeline
 - MEC 010-2 API (9 endpoints)
-- Mm5 interface formalization
+- Mm3 interface formalization
 - Basic host selection
 - Operation tracking
 - 100+ tests + documentation

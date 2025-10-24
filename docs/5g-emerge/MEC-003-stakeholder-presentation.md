@@ -14,7 +14,7 @@
 
 ✅ **Completed comprehensive architectural mapping** of Nuvla to ETSI MEC 003  
 ✅ **Confirmed Nuvla's role as MEC Orchestrator (MEO)** with 75-80% alignment  
-✅ **Identified minimal gaps** - primarily Mm5 interface formalization  
+✅ **Identified minimal gaps** - primarily Mm3 interface formalization  
 ✅ **Defined clear implementation path** - 4-6 weeks to 85-90% compliance
 
 ### Key Message
@@ -104,7 +104,7 @@
 | **Mm8** | Federation | ❌ Future (MEC 040) | Low |
 | **Mp1-Mp3** | Platform Services | ❌ Out of Scope | N/A |
 
-**Key Gap:** Mm5 interface needs standardization for MEPM communication
+**Key Gap:** Mm3 interface needs standardization for MEPM communication
 
 ---
 
@@ -141,7 +141,7 @@
 - Create MEPM resource for tracking platform managers
 - Implement registry API (POST/GET/PUT/DELETE /api/mepm)
 - Define Mm5 protocol specification (REST/JSON)
-- Build Mm5 client for MEPM communication
+- Build Mm3 client for MEPM communication
 
 **Week 5-6: Testing & Validation**
 - Integration testing with mock MEPM
@@ -225,8 +225,8 @@ Edge Applications
 
 **Phase 2: MEPM & Mm5 Implementation** (Weeks 3-4)
 - MEPM resource & registry
-- Mm5 interface specification
-- Mm5 client implementation
+- Mm3 interface specification
+- Mm3 client implementation
 
 **Phase 3: Testing & Validation** (Weeks 5-6)
 - Integration testing
@@ -351,7 +351,7 @@ Edge Applications
 **Functional Requirements:**
 - ✅ MEPM resource operational
 - ✅ MEPM registration working
-- ✅ Mm5 interface functional
+- ✅ Mm3 interface functional
 - ✅ Integration with ≥1 MEPM validated
 
 **Target:** 85-90% MEC 003 alignment (from current 75-80%)
@@ -415,7 +415,7 @@ GET /api/infrastructure-service - List VIMs
 ### Decision Points for Stakeholders
 
 **1. Approve Phase 2 Implementation?**
-- MEPM resource & Mm5 interface
+- MEPM resource & Mm3 interface
 - 4 weeks, ~100 hours effort
 - Recommendation: ✅ **PROCEED**
 
@@ -471,13 +471,13 @@ A: No breaking changes. Backward compatible. Adds formalization, not new behavio
 A: Out of scope for MEO-only implementation. Can integrate external MEP or defer.
 
 **Q: Will this work with OpenNESS?**  
-A: Yes! That's the goal. Mm5 interface enables integration with any MEPM.
+A: Yes! That's the goal. Mm3 interface enables integration with any MEPM.
 
 **Q: Cost implications?**  
 A: Minimal. Uses existing team. No new infrastructure required.
 
 **Q: When can we start using this?**  
-A: MEO functions work today. Formalized Mm5 interface ready in 6 weeks.
+A: MEO functions work today. Formalized Mm3 interface ready in 6 weeks.
 
 ---
 

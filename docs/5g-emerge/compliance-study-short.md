@@ -28,7 +28,7 @@ According to ETSI GS MEC 003 §6.2.1, the MEO has the following critical respons
 - State management: NOT_INSTANTIATED ↔ INSTANTIATED, STARTED/STOPPED/UNKNOWN
 - Query capabilities: filtering, pagination, HATEOAS navigation
 
-**R2 - MEO-MEPM Communication (Mm5 Interface)**
+**R2 - MEO-MEPM Communication (Mm3 Interface)**
 - HTTP client with 6 operations: health check, query capabilities/resources, deploy/query/terminate app
 - Reliability: retry logic, connection pooling, timeouts, failover
 - Multi-MEPM support with selection algorithm
@@ -83,7 +83,7 @@ All requirements are currently **gaps** (not implemented or only partially imple
 | Gap | Requirement | Effort | Priority |
 |-----|-------------|--------|----------|
 | **Gap 1** | MEC 010-2 API (9 endpoints, data models, state mgmt) | 4-6 weeks | 🔴 CRITICAL |
-| **Gap 2** | Mm5 Interface (HTTP client, 6 operations, multi-MEPM) | 2-3 weeks | 🔴 CRITICAL |
+| **Gap 2** | Mm3 Interface (HTTP client, 6 operations, multi-MEPM) | 2-3 weeks | 🔴 CRITICAL |
 | **Gap 3** | Basic Placement (resource-based, first-fit) | 1-2 weeks | 🔴 CRITICAL |
 | **Gap 4** | Operation Tracking (AppLcmOpOcc, query API) | 2-3 weeks | 🔴 CRITICAL |
 
@@ -150,7 +150,7 @@ All requirements are currently **gaps** (not implemented or only partially imple
 
 **Minimum Requirements:**
 - ✅ MEC 010-2 API: 9 endpoints, 80%+ compliant
-- ✅ Mm5 Interface: 6 operations working with MEPM
+- ✅ Mm3 Interface: 6 operations working with MEPM
 - ✅ Lifecycle: Instantiate, terminate, operate end-to-end
 - ✅ Placement: Basic resource-based
 - ✅ Tracking: Operation history with queries
@@ -212,7 +212,7 @@ All requirements are currently **gaps** (not implemented or only partially imple
 
 Achieving minimum viable MEO compliance requires **10-14 weeks** of focused development (Phase 1). Adding production features (Phase 2) requires an additional **4-6 weeks**.
 
-**Critical Path:** MEC 010-2 API → Mm5 Interface → Basic Placement → Operation Tracking
+**Critical Path:** MEC 010-2 API → Mm3 Interface → Basic Placement → Operation Tracking
 
 **Recommendation:** Execute Phase 1 + 2 together (14-18 weeks total) for production-ready MEO suitable for MECwiki registration and 5G-EMERGE deployment.
 

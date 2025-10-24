@@ -15,7 +15,7 @@
 3. [Getting Started](#getting-started)
 4. [Application Lifecycle Management](#application-lifecycle-management)
 5. [Subscription & Notifications](#subscription--notifications)
-6. [MEPM Integration (Mm5 Interface)](#mepm-integration-mm5-interface)
+6. [MEPM Integration (Mm3 Interface)](#mepm-integration-mm5-interface)
 7. [Query Filtering](#query-filtering)
 8. [Error Handling](#error-handling)
 9. [Best Practices](#best-practices)
@@ -351,11 +351,11 @@ DELETE /app_lcm/v2/subscriptions/{id}
 
 ---
 
-## MEPM Integration (Mm5 Interface)
+## MEPM Integration (Mm3 Interface)
 
 ### Overview
 
-Nuvla MEO delegates actual application deployment to MEPMs (MEC Platform Managers) via the Mm5 interface.
+Nuvla MEO delegates actual application deployment to MEPMs (MEC Platform Managers) via the Mm3 interface.
 
 ### MEPM Requirements
 
@@ -755,7 +755,7 @@ curl -X DELETE https://nuvla.io/api/app_lcm/v2/subscriptions/$SUB_ID \
 
 **Solution**:
 1. Verify MEPM is online and accessible
-2. Check Mm5 interface implementation
+2. Check Mm3 interface implementation
 3. Review MEPM logs for errors
 4. Retry operation after delay
 

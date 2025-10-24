@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide provides quick setup instructions for the MEC MEO (Multi-access Edge Orchestrator) implementation with MEPM (MEC Platform Manager) integration via the Mm5 interface.
+This guide provides quick setup instructions for the MEC MEO (Multi-access Edge Orchestrator) implementation with MEPM (MEC Platform Manager) integration via the Mm3 interface.
 
 ## Table of Contents
 
@@ -230,10 +230,10 @@ lein cloverage -n 'com.sixsq.nuvla.server.resources.mec.*'
 
 ### Mm5 Client Options
 
-All Mm5 client functions accept optional configuration:
+All Mm3 client functions accept optional configuration:
 
 ```clojure
-(require '[com.sixsq.nuvla.server.resources.mec.mm5-client :as mm5])
+(require '[com.sixsq.nuvla.server.resources.mec.mm3-client :as mm5])
 
 (mm5/check-health "https://mepm.example.com"
                   :connect-timeout 5000    ; Connection timeout (ms)
@@ -297,7 +297,7 @@ Configure via environment or `profiles.clj`:
 │   Nuvla     │
 │ MEO Service │
 │             │
-│  ┌──────┐   │      Mm5 Interface
+│  ┌──────┐   │      Mm3 Interface
 │  │ MEPM │───┼────────────────────────┐
 │  │Resource  │                        │
 │  └──────┘   │                        │

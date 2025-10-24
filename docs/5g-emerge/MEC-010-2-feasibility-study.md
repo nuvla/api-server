@@ -31,7 +31,7 @@ This feasibility study evaluates implementing **MEC 010-2 Application Lifecycle 
 │  • Multi-host orchestration                            │
 │  • Application package management                      │
 │  • Resource coordination                               │
-│  • Mm5 interface to external MEPMs                     │
+│  • Mm3 interface to external MEPMs                     │
 └──────────────────┬──────────────────────────────────────┘
                    │ Mm5 (Management)
                    │
@@ -123,7 +123,7 @@ According to ETSI MEC 003, the **MEO** is responsible for:
 │    - Multi-host coordination                             │
 │    - Dependency resolution                               │
 │                                                          │
-│ ✅ Mm5 Interface (MEO ↔ MEPM)                            │
+│ ✅ Mm3 Interface (MEO ↔ MEPM)                            │
 │    - Query MEPM capabilities                             │
 │    - Request application instantiation                   │
 │    - Monitor application status                          │
@@ -257,7 +257,7 @@ The facade pattern allows MEC clients to interact with Nuvla resources without c
 Platform-level operations are delegated to external MEC Platform Managers:
 
 **Integration Approach:**
-- MEO sends requests to MEPM via Mm5 interface (HTTP/REST)
+- MEO sends requests to MEPM via Mm3 interface (HTTP/REST)
 - MEPM can be:
   - External MEC platform (e.g., OpenNESS)
   - Enhanced NuvlaBox agent
@@ -330,7 +330,7 @@ The MEO is responsible for selecting which MEC host should run an application:
    - Link to job resource
    - State tracking
 
-3. Mm5 interface basics (Week 6)
+3. Mm3 interface basics (Week 6)
    - Query MEPM capabilities
    - Delegate instantiation requests
    - Monitor operation progress
@@ -399,7 +399,7 @@ User → Nuvla MEO (MEC 010-2 API)
 
 **Use Case:** Organization already has MEC infrastructure, wants Nuvla as orchestration layer
 
-**Integration:** HTTP/REST over Mm5 interface
+**Integration:** HTTP/REST over Mm3 interface
 
 ---
 
@@ -549,7 +549,7 @@ User → Nuvla MEO (MEC 010-2 API)
 - ✅ AppInstance lifecycle operations (instantiate, terminate, operate)
 - ✅ Operation occurrence tracking
 - ✅ Multi-host placement algorithm
-- ✅ Mm5 interface for MEPM integration
+- ✅ Mm3 interface for MEPM integration
 
 ### 9.2 Compliance Targets
 

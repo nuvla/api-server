@@ -425,7 +425,7 @@ graph TB
 
 ---
 
-## 7. Mm5 Interface Protocol
+## 7. Mm3 Interface Protocol
 
 ```mermaid
 sequenceDiagram
@@ -536,7 +536,7 @@ gantt
     section Phase 2
     MEPM Resource Schema       :p2-1, 2025-10-28, 3d
     MEPM CRUD API             :p2-2, 2025-10-30, 4d
-    Mm5 Interface Spec        :p2-3, 2025-11-03, 3d
+    Mm3 Interface Spec        :p2-3, 2025-11-03, 3d
     Mm5 Client Implementation :p2-4, 2025-11-05, 4d
     
     section Phase 3

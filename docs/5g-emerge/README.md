@@ -8,7 +8,7 @@
 
 **Implementation Status:**
 
-**MEC 003 - Mm5 Interface (Complete):**
+**MEC 003 - Mm3 Interface (Complete):**
 - ✅ Phase 1: Mm5 Client Implementation (Weeks 1-2) - Complete
 - ✅ Phase 2: MEPM Resource & Actions (Weeks 3-4) - Complete
 - ✅ Phase 3: Integration & Documentation (Weeks 5-6) - Complete
@@ -50,12 +50,12 @@
 | Document | Purpose | Audience | Status |
 |----------|---------|----------|--------|
 | **[quick-start-guide.md](quick-start-guide.md)** | Dev setup, deployment, testing | Developers, Ops | ✅ Complete |
-| **[mm5-api-reference.md](mm5-api-reference.md)** | Complete Mm5 client API | Developers | ✅ Complete |
+| **[mm5-api-reference.md](mm5-api-reference.md)** | Complete Mm3 client API | Developers | ✅ Complete |
 | **[mepm-resource-api.md](mepm-resource-api.md)** | MEPM resource operations | Developers, API users | ✅ Complete |
 | **[etsi-mec-003-compliance.md](etsi-mec-003-compliance.md)** | Standards compliance matrix | Technical, Compliance | ✅ Complete |
 
 **Implementation Highlights:**
-- 467 lines: Mm5 client with full ETSI MEC 003 Mm5 interface
+- 467 lines: Mm3 client with full ETSI MEC 003 Mm3 interface
 - 339 lines: Mock MEPM server for deterministic testing
 - 26 tests, 138 assertions: 100% passing
 - 100% ETSI MEC 003 core requirements compliance
@@ -121,7 +121,7 @@
 
 **Key Achievements:**
 - Nuvla API Server = MEO (MEC Orchestrator)
-- Mm5 client: 467 lines, 9 functions
+- Mm3 client: 467 lines, 9 functions
 - MEPM resource: CRUD + 3 actions
 - Mock MEPM server: 339 lines
 - Tests: 26 tests, 138 assertions, 100% passing
@@ -154,7 +154,7 @@
 **Key Requirements:**
 - Application lifecycle APIs
 - AppLcmOpOcc (operation tracking)
-- Mm5 interface (builds on MEC 003)
+- Mm3 interface (builds on MEC 003)
 - Placement algorithm
 
 ---
@@ -221,8 +221,8 @@
 **Planned Deliverables:**
 1. MEPM resource schema (Clojure spec)
 2. MEPM CRUD API (5 endpoints)
-3. Mm5 interface specification
-4. Mm5 client implementation
+3. Mm3 interface specification
+4. Mm3 client implementation
 5. Integration with orchestration
 
 **Reference:** [MEC-003-implementation-plan-MEO.md](MEC-003-implementation-plan-MEO.md) (Phase 2 section)

@@ -240,7 +240,7 @@ The MEC 003 standard defines a **three-layer architecture**:
 
 **MEC Alignment:** Mm2 allows MEO to query infrastructure resources. Nuvla supports this for K8s, Docker Swarm, and cloud providers.
 
-### 5.4 Mm5 Interface (To Be Implemented)
+### 5.4 Mm3 Interface (To Be Implemented)
 
 **Required Functionality:**
 
@@ -497,7 +497,7 @@ MEC 003 defines **three trust domains**:
 - RESTful interface (Nuvla-specific)
 
 **Gap:**
-- Need standardized Mm5 interface
+- Need standardized Mm3 interface
 - Need MEPM resource/registry
 - Need protocol specification
 
@@ -541,7 +541,7 @@ MEC 003 defines **three trust domains**:
 - ✅ Package management (Mm9) functional
 
 **Gaps:**
-- ⚠️ Mm5 interface needs formalization
+- ⚠️ Mm3 interface needs formalization
 - ⚠️ MEPM integration not standardized
 - ⚠️ Placement algorithm basic
 - ⚠️ MEC terminology not used
@@ -564,8 +564,8 @@ MEC 003 defines **three trust domains**:
 ### 10.2 Phase 2 Priorities
 
 1. **Implement MEPM resource** - Track available platform managers
-2. **Specify Mm5 interface** - Standardize MEO-MEPM communication
-3. **Create Mm5 client** - Enable communication with external MEPMs
+2. **Specify Mm3 interface** - Standardize MEO-MEPM communication
+3. **Create Mm3 client** - Enable communication with external MEPMs
 4. **Test integration** - Validate with mock MEPM
 
 ### 10.3 Future Enhancements
@@ -585,11 +585,11 @@ Nuvla already functions as a MEC Orchestrator (MEO) with 75-80% architectural al
 **Key Findings:**
 - Nuvla's architecture naturally maps to the MEO role
 - Existing resources (module, deployment, nuvlabox) align with MEC concepts
-- Main gap is standardized Mm5 interface to external MEPMs
+- Main gap is standardized Mm3 interface to external MEPMs
 - Platform services (MEP) are explicitly out of scope for MEO-only implementation
 
 **Path Forward:**
-Following the MEC 003 Implementation Plan, we can achieve 85-90% alignment in 4-6 weeks with minimal changes to core Nuvla functionality. Most work involves documentation, terminology mapping, and creating the Mm5 interface.
+Following the MEC 003 Implementation Plan, we can achieve 85-90% alignment in 4-6 weeks with minimal changes to core Nuvla functionality. Most work involves documentation, terminology mapping, and creating the Mm3 interface.
 
 **Strategic Value:**
 Positioning Nuvla as a MEC-compliant MEO opens opportunities for:

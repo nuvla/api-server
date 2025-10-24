@@ -46,6 +46,7 @@
 (def ^:const subtype-app-docker "Docker Application" "application")
 (def ^:const subtype-app-k8s "Kubernetes Application" "application_kubernetes")
 (def ^:const subtype-app-helm "Helm Application" "application_helm")
+(def ^:const subtype-app-mec "MEC Application (ETSI MEC 037)" "application_mec")
 (def ^:const subtype-apps-sets "Application Bouquet" "applications_sets")
 
 (def ^:const module-subtypes
@@ -54,6 +55,7 @@
    subtype-app-docker
    subtype-app-k8s
    subtype-app-helm
+   subtype-app-mec
    subtype-apps-sets])
 
 (def ^:const compatibility-docker-compose "docker-compose")

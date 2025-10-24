@@ -262,7 +262,7 @@ GET /app_lcm/v2/subscriptions?filter=(eq,subscriptionType,AppInstanceStateChange
 - End-to-end lifecycle workflows
 - Subscription → Notification flow
 - Job tracking integration
-- Mm5 client delegation
+- Mm3 client delegation
 - Query filtering with API endpoints
 - Multi-module coordination
 
@@ -324,12 +324,12 @@ GET /app_lcm/v2/subscriptions?filter=(eq,subscriptionType,AppInstanceStateChange
 
 4. **NuvlaEdge** → MEPM
    - NuvlaEdge acts as MEPM for edge deployments
-   - Mm5 client delegates to NuvlaEdge API
+   - Mm3 client delegates to NuvlaEdge API
 
 ### With External Systems
 
 1. **MEC Orchestrator (MEO)**: This implementation IS the MEO
-2. **MEC Platform Manager (MEPM)**: Mm5 client communicates via HTTP
+2. **MEC Platform Manager (MEPM)**: Mm3 client communicates via HTTP
 3. **MEC Applications**: Deployed as Nuvla deployments
 4. **Notification Consumers**: Receive webhooks via HTTP POST
 
@@ -401,7 +401,7 @@ KAFKA_GROUP_ID=mec-notifications
 
 1. **Webhook Authentication**: Add HMAC signature to notifications
 2. **Rate Limiting**: Per-user API rate limits
-3. **TLS/mTLS**: For Mm5 client connections
+3. **TLS/mTLS**: For Mm3 client connections
 4. **Audit Logging**: Track all lifecycle operations
 
 ---
@@ -528,7 +528,7 @@ lein test com.sixsq.nuvla.server.resources.mec.app-lcm-subscription-test \
           com.sixsq.nuvla.server.resources.mec.app-lcm-v2-test \
           com.sixsq.nuvla.server.resources.mec.app-lcm-op-tracking-test \
           com.sixsq.nuvla.server.resources.mec.lifecycle-handler-test \
-          com.sixsq.nuvla.server.resources.mec.mm5-client-test
+          com.sixsq.nuvla.server.resources.mec.mm3-client-test
 
 # Run specific module tests
 lein test com.sixsq.nuvla.server.resources.mec.app-lcm-subscription-test
@@ -601,7 +601,7 @@ lein test com.sixsq.nuvla.server.resources.mec.app-lcm-subscription-test
    - Code generation ready
    
 2. MEPM Integration Guide (~4000 words)
-   - Complete Mm5 interface documentation
+   - Complete Mm3 interface documentation
    - Best practices and troubleshooting
    - Example workflows
    
@@ -672,7 +672,7 @@ This MEC 010-2 implementation represents **production-ready code** with **100% f
 1. **13 RESTful API Endpoints** - Complete CRUD, lifecycle, operations, subscriptions
 2. **Complete RFC 7807 Error Handling** - 13 error types with MEC extensions
 3. **OpenAPI 3.0 Specification** - Machine-readable, code generation ready
-4. **MEPM Integration Guide** - Comprehensive Mm5 interface documentation
+4. **MEPM Integration Guide** - Comprehensive Mm3 interface documentation
 5. **Integration Test Suite** - End-to-end workflow validation
 6. **Standards Compliance Matrix** - Certification-ready documentation
 7. **Job-based Operation Tracking** - State synchronization with Nuvla infrastructure

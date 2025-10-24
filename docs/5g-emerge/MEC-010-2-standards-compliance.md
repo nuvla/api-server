@@ -112,7 +112,7 @@ Nuvla implements **95% of ETSI GS MEC 010-2 v2.2.1** requirements for a **MEO-le
 | Instantiate operation | ✅ Complete | `lifecycle-handler/instantiate` | Full workflow |
 | grantId parameter (optional) | ✅ Complete | Accepted in request | For resource grants |
 | MEPM selection | ✅ Complete | `resolve-mepm-endpoint` | Basic algorithm |
-| MEPM delegation (Mm5) | ✅ Complete | `mm5-client/instantiate-app` | REST communication |
+| MEPM delegation (Mm5) | ✅ Complete | `mm3-client/instantiate-app` | REST communication |
 | Job creation | ✅ Complete | Nuvla job system | Async tracking |
 | Response: 202 Accepted | ✅ Complete | AppLcmOpOcc | Operation occurrence |
 | Response: 400 Bad Request | ✅ Complete | RFC 7807 ProblemDetails | Validation errors |
@@ -129,7 +129,7 @@ Nuvla implements **95% of ETSI GS MEC 010-2 v2.2.1** requirements for a **MEO-le
 |------------|--------|----------------|-------|
 | Terminate operation | ✅ Complete | `lifecycle-handler/terminate` | Full workflow |
 | terminationType parameter | ✅ Complete | GRACEFUL, FORCEFUL | Both supported |
-| MEPM delegation (Mm5) | ✅ Complete | `mm5-client/terminate-app` | REST communication |
+| MEPM delegation (Mm5) | ✅ Complete | `mm3-client/terminate-app` | REST communication |
 | Job creation | ✅ Complete | Nuvla job system | Async tracking |
 | Response: 202 Accepted | ✅ Complete | AppLcmOpOcc | Operation occurrence |
 | Response: 400 Bad Request | ✅ Complete | RFC 7807 ProblemDetails | Validation errors |
@@ -145,7 +145,7 @@ Nuvla implements **95% of ETSI GS MEC 010-2 v2.2.1** requirements for a **MEO-le
 |------------|--------|----------------|-------|
 | Operate operation | ✅ Complete | `lifecycle-handler/operate` | Start/Stop control |
 | changeStateTo parameter | ✅ Complete | STARTED, STOPPED | Both supported |
-| MEPM delegation (Mm5) | ✅ Complete | `mm5-client/operate-app` | REST communication |
+| MEPM delegation (Mm5) | ✅ Complete | `mm3-client/operate-app` | REST communication |
 | Job creation | ✅ Complete | Nuvla job system | Async tracking |
 | Response: 202 Accepted | ✅ Complete | AppLcmOpOcc | Operation occurrence |
 | Response: 400 Bad Request | ✅ Complete | RFC 7807 ProblemDetails | Validation errors |

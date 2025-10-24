@@ -18,6 +18,7 @@ component, or application.
     [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
     [com.sixsq.nuvla.server.resources.module-application :as module-application]
     [com.sixsq.nuvla.server.resources.module-application-helm :as module-application-helm]
+    [com.sixsq.nuvla.server.resources.module-application-mec :as module-application-mec]
     [com.sixsq.nuvla.server.resources.module-applications-sets :as module-applications-sets]
     [com.sixsq.nuvla.server.resources.module-component :as module-component]
     [com.sixsq.nuvla.server.resources.module.utils :as utils]
@@ -67,6 +68,7 @@ component, or application.
     (utils/is-component? resource) module-component/resource-type
     (utils/is-application? resource) module-application/resource-type
     (utils/is-application-helm? resource) module-application-helm/resource-type
+    (utils/is-application-mec? resource) module-application-mec/resource-type
     (utils/is-application-k8s? resource) module-application/resource-type
     (utils/is-applications-sets? resource) module-applications-sets/resource-type
     :else (throw (r/ex-bad-request (str "unknown module subtype: "

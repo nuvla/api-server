@@ -236,7 +236,7 @@ For the MEO to be compliant with ETSI MEC 010-2, it must implement the Applicati
 
 ## 3. Mm5 Reference Point Requirements
 
-The Mm5 interface connects the MEO to MEC Platform Managers (MEPM). Per ETSI MEC 003 §6.3, this is a critical MEO interface.
+The Mm3 interface connects the MEO to MEC Platform Managers (MEPM). Per ETSI MEC 003 §6.3, this is a critical MEO interface.
 
 ### 3.1 Required Mm5 Operations
 
@@ -324,7 +324,7 @@ This section identifies implementation gaps for achieving minimum viable MEO com
 
 ---
 
-#### **Gap 2: Mm5 Interface (MEO-MEPM Communication)**
+#### **Gap 2: Mm3 Interface (MEO-MEPM Communication)**
 
 **Requirement:** ETSI GS MEC 003 §6.3
 
@@ -368,7 +368,7 @@ This section identifies implementation gaps for achieving minimum viable MEO com
 - Retry logic validation
 
 **Integration Notes:**
-- Lifecycle handler delegates to Mm5 client for deployment
+- Lifecycle handler delegates to Mm3 client for deployment
 - Selection algorithm chooses MEPM based on capabilities/resources
 
 ---
@@ -737,7 +737,7 @@ These gaps are not required for minimum viable MEO but enhance functionality for
 
 #### **Gap 11: Multi-MEPM Coordination**
 
-**Current Gap:** Basic Mm5 client supports multi-MEPM, but no coordination
+**Current Gap:** Basic Mm3 client supports multi-MEPM, but no coordination
 
 **Future Implementation:**
 - MEPM registry and discovery
@@ -777,7 +777,7 @@ This section provides a phased approach to achieving MEO compliance.
 
 **Scope:**
 - 9 required MEC 010-2 API endpoints
-- Mm5 interface (MEO-MEPM communication)
+- Mm3 interface (MEO-MEPM communication)
 - Basic resource-based placement
 - Operation occurrence tracking
 
@@ -916,7 +916,7 @@ For MECwiki registration and initial production deployment, the minimum viable M
 - HATEOAS navigation
 - 80%+ compliance with MEC 010-2
 
-**✅ Mm5 Interface (MEO-MEPM)**
+**✅ Mm3 Interface (MEO-MEPM)**
 - HTTP client for MEPM communication
 - 5 core operations (health, capabilities, resources, deploy, status, terminate)
 - Retry logic and error handling
@@ -976,7 +976,7 @@ Based on this gap analysis, the following criteria must be met for MECwiki regis
 | Criterion | Requirement | Phase |
 |-----------|-------------|-------|
 | **MEC 010-2 API** | 9 endpoints, 80%+ compliant | Phase 1 |
-| **Mm5 Interface** | 5 operations, working with MEPM | Phase 1 |
+| **Mm3 Interface** | 5 operations, working with MEPM | Phase 1 |
 | **Lifecycle Management** | Instantiate, terminate, operate | Phase 1 |
 | **Host Selection** | Basic resource-based placement | Phase 1 |
 | **Operation Tracking** | History with queries | Phase 1 |
@@ -1153,7 +1153,7 @@ This comprehensive gap analysis provides a clear roadmap for achieving MEC Orche
 
 **Critical Gaps (Phase 1 - 6-8 weeks):**
 1. ✅ MEC 010-2 API implementation (9 endpoints)
-2. ✅ Mm5 interface (MEO-MEPM communication)
+2. ✅ Mm3 interface (MEO-MEPM communication)
 3. ✅ Basic placement algorithm (resource-based)
 4. ✅ Operation occurrence tracking
 
@@ -1184,7 +1184,7 @@ This comprehensive gap analysis provides a clear roadmap for achieving MEC Orche
 
 3. **Phase 1 Implementation** (Week 2-8)
    - MEC 010-2 API development
-   - Mm5 client implementation
+   - Mm3 client implementation
    - Placement algorithm
    - Operation tracking
    - Testing and documentation
@@ -1286,7 +1286,7 @@ This appendix documents Nuvla's existing capabilities that align with MEO requir
 
 **Gaps:**
 - ⚠️ Not MEC 010-2 compliant (different API, data models, states)
-- ⚠️ No Mm5 interface (no explicit MEPM delegation)
+- ⚠️ No Mm3 interface (no explicit MEPM delegation)
 
 **Recommendation:** Create new MEC 010-2 API layer that delegates to existing deployment system. Map Nuvla deployment states to MEC states.
 

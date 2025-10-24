@@ -16,10 +16,10 @@ This document provides a comprehensive analysis of MEC reference points (Mm1-Mm9
 
 **Production-Ready Reference Points**:
 - ✅ **Mm3** (Customer API) - Fully functional via MEC 010-2 REST API
-- ✅ **Mm5** (MEO-MEPM) - Complete implementation (467 lines, 26 tests)
+- ✅ **Mm3** (MEO-MEPM) - Complete implementation (467 lines, 26 tests)
 - ✅ **Mm9** (Package Management) - Fully functional via Module resources
 
-**Key Achievement**: All **critical MEO reference points** (Mm3, Mm5, Mm9) are production-ready.
+**Key Achievement**: All **critical MEO reference points** (Mm3, Mm9) are production-ready.
 
 ---
 
@@ -47,14 +47,14 @@ This document provides a comprehensive analysis of MEC reference points (Mm1-Mm9
     │  └──────────────────────────────────────────┘   │
     │                                                    │
     │  ┌──────────────────────────────────────────┐   │
-    │  │   Mm5 Client (MEO-MEPM communication)    │   │
+    │  │   Mm3 Client (MEO-MEPM communication)    │   │
     │  └──────────────────────────────────────────┘   │
     │                                                    │
     │  ┌──────────────────────────────────────────┐   │
     │  │   Module Resources (Package Mgmt - Mm9)  │   │
     │  └──────────────────────────────────────────┘   │
     └────────┬───────────────────┬────────────────┬────┘
-             │ Mm5               │ Mm2            │ Mm9
+             │ Mm3               │ Mm2            │ Mm9
              │ (✅ Implemented)  │ (⚠️ Partial)   │ (✅ Implemented)
              │                   │                │
     ┌────────▼─────────┐  ┌──────▼──────┐  ┌───▼─────────┐
@@ -84,12 +84,9 @@ This document provides a comprehensive analysis of MEC reference points (Mm1-Mm9
 |----------------|---------|--------|----------------|----------|
 | **Mm1** | MEO ↔ OSS | ❌ Not implemented | Out of scope | Low |
 | **Mm2** | MEO ↔ VIM | ⚠️ Partial | Infrastructure Service | Medium |
-| **Mm3** | Customer ↔ MEO | ✅ Functional | MEC 010-2 API (13 endpoints) | **High** |
-| **Mm4** | App ↔ Platform | N/A | Not MEO responsibility | N/A |
-| **Mm5** | MEO ↔ MEPM | ✅ Complete | Mm5 Client (467 lines) | **High** |
-| **Mm6** | MEPM ↔ Platform | N/A | Not MEO responsibility | N/A |
-| **Mm7** | Platform ↔ VIM | N/A | Not MEO responsibility | N/A |
-| **Mm8** | Portal ↔ MEO | N/A | Portal-specific | N/A |
+| **Mm3** (Customer) | Customer ↔ MEO | ✅ Functional | MEC 010-2 API (13 endpoints) | **High** |
+| **Mm3** (MEPM) | MEO ↔ MEPM | ✅ Complete | Mm3 Client (467 lines) | **High** |
+| **Mm4** | MEO ↔ VIM | N/A | Not MEO responsibility | N/A |
 | **Mm9** | Package Mgmt | ✅ Functional | Module resources | **High** |
 
 **Legend**:
@@ -160,28 +157,29 @@ The MEC 010-2 standard defines the API functionality without requiring it to be 
 
 ---
 
-### ✅ Mm5: MEO-MEPM Interface
+### ✅ Mm3: MEO-MEPM Interface
 
-**Standard Reference**: ETSI GS MEC 003 v3.1.1
+**Standard Reference**: ETSI GS MEC 003 v3.2.1
 
 **Status**: ✅ **FULLY IMPLEMENTED** - Production-ready
 
 **Purpose**:
 - Communication between MEO (Nuvla) and external MEPM systems
+- Management of application lifecycle, rules and requirements
 - Query MEPM capabilities and resource availability
 - Delegate application deployment to MEPM
 - Monitor MEPM health and status
 
 **Implementation**:
-- **Module**: `mm5_client.clj` (467 lines)
-- **Test Module**: `mm5_client_test.clj` (extensive coverage)
+- **Module**: `mm3_client.clj` (467 lines)
+- **Test Module**: `mm3_client_test.clj` (extensive coverage)
 - **Mock MEPM**: `mock_mepm_server.clj` (339 lines) for testing
 
 **Core Operations** (5 functions):
 
 1. **Health Check**
    ```clojure
-   (mm5/check-health endpoint options)
+   (mm3/check-health endpoint options)
    ```
    - Verifies MEPM is reachable and operational
    - Returns platform status and metrics
@@ -189,7 +187,7 @@ The MEC 010-2 standard defines the API functionality without requiring it to be 
 
 2. **Query Capabilities**
    ```clojure
-   (mm5/query-capabilities endpoint options)
+   (mm3/query-capabilities endpoint options)
    ```
    - Retrieves supported platforms (x86_64, arm64, etc.)
    - Lists available MEC services
@@ -197,7 +195,7 @@ The MEC 010-2 standard defines the API functionality without requiring it to be 
 
 3. **Query Resources**
    ```clojure
-   (mm5/query-resources endpoint options)
+   (mm3/query-resources endpoint options)
    ```
    - Gets available compute resources (CPU, memory, GPU, storage)
    - Used for placement decisions
@@ -205,7 +203,7 @@ The MEC 010-2 standard defines the API functionality without requiring it to be 
 
 4. **Configure Platform**
    ```clojure
-   (mm5/configure-platform endpoint config options)
+   (mm3/configure-platform endpoint config options)
    ```
    - Updates platform-level settings
    - Configures enabled services
@@ -213,7 +211,7 @@ The MEC 010-2 standard defines the API functionality without requiring it to be 
 
 5. **Get Platform Info**
    ```clojure
-   (mm5/get-platform-info endpoint options)
+   (mm3/get-platform-info endpoint options)
    ```
    - Retrieves platform metadata
    - Includes location and operational state
@@ -228,9 +226,9 @@ The MEC 010-2 standard defines the API functionality without requiring it to be 
 
 **Helper Functions**:
 ```clojure
-(mm5/healthy? endpoint)         ;; Returns true/false
-(mm5/get-capabilities endpoint) ;; Returns capabilities or nil
-(mm5/get-resources endpoint)    ;; Returns resources or nil
+(mm3/healthy? endpoint)         ;; Returns true/false
+(mm3/get-capabilities endpoint) ;; Returns capabilities or nil
+(mm3/get-resources endpoint)    ;; Returns resources or nil
 ```
 
 **Integration**:
@@ -244,12 +242,12 @@ The MEC 010-2 standard defines the API functionality without requiring it to be 
 - Tests cover all 5 operations plus error scenarios
 
 **Documentation**:
-- `MEC-003-Mm5-implementation.md` - Complete implementation guide
-- `mm5-api-reference.md` - API reference documentation
+- `MEC-003-Mm3-implementation.md` - Complete implementation guide
+- `mm3-api-reference.md` - API reference documentation
 - Integration examples in MEC-010-2 integration guide
 
 **MEPM Resource Integration**:
-The MEPM resource (`mepm_resource.clj`) uses the Mm5 client for:
+The MEPM resource (`mepm_resource.clj`) uses the Mm3 client for:
 - Health checks (check-health action)
 - Capability queries (get-capabilities action)
 - Resource queries (get-resources action)
@@ -481,7 +479,7 @@ The following reference points are **not applicable** to MEO-level implementatio
 │  └────────────────────────────────────────────────────────┘   │
 │                                                                  │
 │  ┌────────────────────────────────────────────────────────┐   │
-│  │  Mm5 Client Library (MEO-MEPM Communication)           │   │
+│  │  Mm3 Client Library (MEO-MEPM Communication)           │   │
 │  │  - 467 lines of production code                        │   │
 │  │  - 5 core operations (health, caps, resources, etc.)   │   │
 │  │  - HTTP retry with exponential backoff                 │   │
@@ -503,7 +501,7 @@ The following reference points are **not applicable** to MEO-level implementatio
 │  │  - Needs MEC-specific enhancements                     │   │
 │  └────────────────────────────────────────────────────────┘   │
 └────────┬──────────────────────┬──────────────────────┬─────────┘
-         │ Mm5                  │ Mm2                  │
+         │ Mm3                  │ Mm2                  │
          │                      │                      │
 ┌────────▼─────────┐   ┌────────▼─────────┐   ┌──────▼────────┐
 │  External MEPM   │   │  Cloud VIM       │   │  Edge VIM     │
@@ -521,7 +519,7 @@ The following reference points are **not applicable** to MEO-level implementatio
 - **Pass Rate**: 100%
 - **Coverage**: All 13 endpoints, error handling, HATEOAS, filtering, pagination
 
-### Mm5 (MEO-MEPM)
+### Mm3 (MEO-MEPM)
 - **Unit Tests**: 26 tests, 138 assertions
 - **Pass Rate**: 100%
 - **Coverage**: All 5 operations, retry logic, error handling, mock MEPM integration
@@ -555,13 +553,13 @@ The following reference points are **not applicable** to MEO-level implementatio
    - 95% compliance documented
    - Certification ready
 
-### Mm5 Documentation
-1. **Implementation Guide** (`MEC-003-Mm5-implementation.md`)
-   - Complete Mm5 client documentation
+### Mm3 Documentation (MEO-MEPM)
+1. **Implementation Guide** (`MEC-003-Mm3-implementation.md`)
+   - Complete Mm3 client documentation
    - MEPM integration guide
    - Usage examples
 
-2. **API Reference** (`mm5-api-reference.md`)
+2. **API Reference** (`mm3-api-reference.md`)
    - Function signatures
    - Parameters and returns
    - Error handling
@@ -585,11 +583,11 @@ The following reference points are **not applicable** to MEO-level implementatio
 
 ## Standards Compliance
 
-### ETSI MEC 003 v3.1.1 (Framework)
+### ETSI MEC 003 v3.2.1 (Framework)
 - **Mm1**: ❌ Not required for core MEO
 - **Mm2**: ⚠️ Partial (70% coverage)
-- **Mm3**: ✅ 95% compliant via MEC 010-2 API
-- **Mm5**: ✅ 100% implemented
+- **Mm3** (Customer): ✅ 95% compliant via MEC 010-2 API
+- **Mm3** (MEPM): ✅ 100% implemented
 - **Mm9**: ✅ 100% functional
 
 ### ETSI MEC 010-2 v2.2.1 (Application LCM)
@@ -616,7 +614,7 @@ The following reference points are **not applicable** to MEO-level implementatio
 - ✅ Error handling comprehensive
 - ✅ Monitoring and logging enabled
 
-**Mm5 (MEO-MEPM)**:
+**Mm3 (MEO-MEPM)**:
 - ✅ MEPM endpoints configured
 - ✅ Retry logic tested
 - ✅ Connection pooling enabled
@@ -644,7 +642,7 @@ The following reference points are **not applicable** to MEO-level implementatio
    - Implement edge-aware placement
    - Add formal Mm2 interface
 
-2. **Mm5 Extensions**
+2. **Mm3 Extensions**
    - Add operation status callbacks
    - Implement multi-MEPM coordination
    - Enhanced error reporting
@@ -679,7 +677,7 @@ Nuvla's implementation as a MEC Orchestrator (MEO) achieves **excellent coverage
 
 **✅ Production-Ready (100% Complete)**:
 - **Mm3** (Customer API): 95% MEC 010-2 compliant, 13 endpoints, 149 tests
-- **Mm5** (MEO-MEPM): Complete implementation, 467 lines, 26 tests
+- **Mm3** (MEO-MEPM): Complete implementation, 467 lines, 26 tests
 - **Mm9** (Package Management): Production-proven module system
 
 **⚠️ Partial Implementation**:
@@ -695,7 +693,7 @@ Nuvla's implementation as a MEC Orchestrator (MEO) achieves **excellent coverage
 ## References
 
 ### Standards Documents
-- **ETSI GS MEC 003 v3.1.1** - MEC Framework and Reference Architecture
+- **ETSI GS MEC 003 v3.2.1** - MEC Framework and Reference Architecture
 - **ETSI GS MEC 010-2 v2.2.1** - MEC Application Lifecycle Management API
 - **RFC 7807** - Problem Details for HTTP APIs
 - **OpenAPI 3.0.3** - API Specification Standard
@@ -703,7 +701,7 @@ Nuvla's implementation as a MEC Orchestrator (MEO) achieves **excellent coverage
 ### Implementation Documents
 - [MEC-010-2-summary.md](MEC-010-2-summary.md) - Implementation summary
 - [MEC-010-2-standards-compliance.md](MEC-010-2-standards-compliance.md) - Compliance matrix
-- [MEC-003-Mm5-implementation.md](MEC-003-Mm5-implementation.md) - Mm5 implementation guide
+- [MEC-003-Mm3-implementation.md](MEC-003-Mm3-implementation.md) - Mm3 implementation guide
 - [MEC-010-2-integration-guide.md](MEC-010-2-integration-guide.md) - Integration guide
 - [mec-010-2-openapi.yaml](mec-010-2-openapi.yaml) - OpenAPI specification
 

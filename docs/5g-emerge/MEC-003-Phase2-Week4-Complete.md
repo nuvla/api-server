@@ -2,14 +2,14 @@
 
 **Date:** 21 October 2025  
 **Status:** ✅ COMPLETE  
-**Phase:** Phase 2 - MEPM Resource & Mm5 Interface  
+**Phase:** Phase 2 - MEPM Resource & Mm3 Interface  
 **Sprint:** Week 3-4
 
 ---
 
 ## Executive Summary
 
-Successfully completed **Phase 2** of the MEC 003 implementation, delivering a fully functional MEPM (MEC Platform Manager) resource with integrated Mm5 interface client. This enables Nuvla to function as a MEC Orchestrator (MEO) capable of managing distributed edge infrastructure through standardized ETSI interfaces.
+Successfully completed **Phase 2** of the MEC 003 implementation, delivering a fully functional MEPM (MEC Platform Manager) resource with integrated Mm3 interface client. This enables Nuvla to function as a MEC Orchestrator (MEO) capable of managing distributed edge infrastructure through standardized ETSI interfaces.
 
 **Key Achievement**: Production-ready MEO-MEPM communication via Mm5 reference point
 
@@ -32,7 +32,7 @@ Successfully completed **Phase 2** of the MEC 003 implementation, delivering a f
 - Status tracking (ONLINE/OFFLINE/DEGRADED/ERROR)
 - Capability and resource descriptors
 
-### 2. Mm5 Interface Client ✅
+### 2. Mm3 Interface Client ✅
 **File**: `src/com/sixsq/nuvla/server/resources/mec/mm5_client.clj`
 
 **Features**:
@@ -117,7 +117,7 @@ POST /api/mepm/{id}/query-resources
 ### 5. Documentation ✅
 
 Created comprehensive documentation:
-- **MEC-003-Mm5-implementation.md** - Complete Mm5 interface guide
+- **MEC-003-Mm5-implementation.md** - Complete Mm3 interface guide
   - Architecture diagrams
   - API reference
   - Usage examples
@@ -134,7 +134,7 @@ Created comprehensive documentation:
 |-----------|---------------------|----------------------|
 | MEO Role | System-level orchestration | ✅ Nuvla API Server |
 | MEPM Resource | Platform manager tracking | ✅ Full CRUD + Actions |
-| Mm5 Interface | MEO ↔ MEPM communication | ✅ REST client |
+| Mm3 Interface | MEO ↔ MEPM communication | ✅ REST client |
 | Health Monitoring | Platform status tracking | ✅ check-health action |
 | Capability Discovery | Service/platform info | ✅ query-capabilities |
 | Resource Management | Capacity queries | ✅ query-resources |
@@ -255,7 +255,7 @@ Response:
 
 ### What Went Well
 1. ✅ **Iterative testing** - Fixed issues incrementally (10→5→3→0 failures)
-2. ✅ **Clear separation** - Mm5 client as independent module
+2. ✅ **Clear separation** - Mm3 client as independent module
 3. ✅ **Comprehensive mocking** - Deterministic tests without external dependencies
 4. ✅ **Error handling** - Graceful degradation with cached data
 5. ✅ **Documentation** - Written alongside implementation
@@ -400,7 +400,7 @@ ETSI Compliance: +10% (35% → 45%)
 
 ## Conclusion
 
-**Phase 2 is successfully complete** with a production-ready MEPM resource and Mm5 interface. The implementation provides a solid foundation for MEC orchestration, enabling Nuvla to manage distributed edge infrastructure through standardized ETSI interfaces.
+**Phase 2 is successfully complete** with a production-ready MEPM resource and Mm3 interface. The implementation provides a solid foundation for MEC orchestration, enabling Nuvla to manage distributed edge infrastructure through standardized ETSI interfaces.
 
 The system is now capable of:
 - ✅ Registering and managing multiple MEPMs

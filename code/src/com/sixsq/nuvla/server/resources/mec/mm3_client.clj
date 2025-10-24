@@ -1,14 +1,15 @@
-(ns com.sixsq.nuvla.server.resources.mec.mm5-client
-  "Mm5 Interface Client - MEO to MEPM communication
+(ns com.sixsq.nuvla.server.resources.mec.mm3-client
+  "Mm3 Interface Client - MEO to MEPM communication
    
-   ETSI MEC 003 Reference Point Mm5:
+   ETSI MEC 003 Reference Point Mm3:
    - Interface between MEC Orchestrator (MEO) and MEC Platform Manager (MEPM)
+   - Used for management of application lifecycle, application rules and requirements
    - Handles platform management operations:
      * Platform health checks
      * Capability queries
      * Resource availability queries
      * Platform configuration
-     * Service lifecycle management
+     * Application lifecycle management
    
    This is a REST-based client implementation."
   (:require
@@ -113,13 +114,13 @@
 
 
 ;;
-;; Mm5 API Operations
+;; Mm3 API Operations
 ;;
 
 (defn check-health
-  "Perform health check on MEPM via Mm5 interface.
+  "Perform health check on MEPM via Mm3 interface.
    
-   ETSI MEC 003: Mm5 health check operation
+   ETSI MEC 003: Mm3 health check operation
    - Verifies MEPM is reachable and operational
    - Returns platform status and metrics
    
@@ -137,17 +138,17 @@
   [endpoint & [{:keys [retry-attempts] 
                 :or {retry-attempts default-retry-attempts}
                 :as options}]]
-  (log/info "Mm5: Checking health of MEPM at" endpoint)
-  (let [url (str endpoint "/mm5/health")
+  (log/info "Mm3: Checking health of MEPM at" endpoint)
+  (let [url (str endpoint "/mm3/health")
         http-opts (build-http-options endpoint options)]
     (retry-request
       (fn []
         (try
           (let [response (http/get url http-opts)]
-            (log/debug "Mm5 health check response:" response)
+            (log/debug "Mm3 health check response:" response)
             (parse-response response))
           (catch Exception e
-            (log/error e "Mm5: Failed to check health")
+            (log/error e "Mm3: Failed to check health")
             {:success? false
              :error    :connection-error
              :message  (.getMessage e)
@@ -156,9 +157,9 @@
 
 
 (defn query-capabilities
-  "Query MEPM capabilities via Mm5 interface.
+  "Query MEPM capabilities via Mm3 interface.
    
-   ETSI MEC 003: Mm5 capability query operation
+   ETSI MEC 003: Mm3 capability query operation
    - Retrieves supported platforms, services, and API versions
    - Used for service discovery and compatibility checks
    
@@ -172,17 +173,17 @@
   [endpoint & [{:keys [retry-attempts]
                 :or {retry-attempts default-retry-attempts}
                 :as options}]]
-  (log/info "Mm5: Querying capabilities from MEPM at" endpoint)
-  (let [url (str endpoint "/mm5/capabilities")
+  (log/info "Mm3: Querying capabilities from MEPM at" endpoint)
+  (let [url (str endpoint "/mm3/capabilities")
         http-opts (build-http-options endpoint options)]
     (retry-request
       (fn []
         (try
           (let [response (http/get url http-opts)]
-            (log/debug "Mm5 capabilities response:" response)
+            (log/debug "Mm3 capabilities response:" response)
             (parse-response response))
           (catch Exception e
-            (log/error e "Mm5: Failed to query capabilities")
+            (log/error e "Mm3: Failed to query capabilities")
             {:success? false
              :error    :connection-error
              :message  (.getMessage e)
@@ -191,9 +192,9 @@
 
 
 (defn query-resources
-  "Query available resources on MEPM via Mm5 interface.
+  "Query available resources on MEPM via Mm3 interface.
    
-   ETSI MEC 003: Mm5 resource query operation
+   ETSI MEC 003: Mm3 resource query operation
    - Retrieves available compute, memory, storage, and GPU resources
    - Used for placement decisions and capacity planning
    
@@ -207,17 +208,17 @@
   [endpoint & [{:keys [retry-attempts]
                 :or {retry-attempts default-retry-attempts}
                 :as options}]]
-  (log/info "Mm5: Querying resources from MEPM at" endpoint)
-  (let [url (str endpoint "/mm5/resources")
+  (log/info "Mm3: Querying resources from MEPM at" endpoint)
+  (let [url (str endpoint "/mm3/resources")
         http-opts (build-http-options endpoint options)]
     (retry-request
       (fn []
         (try
           (let [response (http/get url http-opts)]
-            (log/debug "Mm5 resources response:" response)
+            (log/debug "Mm3 resources response:" response)
             (parse-response response))
           (catch Exception e
-            (log/error e "Mm5: Failed to query resources")
+            (log/error e "Mm3: Failed to query resources")
             {:success? false
              :error    :connection-error
              :message  (.getMessage e)
@@ -226,9 +227,9 @@
 
 
 (defn configure-platform
-  "Configure MEPM platform settings via Mm5 interface.
+  "Configure MEPM platform settings via Mm3 interface.
    
-   ETSI MEC 003: Mm5 platform configuration operation
+   ETSI MEC 003: Mm3 platform configuration operation
    - Updates platform-level settings
    - Configures enabled services and features
    
@@ -243,18 +244,18 @@
   [endpoint config & [{:keys [retry-attempts]
                        :or {retry-attempts default-retry-attempts}
                        :as options}]]
-  (log/info "Mm5: Configuring MEPM at" endpoint "with config:" config)
-  (let [url (str endpoint "/mm5/configure")
+  (log/info "Mm3: Configuring MEPM at" endpoint "with config:" config)
+  (let [url (str endpoint "/mm3/configure")
         http-opts (merge (build-http-options endpoint options)
                          {:body (json/write-value-as-string config)})]
     (retry-request
       (fn []
         (try
           (let [response (http/post url http-opts)]
-            (log/debug "Mm5 configure response:" response)
+            (log/debug "Mm3 configure response:" response)
             (parse-response response))
           (catch Exception e
-            (log/error e "Mm5: Failed to configure platform")
+            (log/error e "Mm3: Failed to configure platform")
             {:success? false
              :error    :connection-error
              :message  (.getMessage e)
@@ -263,9 +264,9 @@
 
 
 (defn get-platform-info
-  "Get general platform information via Mm5 interface.
+  "Get general platform information via Mm3 interface.
    
-   ETSI MEC 003: Mm5 platform info operation
+   ETSI MEC 003: Mm3 platform info operation
    - Retrieves platform metadata and status
    - Includes version, location, and operational state
    
@@ -279,17 +280,17 @@
   [endpoint & [{:keys [retry-attempts]
                 :or {retry-attempts default-retry-attempts}
                 :as options}]]
-  (log/info "Mm5: Getting platform info from MEPM at" endpoint)
-  (let [url (str endpoint "/mm5/platform-info")
+  (log/info "Mm3: Getting platform info from MEPM at" endpoint)
+  (let [url (str endpoint "/mm3/platform-info")
         http-opts (build-http-options endpoint options)]
     (retry-request
       (fn []
         (try
           (let [response (http/get url http-opts)]
-            (log/debug "Mm5 platform info response:" response)
+            (log/debug "Mm3 platform info response:" response)
             (parse-response response))
           (catch Exception e
-            (log/error e "Mm5: Failed to get platform info")
+            (log/error e "Mm3: Failed to get platform info")
             {:success? false
              :error    :connection-error
              :message  (.getMessage e)
@@ -302,9 +303,9 @@
 ;;
 
 (defn create-app-instance
-  "Create a new application instance via Mm5 interface.
+  "Create a new application instance via Mm3 interface.
    
-   ETSI MEC 003: Mm5 application instantiation operation
+   ETSI MEC 003: Mm3 application instantiation operation
    
    Parameters:
    - endpoint: MEPM base URL
@@ -317,8 +318,8 @@
   [endpoint app-descriptor & [{:keys [retry-attempts]
                                :or {retry-attempts default-retry-attempts}
                                :as options}]]
-  (log/info "Mm5: Creating app instance on MEPM at" endpoint)
-  (let [url (str endpoint "/mm5/app-instances")
+  (log/info "Mm3: Creating app instance on MEPM at" endpoint)
+  (let [url (str endpoint "/mm3/app-instances")
         http-opts (build-http-options endpoint options)
         http-opts (assoc http-opts :body (json/write-value-as-string app-descriptor)
                                    :content-type :json)]
@@ -326,10 +327,10 @@
       (fn []
         (try
           (let [response (http/post url http-opts)]
-            (log/debug "Mm5 create app instance response:" response)
+            (log/debug "Mm3 create app instance response:" response)
             (parse-response response))
           (catch Exception e
-            (log/error e "Mm5: Failed to create app instance")
+            (log/error e "Mm3: Failed to create app instance")
             {:success? false
              :error    :connection-error
              :message  (.getMessage e)
@@ -338,9 +339,9 @@
 
 
 (defn get-app-instance
-  "Get application instance status via Mm5 interface.
+  "Get application instance status via Mm3 interface.
    
-   ETSI MEC 003: Mm5 application query operation
+   ETSI MEC 003: Mm3 application query operation
    
    Parameters:
    - endpoint: MEPM base URL
@@ -353,17 +354,17 @@
   [endpoint app-id & [{:keys [retry-attempts]
                        :or {retry-attempts default-retry-attempts}
                        :as options}]]
-  (log/info "Mm5: Getting app instance" app-id "from MEPM at" endpoint)
-  (let [url (str endpoint "/mm5/app-instances/" app-id)
+  (log/info "Mm3: Getting app instance" app-id "from MEPM at" endpoint)
+  (let [url (str endpoint "/mm3/app-instances/" app-id)
         http-opts (build-http-options endpoint options)]
     (retry-request
       (fn []
         (try
           (let [response (http/get url http-opts)]
-            (log/debug "Mm5 get app instance response:" response)
+            (log/debug "Mm3 get app instance response:" response)
             (parse-response response))
           (catch Exception e
-            (log/error e "Mm5: Failed to get app instance")
+            (log/error e "Mm3: Failed to get app instance")
             {:success? false
              :error    :connection-error
              :message  (.getMessage e)
@@ -372,9 +373,9 @@
 
 
 (defn list-app-instances
-  "List all application instances via Mm5 interface.
+  "List all application instances via Mm3 interface.
    
-   ETSI MEC 003: Mm5 application listing operation
+   ETSI MEC 003: Mm3 application listing operation
    
    Parameters:
    - endpoint: MEPM base URL
@@ -386,17 +387,17 @@
   [endpoint & [{:keys [retry-attempts]
                 :or {retry-attempts default-retry-attempts}
                 :as options}]]
-  (log/info "Mm5: Listing app instances from MEPM at" endpoint)
-  (let [url (str endpoint "/mm5/app-instances")
+  (log/info "Mm3: Listing app instances from MEPM at" endpoint)
+  (let [url (str endpoint "/mm3/app-instances")
         http-opts (build-http-options endpoint options)]
     (retry-request
       (fn []
         (try
           (let [response (http/get url http-opts)]
-            (log/debug "Mm5 list app instances response:" response)
+            (log/debug "Mm3 list app instances response:" response)
             (parse-response response))
           (catch Exception e
-            (log/error e "Mm5: Failed to list app instances")
+            (log/error e "Mm3: Failed to list app instances")
             {:success? false
              :error    :connection-error
              :message  (.getMessage e)
@@ -405,9 +406,9 @@
 
 
 (defn delete-app-instance
-  "Delete (terminate) an application instance via Mm5 interface.
+  "Delete (terminate) an application instance via Mm3 interface.
    
-   ETSI MEC 003: Mm5 application termination operation
+   ETSI MEC 003: Mm3 application termination operation
    
    Parameters:
    - endpoint: MEPM base URL
@@ -420,17 +421,17 @@
   [endpoint app-id & [{:keys [retry-attempts]
                        :or {retry-attempts default-retry-attempts}
                        :as options}]]
-  (log/info "Mm5: Deleting app instance" app-id "from MEPM at" endpoint)
-  (let [url (str endpoint "/mm5/app-instances/" app-id)
+  (log/info "Mm3: Deleting app instance" app-id "from MEPM at" endpoint)
+  (let [url (str endpoint "/mm3/app-instances/" app-id)
         http-opts (build-http-options endpoint options)]
     (retry-request
       (fn []
         (try
           (let [response (http/delete url http-opts)]
-            (log/debug "Mm5 delete app instance response:" response)
+            (log/debug "Mm3 delete app instance response:" response)
             (parse-response response))
           (catch Exception e
-            (log/error e "Mm5: Failed to delete app instance")
+            (log/error e "Mm3: Failed to delete app instance")
             {:success? false
              :error    :connection-error
              :message  (.getMessage e)

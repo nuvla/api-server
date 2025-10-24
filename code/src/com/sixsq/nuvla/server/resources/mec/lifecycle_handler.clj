@@ -10,7 +10,7 @@
    Standard: ETSI GS MEC 010-2 v2.2.1"
   (:require
     [clojure.tools.logging :as log]
-    [com.sixsq.nuvla.server.resources.mec.mm5-client :as mm5]
+    [com.sixsq.nuvla.server.resources.mec.mm3-client :as mm3]
     [com.sixsq.nuvla.server.resources.mec.app-instance :as app-instance]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-op-occ :as app-lcm-op-occ]
     [com.sixsq.nuvla.server.util.time :as time-utils]))
@@ -47,7 +47,7 @@
     (log/info "Executing instantiate operation for" app-instance-id)
     
     ;; Query MEPM capabilities
-    (let [capabilities (mm5/query-capabilities mepm-endpoint)]
+    (let [capabilities (mm3/query-capabilities mepm-endpoint)]
       (log/debug "MEPM capabilities:" capabilities)
       
       ;; Check if MEPM supports required capabilities
@@ -56,7 +56,7 @@
                         {:mepm-endpoint mepm-endpoint})))
       
       ;; Create app instance via Mm5
-      (let [app-instance-result (mm5/create-app-instance
+      (let [app-instance-result (mm3/create-app-instance
                                   mepm-endpoint
                                   {:app-instance-id app-instance-id
                                    :grant-id        grant-id})]
@@ -91,7 +91,7 @@
     (log/info "Executing terminate operation for" app-instance-id)
     
     ;; Get current app instance status
-    (let [app-status (mm5/get-app-instance mepm-endpoint app-instance-id)]
+    (let [app-status (mm3/get-app-instance mepm-endpoint app-instance-id)]
       (log/debug "Current app instance status:" app-status)
       
       ;; Validate app instance exists
@@ -101,7 +101,7 @@
                          :mepm-endpoint   mepm-endpoint})))
       
       ;; Delete app instance via Mm5
-      (let [delete-result (mm5/delete-app-instance
+      (let [delete-result (mm3/delete-app-instance
                             mepm-endpoint
                             app-instance-id)]
         (log/info "App instance terminated via Mm5:" app-instance-id)
@@ -142,7 +142,7 @@
                        :allowed      [:STARTED :STOPPED]})))
     
     ;; Get current app instance status
-    (let [app-status (mm5/get-app-instance mepm-endpoint app-instance-id)]
+    (let [app-status (mm3/get-app-instance mepm-endpoint app-instance-id)]
       (log/debug "Current app instance status:" app-status)
       
       ;; Validate app instance exists

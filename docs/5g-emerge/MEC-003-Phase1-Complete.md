@@ -64,7 +64,7 @@ Phase 1 of the MEC 003 implementation has been successfully completed. All docum
 7. Trust Domains
 8. Application Lifecycle Flow
 9. Reference Point Overview
-10. Mm5 Interface Protocol
+10. Mm3 Interface Protocol
 
 **Format:** Mermaid (renders in GitHub/GitLab, exportable to PNG/SVG)
 
@@ -139,7 +139,7 @@ Phase 1 of the MEC 003 implementation has been successfully completed. All docum
 | **Mm5** (MEO-MEPM) | ⚠️ To Formalize | **High** |
 | **Mp1-Mp3** (Platform) | ❌ Out of Scope | N/A |
 
-**Main Gap:** Mm5 interface standardization
+**Main Gap:** Mm3 interface standardization
 
 ### Deployment Models
 
@@ -178,9 +178,9 @@ Phase 1 of the MEC 003 implementation has been successfully completed. All docum
 - Implement CRUD operations (POST/GET/PUT/DELETE /api/mepm)
 - Capability tracking
 
-**Week 4: Mm5 Interface**
+**Week 4: Mm3 Interface**
 - Specify Mm5 API (REST/JSON)
-- Build Mm5 client
+- Build Mm3 client
 - Integrate with orchestration
 
 **Effort:** ~60 hours
@@ -269,8 +269,8 @@ Phase 1 of the MEC 003 implementation has been successfully completed. All docum
 ### Phase 2 (Pending Approval)
 - [ ] MEPM resource implemented
 - [ ] MEPM registry operational
-- [ ] Mm5 interface specified
-- [ ] Mm5 client functional
+- [ ] Mm3 interface specified
+- [ ] Mm3 client functional
 
 ### Phase 3 (Pending Approval)
 - [ ] Integration tests passing
@@ -337,7 +337,7 @@ All documents located in: `docs/5g-emerge/`
 - **What:** Framework & Reference Architecture for MEC systems
 - **Nuvla Role:** MEO (MEC Orchestrator) - system-level orchestration
 - **Current Status:** 75-80% aligned
-- **Gap:** Mm5 interface formalization
+- **Gap:** Mm3 interface formalization
 - **Effort:** 4-6 weeks to 85-90%
 - **Risk:** Very low
 - **Value:** High (5G positioning)

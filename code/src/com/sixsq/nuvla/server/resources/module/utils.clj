@@ -41,6 +41,10 @@
   [resource]
   (is-subtype? resource module-spec/subtype-app-helm))
 
+(defn is-application-mec?
+  [resource]
+  (is-subtype? resource module-spec/subtype-app-mec))
+
 (defn is-applications-sets?
   [resource]
   (is-subtype? resource module-spec/subtype-apps-sets))

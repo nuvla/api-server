@@ -10,16 +10,16 @@ This document maps the implementation against ETSI GS MEC 003 V3.1.1 (2022-03) "
 
 ## Table of Contents
 
-- [Mm5 Interface Requirements](#mm5-interface-requirements)
+- [Mm3 Interface Requirements](#mm5-interface-requirements)
 - [Implementation Mapping](#implementation-mapping)
 - [Coverage Analysis](#coverage-analysis)
 - [Extensions and Deviations](#extensions-and-deviations)
 
 ---
 
-## Mm5 Interface Requirements
+## Mm3 Interface Requirements
 
-The Mm5 reference point enables the MEO to manage MEC platforms through the MEPM. Per ETSI MEC 003 Section 6.3.4, the Mm5 interface SHALL support:
+The Mm5 reference point enables the MEO to manage MEC platforms through the MEPM. Per ETSI MEC 003 Section 6.3.4, the Mm3 interface SHALL support:
 
 ### Core Requirements (ETSI MEC 003 §6.3.4)
 
@@ -30,14 +30,14 @@ The Mm5 reference point enables the MEO to manage MEC platforms through the MEPM
 | MM5-003 | Platform resource discovery | ✅ FULL | `query-resources` action |
 | MM5-004 | Platform configuration | ✅ FULL | `configure-platform` operation |
 | MM5-005 | Platform health monitoring | ✅ FULL | `check-health` action + status tracking |
-| MM5-006 | Application instance management | ✅ FULL | App lifecycle via Mm5 client |
+| MM5-006 | Application instance management | ✅ FULL | App lifecycle via Mm3 client |
 | MM5-007 | Platform information queries | ✅ FULL | `query-platform-info` operation |
 
 ### Functional Requirements
 
 | Req ID | Capability | Status | Implementation |
 |--------|------------|--------|----------------|
-| MM5-F01 | RESTful API interface | ✅ FULL | HTTP/JSON Mm5 client |
+| MM5-F01 | RESTful API interface | ✅ FULL | HTTP/JSON Mm3 client |
 | MM5-F02 | Asynchronous operations support | ⚠️ PARTIAL | Synchronous model with retry logic |
 | MM5-F03 | Error handling and reporting | ✅ FULL | Standardized error responses |
 | MM5-F04 | Resource state management | ✅ FULL | MEPM resource state tracking |
@@ -302,7 +302,7 @@ The implementation includes the following extensions not explicitly required by 
 **Rationale:** Enables deterministic integration testing without external dependencies.
 
 **Features:**
-- Full Mm5 interface implementation
+- Full Mm3 interface implementation
 - Error simulation modes (timeout, server-error, degraded, not-found)
 - Request counting and metrics
 - State management
@@ -367,7 +367,7 @@ The implementation includes the following extensions not explicitly required by 
 **Rationale:**
 - Authentication handled at infrastructure level (TLS, API gateway)
 - Nuvla's existing auth framework applies to MEPM resources
-- Mm5 client is internal component, not exposed externally
+- Mm3 client is internal component, not exposed externally
 
 **Status:** ✅ COMPLIANT (via delegation)
 

@@ -269,7 +269,7 @@ This document outlines a detailed implementation plan to align Nuvla.io with the
 #### 3.2 Reference Point Implementation (Week 4-6)
 
 **Tasks:**
-1. **Mm5 Interface (MEO ↔ MEPM)**
+1. **Mm3 Interface (MEO ↔ MEPM)**
    - Already partially exists via REST API
    - Add MEC-specific endpoints
    ```
@@ -803,7 +803,7 @@ This document outlines a detailed implementation plan to align Nuvla.io with the
 ┌─────────────────────────────────────────────────────────────┐
 │             Layer 3: MEC Platform Management                │
 │  • MEPM (NuvlaBox Management API)                          │
-│  • Mm5 Interface (MEO ↔ MEPM)                              │
+│  • Mm3 Interface (MEO ↔ MEPM)                              │
 │  • Mm7 Interface (MEPM ↔ VIM)                              │
 │  • Platform configuration & monitoring                      │
 └─────────────────────────────────────────────────────────────┘

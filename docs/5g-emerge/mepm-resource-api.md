@@ -549,11 +549,11 @@ The following fields are automatically updated by actions:
 
 ## Integration with Mm5 Client
 
-MEPM resource actions internally use the Mm5 client library:
+MEPM resource actions internally use the Mm3 client library:
 
 ```clojure
 (ns com.sixsq.nuvla.server.resources.mepm
-  (:require [com.sixsq.nuvla.server.resources.mec.mm5-client :as mm5]))
+  (:require [com.sixsq.nuvla.server.resources.mec.mm3-client :as mm5]))
 
 (defmethod crud/do-action [resource-type "check-health"]
   [{{:keys [id]} :body :as request}]
@@ -580,7 +580,7 @@ MEPM resource actions internally use the Mm5 client library:
 
 ## See Also
 
-- [Mm5 API Reference](mm5-api-reference.md) - Low-level Mm5 client functions
+- [Mm5 API Reference](mm5-api-reference.md) - Low-level Mm3 client functions
 - [ETSI MEC 003 Compliance](etsi-mec-003-compliance.md) - Standards compliance
 - [Architecture Documentation](architecture.md) - System architecture
 - [Testing Guide](testing-guide.md) - Testing strategies

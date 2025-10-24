@@ -1,8 +1,8 @@
-# Mm5 Interface API Reference
+# Mm3 Interface API Reference
 
 ## Overview
 
-The Mm5 interface provides communication between the MEC Orchestrator (MEO) and MEC Platform Manager (MEPM) according to ETSI GS MEC 003 specification. This document describes the client API for interacting with MEPM endpoints.
+The Mm3 interface provides communication between the MEC Orchestrator (MEO) and MEC Platform Manager (MEPM) according to ETSI GS MEC 003 specification. This document describes the client API for interacting with MEPM endpoints.
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@ The Mm5 interface provides communication between the MEC Orchestrator (MEO) and 
 
 ## Client Functions
 
-All functions are in the `com.sixsq.nuvla.server.resources.mec.mm5-client` namespace.
+All functions are in the `com.sixsq.nuvla.server.resources.mec.mm3-client` namespace.
 
 ### Health Monitoring
 
@@ -378,7 +378,7 @@ Terminates and deletes an application instance.
 
 ### Standard Response Structure
 
-All Mm5 client functions return a standardized response map:
+All Mm3 client functions return a standardized response map:
 
 **Success Response:**
 ```clojure
@@ -427,7 +427,7 @@ All Mm5 client functions return a standardized response map:
 
 ### Retry Mechanism
 
-All Mm5 client functions implement automatic retry with exponential backoff for transient failures:
+All Mm3 client functions implement automatic retry with exponential backoff for transient failures:
 
 ```clojure
 ;; Example: Custom retry configuration
@@ -482,7 +482,7 @@ All Mm5 client functions implement automatic retry with exponential backoff for 
 
 ```clojure
 (ns my-app.mepm-monitor
-  (:require [com.sixsq.nuvla.server.resources.mec.mm5-client :as mm5]
+  (:require [com.sixsq.nuvla.server.resources.mec.mm3-client :as mm5]
             [clojure.tools.logging :as log]))
 
 (defn monitor-mepm-health
@@ -599,7 +599,7 @@ All Mm5 client functions implement automatic retry with exponential backoff for 
 
 ## MEPM Resource Integration
 
-The Mm5 client is integrated with Nuvla's MEPM resource type. See [MEPM Resource API](mepm-resource-api.md) for:
+The Mm3 client is integrated with Nuvla's MEPM resource type. See [MEPM Resource API](mepm-resource-api.md) for:
 - MEPM resource CRUD operations
 - Action endpoints (check-health, query-capabilities, query-resources)
 - Event handling and state management

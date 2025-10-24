@@ -22,7 +22,7 @@
 
 **Key Insights:**
 - Nuvla API Server = MEO (95% aligned)
-- Main gap: Mm5 interface formalization
+- Main gap: Mm3 interface formalization
 - Platform services (MEP) explicitly out of scope
 
 ### 2. MEC Terminology Guide
@@ -111,7 +111,7 @@
 
 **Estimated Effort:** 30 hours
 
-### Week 4: Mm5 Interface Implementation
+### Week 4: Mm3 Interface Implementation
 
 **Objective:** Implement basic Mm5 protocol for MEO-MEPM communication
 
@@ -121,7 +121,7 @@
    - Authentication (API key, OAuth2)
    - Operations: query capabilities, resources, create/query/terminate instances
 
-2. Create Mm5 client
+2. Create Mm3 client
    - HTTP client for MEPM communication
    - Error handling and retry logic
    - Async operation support
@@ -180,7 +180,7 @@
 1. Study existing resource patterns (nuvlabox, deployment, infrastructure-service)
 2. Define MEPM schema (Clojure spec)
 3. Implement basic CRUD operations
-4. Begin Mm5 interface specification
+4. Begin Mm3 interface specification
 
 **Estimated Start:** 28 October 2025 (pending approval)
 
@@ -306,7 +306,7 @@ Based on examination of `nuvlabox.clj`, the pattern for creating a new resource 
 - Confirmed Nuvla API Server = MEO (MEC Orchestrator) role
 - Created comprehensive terminology guide
 - Documented 3 deployment models
-- Identified minimal gaps (primarily Mm5 interface)
+- Identified minimal gaps (primarily Mm3 interface)
 
 **What This Means:**
 - Nuvla is already 75% aligned with MEC 003 as MEO

@@ -1,4 +1,4 @@
-# Mm5 Interface Implementation
+# Mm3 Interface Implementation
 
 **Status:** ✅ Complete  
 **Date:** 21 October 2025  
@@ -8,7 +8,7 @@
 
 ## Overview
 
-The Mm5 interface enables communication between the **MEC Orchestrator (MEO)** and **MEC Platform Manager (MEPM)** as defined in ETSI MEC 003. This implementation provides a REST-based client library that allows Nuvla (acting as MEO) to manage and query external MEPM systems.
+The Mm3 interface enables communication between the **MEC Orchestrator (MEO)** and **MEC Platform Manager (MEPM)** as defined in ETSI MEC 003. This implementation provides a REST-based client library that allows Nuvla (acting as MEO) to manage and query external MEPM systems.
 
 ## Architecture
 
@@ -125,7 +125,7 @@ A comprehensive HTTP client for Mm5 operations:
 ### 2. MEPM Resource Integration
 **File:** `src/com/sixsq/nuvla/server/resources/mepm.clj`
 
-The MEPM resource now uses the Mm5 client for all actions:
+The MEPM resource now uses the Mm3 client for all actions:
 
 #### check-health Action
 - Performs actual health check via Mm5
@@ -230,7 +230,7 @@ These are the Nuvla API endpoints for managing MEPMs:
 **File:** `test/com/sixsq/nuvla/server/resources/mepm_lifecycle_test.clj`
 
 - Full lifecycle testing with Mm5 integration
-- Mocked Mm5 client for predictable responses
+- Mocked Mm3 client for predictable responses
 - Validates all CRUD operations
 - Tests all custom actions
 
@@ -419,10 +419,10 @@ Key metrics to monitor:
 
 ## Conclusion
 
-The Mm5 interface implementation provides a robust, production-ready foundation for MEO-MEPM communication. It enables Nuvla to act as a true MEC Orchestrator, managing distributed edge infrastructure through standardized interfaces.
+The Mm3 interface implementation provides a robust, production-ready foundation for MEO-MEPM communication. It enables Nuvla to act as a true MEC Orchestrator, managing distributed edge infrastructure through standardized interfaces.
 
 **Key Achievements:**
-- ✅ Full Mm5 client library with retry logic
+- ✅ Full Mm3 client library with retry logic
 - ✅ Integration with MEPM resource
 - ✅ Comprehensive test coverage
 - ✅ Error handling and fallback mechanisms

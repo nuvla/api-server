@@ -22,7 +22,7 @@ with multiple MEPMs across distributed edge infrastructure.
     [com.sixsq.nuvla.server.resources.common.event-context :as ectx]
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
-    [com.sixsq.nuvla.server.resources.mec.mm5-client :as mm5]
+    [com.sixsq.nuvla.server.resources.mec.mm3-client :as mm3]
     [com.sixsq.nuvla.server.resources.resource-metadata :as md]
     [com.sixsq.nuvla.server.resources.spec.mepm :as mepm-spec]
     [com.sixsq.nuvla.server.util.metadata :as gen-md]
@@ -185,7 +185,7 @@ with multiple MEPMs across distributed edge infrastructure.
           current-time (time/now-str)
           
           ;; Perform actual Mm5 health check
-          health-result (mm5/check-health endpoint)]
+          health-result (mm3/check-health endpoint)]
       
       (if (:success? health-result)
         (do
@@ -228,7 +228,7 @@ with multiple MEPMs across distributed edge infrastructure.
           endpoint (:endpoint mepm)
           
           ;; Perform actual Mm5 capabilities query
-          cap-result (mm5/query-capabilities endpoint)]
+          cap-result (mm3/query-capabilities endpoint)]
       
       (if (:success? cap-result)
         (let [capabilities (:data cap-result)]
@@ -261,7 +261,7 @@ with multiple MEPMs across distributed edge infrastructure.
           endpoint (:endpoint mepm)
           
           ;; Perform actual Mm5 resources query
-          res-result (mm5/query-resources endpoint)]
+          res-result (mm3/query-resources endpoint)]
       
       (if (:success? res-result)
         (let [resources (:data res-result)]

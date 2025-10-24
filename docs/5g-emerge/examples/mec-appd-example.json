@@ -1,0 +1,129 @@
+{
+  "id": "module/my-mec-app",
+  "resource-type": "module",
+  "subtype": "application_mec",
+  "name": "Example MEC Application",
+  "description": "Sample ETSI MEC 037 compliant application descriptor",
+  "path": "examples/mec/my-app",
+  "parent-path": "examples/mec",
+  "logo-url": "https://example.com/logo.png",
+  "content": {
+    "appDId": "module/my-mec-app",
+    "appDVersion": "1.0",
+    "appName": "My MEC Application",
+    "appProvider": "Acme Corporation",
+    "appSoftVersion": "1.2.3",
+    "mecVersion": "3.1.1",
+    "appInfoName": "my-mec-app",
+    "appDescription": "Example MEC application for edge computing workloads",
+    
+    "virtualComputeDescriptor": {
+      "virtualCpu": {
+        "numVirtualCpu": 4,
+        "virtualCpuClock": 2400,
+        "virtualCpuPinning": true
+      },
+      "virtualMemory": {
+        "virtualMemSize": 8192,
+        "numaEnabled": true
+      }
+    },
+    
+    "virtualStorageDescriptor": [
+      {
+        "id": "storage-1",
+        "typeOfStorage": "BLOCK",
+        "sizeOfStorage": 100,
+        "rdmaEnabled": false
+      }
+    ],
+    
+    "swImageDescriptor": [
+      {
+        "swImageName": "my-mec-app",
+        "swImageVersion": "1.2.3",
+        "containerFormat": "DOCKER",
+        "swImage": "docker.io/acme/my-mec-app:1.2.3",
+        "minDisk": 10,
+        "minRam": 2048
+      }
+    ],
+    
+    "appExtCpd": [
+      {
+        "cpdId": "eth0",
+        "layerProtocol": "HTTP",
+        "addressType": "IPV4"
+      },
+      {
+        "cpdId": "eth1",
+        "layerProtocol": "TCP",
+        "addressType": "IPV4"
+      }
+    ],
+    
+    "appServiceRequired": [
+      {
+        "serName": "rnis",
+        "version": "2.1.1",
+        "transportDependency": {
+          "transportType": "REST_HTTP",
+          "securityType": "TLS"
+        },
+        "permissions": ["READ", "WRITE"]
+      },
+      {
+        "serName": "location",
+        "version": "2.1.1",
+        "transportDependency": {
+          "transportType": "REST_HTTP",
+          "securityType": "TLS"
+        },
+        "permissions": ["READ"]
+      }
+    ],
+    
+    "trafficRuleDescriptor": [
+      {
+        "trafficRuleId": "rule-1",
+        "filterType": "HTTP",
+        "priority": 10,
+        "trafficFilter": {
+          "srcAddress": ["0.0.0.0/0"],
+          "dstAddress": ["10.0.0.0/8"],
+          "dstPort": [8080]
+        },
+        "action": "FORWARD",
+        "dstInterface": "eth0"
+      }
+    ],
+    
+    "dnsRuleDescriptor": [
+      {
+        "dnsRuleId": "dns-1",
+        "domainName": "my-app.mec.local",
+        "ipAddressType": "IPV4",
+        "ipAddress": "10.0.1.100",
+        "ttl": 300
+      }
+    ],
+    
+    "appFeatureRequired": [
+      {
+        "featureName": "gpu-acceleration",
+        "featureVersion": "1.0"
+      }
+    ],
+    
+    "latencyDescriptor": {
+      "maxLatency": 10
+    }
+  },
+  
+  "created": "2024-01-15T10:00:00Z",
+  "updated": "2024-01-15T10:00:00Z",
+  "acl": {
+    "owners": ["group/nuvla-admin"],
+    "view-data": ["group/nuvla-user"]
+  }
+}

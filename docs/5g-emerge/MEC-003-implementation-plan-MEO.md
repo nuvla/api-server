@@ -89,7 +89,7 @@ What Nuvla as MEO needs from MEC 003:
 
 | Gap | Current | Needed | Effort |
 |-----|---------|--------|--------|
-| **Mm5 Interface** | Generic REST | MEC-specific Mm5 | Medium |
+| **Mm3 Interface** | Generic REST | MEC-specific Mm5 | Medium |
 | **MEPM Registry** | None | Track available MEPMs | Low |
 | **MEC Terminology** | Nuvla terms | MEC aliases | Low |
 | **Deployment Model Docs** | Generic | MEC-specific | Low |
@@ -114,7 +114,7 @@ The beauty of MEO-only scope: **Most work is documentation and mapping**, not im
                    │
 ┌──────────────────▼──────────────────────────┐
 │     MEC 003 Alignment Layer (NEW)           │
-│  • Mm5 interface specification              │
+│  • Mm3 interface specification              │
 │  • MEPM registry                            │
 │  • MEC terminology mapping                  │
 │  • Deployment model documentation           │
@@ -205,7 +205,7 @@ The beauty of MEO-only scope: **Most work is documentation and mapping**, not im
 
 ---
 
-### Phase 2: Mm5 Interface & MEPM Registry (Weeks 3-4)
+### Phase 2: Mm3 Interface & MEPM Registry (Weeks 3-4)
 
 **Objective:** Implement basic Mm5 protocol and MEPM registration
 
@@ -229,7 +229,7 @@ The beauty of MEO-only scope: **Most work is documentation and mapping**, not im
    - Supported platforms (K8s, Docker, etc.)
    - Health status
 
-**Week 4: Mm5 Interface**
+**Week 4: Mm3 Interface**
 1. Define Mm5 API specification
    - Query MEPM capabilities
    - Query available resources
@@ -237,7 +237,7 @@ The beauty of MEO-only scope: **Most work is documentation and mapping**, not im
    - Query application status
    - Request termination
 
-2. Create Mm5 client for MEPM communication
+2. Create Mm3 client for MEPM communication
    - HTTP/REST client
    - Authentication support (API keys, OAuth2)
    - Error handling
@@ -252,8 +252,8 @@ The beauty of MEO-only scope: **Most work is documentation and mapping**, not im
 **Deliverables:**
 - ✅ MEPM resource operational
 - ✅ MEPM registry API (5 endpoints)
-- ✅ Mm5 interface specification
-- ✅ Mm5 client implementation
+- ✅ Mm3 interface specification
+- ✅ Mm3 client implementation
 - ✅ Basic MEPM integration
 
 **Effort:** 60 hours (1-2 developers × 2 weeks)
@@ -333,7 +333,7 @@ The beauty of MEO-only scope: **Most work is documentation and mapping**, not im
 |----------------|----------------------|--------|
 | **Mm3** (MEO ↔ Portal) | REST API + UI | ✅ Existing |
 | **Mm2** (MEO ↔ VIM) | Infrastructure Service API | ✅ Existing |
-| **Mm5** (MEO ↔ MEPM) | New Mm5 interface | ⚠️ To implement |
+| **Mm5** (MEO ↔ MEPM) | New Mm3 interface | ⚠️ To implement |
 | **Mm8** (MEO ↔ MEO) | Federation | ❌ Future (MEC 040) |
 
 ### 5.3 MEPM Resource Schema
@@ -420,7 +420,7 @@ The beauty of MEO-only scope: **Most work is documentation and mapping**, not im
 
 - ✅ MEPM resource operational
 - ✅ MEPM registration and discovery working
-- ✅ Mm5 interface basics functional
+- ✅ Mm3 interface basics functional
 - ✅ Integration with at least one MEPM validated
 
 ### 7.3 Compliance Targets
@@ -532,7 +532,7 @@ Docker/K8s Runtime
 **Weekly Progress:**
 - Documentation completion: X %
 - MEPM resource implementation: X %
-- Mm5 interface completion: X %
+- Mm3 interface completion: X %
 - Tests passing: X / Y
 
 ---
@@ -571,7 +571,7 @@ Docker/K8s Runtime
 | **Mm2** (MEO ↔ VIM) | ✅ Existing | Infrastructure Service API |
 | **Mm3** (MEO ↔ Portal) | ✅ Existing | REST API + UI |
 | **Mm4** (MEO ↔ UALCMP) | Out of scope | Not needed |
-| **Mm5** (MEO ↔ MEPM) | ⚠️ To implement | New Mm5 interface |
+| **Mm5** (MEO ↔ MEPM) | ⚠️ To implement | New Mm3 interface |
 | **Mm8** (MEO ↔ MEO) | Future | MEC 040 (federation) |
 
 ### Appendix D: Useful Resources

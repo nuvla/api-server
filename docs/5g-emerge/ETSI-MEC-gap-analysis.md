@@ -311,7 +311,7 @@ Deployment Operations ≈ MEC App Lifecycle
 
 3. **No MEC Application Enablement Layer**
    - Missing Mp1 interface (MEC platform to app)
-   - Missing Mm5 interface (MEC platform manager)
+   - Missing Mm3 interface (MEC platform manager)
    - Missing standardized MEC service discovery
 
 #### ⚠️ Major Gaps
@@ -727,7 +727,7 @@ Deployment Operations ≈ MEC App Lifecycle
 
 **Standard:** ETSI GS MEC 010-2 V2.2.1 (2022-02)  
 **Priority:** 🎯 **CRITICAL** for 5G-EMERGE  
-**Scope:** Application lifecycle, rules and requirements management via Mm5 interface
+**Scope:** Application lifecycle, rules and requirements management via Mm3 interface
 
 #### Key Requirements
 
@@ -778,7 +778,7 @@ Deployment Operations ≈ MEC App Lifecycle
 **Phase 1: Core Lifecycle (8-10 weeks, 2-3 developers)**
 1. Implement MEC state model mapping
 2. Add TOSCA descriptor parsing (basic)
-3. Create Mm5 interface adapter
+3. Create Mm3 interface adapter
 4. Implement instantiate/terminate operations
 
 **Phase 2: Advanced Operations (10-12 weeks, 3-4 developers)**
@@ -1500,7 +1500,7 @@ Given the priority standards (MEC 010-2, 021, 037, 040), we recommend a **standa
 **Milestones:**
 
 **Weeks 3-8: Core Lifecycle Operations**
-- [ ] Design Mm5 interface adapter
+- [ ] Design Mm3 interface adapter
 - [ ] Implement MEC state model
 - [ ] Create instantiate operation (map to deployment create)
 - [ ] Create terminate operation (map to deployment delete)
