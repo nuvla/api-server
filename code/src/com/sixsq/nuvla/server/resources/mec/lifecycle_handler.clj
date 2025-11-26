@@ -55,12 +55,12 @@
         (throw (ex-info "MEPM does not support app instantiation"
                         {:mepm-endpoint mepm-endpoint})))
       
-      ;; Create app instance via Mm5
+      ;; Create app instance via Mm3
       (let [app-instance-result (mm3/create-app-instance
                                   mepm-endpoint
                                   {:app-instance-id app-instance-id
                                    :grant-id        grant-id})]
-        (log/info "App instance created via Mm5:" (:instance-id app-instance-result))
+        (log/info "App instance created via Mm3:" (:instance-id app-instance-result))
         
         ;; Return success result
         {:status          :PROCESSING
