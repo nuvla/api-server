@@ -46,7 +46,7 @@ The following section maps each of the MEC orchestrator responsibilities listed 
 		- **Mm3 (MEO–MEPM)** – MEO as **client**, MEPM as **server** (MEO queries capabilities/resources/hosts, receives status).
 
 - **On-boarding of application packages** (integrity/authenticity checks, rule/requirement validation, operator policies, catalogue of packages, preparing the VIM)
-	- **Relevant specs:** ETSI GS MEC 003 (MEO responsibilities for on-boarding), ETSI GS MEC 010-2 (information used during instantiation), ETSI GS MEC 011 (application descriptors, traffic/DNS rules, service requirements), ETSI MEC 037 (when aligned with NFV-MANO/VNFD packaging).
+	- **Relevant specs:** ETSI GS MEC 003 (MEO responsibilities for on-boarding), ETSI GS MEC 010-2 (information used during instantiation), ETSI GS MEC 011 (application descriptors, traffic/DNS rules, service requirements), ETSI MEC 037 (MEC app package format).
 	- **Reference points:**
 		- **Mm1 (MEO–OSS)** – OSS as **client**, MEO as **server**; OSS can submit application on-boarding requests and associated policies/intents, which the MEO then realizes via its catalog and southbound interfaces.
 		- **Mm3 (MEO–MEPM)** – MEO as **client**, MEPM as **server** (MEO provides package identifiers/requirements and requests preparation of hosts/VIM for supported apps).
