@@ -93,7 +93,7 @@ The validation should combine several methods:
 - Negative tests for invalid input, missing resources, failed implemented security checks, and unsupported operations.
 - Regression tests to confirm that existing Nuvla deployment capabilities are not broken by the standards-compliance layer.
 - Interoperability-oriented validation through standards-aligned interface and workflow checks.
-- Review-based traceability checks from requirement to implementation to evidence.
+- Traceability checks linking each targeted requirement to the corresponding implementation element and supporting validation evidence.
 
 ## Proposed Validation Scenarios
 
@@ -106,7 +106,7 @@ The minimum validation campaign could include the following scenarios:
 5. Terminate the application and verify state cleanup and final reporting.
 6. Submit supported host-targeting or filtering inputs and verify the resulting target selection and requirement-check behavior.
 7. Verify error responses for unsupported or malformed requests.
-8. Repeat a subset of the above with different configurations or deployment conditions to demonstrate robustness and repeatability.
+8. Use targeted integration tests and representative deployment conditions to increase confidence in robustness, where feasible.
 
 ## Evidence to Collect
 
