@@ -2,7 +2,8 @@
   "Schema for MEC Platform Manager (MEPM) resource.
   
   A MEPM represents an external MEC Platform Manager that Nuvla (MEO) 
-  communicates with via the Mm5 interface. MEPMs manage host-level 
+  communicates with via the selected Mm3-oriented southbound interface.
+  MEPMs manage host-level 
   platform operations on MEC hosts."
   (:require
     [clojure.spec.alpha :as s]
@@ -29,7 +30,7 @@
 (s/def ::endpoint
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "endpoint"
-             :json-schema/description "Mm5 interface endpoint URL (e.g., https://mepm.example.com/mm5)"
+             :json-schema/description "Mm3 interface endpoint URL (e.g., https://mepm.example.com/mm3)"
              :json-schema/order 22)))
 
 
@@ -123,7 +124,7 @@
 (s/def ::credential-id
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "credential-id"
-             :json-schema/description "reference to credential resource for Mm5 authentication"
+             :json-schema/description "reference to credential resource for Mm3 authentication"
              :json-schema/order 34)))
 
 

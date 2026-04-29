@@ -4,7 +4,7 @@
    Handles instantiate, terminate, and operate lifecycle operations by:
    1. Validating the request
    2. Creating an operation occurrence (job)
-   3. Delegating to MEPM via Mm5 interface
+   3. Delegating to MEPM via the selected Mm3 southbound interface
    4. Tracking operation status
    
    Standard: ETSI GS MEC 010-2 v2.2.1"
@@ -35,7 +35,7 @@
 ;;
 
 (defn execute-instantiate
-  "Executes app instantiation via MEPM Mm5 interface
+  "Executes app instantiation via the selected MEPM Mm3 path
    
    Steps:
    1. Query MEPM capabilities to find suitable host
@@ -79,7 +79,7 @@
 ;;
 
 (defn execute-terminate
-  "Executes app termination via MEPM Mm5 interface
+  "Executes app termination via the selected MEPM Mm3 path
    
    Steps:
    1. Query app instance status from MEPM
@@ -100,11 +100,11 @@
                         {:app-instance-id app-instance-id
                          :mepm-endpoint   mepm-endpoint})))
       
-      ;; Delete app instance via Mm5
+      ;; Delete app instance via Mm3
       (let [delete-result (mm3/delete-app-instance
                             mepm-endpoint
                             app-instance-id)]
-        (log/info "App instance terminated via Mm5:" app-instance-id)
+        (log/info "App instance terminated via Mm3:" app-instance-id)
         
         ;; Return success result
         {:status          :PROCESSING
@@ -123,7 +123,7 @@
 ;;
 
 (defn execute-operate
-  "Executes app operate (start/stop) via MEPM Mm5 interface
+  "Executes app operate (start/stop) via the selected MEPM southbound path
    
    Steps:
    1. Validate target state (STARTED/STOPPED)
@@ -160,9 +160,9 @@
                           {:current-state current-state
                            :target-state  target-state})))
         
-        ;; Execute state change via Mm5
-        ;; Note: This would require an Mm5 operate endpoint (future enhancement)
-        (log/info "App operate request would be sent to Mm5 (not yet implemented)")
+        ;; Execute state change via the selected southbound MEC path
+        ;; Note: This would require a concrete operate endpoint (future enhancement)
+        (log/info "App operate request would be sent southbound (not yet implemented)")
         
         ;; Return success result
         {:status          :PROCESSING

@@ -67,6 +67,7 @@ Freeze the exact compliance subset to implement and validate.
 ### Main artifacts
 
 - `submitted/Nuvla_MEC_gap_closure_plan.md`
+- `submitted/Nuvla_MEC_WS1_baseline_decisions.md`
 - `submitted/Nuvla_MEC_validation_traceability_draft.md`
 - updated compliance note and/or internal implementation-status annex in a later step
 

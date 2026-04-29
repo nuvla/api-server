@@ -1,8 +1,8 @@
 (ns com.sixsq.nuvla.server.resources.mepm
   "
 MEC Platform Manager (MEPM) resource represents an external platform manager
-that Nuvla (MEO) communicates with via the Mm5 interface as defined in 
-ETSI GS MEC 003.
+that Nuvla (MEO) communicates with via the selected Mm3-oriented southbound
+interface used in this MEC MVP path.
 
 MEPMs manage host-level operations such as:
 - Application lifecycle on specific MEC hosts
@@ -173,7 +173,7 @@ with multiple MEPMs across distributed edge infrastructure.
 
 
 ;;
-;; Check health action - query MEPM status via Mm5
+;; Check health action - query MEPM status via Mm3
 ;;
 
 (defmethod crud/do-action [resource-type "check-health"]
@@ -184,7 +184,7 @@ with multiple MEPMs across distributed edge infrastructure.
           endpoint     (:endpoint mepm)
           current-time (time/now-str)
           
-          ;; Perform actual Mm5 health check
+          ;; Perform actual Mm3 health check
           health-result (mm3/check-health endpoint)]
       
       (if (:success? health-result)
@@ -217,7 +217,7 @@ with multiple MEPMs across distributed edge infrastructure.
 
 
 ;;
-;; Query capabilities action - get MEPM capabilities via Mm5
+;; Query capabilities action - get MEPM capabilities via Mm3
 ;;
 
 (defmethod crud/do-action [resource-type "query-capabilities"]
@@ -227,7 +227,7 @@ with multiple MEPMs across distributed edge infrastructure.
           mepm     (crud/retrieve-by-id-as-admin id)
           endpoint (:endpoint mepm)
           
-          ;; Perform actual Mm5 capabilities query
+          ;; Perform actual Mm3 capabilities query
           cap-result (mm3/query-capabilities endpoint)]
       
       (if (:success? cap-result)
@@ -250,7 +250,7 @@ with multiple MEPMs across distributed edge infrastructure.
 
 
 ;;
-;; Query resources action - get available resources via Mm5
+;; Query resources action - get available resources via Mm3
 ;;
 
 (defmethod crud/do-action [resource-type "query-resources"]
@@ -260,7 +260,7 @@ with multiple MEPMs across distributed edge infrastructure.
           mepm     (crud/retrieve-by-id-as-admin id)
           endpoint (:endpoint mepm)
           
-          ;; Perform actual Mm5 resources query
+          ;; Perform actual Mm3 resources query
           res-result (mm3/query-resources endpoint)]
       
       (if (:success? res-result)
