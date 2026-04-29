@@ -14,6 +14,7 @@
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.mec.app-instance :as app-instance]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-op-occ :as app-lcm-op-occ]
+    [com.sixsq.nuvla.server.resources.mec.mm3-client :as mm3]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-v2 :as app-lcm-v2]))
 
 
@@ -25,9 +26,17 @@
   {:id      "deployment/test-123"
    :module  "module/nginx-app"
    :state   "CREATED"
+   :nuvlabox "nuvlabox/edge-host-1"
    :parent  "nuvlabox/edge-host-1"
    :module/content {:name "NGINX Application"}
    :module/author "test-provider"})
+
+
+(def sample-mepm
+  {:id          "mepm/test-1"
+   :endpoint    "https://mepm.example.com:8443"
+   :status      "ONLINE"
+   :mec-host-id "nuvlabox/edge-host-1"})
 
 
 (def sample-app-instance-info
@@ -384,6 +393,17 @@
           edit-request   (atom nil)
           response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
                                                                sample-deployment)
+                                 crud/query (fn [_]
+                                              {:status 200
+                                               :body {:resources [sample-mepm]}})
+                                 mm3/query-capabilities (fn [_ & _]
+                                                          {:success? true
+                                                           :status 200
+                                                           :data {:platforms ["kubernetes"]}})
+                                 mm3/query-resources (fn [_ & _]
+                                                       {:success? true
+                                                        :status 200
+                                                        :data {:cpu-cores 8}})
                                  crud/do-action (fn [request]
                                                   (reset! action-request request)
                                                   {:status 202
@@ -399,6 +419,7 @@
       (is (= 202 (:status response)))
       (is (= "start" (get-in @action-request [:params :action])))
       (is (= "INSTANTIATE" (get-in @edit-request [:body :mec-operation-type])))
+      (is (= "mepm/test-1" (get-in @edit-request [:body :mepm-id])))
       (is (= "INSTANTIATE" (get-in response [:body :operationType])))))
 
   (testing "Instantiate rejects already instantiated app instance"
@@ -414,6 +435,17 @@
     (let [action-request (atom nil)
           response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
                                                                (assoc sample-deployment :state "STARTED"))
+                                 crud/query (fn [_]
+                                              {:status 200
+                                               :body {:resources [sample-mepm]}})
+                                 mm3/query-capabilities (fn [_ & _]
+                                                          {:success? true
+                                                           :status 200
+                                                           :data {:platforms ["kubernetes"]}})
+                                 mm3/query-resources (fn [_ & _]
+                                                       {:success? true
+                                                        :status 200
+                                                        :data {:cpu-cores 8}})
                                  crud/do-action (fn [request]
                                                   (reset! action-request request)
                                                   {:status 202
@@ -441,6 +473,17 @@
     (let [action-request (atom nil)
           response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
                                                                (assoc sample-deployment :state "STOPPED"))
+                                 crud/query (fn [_]
+                                              {:status 200
+                                               :body {:resources [sample-mepm]}})
+                                 mm3/query-capabilities (fn [_ & _]
+                                                          {:success? true
+                                                           :status 200
+                                                           :data {:platforms ["kubernetes"]}})
+                                 mm3/query-resources (fn [_ & _]
+                                                       {:success? true
+                                                        :status 200
+                                                        :data {:cpu-cores 8}})
                                  crud/do-action (fn [request]
                                                   (reset! action-request request)
                                                   {:status 202
@@ -469,6 +512,30 @@
                      (app-lcm-v2/operate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                :body   {:changeStateTo "STARTED"}}))]
       (is (= 409 (:status response))))))
+
+
+(deftest test-mepm-resolution-behavior
+  (testing "Instantiate fails when multiple eligible MEPMs exist without explicit host association"
+    (let [hostless-deployment (dissoc sample-deployment :nuvlabox)
+          response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               hostless-deployment)
+                                 crud/query (fn [_]
+                                              {:status 200
+                                               :body {:resources [sample-mepm
+                                                                  (assoc sample-mepm :id "mepm/test-2" :mec-host-id "nuvlabox/edge-host-2")]}})]
+                     (app-lcm-v2/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                                   :body   {}}))]
+      (is (= 409 (:status response)))))
+
+  (testing "Instantiate fails when no eligible MEPM exists for targeted host"
+    (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               sample-deployment)
+                                 crud/query (fn [_]
+                                              {:status 200
+                                               :body {:resources []}})]
+                     (app-lcm-v2/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                                   :body   {}}))]
+      (is (= 503 (:status response))))))
 
 
 ;;

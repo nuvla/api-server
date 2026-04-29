@@ -23,12 +23,15 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
+    [com.sixsq.nuvla.auth.utils :as auth]
+    [com.sixsq.nuvla.db.filter.parser :as parser]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.mec.app-instance :as app-instance]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-op-occ :as app-lcm-op-occ]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-subscription :as subscription]
+    [com.sixsq.nuvla.server.resources.mec.mm3-client :as mm3]
     [com.sixsq.nuvla.server.resources.mec.query-filter :as qf]
     [com.sixsq.nuvla.server.util.response :as r]))
 
@@ -96,6 +99,10 @@
   #{"INSTANTIATE" "TERMINATE" "OPERATE"})
 
 
+(def ^:private eligible-mepm-statuses
+  #{"ONLINE" "DEGRADED"})
+
+
 (defn- exception-status
   [e default-status]
   (or (:status (ex-data e)) default-status))
@@ -139,6 +146,18 @@
 (defn- query-resources
   [request resource-name]
   (-> (resource-query-request request resource-name)
+      crud/query
+      :body
+      :resources
+      (or [])))
+
+
+(defn- query-resources-as-admin
+  [resource-name & [filter-str]]
+  (-> {:params      {:resource-name resource-name}
+       :cimi-params (cond-> {:last max-query-results}
+                      filter-str (assoc :filter (parser/parse-cimi-filter filter-str)))
+       :nuvla/authn auth/internal-identity}
       crud/query
       :body
       :resources
@@ -230,6 +249,52 @@
     (seq body) (assoc :body body)))
 
 
+(defn- throw-on-unsuccessful-mm3-response!
+  [response endpoint operation]
+  (when-not (:success? response)
+    (throw-status 503
+                  (str "MEPM " operation " failed: " (:message response))
+                  {:mepm-endpoint endpoint
+                   :operation operation
+                   :error (:error response)}))
+  response)
+
+
+(defn- resolve-mepm-for-deployment!
+  [deployment]
+  (let [nuvlabox-id (:nuvlabox deployment)
+        eligible?   #(contains? eligible-mepm-statuses (:status %))
+        mepms       (if nuvlabox-id
+                      (query-resources-as-admin "mepm" (str "mec-host-id='" nuvlabox-id "'"))
+                      (query-resources-as-admin "mepm"))
+        eligible    (filter eligible? mepms)]
+    (cond
+      (and nuvlabox-id (= 1 (count eligible))) (first eligible)
+      (and nuvlabox-id (empty? eligible))
+      (throw-status 503
+                    (str "No eligible MEPM found for target NuvlaBox " nuvlabox-id)
+                    {:nuvlabox-id nuvlabox-id})
+      (and nuvlabox-id (> (count eligible) 1))
+      (throw-status 409
+                    (str "Multiple eligible MEPMs found for target NuvlaBox " nuvlabox-id)
+                    {:nuvlabox-id nuvlabox-id})
+      (= 1 (count eligible)) (first eligible)
+      (empty? eligible) (throw-status 503 "No eligible MEPM available")
+      :else (throw-status 409 "Multiple eligible MEPMs available; explicit host targeting is required"))))
+
+
+(defn- resolve-mepm-for-app-instance!
+  [request app-instance-id]
+  (let [deployment (retrieve-app-instance-deployment request app-instance-id)
+        mepm       (resolve-mepm-for-deployment! deployment)
+        endpoint   (:endpoint mepm)
+        _          (-> (mm3/query-capabilities endpoint)
+                       (throw-on-unsuccessful-mm3-response! endpoint "capability query"))
+        _          (-> (mm3/query-resources endpoint)
+                       (throw-on-unsuccessful-mm3-response! endpoint "resource query"))]
+    mepm))
+
+
 (defn- action-response->job-id
   [response]
   (or (get-in response [:body :location])
@@ -237,15 +302,16 @@
 
 
 (defn- tag-mec-operation-job!
-  [job-id app-instance-id operation-type request-params]
-  (crud/edit-by-id-as-admin job-id {:mec-operation-type  operation-type
-                                    :mec-app-instance-id app-instance-id
-                                    :mec-request-params  request-params})
+  [job-id app-instance-id operation-type request-params metadata]
+  (crud/edit-by-id-as-admin job-id (merge {:mec-operation-type  operation-type
+                                           :mec-app-instance-id app-instance-id
+                                           :mec-request-params  request-params}
+                                          metadata))
   (crud/retrieve-by-id-as-admin job-id))
 
 
 (defn- run-mec-lifecycle-action!
-  [request app-instance-id action operation-type request-params]
+  [request app-instance-id action operation-type request-params metadata]
   (let [response (crud/do-action (deployment-action-request request app-instance-id action request-params))
         status   (:status response)]
     (when-not (= 202 status)
@@ -260,7 +326,7 @@
         (throw-status 500 "Lifecycle action did not return a job identifier"
                       {:app-instance-id app-instance-id
                        :action action}))
-      (-> (tag-mec-operation-job! job-id app-instance-id operation-type request-params)
+      (-> (tag-mec-operation-job! job-id app-instance-id operation-type request-params metadata)
           app-lcm-op-occ/job->app-lcm-op-occ))))
 
 
@@ -371,7 +437,15 @@
       (log/info "Instantiate request for" app-instance-id)
 
       (validate-instantiate-request! request app-instance-id)
-      (let [op-occ (run-mec-lifecycle-action! request app-instance-id "start" "INSTANTIATE" body)]
+      (let [mepm   (resolve-mepm-for-app-instance! request app-instance-id)
+            op-occ (run-mec-lifecycle-action! request
+                                             app-instance-id
+                                             "start"
+                                             "INSTANTIATE"
+                                             body
+                                             {:mepm-id       (:id mepm)
+                                              :mepm-endpoint (:endpoint mepm)
+                                              :mec-host-id   (:mec-host-id mepm)})]
         (log/info "Instantiation operation created:" (:lcmOpOccId op-occ))
         (json-response-status op-occ 202))
 
@@ -392,7 +466,15 @@
       (log/info "Terminate request for" app-instance-id)
 
       (validate-terminate-request! request app-instance-id)
-      (let [op-occ (run-mec-lifecycle-action! request app-instance-id "stop" "TERMINATE" body)]
+      (let [mepm   (resolve-mepm-for-app-instance! request app-instance-id)
+            op-occ (run-mec-lifecycle-action! request
+                                             app-instance-id
+                                             "stop"
+                                             "TERMINATE"
+                                             body
+                                             {:mepm-id       (:id mepm)
+                                              :mepm-endpoint (:endpoint mepm)
+                                              :mec-host-id   (:mec-host-id mepm)})]
         (log/info "Termination operation created:" (:lcmOpOccId op-occ))
         (json-response-status op-occ 202))
 
@@ -411,11 +493,19 @@
         body            (:body request)]
     (try
       (let [body         (validate-operate-request! request app-instance-id body)
+            mepm         (resolve-mepm-for-app-instance! request app-instance-id)
             target-state (:changeStateTo body)
             action       (if (= "STARTED" target-state) "start" "stop")]
         (log/info "Operate request for" app-instance-id "changeStateTo" target-state)
-        (let [op-occ (run-mec-lifecycle-action! request app-instance-id action "OPERATE" body)]
-        (log/info "Operate operation created:" (:lcmOpOccId op-occ))
+        (let [op-occ (run-mec-lifecycle-action! request
+                                               app-instance-id
+                                               action
+                                               "OPERATE"
+                                               body
+                                               {:mepm-id       (:id mepm)
+                                                :mepm-endpoint (:endpoint mepm)
+                                                :mec-host-id   (:mec-host-id mepm)})]
+          (log/info "Operate operation created:" (:lcmOpOccId op-occ))
           (json-response-status op-occ 202)))
 
       (catch clojure.lang.ExceptionInfo e

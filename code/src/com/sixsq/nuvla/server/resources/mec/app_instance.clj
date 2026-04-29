@@ -82,7 +82,7 @@
         module-ref      (:module deployment)
         module-id       (if (map? module-ref) (:href module-ref) module-ref)
         state           (keyword (:state deployment))
-        parent          (:parent deployment)
+        host-id         (or (:nuvlabox deployment) (:parent deployment))
         instantiation   (get nuvla-to-mec-instantiation-state state :NOT_INSTANTIATED)
         operational     (get nuvla-to-mec-operational-state state)]
     (cond-> {:id                 deployment-id
@@ -116,9 +116,9 @@
       (assoc :operationalState (name operational))
       
       ;; Add MEC host information if deployed
-      parent
-      (assoc :mecHostInformation {:hostId   parent
-                                  :hostName parent})
+      host-id
+      (assoc :mecHostInformation {:hostId   host-id
+                                  :hostName (or (:nuvlabox-name deployment) host-id)})
       
       ;; Add HATEOAS links
       true

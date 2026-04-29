@@ -439,6 +439,37 @@
       retry-attempts)))
 
 
+(defn operate-app-instance
+  "Change application instance runtime state via Mm3 interface.
+  
+   Parameters:
+   - endpoint: MEPM base URL
+   - app-id: Application instance identifier
+   - change-state-to: Target operational state (STARTED or STOPPED)
+   - options: HTTP client options (optional)"
+  [endpoint app-id change-state-to & [{:keys [retry-attempts]
+                                       :or {retry-attempts default-retry-attempts}
+                                       :as options}]]
+  (log/info "Mm3: Operating app instance" app-id "to" change-state-to "via MEPM at" endpoint)
+  (let [url (str endpoint "/mm3/app-instances/" app-id "/operate")
+        http-opts (-> (build-http-options endpoint options)
+                      (assoc :body (json/write-value-as-string {:changeStateTo change-state-to})
+                             :content-type :json))]
+    (retry-request
+      (fn []
+        (try
+          (let [response (http/post url http-opts)]
+            (log/debug "Mm3 operate app instance response:" response)
+            (parse-response response))
+          (catch Exception e
+            (log/error e "Mm3: Failed to operate app instance")
+            {:success? false
+             :error    :connection-error
+             :message  (.getMessage e)
+             :exception e})))
+      retry-attempts)))
+
+
 ;;
 ;; Convenience functions
 ;;

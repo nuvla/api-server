@@ -1,6 +1,6 @@
 (ns com.sixsq.nuvla.server.resources.mec.mock-mepm-server
-  "Mock MEPM server for testing Mm5 interface.
-   Implements ETSI MEC 003 Mm5 reference point for integration testing."
+  "Mock MEPM server for testing the selected Mm3 interface path.
+   Implements ETSI MEC 003 southbound endpoints for integration testing."
   (:require
     [clojure.tools.logging :as log]
     [ring.adapter.jetty :as jetty]
@@ -64,7 +64,7 @@
   @mepm-state)
 
 ;;
-;; Mm5 Endpoint Handlers
+;; Mm3 Endpoint Handlers
 ;;
 
 (defn- increment-request-count! []
@@ -82,7 +82,7 @@
       nil)))
 
 (defn handle-health-check
-  "Handle GET /mm5/health - Check MEPM health status."
+  "Handle GET /mm3/health - Check MEPM health status."
   [_request]
   (increment-request-count!)
   (if-let [error-response (check-error-mode)]
@@ -98,7 +98,7 @@
                                 :vim         "healthy"}}})))
 
 (defn handle-capabilities-query
-  "Handle GET /mm5/capabilities - Query MEPM capabilities."
+  "Handle GET /mm3/capabilities - Query MEPM capabilities."
   [_request]
   (increment-request-count!)
   (if-let [error-response (check-error-mode)]
@@ -107,7 +107,7 @@
      :body   (:capabilities @mepm-state)}))
 
 (defn handle-resources-query
-  "Handle GET /mm5/resources - Query available resources."
+  "Handle GET /mm3/resources - Query available resources."
   [_request]
   (increment-request-count!)
   (if-let [error-response (check-error-mode)]
@@ -116,7 +116,7 @@
      :body   (:resources @mepm-state)}))
 
 (defn handle-platform-info
-  "Handle GET /mm5/platform-info - Get platform metadata."
+  "Handle GET /mm3/platform-info - Get platform metadata."
   [_request]
   (increment-request-count!)
   (if-let [error-response (check-error-mode)]
@@ -132,7 +132,7 @@
               :created       "2025-01-01T00:00:00Z"}}))
 
 (defn handle-configure-platform
-  "Handle POST /mm5/configure - Configure platform settings."
+  "Handle POST /mm3/configure - Configure platform settings."
   [request]
   (increment-request-count!)
   (if-let [error-response (check-error-mode)]
@@ -145,7 +145,7 @@
                 :config  config}})))
 
 (defn handle-create-app-instance
-  "Handle POST /mm5/app-instances - Create application instance."
+  "Handle POST /mm3/app-instances - Create application instance."
   [request]
   (increment-request-count!)
   (if-let [error-response (check-error-mode)]
@@ -162,7 +162,7 @@
        :body   instance})))
 
 (defn handle-get-app-instance
-  "Handle GET /mm5/app-instances/:id - Get application instance status."
+  "Handle GET /mm3/app-instances/:id - Get application instance status."
   [request app-id]
   (increment-request-count!)
   (if-let [error-response (check-error-mode)]
@@ -175,7 +175,7 @@
          :body   {:error "Not Found" :message (str "Application instance " app-id " not found")}}))))
 
 (defn handle-list-app-instances
-  "Handle GET /mm5/app-instances - List all application instances."
+  "Handle GET /mm3/app-instances - List all application instances."
   [_request]
   (increment-request-count!)
   (if-let [error-response (check-error-mode)]
@@ -184,7 +184,7 @@
      :body   {:instances (vals (:app-instances @mepm-state))}}))
 
 (defn handle-delete-app-instance
-  "Handle DELETE /mm5/app-instances/:id - Terminate application instance."
+  "Handle DELETE /mm3/app-instances/:id - Terminate application instance."
   [request app-id]
   (increment-request-count!)
   (if-let [error-response (check-error-mode)]
@@ -195,6 +195,29 @@
         {:status 204})
       {:status 404
        :body   {:error "Not Found" :message (str "Application instance " app-id " not found")}})))
+
+(defn handle-operate-app-instance
+  "Handle POST /mm3/app-instances/:id/operate - Change application instance state."
+  [request app-id]
+  (increment-request-count!)
+  (if-let [error-response (check-error-mode)]
+    error-response
+    (let [change-state-to (get-in request [:body :changeStateTo])
+          instance (get-in @mepm-state [:app-instances app-id])]
+      (cond
+        (nil? instance)
+        {:status 404
+         :body   {:error "Not Found" :message (str "Application instance " app-id " not found")}}
+
+        (not (#{"STARTED" "STOPPED"} change-state-to))
+        {:status 400
+         :body   {:error "Bad Request" :message (str "Unsupported changeStateTo: " change-state-to)}}
+
+        :else
+        (let [updated-instance (assoc instance :status change-state-to)]
+          (swap! mepm-state assoc-in [:app-instances app-id] updated-instance)
+          {:status 200
+           :body   updated-instance})))))
 
 ;;
 ;; Router
@@ -209,41 +232,46 @@
     (try
       (cond
         ;; Health check
-        (and (= method :get) (= path "/mm5/health"))
+        (and (= method :get) (= path "/mm3/health"))
         (handle-health-check request)
 
         ;; Capabilities
-        (and (= method :get) (= path "/mm5/capabilities"))
+        (and (= method :get) (= path "/mm3/capabilities"))
         (handle-capabilities-query request)
 
         ;; Resources
-        (and (= method :get) (= path "/mm5/resources"))
+        (and (= method :get) (= path "/mm3/resources"))
         (handle-resources-query request)
 
         ;; Platform info
-        (and (= method :get) (= path "/mm5/platform-info"))
+        (and (= method :get) (= path "/mm3/platform-info"))
         (handle-platform-info request)
 
         ;; Configure platform
-        (and (= method :post) (= path "/mm5/configure"))
+        (and (= method :post) (= path "/mm3/configure"))
         (handle-configure-platform request)
 
         ;; App instances - list (must come before single instance match)
-        (and (= method :get) (= path "/mm5/app-instances"))
+        (and (= method :get) (= path "/mm3/app-instances"))
         (handle-list-app-instances request)
 
         ;; App instances - create
-        (and (= method :post) (= path "/mm5/app-instances"))
+        (and (= method :post) (= path "/mm3/app-instances"))
         (handle-create-app-instance request)
 
         ;; App instances - get single
-        (and (= method :get) (re-matches #"/mm5/app-instances/(.+)" path))
-        (let [app-id (second (re-matches #"/mm5/app-instances/(.+)" path))]
+        (and (= method :get) (re-matches #"/mm3/app-instances/(.+)" path))
+        (let [app-id (second (re-matches #"/mm3/app-instances/(.+)" path))]
           (handle-get-app-instance request app-id))
 
+        ;; App instances - operate
+        (and (= method :post) (re-matches #"/mm3/app-instances/(.+)/operate" path))
+        (let [app-id (second (re-matches #"/mm3/app-instances/(.+)/operate" path))]
+          (handle-operate-app-instance request app-id))
+
         ;; App instances - delete
-        (and (= method :delete) (re-matches #"/mm5/app-instances/(.+)" path))
-        (let [app-id (second (re-matches #"/mm5/app-instances/(.+)" path))]
+        (and (= method :delete) (re-matches #"/mm3/app-instances/(.+)" path))
+        (let [app-id (second (re-matches #"/mm3/app-instances/(.+)" path))]
           (handle-delete-app-instance request app-id))
 
         ;; Not found

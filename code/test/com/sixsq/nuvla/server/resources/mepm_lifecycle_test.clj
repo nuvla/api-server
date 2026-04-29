@@ -5,7 +5,7 @@
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [com.sixsq.nuvla.server.resources.mec.mm5-client :as mm5]
+    [com.sixsq.nuvla.server.resources.mec.mm3-client :as mm3]
     [com.sixsq.nuvla.server.resources.mepm :as mepm]
     [jsonista.core :as json]
     [peridot.core :refer [content-type header request session]]))
@@ -29,25 +29,25 @@
                    :storage-gb  2048
                    :gpu-count   8}
    :status        "ONLINE"
-   :mec-host-id   "mec-host/test-host-123"
+   :mec-host-id   "nuvlabox/test-host-123"
    :credential-id "credential/test-credential-456"
    :version       "2.1.0"
    :tags          ["production" "edge"]})
 
 
 (deftest lifecycle
-  ;; Mock Mm5 client responses for testing
-  (with-redefs [mm5/check-health (fn [_endpoint & [_opts]]
+  ;; Mock Mm3 client responses for testing
+  (with-redefs [mm3/check-health (fn [_endpoint & [_opts]]
                                     {:success? true
                                      :status 200
                                      :data {:status "healthy" :uptime-seconds 86400}})
-                mm5/query-capabilities (fn [_endpoint & [_opts]]
+                mm3/query-capabilities (fn [_endpoint & [_opts]]
                                          {:success? true
                                           :status 200
                                           :data {:platforms ["x86_64" "arm64"]
                                                  :services ["mec-service-1" "mec-service-2"]
                                                  :api-version "v2"}})
-                mm5/query-resources (fn [_endpoint & [_opts]]
+                mm3/query-resources (fn [_endpoint & [_opts]]
                                       {:success? true
                                        :status 200
                                        :data {:cpu-cores 64

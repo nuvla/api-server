@@ -31,7 +31,7 @@
 ;; Mm3 Protocol Validation Tests
 ;;
 
-(deftest test-mm5-health-check-protocol
+(deftest test-mm3-health-check-protocol
   (testing "Health check follows ETSI MEC 003 protocol"
     (let [response (mm3/check-health test-endpoint)]
       (is (:success? response))
@@ -41,7 +41,7 @@
       (is (contains? (:data response) :version))
       (is (contains? (:data response) :checks)))))
 
-(deftest test-mm5-capabilities-protocol
+(deftest test-mm3-capabilities-protocol
   (testing "Capabilities query follows ETSI MEC 003 protocol"
     (let [response (mm3/query-capabilities test-endpoint)]
       (is (:success? response))
@@ -52,7 +52,7 @@
       (is (vector? (:platforms (:data response))))
       (is (vector? (:services (:data response)))))))
 
-(deftest test-mm5-resources-protocol
+(deftest test-mm3-resources-protocol
   (testing "Resources query follows ETSI MEC 003 protocol"
     (let [response (mm3/query-resources test-endpoint)]
       (is (:success? response))
@@ -63,7 +63,7 @@
       (is (pos? (:cpu-cores (:data response))))
       (is (pos? (:memory-gb (:data response)))))))
 
-(deftest test-mm5-platform-info-protocol
+(deftest test-mm3-platform-info-protocol
   (testing "Platform info follows ETSI MEC 003 protocol"
     (let [response (mm3/get-platform-info test-endpoint)]
       (is (:success? response))
@@ -72,7 +72,7 @@
       (is (contains? (:data response) :platform-name))
       (is (contains? (:data response) :location)))))
 
-(deftest test-mm5-configure-platform-protocol
+(deftest test-mm3-configure-platform-protocol
   (testing "Platform configuration follows ETSI MEC 003 protocol"
     (let [config {:dns-rules [{:domain "example.com" :ip "10.0.0.1"}]
                   :traffic-rules [{:priority 1 :action "allow"}]}
@@ -86,28 +86,28 @@
 ;; Error Handling Tests
 ;;
 
-(deftest test-mm5-timeout-handling
+(deftest test-mm3-timeout-handling
   (testing "Graceful handling of MEPM timeout"
     (mock-mepm/set-error-mode! :timeout)
     (let [response (mm3/check-health test-endpoint {:retry-attempts 1})]
       (is (not (:success? response)))
       (is (= 504 (:status response))))))
 
-(deftest test-mm5-server-error-handling
+(deftest test-mm3-server-error-handling
   (testing "Graceful handling of MEPM server error"
     (mock-mepm/set-error-mode! :server-error)
     (let [response (mm3/query-capabilities test-endpoint {:retry-attempts 1})]
       (is (not (:success? response)))
       (is (= 500 (:status response))))))
 
-(deftest test-mm5-not-found-handling
+(deftest test-mm3-not-found-handling
   (testing "Graceful handling of MEPM not found"
     (mock-mepm/set-error-mode! :not-found)
     (let [response (mm3/query-resources test-endpoint {:retry-attempts 1})]
       (is (not (:success? response)))
       (is (= 404 (:status response))))))
 
-(deftest test-mm5-degraded-service
+(deftest test-mm3-degraded-service
   (testing "Graceful handling of degraded MEPM"
     (mock-mepm/set-error-mode! :degraded)
     (let [response (mm3/check-health test-endpoint {:retry-attempts 1})]
@@ -118,7 +118,7 @@
 ;; Retry Mechanism Tests
 ;;
 
-(deftest test-mm5-retry-mechanism-simulation
+(deftest test-mm3-retry-mechanism-simulation
   (testing "Mock server can simulate transient failures"
     ;; This test verifies the mock server error mode works correctly
     ;; Actual retry testing is done implicitly in other tests
@@ -131,7 +131,7 @@
     (let [response2 (mm3/check-health test-endpoint)]
       (is (:success? response2)))))
 
-(deftest test-mm5-connection-refused
+(deftest test-mm3-connection-refused
   (testing "Graceful handling of connection refused"
     (let [bad-endpoint "http://localhost:9999"]
       (let [response (mm3/check-health bad-endpoint {:retry-attempts 1
@@ -143,7 +143,7 @@
 ;; End-to-End Flow Tests
 ;;
 
-(deftest test-mm5-full-health-check-flow
+(deftest test-mm3-full-health-check-flow
   (testing "Complete health check flow"
     ;; Check health
     (let [health-response (mm3/check-health test-endpoint)]
@@ -153,7 +153,7 @@
     ;; Use convenience function
     (is (mm3/healthy? test-endpoint))))
 
-(deftest test-mm5-full-capability-query-flow
+(deftest test-mm3-full-capability-query-flow
   (testing "Complete capability query flow"
     ;; Query capabilities
     (let [cap-response (mm3/query-capabilities test-endpoint)]
@@ -167,7 +167,7 @@
       (is (contains? capabilities :platforms))
       (is (contains? capabilities :services)))))
 
-(deftest test-mm5-full-resource-query-flow
+(deftest test-mm3-full-resource-query-flow
   (testing "Complete resource query flow"
     ;; Query resources
     (let [res-response (mm3/query-resources test-endpoint)]
@@ -185,7 +185,7 @@
 ;; Application Lifecycle Tests
 ;;
 
-(deftest test-mm5-app-instance-creation
+(deftest test-mm3-app-instance-creation
   (testing "Create application instance via Mm3"
     (let [app-desc {:name "test-app"
                    :image "nginx:latest"
@@ -212,7 +212,7 @@
           (is (not (:success? get-after-delete)))
           (is (= 404 (:status get-after-delete))))))))
 
-(deftest test-mm5-list-app-instances
+(deftest test-mm3-list-app-instances
   (testing "List application instances via Mm3"
     ;; Initially empty
     (let [list-response (mm3/list-app-instances test-endpoint)]
@@ -228,18 +228,32 @@
       (is (:success? list-response))
       (is (= 2 (count (:instances (:data list-response))))))))
 
+(deftest test-mm3-operate-app-instance
+  (testing "Operate application instance via Mm3"
+    (let [create-response (mm3/create-app-instance test-endpoint {:name "app-operate"})
+          app-id (:id (:data create-response))]
+      (is (:success? create-response))
+      (let [stop-response (mm3/operate-app-instance test-endpoint app-id "STOPPED")]
+        (is (:success? stop-response))
+        (is (= 200 (:status stop-response)))
+        (is (= "STOPPED" (:status (:data stop-response)))))
+      (let [start-response (mm3/operate-app-instance test-endpoint app-id "STARTED")]
+        (is (:success? start-response))
+        (is (= 200 (:status start-response)))
+        (is (= "STARTED" (:status (:data start-response))))))))
+
 ;;
 ;; HTTP Options Tests
 ;;
 
-(deftest test-mm5-custom-timeouts
+(deftest test-mm3-custom-timeouts
   (testing "Custom timeout options work"
     (let [response (mm3/check-health test-endpoint
                                       {:timeout 5000
                                        :connect-timeout 2000})]
       (is (:success? response)))))
 
-(deftest test-mm5-insecure-option
+(deftest test-mm3-insecure-option
   (testing "Insecure SSL option works"
     (let [response (mm3/check-health test-endpoint
                                       {:insecure? true})]
@@ -249,7 +263,7 @@
 ;; Performance Tests
 ;;
 
-(deftest test-mm5-concurrent-requests
+(deftest test-mm3-concurrent-requests
   (testing "Handle concurrent requests correctly"
     (let [futures (doall
                    (for [i (range 10)]
@@ -259,7 +273,7 @@
         (is (every? :success? results))
         (is (= 10 (count results)))))))
 
-(deftest test-mm5-request-counting
+(deftest test-mm3-request-counting
   (testing "Mock server counts requests correctly"
     (mock-mepm/reset-state!)
     (mm3/check-health test-endpoint)
@@ -272,7 +286,7 @@
 ;; Integration with MEPM State
 ;;
 
-(deftest test-mm5-reflects-mepm-state-changes
+(deftest test-mm3-reflects-mepm-state-changes
   (testing "Mm3 client reflects MEPM state changes"
     ;; Initial state
     (let [initial-response (mm3/query-capabilities test-endpoint)]

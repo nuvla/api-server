@@ -5,7 +5,6 @@
     [jsonista.core :as json]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [com.sixsq.nuvla.server.resources.mec.mm5-client :as mm5]
     [com.sixsq.nuvla.server.resources.mec.mock-mepm-server :as mock-mepm]
     [com.sixsq.nuvla.server.resources.mepm :as mepm]
     [com.sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
