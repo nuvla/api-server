@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document translates `Nuvla_MEC_gap_closure_plan.md` into an execution-oriented backlog. It is intended to support milestone planning, sprint slicing, and assignment of concrete engineering work.
+This document translates `Nuvla_MEC_gap_closure_plan.md` into an execution-oriented backlog. It is intended to support milestone planning, sprint slicing, assignment of concrete engineering work, and agent hand-off.
 
 The backlog is organized around the staged development approach:
 
@@ -10,6 +10,32 @@ The backlog is organized around the staged development approach:
 2. connect that surface to real Nuvla resources and southbound orchestration
 3. complete onboarding, validation, and evidence collection
 4. defer advanced features until the minimum viable ETSI MEC MEO is credible and testable
+
+## Recommended Hand-Off Mode
+
+For execution, this document should be read and assigned in `milestone-first` order, with workstreams aligned to the same sequence.
+
+Reason:
+
+- milestones provide the delivery sequence and dependency boundaries
+- aligned workstreams make the thematic structure agree with the execution order
+- this avoids a split between "topic grouping" and "delivery order"
+
+Practical rule:
+
+- use `milestones` as the primary hand-off order
+- use `workstreams` as the matching execution-stream labels for the same ordered steps
+
+## Workstream Tags Used in Hand-Off
+
+The workstreams are intentionally aligned with milestone order. When tasks are handed off, use the following labels:
+
+- `WS1` Baseline and MVP scope lock
+- `WS2` Northbound Mm1 lifecycle hardening
+- `WS3` Southbound MEPM coordination and placement
+- `WS4` MEC 037 package onboarding
+- `WS5` Validation readiness: subscriptions, notifications, evidence, and security
+- `WS6` Deferred and advanced features
 
 ## Planning Assumptions
 
@@ -28,15 +54,15 @@ Freeze the exact compliance subset to implement and validate.
 
 ### Key tasks
 
-- Reconcile the implementation claims in the compliance note with actual code behavior.
-- Freeze the selected standards subset for the MVP:
+- `WS1` Reconcile the implementation claims in the compliance note with actual code behavior.
+- `WS1` Freeze the selected standards subset for the MVP:
   - `MEC 003` orchestrator role
   - `MEC 010-2` lifecycle and subscriptions
   - selected `MEC 011` data-model elements
   - selected `MEC 037` onboarding and package metadata behavior
-- Clarify and normalize the southbound reference-point naming used across code and docs.
-- Create the first requirement-to-test traceability draft.
-- Define explicit deferred items for the MVP release claim.
+- `WS1` Clarify and normalize the southbound reference-point naming used across code and docs.
+- `WS1` Create the first requirement-to-test traceability draft.
+- `WS1` Define explicit deferred items for the MVP release claim.
 
 ### Main artifacts
 
@@ -66,20 +92,20 @@ Turn the northbound lifecycle surface into real functionality backed by Nuvla de
 
 ### Key tasks
 
-- Replace placeholder `app_instances` handlers with real deployment CRUD integration:
+- `WS2` Replace placeholder `app_instances` handlers with real deployment CRUD integration:
   - create app instance
   - list app instances
   - get app instance
   - delete app instance
-- Replace placeholder `app_lcm_op_occs` handlers with real job-backed retrieval and query logic.
-- Standardize use of `ProblemDetails` across all northbound MEC handlers.
-- Ensure MEC state mapping is consistent for:
+- `WS2` Replace placeholder `app_lcm_op_occs` handlers with real job-backed retrieval and query logic.
+- `WS2` Standardize use of `ProblemDetails` across all northbound MEC handlers.
+- `WS2` Ensure MEC state mapping is consistent for:
   - instance state
   - operation state
   - invalid transitions
   - not-found and conflict responses
-- Define ownership and query-filter behavior for list endpoints.
-- Add focused tests for:
+- `WS2` Define ownership and query-filter behavior for list endpoints.
+- `WS2` Add focused tests for:
   - CRUD success
   - not-found
   - malformed request
@@ -111,21 +137,21 @@ Replace hardcoded target resolution with real MEPM-aware orchestration and basic
 
 ### Key tasks
 
-- Replace the hardcoded default MEPM endpoint resolution.
-- Use the existing `mepm` resource as the southbound registry of reachable platform managers.
-- Define host-to-MEPM association rules.
-- Implement a first deterministic placement policy using:
+- `WS3` Replace the hardcoded default MEPM endpoint resolution.
+- `WS3` Use the existing `mepm` resource as the southbound registry of reachable platform managers.
+- `WS3` Define host-to-MEPM association rules.
+- `WS3` Implement a first deterministic placement policy using:
   - host targeting inputs
   - architecture
   - CPU
   - RAM
   - disk
   - required services or capabilities where available
-- Decide whether grants are:
+- `WS3` Decide whether grants are:
   - minimally implemented
   - stubbed behind explicit non-support
   - fully deferred from the MVP claim
-- Ensure southbound failures map to clear northbound errors and logs.
+- `WS3` Ensure southbound failures map to clear northbound errors and logs.
 
 ### Dependencies
 
@@ -155,17 +181,17 @@ Move from module bootstrap behavior to a credible MEC 037-aligned onboarding sub
 
 ### Key tasks
 
-- Implement missing package descriptor resource behavior.
-- Implement missing package content resource behavior.
-- Define the supported onboarding flow and state transitions.
-- Validate required metadata and descriptor structure.
-- Persist and expose:
+- `WS4` Implement missing package descriptor resource behavior.
+- `WS4` Implement missing package content resource behavior.
+- `WS4` Define the supported onboarding flow and state transitions.
+- `WS4` Validate required metadata and descriptor structure.
+- `WS4` Persist and expose:
   - onboarding state
   - versioning
   - provenance
   - checksum/integrity metadata
-- Decide which artifact formats are in scope for the MVP and which are not.
-- Add focused negative tests for:
+- `WS4` Decide which artifact formats are in scope for the MVP and which are not.
+- `WS4` Add focused negative tests for:
   - missing metadata
   - malformed descriptor
   - unsupported package format
@@ -197,16 +223,16 @@ Make the standards-facing flows observable, auditable, and validation-ready.
 
 ### Key tasks
 
-- Replace in-memory subscriptions with persistent resource-backed behavior.
-- Wire notification dispatch to actual state transitions for:
+- `WS5` Replace in-memory subscriptions with persistent resource-backed behavior.
+- `WS5` Wire notification dispatch to actual state transitions for:
   - app instance changes
   - operation occurrence changes
   - package changes if still in promised scope
-- Expose enough audit trail to support validation evidence.
-- Insert policy checks before instantiation and, where necessary, onboarding.
-- Enforce authentication and authorization consistently on MEC-facing routes.
-- Add package integrity validation for supported formats.
-- Add targeted tests for:
+- `WS5` Expose enough audit trail to support validation evidence.
+- `WS5` Insert policy checks before instantiation and, where necessary, onboarding.
+- `WS5` Enforce authentication and authorization consistently on MEC-facing routes.
+- `WS5` Add package integrity validation for supported formats.
+- `WS5` Add targeted tests for:
   - subscription lifecycle
   - matching and non-matching notifications
   - authz failures
@@ -233,11 +259,11 @@ Keep advanced scope visible without blocking the MVP.
 
 ### Candidate backlog items
 
-- `AppLcmOpOcc` cancel/fail/retry controls
-- grant lifecycle support
-- relocation and MEC 021 workflows
-- CAPIF-facing integration
-- deeper 3GPP telemetry normalization and assurance mappings
+- `WS6` `AppLcmOpOcc` cancel/fail/retry controls
+- `WS6` grant lifecycle support
+- `WS6` relocation and MEC 021 workflows
+- `WS6` CAPIF-facing integration
+- `WS6` deeper 3GPP telemetry normalization and assurance mappings
 
 ### Entry condition
 
@@ -287,6 +313,32 @@ Keep advanced scope visible without blocking the MVP.
 
 - Milestone 5 security gates, policy enforcement, and evidence packaging
 
+## Recommended Agent Execution Sequence
+
+Use this section when handing work to the agent. The sequence is intentionally milestone-first, and each sequence step aligns with the matching workstream.
+
+### Sequence 1
+
+- complete `Milestone 1 / WS1`
+- then start the `Milestone 2 / WS2` tasks
+
+### Sequence 2
+
+- finish `Milestone 2 / WS2` lifecycle CRUD and operation persistence
+- only then start `Milestone 3 / WS3`
+
+### Sequence 3
+
+- once `Milestone 3 / WS3` has real southbound resolution, start `Milestone 4 / WS4`
+
+### Sequence 4
+
+- once `Milestone 4 / WS4` onboarding behavior is real, complete `Milestone 5 / WS5`
+
+### Sequence 5
+
+- only start `Milestone 6 / WS6` after the MVP claim is stable
+
 ## Definition of Done for Standards-Facing Features
 
 A feature should only be considered done when all of the following are true:
@@ -299,11 +351,12 @@ A feature should only be considered done when all of the following are true:
 
 ## Immediate Next Tasks
 
-The most valuable near-term tasks are:
+The most valuable near-term tasks, in recommended hand-off order, are:
 
-- implement real `app_instances` handlers in `app_lcm_v2.clj`
-- implement real `app_lcm_op_occs` retrieval through jobs
-- remove in-memory subscription-only behavior
-- replace hardcoded MEPM endpoint resolution
-- add descriptor and package-content resources to package management
+1. `Milestone 1 / WS1`: finalize the MVP claim boundary and deferred list
+2. `Milestone 2 / WS2`: implement real `app_instances` handlers in `app_lcm_v2.clj`
+3. `Milestone 2 / WS2`: implement real `app_lcm_op_occs` retrieval through jobs
+4. `Milestone 3 / WS3`: replace hardcoded MEPM endpoint resolution
+5. `Milestone 4 / WS4`: add descriptor and package-content resources to package management
+6. `Milestone 5 / WS5`: remove in-memory subscription-only behavior
 

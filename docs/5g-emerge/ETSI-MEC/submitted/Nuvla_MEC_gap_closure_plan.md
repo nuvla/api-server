@@ -117,9 +117,14 @@ That means the order should be:
 4. harden notifications, policy checks, and validation evidence
 5. only then address optional grant, relocation, and deeper 3GPP-facing features
 
-## Workstreams
+## Ordered Workstreams
 
-### Workstream 0: Compliance Baseline and Contract Freeze
+The workstreams below are intentionally ordered so that completing them in sequence should also produce the milestones in the same order. In this model:
+
+- `workstreams` define the ordered execution chunks
+- `milestones` define the completion gates for those chunks
+
+### Workstream 1: Baseline and MVP Scope Lock
 
 Objective: establish one authoritative, code-grounded compliance baseline before more implementation proceeds.
 
@@ -136,7 +141,7 @@ Outputs:
 - frozen API/resource list for the MVP
 - traceability matrix for development and validation
 
-### Workstream 1: Northbound Mm1 Lifecycle Hardening
+### Workstream 2: Northbound Mm1 Lifecycle Hardening
 
 Objective: turn the existing route skeleton into a real MEC 010-2 lifecycle facade over Nuvla deployments and jobs.
 
@@ -154,7 +159,7 @@ Outputs:
 - fully wired `AppLcmOpOcc` persistence and retrieval
 - reliable lifecycle state and error model
 
-### Workstream 2: Southbound MEPM Coordination and Placement
+### Workstream 3: Southbound MEPM Coordination and Placement
 
 Objective: replace the hardcoded southbound path with deterministic orchestration logic.
 
@@ -172,7 +177,7 @@ Outputs:
 - auditable placement decision path
 - observable rejection reasons for unsuitable hosts
 
-### Workstream 3: MEC 037 Package Onboarding Completion
+### Workstream 4: MEC 037 Package Onboarding Completion
 
 Objective: move package management from module bootstrapping to standards-aligned onboarding.
 
@@ -190,9 +195,9 @@ Outputs:
 - real onboarding state machine and validation failures
 - package traceability suitable for validation evidence
 
-### Workstream 4: Subscriptions, Notifications, and Operational Evidence
+### Workstream 5: Validation Readiness: Subscriptions, Notifications, Evidence, and Security
 
-Objective: make lifecycle and onboarding workflows observable and auditable enough for the validation campaign.
+Objective: make lifecycle and onboarding workflows observable, auditable, and secure enough for the validation campaign and the final compliance claim.
 
 Scope:
 
@@ -201,19 +206,6 @@ Scope:
 - add package-management subscriptions if they remain in the promised scope
 - persist delivery results or at least expose reliable delivery/audit logs
 - align emitted events, logs, and API traces with the evidence list in the validation strategy
-
-Outputs:
-
-- durable subscriptions
-- event-driven notification delivery
-- evidence-ready lifecycle and onboarding traces
-
-### Workstream 5: Security and Policy Enforcement
-
-Objective: add the minimum enforcement needed to support credible standards-facing behavior.
-
-Scope:
-
 - add package integrity verification for the supported artifact formats
 - enforce authentication and authorization rules consistently on MEC-facing endpoints
 - insert a policy gate before instantiation and, where needed, during onboarding
@@ -222,6 +214,9 @@ Scope:
 
 Outputs:
 
+- durable subscriptions
+- event-driven notification delivery
+- evidence-ready lifecycle and onboarding traces
 - secure onboarding and instantiation gates
 - policy-driven placement/admission control
 - reproducible negative-test scenarios
@@ -249,7 +244,7 @@ Outputs:
 
 Focus:
 
-- Workstream 0
+- completion of `Workstream 1`
 
 Exit criteria:
 
@@ -261,21 +256,19 @@ Exit criteria:
 
 Focus:
 
-- Workstream 1
-- the minimum slice of Workstream 4 needed for operation visibility
+- completion of `Workstream 2`
 
 Exit criteria:
 
 - app instance CRUD works end-to-end over Nuvla deployment resources
 - instantiate and terminate create real operation occurrences backed by jobs
 - operation status queries return real persisted state
-- subscriptions are no longer process-local only
 
 ### Milestone 3: Deterministic Southbound Orchestration
 
 Focus:
 
-- Workstream 2
+- completion of `Workstream 3`
 
 Exit criteria:
 
@@ -287,8 +280,7 @@ Exit criteria:
 
 Focus:
 
-- Workstream 3
-- package-related parts of Workstream 4
+- completion of `Workstream 4`
 
 Exit criteria:
 
@@ -300,8 +292,7 @@ Exit criteria:
 
 Focus:
 
-- Workstream 4
-- Workstream 5
+- completion of `Workstream 5`
 
 Exit criteria:
 
@@ -313,7 +304,7 @@ Exit criteria:
 
 Focus:
 
-- Workstream 6
+- completion of `Workstream 6`
 
 Exit criteria:
 
@@ -384,6 +375,23 @@ The highest-priority implementation items are:
 - add missing package descriptor and package content resources
 - add descriptor validation and package integrity checks
 - wire notifications to real events and evidence collection
+
+## Ordering Rule for Execution
+
+For hand-off and implementation, use the following rule:
+
+1. execute the workstreams in numerical order
+2. treat each milestone as the acceptance gate for the matching workstream
+3. avoid pulling work from a later workstream forward unless a prerequisite dependency is missing and must be resolved early
+
+In practice, the intended alignment is:
+
+- `Workstream 1` -> `Milestone 1`
+- `Workstream 2` -> `Milestone 2`
+- `Workstream 3` -> `Milestone 3`
+- `Workstream 4` -> `Milestone 4`
+- `Workstream 5` -> `Milestone 5`
+- `Workstream 6` -> `Milestone 6`
 
 ## Validation Mapping Guidance
 
