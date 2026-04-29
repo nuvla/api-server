@@ -145,6 +145,12 @@ Outputs:
 
 Objective: turn the existing route skeleton into a real MEC 010-2 lifecycle facade over Nuvla deployments and jobs.
 
+Implementation note:
+
+- `AppInstanceInfo` should be backed by Nuvla `deployment`
+- `AppLcmOpOcc` should be backed by persisted Nuvla `job`
+- the target architecture should wrap native deployment actions and translate their state, rather than maintain a second synthetic lifecycle engine beside Nuvla's existing async job model
+
 Scope:
 
 - implement real `app_instances` create/list/get/delete using deployment CRUD
@@ -158,10 +164,15 @@ Outputs:
 - fully wired `AppInstanceInfo` resource behavior
 - fully wired `AppLcmOpOcc` persistence and retrieval
 - reliable lifecycle state and error model
+- documented mapping from deployment/job semantics to MEC lifecycle semantics
 
 ### Workstream 3: Southbound MEPM Coordination and Placement
 
 Objective: replace the hardcoded southbound path with deterministic orchestration logic.
+
+Implementation note:
+
+Southbound orchestration should plug into the same deployment/job-backed lifecycle model established in Workstream 2. The main semantic gap that still needs an explicit design decision is `terminate`: ETSI MEC expects a retained app instance returning to `NOT_INSTANTIATED`, while native Nuvla stop behavior leaves the deployment in `STOPPED` unless deletion is requested.
 
 Scope:
 
@@ -261,7 +272,8 @@ Focus:
 Exit criteria:
 
 - app instance CRUD works end-to-end over Nuvla deployment resources
-- instantiate and terminate create real operation occurrences backed by jobs
+- operation-occurrence query and retrieval are backed by persisted Nuvla jobs
+- any implemented lifecycle operations reuse deployment actions and persisted jobs instead of synthetic operation records
 - operation status queries return real persisted state
 
 ### Milestone 3: Deterministic Southbound Orchestration
@@ -275,6 +287,7 @@ Exit criteria:
 - lifecycle actions resolve real MEPM targets
 - host/resource checks are enforced before deployment
 - placement failures are explicit, reproducible, and visible in API responses and logs
+- `terminate` semantics are explicitly normalized so the retained app instance maps back to MEC `NOT_INSTANTIATED`
 
 ### Milestone 4: Interoperable Package Onboarding
 

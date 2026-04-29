@@ -21,6 +21,7 @@
    
    Standard: ETSI GS MEC 010-2 v2.2.1"
   (:require
+    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -28,7 +29,6 @@
     [com.sixsq.nuvla.server.resources.mec.app-instance :as app-instance]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-op-occ :as app-lcm-op-occ]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-subscription :as subscription]
-    [com.sixsq.nuvla.server.resources.mec.lifecycle-handler :as lifecycle]
     [com.sixsq.nuvla.server.resources.mec.query-filter :as qf]
     [com.sixsq.nuvla.server.util.response :as r]))
 
@@ -88,6 +88,182 @@
     :detail detail))
 
 
+(def ^:private max-query-results
+  1000)
+
+
+(def ^:private mec-operation-types
+  #{"INSTANTIATE" "TERMINATE" "OPERATE"})
+
+
+(defn- exception-status
+  [e default-status]
+  (or (:status (ex-data e)) default-status))
+
+
+(defn- exception-response
+  [e default-status]
+  (let [status (exception-status e default-status)
+        detail (or (ex-message e) "Unexpected error")]
+    (-> (case status
+          404 (problem-details
+                "https://docs.nuvla.io/mec/errors/not-found"
+                "Resource Not Found"
+                404
+                :detail detail)
+          409 (conflict-error detail)
+          500 (problem-details
+                "about:blank"
+                "Internal Server Error"
+                500
+                :detail detail)
+          (validation-error detail))
+        r/json-response
+        (assoc :status status))))
+
+
+(defn- json-response-status
+  [body status]
+  (-> body
+      r/json-response
+      (assoc :status status)))
+
+
+(defn- resource-query-request
+  [request resource-name]
+  {:params      {:resource-name resource-name}
+   :cimi-params {:last max-query-results}
+   :nuvla/authn (:nuvla/authn request)})
+
+
+(defn- query-resources
+  [request resource-name]
+  (-> (resource-query-request request resource-name)
+      crud/query
+      :body
+      :resources
+      (or [])))
+
+
+(defn- mec-operation-job?
+  [job]
+  (contains? mec-operation-types
+             (some-> (or (:mec-operation-type job)
+                         (:operation-type job))
+                     str/upper-case)))
+
+
+(defn- throw-status
+  [status detail & [data]]
+  (throw (ex-info detail (merge {:status status} data))))
+
+
+(defn- retrieve-app-instance-deployment
+  [request app-instance-id]
+  (crud/get-resource-throw-nok app-instance-id request))
+
+
+(defn- retrieve-app-instance-info
+  [request app-instance-id]
+  (->> app-instance-id
+       (retrieve-app-instance-deployment request)
+       app-instance/deployment->app-instance-info))
+
+
+(defn- request-change-state->target-state
+  [change-state]
+  (cond
+    (keyword? change-state) (-> change-state name str/upper-case)
+    (string? change-state) (str/upper-case change-state)
+    :else nil))
+
+
+(defn- validate-instantiate-request!
+  [request app-instance-id]
+  (let [{:keys [instantiationState]} (retrieve-app-instance-info request app-instance-id)]
+    (when-not (= "NOT_INSTANTIATED" instantiationState)
+      (throw-status 409 "App instance must be NOT_INSTANTIATED before instantiation"
+                    {:app-instance-id app-instance-id
+                     :instantiation-state instantiationState}))))
+
+
+(defn- validate-terminate-request!
+  [request app-instance-id]
+  (let [{:keys [instantiationState]} (retrieve-app-instance-info request app-instance-id)]
+    (when (= "NOT_INSTANTIATED" instantiationState)
+      (throw-status 409 "App instance must be INSTANTIATED before termination"
+                    {:app-instance-id app-instance-id
+                     :instantiation-state instantiationState}))))
+
+
+(defn- validate-operate-request!
+  [request app-instance-id body]
+  (let [deployment   (retrieve-app-instance-deployment request app-instance-id)
+        target-state (request-change-state->target-state (:changeStateTo body))
+        current-state (:state deployment)]
+    (when-not (#{"STARTED" "STOPPED"} target-state)
+      (throw-status 400 "changeStateTo must be STARTED or STOPPED"
+                    {:app-instance-id app-instance-id
+                     :change-state-to (:changeStateTo body)}))
+    (case target-state
+      "STARTED"
+      (when-not (= "STOPPED" current-state)
+        (throw-status 409 "Operate STARTED requires the app instance to be STOPPED"
+                      {:app-instance-id app-instance-id
+                       :current-state current-state
+                       :target-state target-state}))
+      "STOPPED"
+      (when-not (= "STARTED" current-state)
+        (throw-status 409 "Operate STOPPED requires the app instance to be STARTED"
+                      {:app-instance-id app-instance-id
+                       :current-state current-state
+                       :target-state target-state})))
+    (assoc body :changeStateTo target-state)))
+
+
+(defn- deployment-action-request
+  [request app-instance-id action body]
+  (cond-> {:params      {:resource-name "deployment"
+                         :uuid          (u/id->uuid app-instance-id)
+                         :action        action}
+           :nuvla/authn (:nuvla/authn request)}
+    (seq body) (assoc :body body)))
+
+
+(defn- action-response->job-id
+  [response]
+  (or (get-in response [:body :location])
+      (get-in response [:headers "Location"])))
+
+
+(defn- tag-mec-operation-job!
+  [job-id app-instance-id operation-type request-params]
+  (crud/edit-by-id-as-admin job-id {:mec-operation-type  operation-type
+                                    :mec-app-instance-id app-instance-id
+                                    :mec-request-params  request-params})
+  (crud/retrieve-by-id-as-admin job-id))
+
+
+(defn- run-mec-lifecycle-action!
+  [request app-instance-id action operation-type request-params]
+  (let [response (crud/do-action (deployment-action-request request app-instance-id action request-params))
+        status   (:status response)]
+    (when-not (= 202 status)
+      (throw-status (or status 500)
+                    (or (get-in response [:body :detail])
+                        (get-in response [:body :message])
+                        "Lifecycle action failed")
+                    {:app-instance-id app-instance-id
+                     :action action}))
+    (let [job-id (action-response->job-id response)]
+      (when-not job-id
+        (throw-status 500 "Lifecycle action did not return a job identifier"
+                      {:app-instance-id app-instance-id
+                       :action action}))
+      (-> (tag-mec-operation-job! job-id app-instance-id operation-type request-params)
+          app-lcm-op-occ/job->app-lcm-op-occ))))
+
+
 ;;
 ;; App Instance Endpoints
 ;;
@@ -96,14 +272,22 @@
   "POST /app_lcm/v2/app_instances - Create a new app instance"
   [request]
   (try
-    (let [body     (:body request)
-          _        (app-instance/validate-app-instance-info body)]
-      ;; TODO: Integrate with deployment CRUD create
-      (r/json-response {:message "App instance creation pending integration"
-                        :appInstanceInfo body} 501))
-    (catch Exception e
+    (let [body             (:body request)
+          _                (app-instance/validate-create-app-instance-request body)
+          deployment-body  (app-instance/create-request->deployment body)
+          create-response  (crud/add (assoc request
+                                        :params {:resource-name "deployment"}
+                                        :body deployment-body))
+          deployment-id    (get-in create-response [:body :resource-id])
+          deployment       (crud/get-resource-throw-nok deployment-id request)
+          app-instance-info (app-instance/deployment->app-instance-info deployment)]
+      (json-response-status app-instance-info 201))
+    (catch clojure.lang.ExceptionInfo e
       (log/error e "Failed to create app instance")
-      (r/json-response (validation-error (ex-message e)) 400))))
+      (exception-response e 400))
+    (catch Exception e
+      (log/error e "Unexpected error creating app instance")
+      (exception-response e 500))))
 
 
 (defn list-app-instances-handler
@@ -116,24 +300,35 @@
    - fields:  Comma-separated field names for field selection"
   [request]
   (try
-    (let [params   (:params request)
-          ;; TODO: Replace with actual deployment CRUD query
-          ;; For now, return empty collection with query processing
-          resources []]
+    (let [params      (:params request)
+          deployments (query-resources request "deployment")
+          resources   (mapv app-instance/deployment->app-instance-info deployments)]
       (r/json-response (qf/process-query resources
                                          (merge params
                                                 {:base-uri (str "/" base-uri "/app_instances")}))))
-    (catch Exception e
+    (catch clojure.lang.ExceptionInfo e
       (log/error e "Failed to list app instances")
-      (r/json-response (validation-error (ex-message e)) 400))))
+      (exception-response e 400))
+    (catch Exception e
+      (log/error e "Unexpected error listing app instances")
+      (exception-response e 500))))
 
 
 (defn get-app-instance-handler
   "GET /app_lcm/v2/app_instances/{id} - Get a specific app instance"
   [request]
   (let [app-instance-id (get-in request [:params :id])]
-    ;; TODO: Integrate with deployment CRUD read
-    (r/json-response (not-found-error app-instance-id) 404)))
+    (try
+      (-> app-instance-id
+          (crud/get-resource-throw-nok request)
+          app-instance/deployment->app-instance-info
+          r/json-response)
+      (catch clojure.lang.ExceptionInfo e
+        (log/error e "Failed to get app instance" app-instance-id)
+        (exception-response e 404))
+      (catch Exception e
+        (log/error e "Unexpected error getting app instance" app-instance-id)
+        (exception-response e 500)))))
 
 
 (defn delete-app-instance-handler
@@ -141,11 +336,26 @@
   [request]
   (let [app-instance-id (get-in request [:params :id])]
     (try
-      ;; TODO: Integrate with deployment CRUD delete
-      (r/json-response {:message "App instance deletion pending integration"} 501)
-      (catch Exception e
+      (let [deployment         (crud/get-resource-throw-nok app-instance-id request)
+            app-instance-info  (app-instance/deployment->app-instance-info deployment)
+            inst-state         (:instantiationState app-instance-info)
+            [_ uuid]           (u/parse-id app-instance-id)]
+        (when-not (= "NOT_INSTANTIATED" inst-state)
+          (throw (ex-info "App instance must be NOT_INSTANTIATED before deletion"
+                          {:status 409
+                           :app-instance-id app-instance-id
+                           :instantiation-state inst-state})))
+        (crud/delete {:params      {:resource-name "deployment"
+                                    :uuid          uuid}
+                      :nuvla/authn (:nuvla/authn request)})
+        {:status 204
+         :body   nil})
+      (catch clojure.lang.ExceptionInfo e
         (log/error e "Failed to delete app instance" app-instance-id)
-        (r/json-response (not-found-error app-instance-id) 404)))))
+        (exception-response e 404))
+      (catch Exception e
+        (log/error e "Unexpected error deleting app instance" app-instance-id)
+        (exception-response e 500)))))
 
 
 ;;
@@ -159,25 +369,18 @@
         body            (:body request)]
     (try
       (log/info "Instantiate request for" app-instance-id)
-      
-      ;; Execute instantiation via lifecycle handler
-      (let [op-occ (lifecycle/instantiate app-instance-id body)]
+
+      (validate-instantiate-request! request app-instance-id)
+      (let [op-occ (run-mec-lifecycle-action! request app-instance-id "start" "INSTANTIATE" body)]
         (log/info "Instantiation operation created:" (:lcmOpOccId op-occ))
-        
-        ;; Return operation occurrence with 202 Accepted
-        (r/json-response op-occ 202))
-      
+        (json-response-status op-occ 202))
+
       (catch clojure.lang.ExceptionInfo e
         (log/error e "Failed to instantiate app instance" app-instance-id)
-        (r/json-response (validation-error (ex-message e)) 400))
+        (exception-response e 400))
       (catch Exception e
         (log/error e "Unexpected error during instantiation" app-instance-id)
-        (r/json-response (problem-details
-                           "about:blank"
-                           "Internal Server Error"
-                           500
-                           :detail (ex-message e)
-                           :instance app-instance-id) 500)))))
+        (exception-response e 500)))))
 
 
 (defn terminate-app-instance-handler
@@ -187,25 +390,18 @@
         body            (:body request)]
     (try
       (log/info "Terminate request for" app-instance-id)
-      
-      ;; Execute termination via lifecycle handler
-      (let [op-occ (lifecycle/terminate app-instance-id body)]
+
+      (validate-terminate-request! request app-instance-id)
+      (let [op-occ (run-mec-lifecycle-action! request app-instance-id "stop" "TERMINATE" body)]
         (log/info "Termination operation created:" (:lcmOpOccId op-occ))
-        
-        ;; Return operation occurrence with 202 Accepted
-        (r/json-response op-occ 202))
-      
+        (json-response-status op-occ 202))
+
       (catch clojure.lang.ExceptionInfo e
         (log/error e "Failed to terminate app instance" app-instance-id)
-        (r/json-response (validation-error (ex-message e)) 400))
+        (exception-response e 400))
       (catch Exception e
         (log/error e "Unexpected error during termination" app-instance-id)
-        (r/json-response (problem-details
-                           "about:blank"
-                           "Internal Server Error"
-                           500
-                           :detail (ex-message e)
-                           :instance app-instance-id) 500)))))
+        (exception-response e 500)))))
 
 
 (defn operate-app-instance-handler
@@ -214,26 +410,20 @@
   (let [app-instance-id (get-in request [:params :id])
         body            (:body request)]
     (try
-      (log/info "Operate request for" app-instance-id "changeStateTo" (:changeStateTo body))
-      
-      ;; Execute operate via lifecycle handler
-      (let [op-occ (lifecycle/operate app-instance-id body)]
+      (let [body         (validate-operate-request! request app-instance-id body)
+            target-state (:changeStateTo body)
+            action       (if (= "STARTED" target-state) "start" "stop")]
+        (log/info "Operate request for" app-instance-id "changeStateTo" target-state)
+        (let [op-occ (run-mec-lifecycle-action! request app-instance-id action "OPERATE" body)]
         (log/info "Operate operation created:" (:lcmOpOccId op-occ))
-        
-        ;; Return operation occurrence with 202 Accepted
-        (r/json-response op-occ 202))
-      
+          (json-response-status op-occ 202)))
+
       (catch clojure.lang.ExceptionInfo e
         (log/error e "Failed to operate app instance" app-instance-id)
-        (r/json-response (validation-error (ex-message e)) 400))
+        (exception-response e 400))
       (catch Exception e
         (log/error e "Unexpected error during operate" app-instance-id)
-        (r/json-response (problem-details
-                           "about:blank"
-                           "Internal Server Error"
-                           500
-                           :detail (ex-message e)
-                           :instance app-instance-id) 500)))))
+        (exception-response e 500)))))
 
 
 ;;
@@ -250,24 +440,38 @@
    - fields:  Comma-separated field names for field selection"
   [request]
   (try
-    (let [params   (:params request)
-          ;; TODO: Replace with actual job CRUD query
-          ;; For now, return empty collection with query processing
-          resources []]
+    (let [params     (:params request)
+          jobs       (query-resources request "job")
+          resources  (->> jobs
+                          (filter mec-operation-job?)
+                          (map app-lcm-op-occ/job->app-lcm-op-occ)
+                          vec)]
       (r/json-response (qf/process-query resources
                                          (merge params
                                                 {:base-uri (str "/" base-uri "/app_lcm_op_occs")}))))
-    (catch Exception e
+    (catch clojure.lang.ExceptionInfo e
       (log/error e "Failed to list operation occurrences")
-      (r/json-response (validation-error (ex-message e)) 400))))
+      (exception-response e 400))
+    (catch Exception e
+      (log/error e "Unexpected error listing operation occurrences")
+      (exception-response e 500))))
 
 
 (defn get-app-lcm-op-occ-handler
   "GET /app_lcm/v2/app_lcm_op_occs/{id} - Get a specific operation occurrence"
   [request]
   (let [lcm-op-occ-id (get-in request [:params :id])]
-    ;; TODO: Integrate with job CRUD read
-    (r/json-response (not-found-error lcm-op-occ-id) 404)))
+    (try
+      (let [job (crud/get-resource-throw-nok lcm-op-occ-id request)]
+        (if (mec-operation-job? job)
+          (r/json-response (app-lcm-op-occ/job->app-lcm-op-occ job))
+          (json-response-status (not-found-error lcm-op-occ-id) 404)))
+      (catch clojure.lang.ExceptionInfo e
+        (log/error e "Failed to get operation occurrence" lcm-op-occ-id)
+        (exception-response e 404))
+      (catch Exception e
+        (log/error e "Unexpected error getting operation occurrence" lcm-op-occ-id)
+        (exception-response e 500)))))
 
 
 ;;
@@ -314,20 +518,20 @@
         (swap! subscription-store conj sub)
         
         (log/info "Created subscription" (:id sub) "for user" user-id)
-        (r/json-response sub 201)))
+        (json-response-status sub 201)))
     
     (catch clojure.lang.ExceptionInfo e
       (let [data (ex-data e)]
         (log/error e "Failed to create subscription")
-        (r/json-response (validation-error (ex-message e))
-                         (or (:status data) 400))))
+        (json-response-status (validation-error (ex-message e))
+                              (or (:status data) 400))))
     (catch Exception e
       (log/error e "Unexpected error creating subscription")
-      (r/json-response (problem-details
-                         "about:blank"
-                         "Internal Server Error"
-                         500
-                         :detail (ex-message e)) 500))))
+      (json-response-status (problem-details
+                              "about:blank"
+                              "Internal Server Error"
+                              500
+                              :detail (ex-message e)) 500))))
 
 
 (defn list-subscriptions-handler
@@ -361,11 +565,11 @@
     
     (catch Exception e
       (log/error e "Failed to list subscriptions")
-      (r/json-response (problem-details
-                         "about:blank"
-                         "Internal Server Error"
-                         500
-                         :detail (ex-message e)) 500))))
+      (json-response-status (problem-details
+                              "about:blank"
+                              "Internal Server Error"
+                              500
+                              :detail (ex-message e)) 500))))
 
 
 (defn get-subscription-handler
@@ -380,26 +584,26 @@
       
       (cond
         (nil? sub)
-        (r/json-response (not-found-error subscription-id) 404)
+        (json-response-status (not-found-error subscription-id) 404)
         
         (and user-id (not= (:owner sub) user-id))
-        (r/json-response (problem-details
-                           "https://docs.nuvla.io/mec/errors/forbidden"
-                           "Access Forbidden"
-                           403
-                           :detail "You do not have permission to access this subscription"
-                           :instance subscription-id) 403)
+        (json-response-status (problem-details
+                                "https://docs.nuvla.io/mec/errors/forbidden"
+                                "Access Forbidden"
+                                403
+                                :detail "You do not have permission to access this subscription"
+                                :instance subscription-id) 403)
         
         :else
         (r/json-response sub)))
     
     (catch Exception e
       (log/error e "Failed to get subscription")
-      (r/json-response (problem-details
-                         "about:blank"
-                         "Internal Server Error"
-                         500
-                         :detail (ex-message e)) 500))))
+      (json-response-status (problem-details
+                              "about:blank"
+                              "Internal Server Error"
+                              500
+                              :detail (ex-message e)) 500))))
 
 
 (defn delete-subscription-handler
@@ -414,15 +618,15 @@
       
       (cond
         (nil? sub)
-        (r/json-response (not-found-error subscription-id) 404)
+        (json-response-status (not-found-error subscription-id) 404)
         
         (and user-id (not= (:owner sub) user-id))
-        (r/json-response (problem-details
-                           "https://docs.nuvla.io/mec/errors/forbidden"
-                           "Access Forbidden"
-                           403
-                           :detail "You do not have permission to delete this subscription"
-                           :instance subscription-id) 403)
+        (json-response-status (problem-details
+                                "https://docs.nuvla.io/mec/errors/forbidden"
+                                "Access Forbidden"
+                                403
+                                :detail "You do not have permission to delete this subscription"
+                                :instance subscription-id) 403)
         
         :else
         (do
@@ -436,15 +640,15 @@
                          subs)))
           
           (log/info "Deleted subscription" subscription-id)
-          (r/json-response nil 204))))
+          (json-response-status nil 204))))
     
     (catch Exception e
       (log/error e "Failed to delete subscription")
-      (r/json-response (problem-details
-                         "about:blank"
-                         "Internal Server Error"
-                         500
-                         :detail (ex-message e)) 500))))
+      (json-response-status (problem-details
+                              "about:blank"
+                              "Internal Server Error"
+                              500
+                              :detail (ex-message e)) 500))))
 
 
 ;;

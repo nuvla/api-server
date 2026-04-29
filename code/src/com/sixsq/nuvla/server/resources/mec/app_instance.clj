@@ -79,22 +79,37 @@
   "Translates a Nuvla deployment resource to MEC AppInstanceInfo"
   [deployment]
   (let [deployment-id   (:id deployment)
-        module-id       (:module deployment)
+        module-ref      (:module deployment)
+        module-id       (if (map? module-ref) (:href module-ref) module-ref)
         state           (keyword (:state deployment))
         parent          (:parent deployment)
         instantiation   (get nuvla-to-mec-instantiation-state state :NOT_INSTANTIATED)
         operational     (get nuvla-to-mec-operational-state state)]
-    (cond-> {:appInstanceId      deployment-id
+    (cond-> {:id                 deployment-id
+             :appInstanceId      deployment-id
              :appDId             module-id
              :instantiationState (name instantiation)}
       
       ;; Add appName from module if available
-      (:module/content deployment)
-      (assoc :appName (get-in deployment [:module/content :name]))
+      (or (:module/content deployment)
+          (get-in deployment [:module :content]))
+      (assoc :appName (or (get-in deployment [:module/content :name])
+                          (get-in deployment [:module :content :name])
+                          (get-in deployment [:module :name])))
+
+      ;; Add appDescription from module if available
+      (or (get-in deployment [:module/content :description])
+          (get-in deployment [:module :content :description])
+          (get-in deployment [:module :description]))
+      (assoc :appDescription (or (get-in deployment [:module/content :description])
+                                 (get-in deployment [:module :content :description])
+                                 (get-in deployment [:module :description])))
       
       ;; Add appProvider if available
-      (:module/author deployment)
-      (assoc :appProvider (:module/author deployment))
+      (or (:module/author deployment)
+          (get-in deployment [:module :author]))
+      (assoc :appProvider (or (:module/author deployment)
+                              (get-in deployment [:module :author])))
       
       ;; Add operational state if applicable
       operational
@@ -122,6 +137,25 @@
      :module    (:appDId app-instance-info)
      :state     (name nuvla-state)
      :parent    (get-in app-instance-info [:mecHostInformation :hostId])}))
+
+
+(defn validate-create-app-instance-request
+  "Validates the CreateAppInstanceRequest payload used by POST /app_instances."
+  [create-request]
+  (when-not (:appDId create-request)
+    (throw (ex-info "appDId is required" {:field :appDId})))
+  (when-not (valid-app-d-id? (:appDId create-request))
+    (throw (ex-info "Invalid appDId" {:field :appDId
+                                      :value (:appDId create-request)})))
+  create-request)
+
+
+(defn create-request->deployment
+  "Translates a CreateAppInstanceRequest to a Nuvla deployment create body."
+  [create-request]
+  (cond-> {:module {:href (:appDId create-request)}}
+    (get-in create-request [:mecHostInformation :hostId])
+    (assoc :parent (get-in create-request [:mecHostInformation :hostId]))))
 
 
 ;;

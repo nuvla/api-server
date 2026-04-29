@@ -58,12 +58,19 @@
 (defn job->app-lcm-op-occ
   "Translates a Nuvla job to MEC AppLcmOpOcc"
   [job]
-  (let [job-id         (:id job)
-        job-state      (keyword (:state job))
-        operation-type (keyword (or (:operation-type job) "INSTANTIATE"))
+  (let [job-id          (:id job)
+        job-state       (keyword (:state job))
+        operation-type  (keyword (or (:mec-operation-type job)
+                                     (:operation-type job)
+                                     "INSTANTIATE"))
         mec-state      (get nuvla-job-to-mec-operation-state job-state :STARTING)
-        target-id      (:target-resource job)]
+        target-resource (:target-resource job)
+        target-id       (or (:mec-app-instance-id job)
+                            (if (map? target-resource)
+                              (:href target-resource)
+                              target-resource))]
     (cond-> {:lcmOpOccId        job-id
+             :id                job-id
              :operationType     (name operation-type)
              :operationState    (name mec-state)
              :stateEnteredTime  (or (:state-entered-time job)

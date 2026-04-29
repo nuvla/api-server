@@ -11,6 +11,7 @@
    Standard: ETSI GS MEC 010-2 v2.2.1"
   (:require
     [clojure.test :refer [deftest is testing use-fixtures]]
+    [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.mec.app-instance :as app-instance]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-op-occ :as app-lcm-op-occ]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-v2 :as app-lcm-v2]))
@@ -50,6 +51,36 @@
    :target-resource   "deployment/test-123"
    :start-time        "2025-10-21T10:00:00Z"
    :state-entered-time "2025-10-21T10:00:05Z"})
+
+
+(def sample-mec-instantiate-job
+  {:id                 "job/instantiate-123"
+   :state              "QUEUED"
+   :mec-operation-type "INSTANTIATE"
+   :mec-app-instance-id "deployment/test-123"
+   :target-resource    {:href "deployment/test-123"}})
+
+
+(def sample-mec-terminate-job
+  {:id                 "job/terminate-123"
+   :state              "QUEUED"
+   :mec-operation-type "TERMINATE"
+   :mec-app-instance-id "deployment/test-123"
+   :target-resource    {:href "deployment/test-123"}})
+
+
+(def sample-mec-operate-job
+  {:id                 "job/operate-123"
+   :state              "QUEUED"
+   :mec-operation-type "OPERATE"
+   :mec-app-instance-id "deployment/test-123"
+   :target-resource    {:href "deployment/test-123"}})
+
+
+(def sample-create-request
+  {:appDId          "module/nginx-app"
+   :appName         "NGINX Application"
+   :appDescription  "NGINX application instance"})
 
 
 ;;
@@ -251,6 +282,193 @@
 (deftest test-base-uri
   (testing "Base URI follows MEC 010-2 format"
     (is (= "app_lcm/v2" app-lcm-v2/base-uri))))
+
+
+(deftest test-create-app-instance-handler
+  (testing "Create app instance creates deployment-backed MEC resource"
+    (let [response (with-redefs [crud/add (fn [_]
+                                            {:status 201
+                                             :body {:resource-id "deployment/test-123"}})
+                                 crud/get-resource-throw-nok (fn [_ _]
+                                                               sample-deployment)]
+                     (app-lcm-v2/create-app-instance-handler {:body sample-create-request}))]
+      (is (= 201 (:status response)))
+      (is (= "deployment/test-123" (get-in response [:body :appInstanceId])))
+      (is (= "module/nginx-app" (get-in response [:body :appDId])))))
+  
+  (testing "Create app instance validates missing appDId"
+    (let [response (app-lcm-v2/create-app-instance-handler {:body {}})]
+      (is (= 400 (:status response)))
+      (is (= "Validation Error" (get-in response [:body :title]))))))
+
+
+(deftest test-list-app-instances-handler
+  (testing "List app instances returns translated deployments"
+    (let [response (with-redefs [crud/query (fn [_]
+                                              {:status 200
+                                               :body {:resources [sample-deployment]}})]
+                     (app-lcm-v2/list-app-instances-handler {:params {}}))]
+      (is (= 200 (:status response)))
+      (is (= 1 (count (get-in response [:body :items]))))
+      (is (= "deployment/test-123" (get-in response [:body :items 0 :appInstanceId]))))))
+
+
+(deftest test-get-app-instance-handler
+  (testing "Get app instance returns translated deployment"
+    (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               sample-deployment)]
+                     (app-lcm-v2/get-app-instance-handler {:params {:id "deployment/test-123"}}))]
+      (is (= 200 (:status response)))
+      (is (= "deployment/test-123" (get-in response [:body :appInstanceId])))))
+  
+  (testing "Get app instance returns not found"
+    (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               (throw (ex-info "missing"
+                                                                               {:status 404})))]
+                     (app-lcm-v2/get-app-instance-handler {:params {:id "deployment/missing"}}))]
+      (is (= 404 (:status response))))))
+
+
+(deftest test-delete-app-instance-handler
+  (testing "Delete app instance deletes deployment in NOT_INSTANTIATED state"
+    (let [deleted (atom nil)
+          response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               sample-deployment)
+                                 crud/delete (fn [request]
+                                               (reset! deleted request)
+                                               {:status 200})]
+                     (app-lcm-v2/delete-app-instance-handler {:params {:id "deployment/test-123"}}))]
+      (is (= 204 (:status response)))
+      (is (= "deployment" (get-in @deleted [:params :resource-name])))))
+  
+  (testing "Delete app instance rejects instantiated deployment"
+    (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               (assoc sample-deployment :state "STARTED"))]
+                     (app-lcm-v2/delete-app-instance-handler {:params {:id "deployment/test-123"}}))]
+      (is (= 409 (:status response)))
+      (is (= "Resource Conflict" (get-in response [:body :title]))))))
+
+
+(deftest test-list-app-lcm-op-occs-handler
+  (testing "List operation occurrences returns translated jobs"
+    (let [response (with-redefs [crud/query (fn [_]
+                                              {:status 200
+                                               :body {:resources [sample-job]}})]
+                     (app-lcm-v2/list-app-lcm-op-occs-handler {:params {}}))]
+      (is (= 200 (:status response)))
+      (is (= 1 (count (get-in response [:body :items]))))
+      (is (= "job/instantiate-123" (get-in response [:body :items 0 :lcmOpOccId]))))))
+
+
+(deftest test-get-app-lcm-op-occ-handler
+  (testing "Get operation occurrence returns translated job"
+    (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               sample-job)]
+                     (app-lcm-v2/get-app-lcm-op-occ-handler {:params {:id "job/instantiate-123"}}))]
+      (is (= 200 (:status response)))
+      (is (= "INSTANTIATE" (get-in response [:body :operationType])))))
+  
+  (testing "Non-MEC job is hidden from operation occurrence endpoint"
+    (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               {:id "job/other"
+                                                                :action "start_deployment"
+                                                                :state "RUNNING"
+                                                                :target-resource "deployment/test-123"})]
+                     (app-lcm-v2/get-app-lcm-op-occ-handler {:params {:id "job/other"}}))]
+      (is (= 404 (:status response))))))
+
+
+(deftest test-instantiate-app-instance-handler
+  (testing "Instantiate uses deployment start action and returns persisted MEC job"
+    (let [action-request (atom nil)
+          edit-request   (atom nil)
+          response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               sample-deployment)
+                                 crud/do-action (fn [request]
+                                                  (reset! action-request request)
+                                                  {:status 202
+                                                   :body {:location "job/instantiate-123"}})
+                                 crud/edit-by-id-as-admin (fn [resource-id body]
+                                                            (reset! edit-request {:id resource-id
+                                                                                  :body body})
+                                                            {:status 200})
+                                 crud/retrieve-by-id-as-admin (fn [_]
+                                                                sample-mec-instantiate-job)]
+                     (app-lcm-v2/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                                   :body   {}}))]
+      (is (= 202 (:status response)))
+      (is (= "start" (get-in @action-request [:params :action])))
+      (is (= "INSTANTIATE" (get-in @edit-request [:body :mec-operation-type])))
+      (is (= "INSTANTIATE" (get-in response [:body :operationType])))))
+
+  (testing "Instantiate rejects already instantiated app instance"
+    (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               (assoc sample-deployment :state "STARTED"))]
+                     (app-lcm-v2/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                                   :body   {}}))]
+      (is (= 409 (:status response))))))
+
+
+(deftest test-terminate-app-instance-handler
+  (testing "Terminate uses deployment stop action and returns persisted MEC job"
+    (let [action-request (atom nil)
+          response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               (assoc sample-deployment :state "STARTED"))
+                                 crud/do-action (fn [request]
+                                                  (reset! action-request request)
+                                                  {:status 202
+                                                   :body {:location "job/terminate-123"}})
+                                 crud/edit-by-id-as-admin (fn [_ _]
+                                                            {:status 200})
+                                 crud/retrieve-by-id-as-admin (fn [_]
+                                                                sample-mec-terminate-job)]
+                     (app-lcm-v2/terminate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                                 :body   {:terminationType "GRACEFUL"}}))]
+      (is (= 202 (:status response)))
+      (is (= "stop" (get-in @action-request [:params :action])))
+      (is (= "TERMINATE" (get-in response [:body :operationType])))))
+
+  (testing "Terminate rejects not-instantiated app instance"
+    (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               sample-deployment)]
+                     (app-lcm-v2/terminate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                                 :body   {:terminationType "GRACEFUL"}}))]
+      (is (= 409 (:status response))))))
+
+
+(deftest test-operate-app-instance-handler
+  (testing "Operate STARTED uses deployment start action and returns persisted MEC job"
+    (let [action-request (atom nil)
+          response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               (assoc sample-deployment :state "STOPPED"))
+                                 crud/do-action (fn [request]
+                                                  (reset! action-request request)
+                                                  {:status 202
+                                                   :body {:location "job/operate-123"}})
+                                 crud/edit-by-id-as-admin (fn [_ _]
+                                                            {:status 200})
+                                 crud/retrieve-by-id-as-admin (fn [_]
+                                                                sample-mec-operate-job)]
+                     (app-lcm-v2/operate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                               :body   {:changeStateTo :STARTED}}))]
+      (is (= 202 (:status response)))
+      (is (= "start" (get-in @action-request [:params :action])))
+      (is (= "STARTED" (get-in @action-request [:body :changeStateTo])))
+      (is (= "OPERATE" (get-in response [:body :operationType])))))
+
+  (testing "Operate rejects invalid requested state"
+    (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               (assoc sample-deployment :state "STOPPED"))]
+                     (app-lcm-v2/operate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                               :body   {:changeStateTo "PAUSED"}}))]
+      (is (= 400 (:status response)))))
+
+  (testing "Operate STARTED requires STOPPED deployment state"
+    (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               sample-deployment)]
+                     (app-lcm-v2/operate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                               :body   {:changeStateTo "STARTED"}}))]
+      (is (= 409 (:status response))))))
 
 
 ;;

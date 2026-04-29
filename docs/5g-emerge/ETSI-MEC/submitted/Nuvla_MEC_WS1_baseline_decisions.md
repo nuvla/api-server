@@ -123,6 +123,18 @@ From Workstream 1 onward:
 - legacy `Mm5` references in comments and helper descriptions should be treated as documentation debt to be normalized during related code changes
 - no MVP claim should rely on `Mm5` semantics
 
+## Lifecycle Mapping Clarification for Later Workstreams
+
+The current Nuvla implementation model should be treated as follows during later MEC workstreams:
+
+- `AppInstanceInfo` is expected to be exposed as a facade over Nuvla `deployment` resources
+- `AppLcmOpOcc` is expected to be exposed as a facade over persisted Nuvla `job` resources
+- `instantiate` should align with native deployment `start`
+- selected `operate` semantics should align with native deployment `start` / `stop`
+- `terminate` requires an explicit normalization decision because ETSI MEC expects a retained app instance returning to `NOT_INSTANTIATED`, while native Nuvla stop behavior naturally ends in `STOPPED`
+
+This clarification narrows implementation choices without widening the MVP claim boundary.
+
 ## MVP Claim Boundary by Area
 
 | Area | MVP Claim Boundary | Deferred Outside MVP |

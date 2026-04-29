@@ -83,6 +83,16 @@ Freeze the exact compliance subset to implement and validate.
 
 Turn the northbound lifecycle surface into real functionality backed by Nuvla deployments and jobs.
 
+### Implementation note
+
+For the current codebase, the intended realization model is:
+
+- `AppInstanceInfo` is a standards-facing facade over Nuvla `deployment` resources
+- `AppLcmOpOcc` is a standards-facing facade over persisted Nuvla `job` resources
+- `instantiate` should map to deployment `start`
+- `operate` should map to deployment `start` / `stop` for the selected subset
+- `terminate` requires an explicit normalization step because ETSI MEC expects a retained app instance returning to `NOT_INSTANTIATED`, while native Nuvla stop semantics end in `STOPPED`
+
 ### Primary code touchpoints
 
 - `api-server/code/src/com/sixsq/nuvla/server/resources/mec/app_lcm_v2.clj`
@@ -122,12 +132,17 @@ Turn the northbound lifecycle surface into real functionality backed by Nuvla de
 - lifecycle resources are no longer placeholder-based
 - operation occurrences are backed by persisted Nuvla job state
 - API responses are stable enough for conformance and integration tests
+- instantiate / operate / terminate may still be partially staged, but any implemented operation must reuse persisted deployment/job state rather than synthetic operation records
 
 ## Milestone 3: Deterministic Southbound Orchestration
 
 ### Goal
 
 Replace hardcoded target resolution with real MEPM-aware orchestration and basic placement.
+
+### Implementation note
+
+Workstream 3 should extend the deployment/job-backed lifecycle model from Milestone 2 rather than introduce a second parallel lifecycle engine. Southbound logic should decide where and how a deployment action is executed, while northbound operation-occurrence tracking should continue to be derived from persisted Nuvla jobs.
 
 ### Primary code touchpoints
 
@@ -164,6 +179,7 @@ Replace hardcoded target resolution with real MEPM-aware orchestration and basic
 - instantiate/terminate use registry-backed southbound resolution
 - placement decisions are deterministic and observable
 - placement failures can be validated and evidenced
+- terminate semantics are explicitly defined so a successful ETSI MEC termination leaves the retained app instance in a state that maps cleanly to `NOT_INSTANTIATED`
 
 ## Milestone 4: Interoperable Package Onboarding
 
