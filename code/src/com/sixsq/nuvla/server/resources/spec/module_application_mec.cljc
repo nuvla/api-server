@@ -341,6 +341,9 @@
 (s/def ::changeAppInstanceStateOpConfig
   map?)
 
+(s/def ::userDefinedData
+  map?)
+
 
 ;;
 ;; Complete MEC AppD Content Schema
@@ -361,6 +364,7 @@
                    ::appExtCpd
                    ::appServiceRequired
                    ::appFeatureRequired
+                   ::userDefinedData
                    ::trafficRuleDescriptor
                    ::dnsRuleDescriptor
                    ::latencyDescriptor
@@ -379,15 +383,28 @@
 (s/def ::content ::mec-appd-content)
 
 (def module-application-mec-keys-spec
-  {:req-un [::subtype ::content]
-   :opt-un []})
-
-(def module-application-mec-keys-href-opt-spec
-  (update-in module-application-mec-keys-spec [:opt-un] conj :com.sixsq.nuvla.server.resources.spec.module/href))
-
-(s/def ::module-application-mec
-  (s/merge ::core/resource
-           (s/keys :req-un [::subtype ::content])))
+  (su/merge-keys-specs
+    [common/common-attrs
+     {:req-un [::appDId
+               ::appDVersion
+               ::appName
+               ::appProvider
+               ::appSoftVersion
+               ::mecVersion
+               ::virtualComputeDescriptor
+               ::swImageDescriptor]
+      :opt-un [::appInfoName
+               ::appDescription
+               ::virtualStorageDescriptor
+               ::appExtCpd
+               ::appServiceRequired
+               ::appFeatureRequired
+               ::userDefinedData
+               ::trafficRuleDescriptor
+               ::dnsRuleDescriptor
+               ::latencyDescriptor
+               ::terminateAppInstanceOpConfig
+               ::changeAppInstanceStateOpConfig]}]))
 
 (def module-application-mec-schema (su/only-keys-maps module-application-mec-keys-spec))
 

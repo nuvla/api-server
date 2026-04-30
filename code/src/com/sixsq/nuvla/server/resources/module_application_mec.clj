@@ -15,6 +15,7 @@
    - Multi-architecture container support
    - Integration with MEC 010-2 lifecycle API"
   (:require
+    [clojure.walk :as walk]
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -42,6 +43,16 @@
 
 (def resource-acl {:owners ["group/nuvla-admin"]})
 
+(def ^:private enum-string-keys
+  #{:containerFormat
+    :typeOfStorage
+    :layerProtocol
+    :addressType
+    :iPAddressAssignment
+    :serName
+    :diskFormat
+    :ipAddressType})
+
 
 ;;
 ;; Validation Functions
@@ -57,6 +68,22 @@
                        :problems problems
                        :explanation (with-out-str (spec-mec/explain-mec-appd content))}))))
   content)
+
+
+(defn normalize-appd-content
+  "Normalizes JSON-decoded enum values into the keyword form expected by the spec."
+  [content]
+  (walk/postwalk
+    (fn [node]
+      (if (map? node)
+        (reduce (fn [m k]
+                  (if (contains? m k)
+                    (update m k #(if (string? %) (keyword %) %))
+                    m))
+                node
+                enum-string-keys)
+        node))
+    content))
 
 
 (defn validate-resource-requirements
@@ -225,25 +252,24 @@
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
+(defn validate-appd-request
+  [request]
+  (let [content (normalize-appd-content (:body request))]
+    (-> content
+        validate-appd-content
+        validate-resource-requirements
+        validate-mec-services
+        validate-container-images
+        validate-traffic-rules
+        validate-dns-rules)
+    (assoc request :body content)))
+
 (defmethod crud/add resource-type
-  [{{:keys [subtype content] :as body} :body :as request}]
-  (when-not (= subtype "application_mec")
-    (throw (ex-info "Invalid module subtype"
-                    {:status 400
-                     :expected "application_mec"
-                     :actual subtype})))
-  
-  ;; Validate MEC AppD content
-  (-> content
-      validate-appd-content
-      validate-resource-requirements
-      validate-mec-services
-      validate-container-images
-      validate-traffic-rules
-      validate-dns-rules)
-  
-  (log/info "Creating MEC AppD module")
-  (let [response (add-impl request)
+  [request]
+  (let [request (validate-appd-request request)
+        content (:body request)
+        _ (log/info "Creating MEC AppD module")
+        response (add-impl request)
         module-id (get-in response [:body :resource-id])]
     
     ;; Log deployment info for monitoring
@@ -273,7 +299,9 @@
 
 (defmethod crud/edit resource-type
   [request]
-  (edit-impl request))
+  (-> request
+      validate-appd-request
+      edit-impl))
 
 
 (def delete-impl (std-crud/delete-fn resource-type))

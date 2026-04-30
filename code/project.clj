@@ -95,7 +95,7 @@
                              [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
 
    :test     {:dependencies      [[me.raynes/fs "1.4.6"]
-                                  [org.testcontainers/testcontainers "1.20.4"]
+                                  [org.testcontainers/testcontainers "1.21.4"]
                                   [peridot "0.5.4"]
                                   [clj-test-containers "0.7.4"]
                                   [ring/ring-jetty-adapter "1.12.2"]

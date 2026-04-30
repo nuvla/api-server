@@ -172,7 +172,7 @@ component, or application.
 (defn add-version
   [{{:keys [author commit]} :content :as module} content-href]
   (update module :versions conj (cond-> {:href   content-href
-                                         :author author}
+                                         :author (or author "internal")}
                                         commit (assoc :commit commit))))
 
 (defn create-content

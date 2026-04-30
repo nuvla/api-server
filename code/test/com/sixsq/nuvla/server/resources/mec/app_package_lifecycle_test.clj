@@ -1,7 +1,7 @@
 (ns com.sixsq.nuvla.server.resources.mec.app-package-lifecycle-test
   "Integration tests for ETSI MEC 010-2 Mm1 Application Package Lifecycle"
   (:require
-    [clojure.data.json :as json]
+    [cheshire.core :as json]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -14,7 +14,7 @@
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context "/api/mec/app_lcm/v2"))
+(def base-uri (str p/service-context "mec/app_lcm/v2"))
 
 
 (deftest mm1-app-package-lifecycle
@@ -36,20 +36,21 @@
             response (-> session-admin
                          (request (str base-uri "/app_packages")
                                   :request-method :post
-                                  :body (json/write-str create-request))
+                                  :body (json/generate-string create-request))
                          :response)
             body (when (:body response)
-                   (json/read-str (:body response) :key-fn keyword))]
+                   (json/parse-string (:body response) true))]
         
-        (is (= 201 (:status response)))
+        (is (= 201 (:status response)) (pr-str body))
         (is (string? (get-in response [:headers "Location"])))
         (is (= "test-mec-app" (:appName body)))
         (is (= "Acme Corp" (:appProvider body)))
         (is (= "1.0.0" (:appSoftVersion body)))
-        (is (= "CREATED" (:onboardingState body)))
-        (is (= "DISABLED" (:operationalState body)))
+        (is (= "ONBOARDED" (:onboardingState body)))
+        (is (= "ENABLED" (:operationalState body)))
         (is (= "NOT_IN_USE" (:usageState body)))
         (is (map? (:_links body)))
+        (is (= (:appPkgId body) (:appDId body)))
         
         ;; Store package ID for subsequent tests
         (def app-pkg-id (:appPkgId body))
@@ -60,19 +61,78 @@
                                  (request (str base-uri "/app_packages/" app-pkg-id)
                                           :request-method :get)
                                  :response)
-                get-body (json/read-str (:body get-response) :key-fn keyword)]
+                get-body (json/parse-string (:body get-response) true)]
             
             (is (= 200 (:status get-response)))
             (is (= app-pkg-id (:appPkgId get-body)))
             (is (= "test-mec-app" (:appName get-body)))
-            (is (= "CREATED" (:onboardingState get-body)))))
+            (is (= "ONBOARDED" (:onboardingState get-body)))))
+
+        (testing "GET /app_packages/{appPkgId}/appD - Retrieve AppD descriptor"
+          (let [appd-response (-> session-admin
+                                  (request (str base-uri "/app_packages/" app-pkg-id "/appD")
+                                           :request-method :get)
+                                  :response)
+                appd-body (json/parse-string (:body appd-response) true)]
+
+            (is (= 200 (:status appd-response)))
+            (is (= app-pkg-id (:appDId appd-body)))
+            (is (= "test-mec-app" (:appName appd-body)))
+            (is (re-find #"application/json" (get-in appd-response [:headers "Content-Type"] "")))))
+
+        (testing "GET /app_packages/{appPkgId}/package_content - Retrieve package content"
+          (let [content-response (-> session-admin
+                                     (request (str base-uri "/app_packages/" app-pkg-id "/package_content")
+                                              :request-method :get)
+                                     :response)
+                content-body (json/parse-string (:body content-response) true)]
+
+            (is (= 200 (:status content-response)))
+            (is (= app-pkg-id (:appDId content-body)))
+            (is (= "test-mec-app" (:appName content-body)))
+            (is (re-find #"application/json" (get-in content-response [:headers "Content-Type"] "")))
+            (is (string? (get-in content-response [:headers "Content-Disposition"])))))
+
+        (testing "PUT /app_packages/{appPkgId}/package_content - Update package descriptor"
+          (let [updated-content {:appName "updated-mec-app"
+                                 :appDescription "Updated descriptor"
+                                 :appProvider "Acme Corp"
+                                 :appSoftVersion "1.1.0"
+                                 :appDVersion "3.2.1"
+                                 :mecVersion "2.2.1"
+                                 :virtualComputeDescriptor {:virtualCpu {:numVirtualCpu 2}
+                                                            :virtualMemory {:virtualMemSize 2048}}
+                                 :swImageDescriptor [{:swImageName "updated-mec-app"
+                                                      :swImageVersion "1.1.0"
+                                                      :containerFormat :DOCKER
+                                                      :swImage "sixsq/updated-mec-app:1.1.0"}]
+                                 :virtualStorageDescriptor []
+                                 :appExtCpd []
+                                 :appServiceRequired []
+                                 :trafficRuleDescriptor []
+                                 :dnsRuleDescriptor []
+                                 :appFeatureRequired []}
+                put-response (-> session-admin
+                                 (request (str base-uri "/app_packages/" app-pkg-id "/package_content")
+                                          :request-method :put
+                                          :body (json/generate-string updated-content))
+                                 :response)
+                get-response (-> session-admin
+                                 (request (str base-uri "/app_packages/" app-pkg-id "/package_content")
+                                          :request-method :get)
+                                 :response)
+                get-body (json/parse-string (:body get-response) true)]
+            (is (= 204 (:status put-response)))
+            (is (= app-pkg-id (:appDId get-body)))
+            (is (= "updated-mec-app" (:appName get-body)))
+            (is (= "1.1.0" (:appSoftVersion get-body)))))
         
         (testing "GET /app_packages - Query all packages"
           (let [query-response (-> session-admin
                                    (request (str base-uri "/app_packages")
                                             :request-method :get)
                                    :response)
-                query-body (json/read-str (:body query-response) :key-fn keyword)
+                query-body (json/parse-string (:body query-response) true)
                 packages (:AppPkgInfo query-body)]
             
             (is (= 200 (:status query-response)))
@@ -80,24 +140,24 @@
             (is (pos? (count packages)))
             (is (some #(= app-pkg-id (:appPkgId %)) packages))))
         
-        (testing "GET /app_packages?appName=test-mec-app - Filter by name"
+        (testing "GET /app_packages?appName=updated-mec-app - Filter by name"
           (let [query-response (-> session-admin
-                                   (request (str base-uri "/app_packages?appName=test-mec-app")
+                                   (request (str base-uri "/app_packages?appName=updated-mec-app")
                                             :request-method :get)
                                    :response)
-                query-body (json/read-str (:body query-response) :key-fn keyword)
+                query-body (json/parse-string (:body query-response) true)
                 packages (:AppPkgInfo query-body)]
             
             (is (= 200 (:status query-response)))
             (is (= 1 (count packages)))
-            (is (= "test-mec-app" (:appName (first packages))))))
+            (is (= "updated-mec-app" (:appName (first packages))))))
         
         (testing "GET /app_packages?appProvider=Acme Corp - Filter by provider"
           (let [query-response (-> session-admin
                                    (request (str base-uri "/app_packages?appProvider=Acme%20Corp")
                                             :request-method :get)
                                    :response)
-                query-body (json/read-str (:body query-response) :key-fn keyword)
+                query-body (json/parse-string (:body query-response) true)
                 packages (:AppPkgInfo query-body)]
             
             (is (= 200 (:status query-response)))
@@ -131,10 +191,10 @@
             response (-> session-admin
                          (request (str base-uri "/app_packages")
                                   :request-method :post
-                                  :body (json/write-str invalid-request))
+                                  :body (json/generate-string invalid-request))
                          :response)
             body (when (:body response)
-                   (json/read-str (:body response) :key-fn keyword))]
+                   (json/parse-string (:body response) true))]
         
         (is (= 400 (:status response)))
         (is (= 400 (:status body)))
@@ -147,7 +207,7 @@
                                   :request-method :get)
                          :response)
             body (when (:body response)
-                   (json/read-str (:body response) :key-fn keyword))]
+                   (json/parse-string (:body response) true))]
         
         (is (= 404 (:status response)))
         (is (= 404 (:status body)))
@@ -159,6 +219,14 @@
                                   :request-method :delete)
                          :response)]
         
+        (is (= 404 (:status response)))))
+
+    (testing "PUT /app_packages/{nonexistent}/package_content - Not Found"
+      (let [response (-> session-admin
+                         (request (str base-uri "/app_packages/module/nonexistent-789/package_content")
+                                  :request-method :put
+                                  :body (json/generate-string {:appName "missing"}))
+                         :response)]
         (is (= 404 (:status response)))))))
 
 
@@ -169,23 +237,32 @@
                           (header authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-anon"))]
     
     (testing "Create MEC module and verify it appears in Mm1 query"
-      ;; Create a module-application-mec directly
-      (let [mec-module {:name "Direct MEC Module"
+      ;; Create parent project first, then create a module-application-mec directly
+      (let [project-response (-> session-admin
+                                 (request (str p/service-context "module")
+                                          :request-method :post
+                                          :body (json/generate-string {:subtype "project"
+                                                                       :path "test-mec-modules"}))
+                                 :response)
+            mec-module {:name "Direct MEC Module"
                         :description "MEC module created directly"
                         :subtype "application_mec"
-                        :path "test/mec-modules/direct"
-                        :parent-path "test/mec-modules"
+                        :path "test-mec-modules/direct"
+                        :parent-path "test-mec-modules"
                         :published false
                         :content {:appName "Direct MEC App"
-                                  :appDId (str "appd-direct-" (random-uuid))
+                                  :appDescription "Direct MEC App description"
+                                  :appDId (str "module/" (random-uuid))
                                   :appProvider "Test Provider"
                                   :appSoftVersion "2.0.0"
                                   :appDVersion "3.2.1"
                                   :mecVersion "2.2.1"
-                                  :virtualComputeDescriptor [{:virtualComputeDescId "compute-1"
-                                                              :virtualCpu {:numVirtualCpu 2}
-                                                              :virtualMemory {:virtualMemSize 2048}}]
-                                  :swImageDescriptor []
+                                  :virtualComputeDescriptor {:virtualCpu {:numVirtualCpu 2}
+                                                             :virtualMemory {:virtualMemSize 2048}}
+                                  :swImageDescriptor [{:swImageName "direct-mec-app"
+                                                       :swImageVersion "2.0.0"
+                                                       :containerFormat :DOCKER
+                                                       :swImage "sixsq/direct-mec-app:2.0.0"}]
                                   :virtualStorageDescriptor []
                                   :appExtCpd []
                                   :appServiceRequired []
@@ -193,13 +270,16 @@
                                   :dnsRuleDescriptor []
                                   :appFeatureRequired []}}
             create-response (-> session-admin
-                                (request (str p/service-context "/api/module")
+                                (request (str p/service-context "module")
                                          :request-method :post
-                                         :body (json/write-str mec-module))
+                                         :body (json/generate-string mec-module))
                                 :response)
-            module-id (get-in create-response [:body :resource-id])]
+            create-body (when (:body create-response)
+                          (json/parse-string (:body create-response) true))
+            module-id (:resource-id create-body)]
         
-        (is (= 201 (:status create-response)))
+        (is (= 201 (:status project-response)))
+        (is (= 201 (:status create-response))) ; direct module path kept for subtype smoke coverage
         (is (string? module-id))
         
         ;; Query via Mm1 API
@@ -207,7 +287,7 @@
                                  (request (str base-uri "/app_packages?appName=Direct%20MEC%20App")
                                           :request-method :get)
                                  :response)
-              query-body (json/read-str (:body query-response) :key-fn keyword)
+              query-body (json/parse-string (:body query-response) true)
               packages (:AppPkgInfo query-body)]
           
           (is (= 200 (:status query-response)))
