@@ -32,6 +32,7 @@
     [com.sixsq.nuvla.server.resources.mec.app-lcm-op-occ :as app-lcm-op-occ]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-subscription :as subscription]
     [com.sixsq.nuvla.server.resources.mec.mm3-client :as mm3]
+    [com.sixsq.nuvla.server.resources.mec.notification-dispatcher :as dispatcher]
     [com.sixsq.nuvla.server.resources.mec.query-filter :as qf]
     [com.sixsq.nuvla.server.util.response :as r]))
 
@@ -326,8 +327,10 @@
         (throw-status 500 "Lifecycle action did not return a job identifier"
                       {:app-instance-id app-instance-id
                        :action action}))
-      (-> (tag-mec-operation-job! job-id app-instance-id operation-type request-params metadata)
-          app-lcm-op-occ/job->app-lcm-op-occ))))
+      (let [op-occ (-> (tag-mec-operation-job! job-id app-instance-id operation-type request-params metadata)
+                       app-lcm-op-occ/job->app-lcm-op-occ)]
+        (dispatcher/dispatch-app-lcm-op-occ-state-change! op-occ "OPERATION_STATE" nil)
+        op-occ))))
 
 
 ;;
@@ -347,6 +350,7 @@
           deployment-id    (get-in create-response [:body :resource-id])
           deployment       (crud/get-resource-throw-nok deployment-id request)
           app-instance-info (app-instance/deployment->app-instance-info deployment)]
+      (dispatcher/dispatch-app-instance-state-change! app-instance-info "INSTANTIATION_STATE" nil)
       (json-response-status app-instance-info 201))
     (catch clojure.lang.ExceptionInfo e
       (log/error e "Failed to create app instance")
@@ -568,8 +572,45 @@
 ;; Subscription Endpoints
 ;;
 
-;; In-memory subscription store (TODO: Replace with persistent storage)
-(def subscription-store (atom []))
+(defn- subscription-authn
+  [request]
+  (or (:nuvla/authn request)
+      (auth/current-authentication request)))
+
+(defn- subscription-owner
+  [request]
+  (or (auth/current-user-id request)
+      (get-in request [:identity :user-id])
+      "user/anonymous"))
+
+(defn- subscription-response
+  [resource]
+  (when resource
+    (-> (select-keys resource [:id
+                               :subscription-type
+                               :callback-uri
+                               :app-instance-filter
+                               :app-lcm-op-occ-filter
+                               :created
+                               :updated
+                               :owner
+                               :active])
+        (update :id subscription/resource-id->api-id))))
+
+(defn- retrieve-subscription-resource
+  [public-id]
+  (some-> public-id
+          subscription/api-id->resource-id
+          crud/retrieve-by-id-as-admin1))
+
+(defn- query-user-subscriptions
+  [request]
+  (-> {:params      {:resource-name subscription/resource-type}
+       :cimi-params {:last 1000}
+       :nuvla/authn (subscription-authn request)}
+      crud/query
+      :body
+      :resources))
 
 (defn create-subscription-handler
   "POST /app_lcm/v2/subscriptions - Create a new subscription"
@@ -581,8 +622,7 @@
           filter-opts       (or (:appInstanceFilter body)
                                 (:appLcmOpOccFilter body)
                                 {})
-          user-id           (or (get-in request [:identity :user-id])
-                                "user/anonymous")]
+          user-id           (subscription-owner request)]
       
       ;; Validate subscription type
       (when-not (contains? subscription/subscription-types subscription-type)
@@ -590,25 +630,36 @@
                         {:status 400
                          :subscription-type subscription-type})))
       
-      ;; Create subscription
-      (let [sub (subscription/create-subscription
-                  subscription-type
-                  callback-uri
-                  filter-opts
-                  user-id)]
+      ;; Create subscription body
+      (let [filter-key (case subscription-type
+                         "AppInstanceStateChangeNotification" :app-instance-filter
+                         "AppLcmOpOccStateChangeNotification" :app-lcm-op-occ-filter
+                         nil)
+            preview (subscription/create-subscription
+                      subscription-type
+                      callback-uri
+                      filter-opts
+                      user-id)
+            sub (cond-> {:subscription-type subscription-type
+                         :callback-uri      callback-uri
+                         :owner             user-id
+                         :active            true}
+                  (and filter-key (seq filter-opts)) (assoc filter-key filter-opts))]
         
         ;; Validate subscription
-        (let [validation (subscription/validate-subscription sub)]
+        (let [validation (subscription/validate-subscription preview)]
           (when-not (:valid? validation)
             (throw (ex-info "Invalid subscription"
                             {:status 400
                              :errors (:errors validation)}))))
         
-        ;; Store subscription
-        (swap! subscription-store conj sub)
-        
-        (log/info "Created subscription" (:id sub) "for user" user-id)
-        (json-response-status sub 201)))
+        (let [create-response (crud/add {:params      {:resource-name subscription/resource-type}
+                                         :body        sub
+                                         :nuvla/authn (subscription-authn request)})
+              resource-id     (get-in create-response [:body :resource-id])
+              persisted       (crud/retrieve-by-id-as-admin1 resource-id)]
+          (log/info "Created subscription" resource-id "for user" user-id)
+          (json-response-status (subscription-response persisted) 201))))
     
     (catch clojure.lang.ExceptionInfo e
       (let [data (ex-data e)]
@@ -639,17 +690,12 @@
   [request]
   (try
     (let [query-params      (:params request)
-          user-id           (get-in request [:identity :user-id])
-          
-          ;; Filter subscriptions by user and active status
-          active-user-subs  (filter (fn [s]
-                                      (and (:active s)
-                                           (or (nil? user-id)
-                                               (= (:owner s) user-id))))
-                                    @subscription-store)]
+          active-user-subs  (->> (query-user-subscriptions request)
+                                 (filter :active)
+                                 (mapv subscription-response))]
       
       ;; Apply query processing (filter, pagination, field selection)
-      (r/json-response (qf/process-query (vec active-user-subs)
+      (r/json-response (qf/process-query active-user-subs
                                          (merge query-params
                                                 {:base-uri (str "/" base-uri "/subscriptions")}))))
     
@@ -667,16 +713,14 @@
   [request]
   (try
     (let [subscription-id (get-in request [:params :id])
-          user-id         (get-in request [:identity :user-id])
-          sub             (subscription/get-subscription-by-id
-                            @subscription-store
-                            subscription-id)]
+          user-id         (subscription-owner request)
+          sub             (retrieve-subscription-resource subscription-id)]
       
       (cond
-        (nil? sub)
+        (or (nil? sub) (false? (:active sub)))
         (json-response-status (not-found-error subscription-id) 404)
         
-        (and user-id (not= (:owner sub) user-id))
+        (not= (:owner sub) user-id)
         (json-response-status (problem-details
                                 "https://docs.nuvla.io/mec/errors/forbidden"
                                 "Access Forbidden"
@@ -685,7 +729,7 @@
                                 :instance subscription-id) 403)
         
         :else
-        (r/json-response sub)))
+        (r/json-response (subscription-response sub))))
     
     (catch Exception e
       (log/error e "Failed to get subscription")
@@ -701,16 +745,14 @@
   [request]
   (try
     (let [subscription-id (get-in request [:params :id])
-          user-id         (get-in request [:identity :user-id])
-          sub             (subscription/get-subscription-by-id
-                            @subscription-store
-                            subscription-id)]
+          user-id         (subscription-owner request)
+          sub             (retrieve-subscription-resource subscription-id)]
       
       (cond
-        (nil? sub)
+        (or (nil? sub) (false? (:active sub)))
         (json-response-status (not-found-error subscription-id) 404)
         
-        (and user-id (not= (:owner sub) user-id))
+        (not= (:owner sub) user-id)
         (json-response-status (problem-details
                                 "https://docs.nuvla.io/mec/errors/forbidden"
                                 "Access Forbidden"
@@ -720,16 +762,10 @@
         
         :else
         (do
-          ;; Deactivate subscription (soft delete)
-          (swap! subscription-store
-                 (fn [subs]
-                   (mapv (fn [s]
-                           (if (= (:id s) subscription-id)
-                             (subscription/deactivate-subscription s)
-                             s))
-                         subs)))
-          
-          (log/info "Deleted subscription" subscription-id)
+          (let [resource-id (subscription/api-id->resource-id subscription-id)]
+            (crud/delete {:params      (u/id->request-params resource-id)
+                          :nuvla/authn (subscription-authn request)})
+            (log/info "Deleted subscription" resource-id))
           (json-response-status nil 204))))
     
     (catch Exception e

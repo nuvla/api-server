@@ -9,7 +9,24 @@
    about lifecycle events via HTTP callbacks."
   (:require
     [clojure.spec.alpha :as s]
-    [clojure.tools.logging :as log]))
+    [com.sixsq.nuvla.auth.acl-resource :as a]
+    [com.sixsq.nuvla.server.resources.common.crud :as crud]
+    [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
+    [com.sixsq.nuvla.server.resources.common.utils :as u]
+    [com.sixsq.nuvla.server.resources.resource-metadata :as md]
+    [com.sixsq.nuvla.server.resources.spec.common :as common]
+    [com.sixsq.nuvla.server.resources.spec.mec-subscription :as mec-subscription]
+    [com.sixsq.nuvla.server.util.metadata :as gen-md]))
+
+
+(def ^:const api-resource-type "subscription")
+
+(def ^:const resource-type "mec-subscription")
+
+(def ^:const collection-type "mec-subscription-collection")
+
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 
 ;;
@@ -52,7 +69,6 @@
 ;; Schema Definitions
 ;;
 
-(s/def ::id string?)
 (s/def ::subscription-type subscription-types)
 (s/def ::callback-uri (s/and string? #(re-matches #"https?://.*" %)))
 
@@ -79,14 +95,13 @@
 
 ;; Subscription resource
 (s/def ::subscription
-  (s/keys :req-un [::id
+  (s/keys :req-un [::common/id
                    ::subscription-type
                    ::callback-uri]
           :opt-un [::app-instance-filter
                    ::app-lcm-op-occ-filter
-                   ::created
-                   ::updated
-                   ::owner]))
+                   ::mec-subscription/owner
+                   ::mec-subscription/active]))
 
 
 ;;
@@ -105,8 +120,8 @@
    Returns:
    Subscription resource map with generated ID"
   [subscription-type callback-uri filter-opts user-id]
-  (let [subscription-id (str "subscription/" (java.util.UUID/randomUUID))
-        now             (java.time.Instant/now)
+  (let [subscription-id (str api-resource-type "/" (java.util.UUID/randomUUID))
+        now             (str (java.time.Instant/now))
         filter-key      (case subscription-type
                           "AppInstanceStateChangeNotification"
                           :app-instance-filter
@@ -138,6 +153,81 @@
     {:valid? true}
     {:valid? false
      :errors (s/explain-data ::subscription subscription)}))
+
+
+(defn api-id->resource-id
+  [subscription-id]
+  (let [[_ uuid] (u/parse-id subscription-id)]
+    (when uuid
+      (str resource-type "/" uuid))))
+
+
+(defn resource-id->api-id
+  [subscription-id]
+  (let [[_ uuid] (u/parse-id subscription-id)]
+    (when uuid
+      (str api-resource-type "/" uuid))))
+
+
+(defn resource->api-subscription
+  [resource]
+  (when resource
+    (update resource :id resource-id->api-id)))
+
+
+(def resource-metadata (gen-md/generate-metadata ::ns ::mec-subscription/schema))
+
+(defn initialize
+  []
+  (std-crud/initialize resource-type ::mec-subscription/schema)
+  (md/register resource-metadata))
+
+(def validate-fn (u/create-spec-validation-fn ::mec-subscription/schema))
+
+
+(defmethod crud/validate resource-type
+  [resource]
+  (validate-fn resource))
+
+
+(defmethod crud/add-acl resource-type
+  [resource request]
+  (a/add-acl resource request))
+
+
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
+
+(defmethod crud/add resource-type
+  [request]
+  (add-impl request))
+
+
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
+
+(defmethod crud/retrieve resource-type
+  [request]
+  (retrieve-impl request))
+
+
+(def edit-impl (std-crud/edit-fn resource-type))
+
+(defmethod crud/edit resource-type
+  [request]
+  (edit-impl request))
+
+
+(def delete-impl (std-crud/delete-fn resource-type))
+
+(defmethod crud/delete resource-type
+  [request]
+  (delete-impl request))
+
+
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
+
+(defmethod crud/query resource-type
+  [request]
+  (query-impl request))
 
 
 (defn update-subscription

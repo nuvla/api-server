@@ -15,6 +15,7 @@ a container orchestration engine.
     [com.sixsq.nuvla.server.resources.deployment.utils :as utils]
     [com.sixsq.nuvla.server.resources.job.interface :as job-interface]
     [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
+    [com.sixsq.nuvla.server.resources.mec.job-notifications :as mec-job-notifications]
     [com.sixsq.nuvla.server.resources.module.utils :as module-utils]
     [com.sixsq.nuvla.server.resources.nuvlabox.status-utils :as nuvlabox-status-utils]
     [com.sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -441,19 +442,48 @@ a container orchestration engine.
   (utils/get-context resource false))
 
 (defmethod job-interface/on-cancel ["deployment" "start_deployment"]
-  [resource]
-  (utils/on-cancel resource))
+  [job]
+  (let [response (utils/on-cancel job)]
+    (mec-job-notifications/dispatch-mec-job-finalization! job)
+    response))
 
 (defmethod job-interface/on-cancel ["deployment" "update_deployment"]
-  [resource]
-  (utils/on-cancel resource))
+  [job]
+  (let [response (utils/on-cancel job)]
+    (mec-job-notifications/dispatch-mec-job-finalization! job)
+    response))
 
 (defmethod job-interface/on-cancel ["deployment" "stop_deployment"]
-  [resource]
-  (utils/on-cancel resource))
+  [job]
+  (let [response (utils/on-cancel job)]
+    (mec-job-notifications/dispatch-mec-job-finalization! job)
+    response))
+
+(defmethod job-interface/on-timeout ["deployment" "start_deployment"]
+  [job]
+  (let [response (utils/on-cancel job)]
+    (mec-job-notifications/dispatch-mec-job-finalization! job)
+    response))
+
+(defmethod job-interface/on-timeout ["deployment" "update_deployment"]
+  [job]
+  (let [response (utils/on-cancel job)]
+    (mec-job-notifications/dispatch-mec-job-finalization! job)
+    response))
+
+(defmethod job-interface/on-timeout ["deployment" "stop_deployment"]
+  [job]
+  (let [response (utils/on-cancel job)]
+    (mec-job-notifications/dispatch-mec-job-finalization! job)
+    response))
+
+(defmethod job-interface/on-done ["deployment" "start_deployment"]
+  [job]
+  (mec-job-notifications/dispatch-mec-job-finalization! job))
 
 (defmethod job-interface/on-done ["deployment" "stop_deployment"]
-  [{:keys [target-resource state payload] :as _job}]
+  [{:keys [target-resource state payload] :as job}]
+  (mec-job-notifications/dispatch-mec-job-finalization! job)
   (when-let [deployment (and (= state job-utils/state-success)
                              (-> payload j/read-value (get "delete" false))
                              (some-> target-resource :href crud/retrieve-by-id-as-admin))]

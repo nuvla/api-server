@@ -14,6 +14,7 @@
   (:require
     [clj-http.client :as http]
     [clojure.tools.logging :as log]
+    [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-subscription :as subscription]
     [jsonista.core :as json]))
 
@@ -234,6 +235,44 @@
 ;; Event Handling
 ;;
 
+(defn- active-subscriptions
+  [subscription-type]
+  (let [[_ resources] (crud/query-as-admin subscription/resource-type {:last 1000})]
+    (->> resources
+         (filter :active)
+         (map subscription/resource->api-subscription)
+         (filter #(= subscription-type (:subscription-type %)))
+         vec)))
+
+(defn- normalize-app-instance
+  [app-instance]
+  (cond-> {:id                  (or (:id app-instance)
+                                    (:appInstanceId app-instance))
+           :app-name            (:app-name app-instance)
+           :app-d-id            (or (:app-d-id app-instance)
+                                    (:appDId app-instance))
+           :instantiation-state (or (:instantiation-state app-instance)
+                                    (:instantiationState app-instance))
+           :operational-state   (or (:operational-state app-instance)
+                                    (:operationalState app-instance))}
+    (nil? (:app-name app-instance))
+    (assoc :app-name (:appName app-instance))))
+
+(defn- normalize-app-lcm-op-occ
+  [app-lcm-op-occ]
+  {:id                 (or (:id app-lcm-op-occ)
+                           (:lcmOpOccId app-lcm-op-occ))
+   :app-instance-id    (or (:app-instance-id app-lcm-op-occ)
+                           (:appInstanceId app-lcm-op-occ))
+   :operation-type     (or (:operation-type app-lcm-op-occ)
+                           (:operationType app-lcm-op-occ))
+   :operation-state    (or (:operation-state app-lcm-op-occ)
+                           (:operationState app-lcm-op-occ))
+   :start-time         (or (:start-time app-lcm-op-occ)
+                           (:startTime app-lcm-op-occ))
+   :state-entered-time (or (:state-entered-time app-lcm-op-occ)
+                           (:stateEnteredTime app-lcm-op-occ))})
+
 (defn handle-app-instance-state-change
   "Handle app instance state change event.
    
@@ -300,6 +339,34 @@
                                  previous-state)]
               (dispatch-notification-async sub notification)))
           matching-subs)))
+
+
+(defn dispatch-app-instance-state-change!
+  "Load durable subscriptions and dispatch app instance notifications.
+   Best effort only: dispatch failures are logged and do not propagate."
+  [app-instance change-type previous-state]
+  (try
+    (handle-app-instance-state-change (active-subscriptions "AppInstanceStateChangeNotification")
+                                      (normalize-app-instance app-instance)
+                                      change-type
+                                      previous-state)
+    (catch Exception e
+      (log/error e "Failed to dispatch app instance notifications")
+      [])))
+
+
+(defn dispatch-app-lcm-op-occ-state-change!
+  "Load durable subscriptions and dispatch operation-occurrence notifications.
+   Best effort only: dispatch failures are logged and do not propagate."
+  [app-lcm-op-occ change-type previous-state]
+  (try
+    (handle-app-lcm-op-occ-state-change (active-subscriptions "AppLcmOpOccStateChangeNotification")
+                                        (normalize-app-lcm-op-occ app-lcm-op-occ)
+                                        change-type
+                                        previous-state)
+    (catch Exception e
+      (log/error e "Failed to dispatch operation occurrence notifications")
+      [])))
 
 
 ;;

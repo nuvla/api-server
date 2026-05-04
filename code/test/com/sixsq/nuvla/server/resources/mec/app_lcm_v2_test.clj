@@ -15,6 +15,7 @@
     [com.sixsq.nuvla.server.resources.mec.app-instance :as app-instance]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-op-occ :as app-lcm-op-occ]
     [com.sixsq.nuvla.server.resources.mec.mm3-client :as mm3]
+    [com.sixsq.nuvla.server.resources.mec.notification-dispatcher :as dispatcher]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-v2 :as app-lcm-v2]))
 
 
@@ -295,15 +296,21 @@
 
 (deftest test-create-app-instance-handler
   (testing "Create app instance creates deployment-backed MEC resource"
-    (let [response (with-redefs [crud/add (fn [_]
+    (let [dispatch-args (atom nil)
+          response (with-redefs [crud/add (fn [_]
                                             {:status 201
                                              :body {:resource-id "deployment/test-123"}})
                                  crud/get-resource-throw-nok (fn [_ _]
-                                                               sample-deployment)]
+                                                               sample-deployment)
+                                 dispatcher/dispatch-app-instance-state-change! (fn [app-instance change-type previous-state]
+                                                                                  (reset! dispatch-args [app-instance change-type previous-state])
+                                                                                  [])]
                      (app-lcm-v2/create-app-instance-handler {:body sample-create-request}))]
       (is (= 201 (:status response)))
       (is (= "deployment/test-123" (get-in response [:body :appInstanceId])))
-      (is (= "module/nginx-app" (get-in response [:body :appDId])))))
+      (is (= "module/nginx-app" (get-in response [:body :appDId])))
+      (is (= "INSTANTIATION_STATE" (second @dispatch-args)))
+      (is (= "deployment/test-123" (get-in (first @dispatch-args) [:appInstanceId])))))
   
   (testing "Create app instance validates missing appDId"
     (let [response (app-lcm-v2/create-app-instance-handler {:body {}})]
@@ -391,6 +398,7 @@
   (testing "Instantiate uses deployment start action and returns persisted MEC job"
     (let [action-request (atom nil)
           edit-request   (atom nil)
+          dispatch-args  (atom nil)
           response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
                                                                sample-deployment)
                                  crud/query (fn [_]
@@ -413,14 +421,19 @@
                                                                                   :body body})
                                                             {:status 200})
                                  crud/retrieve-by-id-as-admin (fn [_]
-                                                                sample-mec-instantiate-job)]
+                                                                sample-mec-instantiate-job)
+                                 dispatcher/dispatch-app-lcm-op-occ-state-change! (fn [op-occ change-type previous-state]
+                                                                                     (reset! dispatch-args [op-occ change-type previous-state])
+                                                                                     [])]
                      (app-lcm-v2/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                    :body   {}}))]
       (is (= 202 (:status response)))
       (is (= "start" (get-in @action-request [:params :action])))
       (is (= "INSTANTIATE" (get-in @edit-request [:body :mec-operation-type])))
       (is (= "mepm/test-1" (get-in @edit-request [:body :mepm-id])))
-      (is (= "INSTANTIATE" (get-in response [:body :operationType])))))
+      (is (= "INSTANTIATE" (get-in response [:body :operationType])))
+      (is (= "OPERATION_STATE" (second @dispatch-args)))
+      (is (= "job/instantiate-123" (get-in (first @dispatch-args) [:lcmOpOccId])))))
 
   (testing "Instantiate rejects already instantiated app instance"
     (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
@@ -453,7 +466,8 @@
                                  crud/edit-by-id-as-admin (fn [_ _]
                                                             {:status 200})
                                  crud/retrieve-by-id-as-admin (fn [_]
-                                                                sample-mec-terminate-job)]
+                                                                sample-mec-terminate-job)
+                                 dispatcher/dispatch-app-lcm-op-occ-state-change! (fn [& _] [])]
                      (app-lcm-v2/terminate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                  :body   {:terminationType "GRACEFUL"}}))]
       (is (= 202 (:status response)))
@@ -491,7 +505,8 @@
                                  crud/edit-by-id-as-admin (fn [_ _]
                                                             {:status 200})
                                  crud/retrieve-by-id-as-admin (fn [_]
-                                                                sample-mec-operate-job)]
+                                                                sample-mec-operate-job)
+                                 dispatcher/dispatch-app-lcm-op-occ-state-change! (fn [& _] [])]
                      (app-lcm-v2/operate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                :body   {:changeStateTo :STARTED}}))]
       (is (= 202 (:status response)))

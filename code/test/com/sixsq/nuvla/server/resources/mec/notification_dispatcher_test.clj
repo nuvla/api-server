@@ -2,6 +2,7 @@
   "Tests for MEC 010-2 Notification Dispatcher"
   (:require
     [clojure.test :refer [deftest is testing use-fixtures]]
+    [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-subscription :as subscription]
     [com.sixsq.nuvla.server.resources.mec.notification-dispatcher :as dispatcher]))
 
@@ -314,6 +315,76 @@
         (is (= 1 (:total-sent stats)))))))
 
 
+(deftest test-dispatch-app-instance-state-change-from-durable-subscriptions
+  (testing "Load persisted subscriptions and dispatch matching app instance notification"
+    (let [delivered (atom [])]
+      (with-redefs [crud/query-as-admin (fn [_ _]
+                                          [{} [(subscription/resource->api-subscription
+                                                {:id "mec-subscription/sub-1"
+                                                 :subscription-type "AppInstanceStateChangeNotification"
+                                                 :callback-uri "https://example.org/webhook"
+                                                 :app-instance-filter {:app-name "test-app"}
+                                                 :owner test-user-id
+                                                 :active true})
+                                               (subscription/resource->api-subscription
+                                                {:id "mec-subscription/sub-2"
+                                                 :subscription-type "AppInstanceStateChangeNotification"
+                                                 :callback-uri "https://example.org/webhook"
+                                                 :app-instance-filter {:app-name "other-app"}
+                                                 :owner test-user-id
+                                                 :active true})]])
+                    dispatcher/dispatch-notification-async (fn [sub notification]
+                                                             (swap! delivered conj {:sub sub
+                                                                                    :notification notification})
+                                                             (future {:success? true}))]
+        (let [futures (dispatcher/dispatch-app-instance-state-change!
+                        {:id "deployment/abc-123"
+                         :appInstanceId "deployment/abc-123"
+                         :appName "test-app"
+                         :appDId "appd/test-1"
+                         :instantiationState "INSTANTIATED"
+                         :operationalState "STARTED"}
+                        "INSTANTIATION_STATE"
+                        "NOT_INSTANTIATED")]
+          (is (= 1 (count futures)))
+          (is (= 1 (count @delivered)))
+          (is (= "subscription/sub-1" (get-in @delivered [0 :sub :id])))
+          (is (= "deployment/abc-123"
+                 (get-in @delivered [0 :notification :app-instance-id]))))))))
+
+
+(deftest test-dispatch-app-lcm-op-occ-state-change-from-durable-subscriptions
+  (testing "Load persisted subscriptions and dispatch matching operation notification"
+    (let [delivered (atom [])]
+      (with-redefs [crud/query-as-admin (fn [_ _]
+                                          [{} [(subscription/resource->api-subscription
+                                                {:id "mec-subscription/sub-3"
+                                                 :subscription-type "AppLcmOpOccStateChangeNotification"
+                                                 :callback-uri "https://example.org/webhook"
+                                                 :app-lcm-op-occ-filter {:operation-type "INSTANTIATE"}
+                                                 :owner test-user-id
+                                                 :active true})]])
+                    dispatcher/dispatch-notification-async (fn [sub notification]
+                                                             (swap! delivered conj {:sub sub
+                                                                                    :notification notification})
+                                                             (future {:success? true}))]
+        (let [futures (dispatcher/dispatch-app-lcm-op-occ-state-change!
+                        {:id "job/op-123"
+                         :lcmOpOccId "job/op-123"
+                         :appInstanceId "deployment/abc-123"
+                         :operationType "INSTANTIATE"
+                         :operationState "COMPLETED"
+                         :startTime "2025-01-01T10:00:00Z"
+                         :stateEnteredTime "2025-01-01T10:05:00Z"}
+                        "OPERATION_STATE"
+                        "PROCESSING")]
+          (is (= 1 (count futures)))
+          (is (= 1 (count @delivered)))
+          (is (= "subscription/sub-3" (get-in @delivered [0 :sub :id])))
+          (is (= "job/op-123"
+                 (get-in @delivered [0 :notification :app-lcm-op-occ-id]))))))))
+
+
 ;;
 ;; Delivery Stats Tests
 ;;
@@ -403,6 +474,8 @@
                         'dispatch-notification-async
                         'handle-app-instance-state-change
                         'handle-app-lcm-op-occ-state-change
+                        'dispatch-app-instance-state-change!
+                        'dispatch-app-lcm-op-occ-state-change!
                         'start-event-listener
                         'stop-event-listener
                         'trigger-app-instance-notification

@@ -2,6 +2,7 @@
   "Top-level route mounting for MEC-specific APIs."
   (:require
     [com.sixsq.nuvla.server.app.params :as p]
+    [com.sixsq.nuvla.server.resources.mec.app-lcm-subscription :as app-lcm-subscription]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-v2 :as app-lcm-v2]
     [com.sixsq.nuvla.server.resources.mec.app-package :as app-package]
     [com.sixsq.nuvla.server.util.response :as r]
@@ -13,6 +14,10 @@
   [request target-key]
   (let [{:keys [resourceName uuid]} (:params request)]
     (assoc-in request [:params target-key] (str resourceName "/" uuid))))
+
+(defn initialize
+  []
+  (app-lcm-subscription/initialize))
 
 (defroutes routes
   ;; Mm1 application package management
