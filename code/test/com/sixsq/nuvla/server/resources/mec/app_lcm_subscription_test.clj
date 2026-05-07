@@ -410,6 +410,11 @@
       (is (= 1 (count result)))
       (is (= (:id sub1) (:id (first result)))))))
 
+(deftest test-resource-metadata-type-uri
+  (testing "Resource metadata uses the exposed collection name"
+    (is (= "mec-subscription" (:type-uri subscription/resource-metadata)))
+    (is (= "mec-subscription" (:name subscription/resource-metadata)))))
+
 
 ;;
 ;; Module Completeness Test

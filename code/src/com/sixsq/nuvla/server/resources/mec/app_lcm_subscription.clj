@@ -175,7 +175,10 @@
     (update resource :id resource-id->api-id)))
 
 
-(def resource-metadata (gen-md/generate-metadata ::ns ::mec-subscription/schema))
+(def resource-metadata
+  (-> (gen-md/generate-metadata ::ns ::mec-subscription/schema)
+      (assoc :type-uri resource-type
+             :name resource-type)))
 
 (defn initialize
   []

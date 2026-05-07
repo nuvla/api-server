@@ -68,6 +68,7 @@
   (-> (st/spec (su/only-keys :req-un [::platforms]
                              :opt-un [::services ::api-version]))
       (assoc :name "capabilities"
+             :json-schema/type "map"
              :json-schema/description "MEPM capabilities and supported features"
              :json-schema/order 27)))
 
@@ -107,6 +108,7 @@
 (s/def ::resources
   (-> (st/spec (su/only-keys :opt-un [::cpu-cores ::memory-gb ::storage-gb ::gpu-count]))
       (assoc :name "resources"
+             :json-schema/type "map"
              :json-schema/description "available compute resources managed by MEPM"
              :json-schema/order 32)))
 

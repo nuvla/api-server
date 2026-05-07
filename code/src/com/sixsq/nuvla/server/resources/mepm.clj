@@ -13,6 +13,7 @@ This resource enables Nuvla to act as a MEC Orchestrator (MEO) that coordinates
 with multiple MEPMs across distributed edge infrastructure.
 "
   (:require
+    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
@@ -87,6 +88,21 @@ with multiple MEPMs across distributed edge infrastructure.
 
 (def validate-fn (u/create-spec-validation-fn ::mepm-spec/schema))
 
+(defn- normalize-endpoint
+  [endpoint]
+  (some-> endpoint
+          str
+          str/trim
+          (str/replace #"/+$" "")))
+
+(defn- find-mepm-by-endpoint
+  [endpoint]
+  (let [normalized-endpoint (normalize-endpoint endpoint)
+        [_ resources]       (crud/query-as-admin resource-type {:last 1000})]
+    (some #(when (= normalized-endpoint (normalize-endpoint (:endpoint %)))
+             %)
+          resources)))
+
 (defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
@@ -100,13 +116,19 @@ with multiple MEPMs across distributed edge infrastructure.
 
 (defmethod crud/add resource-type
   [{{:keys [name endpoint capabilities status] :as body} :body :as request}]
-  (let [authn-info    (auth/current-authentication request)
+  (let [normalized-endpoint (normalize-endpoint endpoint)
+        _                  (when-let [existing (find-mepm-by-endpoint normalized-endpoint)]
+                             (throw (r/ex-response
+                                      (str "MEPM endpoint already exists: " normalized-endpoint)
+                                      409
+                                      (:id existing))))
+        authn-info    (auth/current-authentication request)
         current-user  (auth/current-user-id request)
         desc-attr     (u/select-desc-keys body)
         mepm-resource (cond-> (merge desc-attr
                                      {:resource-type resource-type
                                       :name          name
-                                      :endpoint      endpoint
+                                      :endpoint      normalized-endpoint
                                       :capabilities  capabilities
                                       :status        (or status "ONLINE")
                                       :created       (time/now-str)

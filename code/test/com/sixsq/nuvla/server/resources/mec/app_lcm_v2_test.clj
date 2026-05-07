@@ -329,6 +329,58 @@
       (is (= "deployment/test-123" (get-in response [:body :items 0 :appInstanceId]))))))
 
 
+(deftest test-create-subscription-handler
+  (testing "Create subscription rejects duplicate active subscription"
+    (let [add-called? (atom false)
+          response    (with-redefs-fn
+                        {#'app-lcm-v2/query-user-subscriptions (fn [_]
+                                                                 [{:id                  "mec-subscription/existing"
+                                                                   :subscription-type   "AppLcmOpOccStateChangeNotification"
+                                                                   :callback-uri        "http://localhost:18082"
+                                                                   :owner               "user/alice"
+                                                                   :active              true
+                                                                   :app-lcm-op-occ-filter {:operation-type "INSTANTIATE"}}])
+                         #'crud/add                             (fn [_]
+                                                                   (reset! add-called? true)
+                                                                   {:status 201
+                                                                    :body {:resource-id "mec-subscription/new"}})}
+                        #(app-lcm-v2/create-subscription-handler
+                           {:identity {:user-id "user/alice"}
+                            :body     {:subscriptionType "AppLcmOpOccStateChangeNotification"
+                                       :callbackUri      "http://localhost:18082"
+                                       :appLcmOpOccFilter {:operationType "INSTANTIATE"}}}))]
+      (is (= 409 (:status response)))
+      (is (= "Resource Conflict" (get-in response [:body :title])))
+      (is (false? @add-called?))))
+
+  (testing "Create subscription accepts same callback with different filter"
+    (let [response (with-redefs-fn
+                     {#'app-lcm-v2/query-user-subscriptions (fn [_]
+                                                              [{:id                  "mec-subscription/existing"
+                                                                :subscription-type   "AppLcmOpOccStateChangeNotification"
+                                                                :callback-uri        "http://localhost:18082"
+                                                                :owner               "user/alice"
+                                                                :active              true
+                                                                :app-lcm-op-occ-filter {:operation-type "TERMINATE"}}])
+                      #'crud/add                             (fn [_]
+                                                                {:status 201
+                                                                 :body {:resource-id "mec-subscription/new"}})
+                      #'crud/retrieve-by-id-as-admin1        (fn [_]
+                                                                {:id                  "mec-subscription/new"
+                                                                 :subscription-type   "AppLcmOpOccStateChangeNotification"
+                                                                 :callback-uri        "http://localhost:18082"
+                                                                 :owner               "user/alice"
+                                                                 :active              true
+                                                                 :app-lcm-op-occ-filter {:operation-type "INSTANTIATE"}})}
+                     #(app-lcm-v2/create-subscription-handler
+                        {:identity {:user-id "user/alice"}
+                         :body     {:subscriptionType "AppLcmOpOccStateChangeNotification"
+                                    :callbackUri      "http://localhost:18082"
+                                    :appLcmOpOccFilter {:operationType "INSTANTIATE"}}}))]
+      (is (= 201 (:status response)))
+      (is (= "subscription/new" (get-in response [:body :id]))))))
+
+
 (deftest test-get-app-instance-handler
   (testing "Get app instance returns translated deployment"
     (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]

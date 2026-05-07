@@ -586,16 +586,57 @@
 (defn- subscription-response
   [resource]
   (when resource
-    (-> (select-keys resource [:id
-                               :subscription-type
-                               :callback-uri
-                               :app-instance-filter
-                               :app-lcm-op-occ-filter
-                               :created
-                               :updated
-                               :owner
-                               :active])
-        (update :id subscription/resource-id->api-id))))
+    (cond-> {:id               (some-> (:id resource) subscription/resource-id->api-id)
+             :subscriptionType (:subscription-type resource)
+             :callbackUri      (:callback-uri resource)
+             :created          (:created resource)
+             :updated          (:updated resource)
+             :owner            (:owner resource)
+             :active           (:active resource)}
+      (:app-instance-filter resource)
+      (assoc :appInstanceFilter
+             (let [filter (:app-instance-filter resource)]
+               (cond-> {}
+                 (:app-instance-id filter) (assoc :appInstanceId (:app-instance-id filter))
+                 (:app-name filter) (assoc :appName (:app-name filter))
+                 (:operational-state filter) (assoc :operationalState (:operational-state filter))
+                 (:instantiation-state filter) (assoc :instantiationState (:instantiation-state filter)))))
+      (:app-lcm-op-occ-filter resource)
+      (assoc :appLcmOpOccFilter
+             (let [filter (:app-lcm-op-occ-filter resource)]
+               (cond-> {}
+                 (:app-instance-id filter) (assoc :appInstanceId (:app-instance-id filter))
+                 (:operation-type filter) (assoc :operationType (:operation-type filter))
+                 (:operation-state filter) (assoc :operationState (:operation-state filter))))))))
+
+(defn- normalize-app-instance-filter
+  [filter-opts]
+  (cond-> {}
+    (or (:appInstanceId filter-opts) (:app-instance-id filter-opts))
+    (assoc :app-instance-id (or (:appInstanceId filter-opts)
+                                (:app-instance-id filter-opts)))
+    (or (:appName filter-opts) (:app-name filter-opts))
+    (assoc :app-name (or (:appName filter-opts)
+                         (:app-name filter-opts)))
+    (or (:operationalState filter-opts) (:operational-state filter-opts))
+    (assoc :operational-state (or (:operationalState filter-opts)
+                                  (:operational-state filter-opts)))
+    (or (:instantiationState filter-opts) (:instantiation-state filter-opts))
+    (assoc :instantiation-state (or (:instantiationState filter-opts)
+                                    (:instantiation-state filter-opts)))))
+
+(defn- normalize-app-lcm-op-occ-filter
+  [filter-opts]
+  (cond-> {}
+    (or (:appInstanceId filter-opts) (:app-instance-id filter-opts))
+    (assoc :app-instance-id (or (:appInstanceId filter-opts)
+                                (:app-instance-id filter-opts)))
+    (or (:operationType filter-opts) (:operation-type filter-opts))
+    (assoc :operation-type (or (:operationType filter-opts)
+                               (:operation-type filter-opts)))
+    (or (:operationState filter-opts) (:operation-state filter-opts))
+    (assoc :operation-state (or (:operationState filter-opts)
+                                (:operation-state filter-opts)))))
 
 (defn- retrieve-subscription-resource
   [public-id]
@@ -612,6 +653,32 @@
       :body
       :resources))
 
+(defn- normalize-callback-uri
+  [callback-uri]
+  (some-> callback-uri str str/trim))
+
+(defn- canonicalize-filter
+  [filter-opts]
+  (some->> filter-opts
+           (remove (comp nil? val))
+           (into {})))
+
+(defn- duplicate-active-subscription
+  [request subscription-type callback-uri filter-opts user-id]
+  (let [filter-key (case subscription-type
+                     "AppInstanceStateChangeNotification" :app-instance-filter
+                     "AppLcmOpOccStateChangeNotification" :app-lcm-op-occ-filter
+                     nil)
+        callback-uri* (normalize-callback-uri callback-uri)
+        filter-opts*  (canonicalize-filter filter-opts)]
+    (some (fn [existing]
+            (and (:active existing)
+                 (= user-id (:owner existing))
+                 (= subscription-type (:subscription-type existing))
+                 (= callback-uri* (normalize-callback-uri (:callback-uri existing)))
+                 (= filter-opts* (canonicalize-filter (get existing filter-key)))))
+          (query-user-subscriptions request))))
+
 (defn create-subscription-handler
   "POST /app_lcm/v2/subscriptions - Create a new subscription"
   [request]
@@ -619,9 +686,12 @@
     (let [body              (:body request)
           subscription-type (:subscriptionType body)
           callback-uri      (:callbackUri body)
-          filter-opts       (or (:appInstanceFilter body)
-                                (:appLcmOpOccFilter body)
-                                {})
+          filter-opts       (case subscription-type
+                              "AppInstanceStateChangeNotification"
+                              (normalize-app-instance-filter (:appInstanceFilter body))
+                              "AppLcmOpOccStateChangeNotification"
+                              (normalize-app-lcm-op-occ-filter (:appLcmOpOccFilter body))
+                              {})
           user-id           (subscription-owner request)]
       
       ;; Validate subscription type
@@ -629,6 +699,10 @@
         (throw (ex-info "Invalid subscription type"
                         {:status 400
                          :subscription-type subscription-type})))
+
+      (when (duplicate-active-subscription request subscription-type callback-uri filter-opts user-id)
+        (throw (ex-info "An active MEC subscription with the same callback URI and filter already exists"
+                        {:status 409})))
       
       ;; Create subscription body
       (let [filter-key (case subscription-type
@@ -637,11 +711,11 @@
                          nil)
             preview (subscription/create-subscription
                       subscription-type
-                      callback-uri
+                      (normalize-callback-uri callback-uri)
                       filter-opts
                       user-id)
             sub (cond-> {:subscription-type subscription-type
-                         :callback-uri      callback-uri
+                         :callback-uri      (normalize-callback-uri callback-uri)
                          :owner             user-id
                          :active            true}
                   (and filter-key (seq filter-opts)) (assoc filter-key filter-opts))]
@@ -664,8 +738,12 @@
     (catch clojure.lang.ExceptionInfo e
       (let [data (ex-data e)]
         (log/error e "Failed to create subscription")
-        (json-response-status (validation-error (ex-message e))
-                              (or (:status data) 400))))
+        (json-response-status
+          ((case (or (:status data) 400)
+             409 conflict-error
+             validation-error)
+           (ex-message e))
+          (or (:status data) 400))))
     (catch Exception e
       (log/error e "Unexpected error creating subscription")
       (json-response-status (problem-details

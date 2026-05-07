@@ -115,6 +115,14 @@
         (is (:created mepm))
         (is (:updated mepm)))
 
+      ;; Duplicate endpoint create should fail, even with trailing slash variation
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-value-as-string (assoc valid-mepm :endpoint "https://mepm.example.com:8443/")))
+          (ltu/body->edn)
+          (ltu/is-status 409))
+
       ;; Update MEPM status
       (let [updated-mepm (-> session-user
                              (request uri
