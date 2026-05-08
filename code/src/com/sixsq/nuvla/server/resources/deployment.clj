@@ -309,6 +309,8 @@ a container orchestration engine.
           user-rights?   (get-in deployment [:module :content :requires-user-rights])
           data?          (some? (:data deployment))
           execution-mode (:execution-mode deployment)
+          job-attrs      (get-in request [:body :job-attrs])
+          mec-operate?   (= "OPERATE" (:mec-operation-type job-attrs))
           state          (if (= execution-mode "pull") "PENDING" "STARTING")
           new-deployment (-> deployment
                              (assoc :state state)
@@ -319,18 +321,25 @@ a container orchestration engine.
                                                                  user-rights?)
                                                          (auth/current-authentication request))))
                              (edit-deployment request))]
-      (when stopped?
+      ;; A stopped MEC deployment must keep its persisted southbound MM3 app instance id
+      ;; so the subsequent OPERATE->STARTED job can act on the same instance.
+      (when (and stopped? (not mec-operate?))
         (utils/delete-child-resources "deployment-parameter" id))
-      (utils/create-job new-deployment request "start_deployment" execution-mode))
+      (utils/create-job new-deployment request "start_deployment" execution-mode
+                        :job-attrs job-attrs))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
 (defmethod crud/do-action [resource-type "stop"]
   [{{uuid :uuid} :params body :body :as request}]
   (try
-    (let [deployment     (-> (str resource-type "/" uuid)
-                             (crud/retrieve-by-id-as-admin)
-                             (u/throw-cannot-do-action-invalid-state utils/can-stop? "stop"))
+    (let [deployment-id   (str resource-type "/" uuid)
+          job-attrs       (:job-attrs body)
+          mec-terminate?  (= "TERMINATE" (:mec-operation-type job-attrs))
+          deployment0     (crud/retrieve-by-id-as-admin deployment-id)
+          deployment      (if (and mec-terminate? (= "STOPPED" (:state deployment0)))
+                            deployment0
+                            (u/throw-cannot-do-action-invalid-state deployment0 utils/can-stop? "stop"))
           execution-mode (:execution-mode deployment)
           params         (cond-> {}
                                  (:delete body) (assoc :delete true)
@@ -339,7 +348,9 @@ a container orchestration engine.
       (-> deployment
           (assoc :state "STOPPING")
           (edit-deployment request)
-          (utils/create-job request "stop_deployment" execution-mode :payload params)))
+          (utils/create-job request "stop_deployment" execution-mode
+                            :payload params
+                            :job-attrs job-attrs)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

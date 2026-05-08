@@ -45,7 +45,7 @@
 
 (defn- build-http-options
   "Build HTTP client options with standard settings"
-  [endpoint {:keys [timeout connect-timeout insecure?]
+  [endpoint {:keys [timeout connect-timeout insecure? headers]
              :or   {timeout         default-timeout-ms
                     connect-timeout default-connect-timeout-ms
                     insecure?       false}}]
@@ -56,6 +56,7 @@
    :as                  :json
    :content-type        :json
    :accept              :json
+   :headers             (merge {"X-Nuvla-Mm3-Caller" "api-server"} headers)
    :coerce              :always})
 
 

@@ -279,8 +279,22 @@
     (mm3/check-health test-endpoint)
     (mm3/query-capabilities test-endpoint)
     (mm3/query-resources test-endpoint)
-    (let [state (mock-mepm/get-state)]
-      (is (= 3 (:request-count state))))))
+    (let [state       (mock-mepm/get-state)
+          request-log (mock-mepm/get-request-log)]
+      (is (= 3 (:request-count state)))
+      (is (= 3 (count request-log)))
+      (is (= ["api-server" "api-server" "api-server"]
+             (mapv :caller request-log)))
+      (is (= ["health" "capabilities" "resources"]
+             (mapv :operation request-log))))))
+
+(deftest test-mm3-request-log-can-be-cleared
+  (testing "Mock request log is separately inspectable and resettable"
+    (mock-mepm/reset-state!)
+    (mm3/query-capabilities test-endpoint)
+    (is (= 1 (count (mock-mepm/get-request-log))))
+    (mock-mepm/clear-request-log!)
+    (is (empty? (mock-mepm/get-request-log)))))
 
 ;;
 ;; Integration with MEPM State

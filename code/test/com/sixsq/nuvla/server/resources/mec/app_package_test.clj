@@ -120,6 +120,52 @@
       (is (map? (:userDefinedData body))))))
 
 
+(deftest test-create-app-package-omits-nil-user-defined-data
+  (let [created-request (atom nil)
+        module-id       "module/test-123"
+        authn-info      {:user-id      "user/test"
+                         :active-claim "user/test"
+                         :claims       ["user/test" "group/nuvla-user"]}
+        module          {:id          module-id
+                         :subtype     "application_mec"
+                         :name        "demo-mec-app"
+                         :description "MEC Application Package: demo-mec-app"
+                         :parent-path "mec-apps"
+                         :content     {:appDId            module-id
+                                       :appName          "demo-mec-app"
+                                       :appDescription   "MEC Application Package: demo-mec-app"
+                                       :appProvider      "Acme Corp"
+                                       :appSoftVersion   "1.0.0"
+                                       :appDVersion      "3.2.1"
+                                       :mecVersion       "2.2.1"
+                                       :virtualComputeDescriptor {:virtualCpu {:numVirtualCpu 1}
+                                                                  :virtualMemory {:virtualMemSize 1024}}
+                                       :swImageDescriptor [{:swImageName "demo-mec-app"
+                                                            :swImageVersion "1.0.0"
+                                                            :containerFormat :DOCKER
+                                                            :swImage "sixsq/example-mec-app:1.0.0"}]
+                                       :virtualStorageDescriptor []
+                                       :appExtCpd []
+                                       :appServiceRequired []
+                                       :trafficRuleDescriptor []
+                                       :dnsRuleDescriptor []
+                                       :appFeatureRequired []}}]
+    (with-redefs [t/ensure-project-path! (fn [_ _] nil)
+                  crud/add (fn [request]
+                             (reset! created-request request)
+                             {:body {:resource-id module-id}})
+                  t/ensure-mec-app-package! (fn [_ _] module)
+                  t/sync-appd-id! identity]
+      (let [response (t/create-app-package {:body        {:appPkgName    "demo-mec-app"
+                                                          :appPkgVersion "1.0.0"
+                                                          :appProvider   "Acme Corp"}
+                                            :nuvla/authn authn-info})]
+        (is (= 201 (:status response)))
+        (is (nil? (get-in @created-request [:body :content :userDefinedData])))
+        (is (false? (contains? (get-in @created-request [:body :content]) :userDefinedData)))
+        (is (= authn-info (:nuvla/authn @created-request)))))))
+
+
 (deftest test-validate-package-content
   (testing "package content is normalized to the real package id"
     (let [module {:id "module/test-123"

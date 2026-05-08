@@ -92,6 +92,16 @@
     :detail detail))
 
 
+(defn service-unavailable-error
+  "Returns a 503 Service Unavailable error in ProblemDetails format"
+  [detail]
+  (problem-details
+    "https://docs.nuvla.io/mec/errors/service-unavailable"
+    "Service Unavailable"
+    503
+    :detail detail))
+
+
 (def ^:private max-query-results
   1000)
 
@@ -120,6 +130,7 @@
                 404
                 :detail detail)
           409 (conflict-error detail)
+          503 (service-unavailable-error detail)
           500 (problem-details
                 "about:blank"
                 "Internal Server Error"
@@ -242,12 +253,14 @@
 
 
 (defn- deployment-action-request
-  [request app-instance-id action body]
+  [request app-instance-id action body job-attrs]
   (cond-> {:params      {:resource-name "deployment"
                          :uuid          (u/id->uuid app-instance-id)
                          :action        action}
            :nuvla/authn (:nuvla/authn request)}
-    (seq body) (assoc :body body)))
+    (or (seq body) (seq job-attrs))
+    (assoc :body (cond-> (or body {})
+                   (seq job-attrs) (assoc :job-attrs job-attrs)))))
 
 
 (defn- throw-on-unsuccessful-mm3-response!
@@ -304,16 +317,26 @@
 
 (defn- tag-mec-operation-job!
   [job-id app-instance-id operation-type request-params metadata]
-  (crud/edit-by-id-as-admin job-id (merge {:mec-operation-type  operation-type
-                                           :mec-app-instance-id app-instance-id
-                                           :mec-request-params  request-params}
-                                          metadata))
+  (crud/edit-by-id-as-admin
+    job-id
+    (cond-> {:mec-operation-type  operation-type
+             :mec-app-instance-id app-instance-id}
+      (some? request-params) (assoc :mec-request-params request-params)
+      (some? (:mepm-id metadata)) (assoc :mepm-id (:mepm-id metadata))
+      (some? (:mepm-endpoint metadata)) (assoc :mepm-endpoint (:mepm-endpoint metadata))
+      (some? (:mec-host-id metadata)) (assoc :mec-host-id (:mec-host-id metadata))))
   (crud/retrieve-by-id-as-admin job-id))
 
 
 (defn- run-mec-lifecycle-action!
   [request app-instance-id action operation-type request-params metadata]
-  (let [response (crud/do-action (deployment-action-request request app-instance-id action request-params))
+  (let [job-attrs (cond-> {:mec-operation-type  operation-type
+                           :mec-app-instance-id app-instance-id}
+                    (some? request-params) (assoc :mec-request-params request-params)
+                    (some? (:mepm-id metadata)) (assoc :mepm-id (:mepm-id metadata))
+                    (some? (:mepm-endpoint metadata)) (assoc :mepm-endpoint (:mepm-endpoint metadata))
+                    (some? (:mec-host-id metadata)) (assoc :mec-host-id (:mec-host-id metadata)))
+        response (crud/do-action (deployment-action-request request app-instance-id action request-params job-attrs))
         status   (:status response)]
     (when-not (= 202 status)
       (throw-status (or status 500)

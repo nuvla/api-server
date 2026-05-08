@@ -11,6 +11,31 @@ The goal is not to reproduce a full operator deployment. The goal is to demonstr
 - durable subscriptions and webhook notifications work for matching lifecycle events
 - evidence can be collected for a demo or a validation rehearsal
 
+## Demo Setup Diagram
+```mermaid
+flowchart LR
+    Client["Demo operator shell / curl"]
+    Webhook["Local webhook receiver"]
+    APIServer["Nuvla API server\nMm1 + MEC facade"]
+    JobDistributor["job-engine distributor"]
+    JobExecutor["job-engine executor"]
+    MockMEPM["Mock MEPM\nMm3 endpoints"]
+    ES["Elasticsearch"]
+    ZK["ZooKeeper"]
+
+    Client -->|Mm1 API calls| APIServer
+    APIServer -->|persist resources| ES
+    APIServer -->|enqueue lifecycle jobs| ZK
+    JobDistributor -->|consume / assign jobs| ZK
+    JobExecutor -->|consume jobs| ZK
+    JobExecutor -->|read / update deployment + job state| APIServer
+    APIServer -->|Mm3 pre-flight:\ncapabilities + resources| MockMEPM
+    JobExecutor -->|Mm3 lifecycle:\ncreate / operate / delete app instance| MockMEPM
+    MockMEPM -->|Mm3 responses| APIServer
+    MockMEPM -->|Mm3 responses| JobExecutor
+    APIServer -->|subscription notifications| Webhook
+```
+
 ## What This Demo Can Credibly Show
 This local runbook is well suited to demonstrate:
 
@@ -379,21 +404,21 @@ cat > app-package-create.json <<'EOF'
 }
 EOF
 
-curl \
-  -X POST \
-  -H 'content-type: application/json' \
-  -d @app-package-create.json \
-  -b nuvla-cookies.txt \
-  http://localhost:8200/api/mec/app_lcm/v2/app_packages | tee app-package-create.out
-```
+export APP_PKG_ID="$(
+  curl -s \
+    -X POST \
+    -H 'content-type: application/json' \
+    -d @app-package-create.json \
+    -b nuvla-cookies.txt \
+    http://localhost:8200/api/mec/app_lcm/v2/app_packages | tee app-package-create.out | jq -r '.appPkgId'
+)"
 
-Save the returned `appPkgId` as `APP_PKG_ID`.
+echo "$APP_PKG_ID"
+```
 
 Then upload a valid descriptor to `package_content`:
 
 ```bash
-export APP_PKG_ID="module/REPLACE_ME"
-
 cat > appd.json <<EOF
 {
   "appName": "demo-mec-app",
@@ -455,21 +480,21 @@ cat > app-instance-create.json <<EOF
 }
 EOF
 
-curl \
-  -X POST \
-  -H 'content-type: application/json' \
-  -d @app-instance-create.json \
-  -b nuvla-cookies.txt \
-  http://localhost:8200/api/mec/app_lcm/v2/app_instances | tee app-instance-create.out
-```
+export APP_INSTANCE_ID="$(
+  curl -s \
+    -X POST \
+    -H 'content-type: application/json' \
+    -d @app-instance-create.json \
+    -b nuvla-cookies.txt \
+    http://localhost:8200/api/mec/app_lcm/v2/app_instances | tee app-instance-create.out | jq -r '.appInstanceId'
+)"
 
-Save the returned `appInstanceId` as `APP_INSTANCE_ID`.
+echo "$APP_INSTANCE_ID"
+```
 
 Verify:
 
 ```bash
-export APP_INSTANCE_ID="deployment/REPLACE_ME"
-
 curl -b nuvla-cookies.txt \
   "http://localhost:8200/api/mec/app_lcm/v2/app_instances/${APP_INSTANCE_ID}" | jq .
 ```
@@ -481,21 +506,21 @@ Expected demo state before instantiate:
 ## Step 12: Instantiate the App
 
 ```bash
-curl \
-  -X POST \
-  -H 'content-type: application/json' \
-  -d '{}' \
-  -b nuvla-cookies.txt \
-  "http://localhost:8200/api/mec/app_lcm/v2/app_instances/${APP_INSTANCE_ID}/instantiate" | tee instantiate.out
-```
+export LCM_OP_OCC_ID="$(
+  curl -s \
+    -X POST \
+    -H 'content-type: application/json' \
+    -d '{}' \
+    -b nuvla-cookies.txt \
+    "http://localhost:8200/api/mec/app_lcm/v2/app_instances/${APP_INSTANCE_ID}/instantiate" | tee instantiate.out | jq -r '.lcmOpOccId'
+)"
 
-Save the returned operation id as `LCM_OP_OCC_ID`.
+echo "$LCM_OP_OCC_ID"
+```
 
 Verify operation tracking:
 
 ```bash
-export LCM_OP_OCC_ID="job/REPLACE_ME"
-
 curl -b nuvla-cookies.txt \
   "http://localhost:8200/api/mec/app_lcm/v2/app_lcm_op_occs/${LCM_OP_OCC_ID}" | jq .
 ```

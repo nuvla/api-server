@@ -126,7 +126,7 @@
 (defn create-job
   [target-resource action acl created-by & {:keys [priority affected-resources
                                                    execution-mode payload
-                                                   parent-job]}]
+                                                   parent-job job-attrs]}]
   (let [job-map        (cond-> {:action          action
                                 :target-resource {:href target-resource}
                                 :acl             acl
@@ -135,7 +135,8 @@
                                parent-job (assoc :parent-job parent-job)
                                affected-resources (assoc :affected-resources affected-resources)
                                execution-mode (assoc :execution-mode execution-mode)
-                               payload (assoc :payload payload))
+                               payload (assoc :payload payload)
+                               (seq job-attrs) (merge job-attrs))
         create-request {:params      {:resource-name "job"}
                         :body        job-map
                         :nuvla/authn auth/internal-identity}]

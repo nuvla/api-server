@@ -12,6 +12,8 @@
   (:require
     [clojure.test :refer [deftest is testing use-fixtures]]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
+    [com.sixsq.nuvla.server.resources.deployment :as deployment-resource]
+    [com.sixsq.nuvla.server.resources.deployment.utils :as deployment-utils]
     [com.sixsq.nuvla.server.resources.mec.app-instance :as app-instance]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-op-occ :as app-lcm-op-occ]
     [com.sixsq.nuvla.server.resources.mec.mm3-client :as mm3]
@@ -269,7 +271,13 @@
     (let [error (app-lcm-v2/conflict-error "Resource already exists")]
       (is (= 409 (:status error)))
       (is (= "Resource Conflict" (:title error)))
-      (is (= "Resource already exists" (:detail error))))))
+      (is (= "Resource already exists" (:detail error)))))
+
+  (testing "Service unavailable error has correct structure"
+    (let [error (app-lcm-v2/service-unavailable-error "Upstream MEPM unavailable")]
+      (is (= 503 (:status error)))
+      (is (= "Service Unavailable" (:title error)))
+      (is (= "Upstream MEPM unavailable" (:detail error))))))
 
 
 ;;
@@ -481,11 +489,51 @@
                                                                    :body   {}}))]
       (is (= 202 (:status response)))
       (is (= "start" (get-in @action-request [:params :action])))
+      (is (= "INSTANTIATE" (get-in @action-request [:body :job-attrs :mec-operation-type])))
+      (is (= "deployment/test-123" (get-in @action-request [:body :job-attrs :mec-app-instance-id])))
+      (is (= "mepm/test-1" (get-in @action-request [:body :job-attrs :mepm-id])))
       (is (= "INSTANTIATE" (get-in @edit-request [:body :mec-operation-type])))
       (is (= "mepm/test-1" (get-in @edit-request [:body :mepm-id])))
       (is (= "INSTANTIATE" (get-in response [:body :operationType])))
       (is (= "OPERATION_STATE" (second @dispatch-args)))
       (is (= "job/instantiate-123" (get-in (first @dispatch-args) [:lcmOpOccId])))))
+
+  (testing "Instantiate omits nil MEC job attributes"
+    (let [action-request (atom nil)
+          edit-request   (atom nil)
+          hostless-mepm  (dissoc sample-mepm :mec-host-id)
+          _response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                                sample-deployment)
+                                  crud/query (fn [_]
+                                               {:status 200
+                                                :body {:resources [hostless-mepm]}})
+                                  mm3/query-capabilities (fn [_ & _]
+                                                           {:success? true
+                                                            :status 200
+                                                            :data {:platforms ["kubernetes"]}})
+                                  mm3/query-resources (fn [_ & _]
+                                                        {:success? true
+                                                         :status 200
+                                                         :data {:cpu-cores 8}})
+                                  crud/do-action (fn [request]
+                                                   (reset! action-request request)
+                                                   {:status 202
+                                                    :body {:location "job/instantiate-123"}})
+                                  crud/edit-by-id-as-admin (fn [resource-id body]
+                                                             (reset! edit-request {:id resource-id
+                                                                                   :body body})
+                                                             {:status 200})
+                                  crud/retrieve-by-id-as-admin (fn [_]
+                                                                 sample-mec-instantiate-job)
+                                  dispatcher/dispatch-app-lcm-op-occ-state-change! (fn [& _] [])]
+                      (app-lcm-v2/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                                    :body   nil}))]
+      (is (nil? (get-in @action-request [:body :job-attrs :mec-host-id])))
+      (is (nil? (get-in @action-request [:body :job-attrs :mec-request-params])))
+      (is (not (contains? (get-in @action-request [:body :job-attrs]) :mec-host-id)))
+      (is (not (contains? (get-in @action-request [:body :job-attrs]) :mec-request-params)))
+      (is (not (contains? (:body @edit-request) :mec-host-id)))
+      (is (not (contains? (:body @edit-request) :mec-request-params)))))
 
   (testing "Instantiate rejects already instantiated app instance"
     (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
@@ -524,6 +572,8 @@
                                                                  :body   {:terminationType "GRACEFUL"}}))]
       (is (= 202 (:status response)))
       (is (= "stop" (get-in @action-request [:params :action])))
+      (is (= "TERMINATE" (get-in @action-request [:body :job-attrs :mec-operation-type])))
+      (is (= "deployment/test-123" (get-in @action-request [:body :job-attrs :mec-app-instance-id])))
       (is (= "TERMINATE" (get-in response [:body :operationType])))))
 
   (testing "Terminate rejects not-instantiated app instance"
@@ -564,6 +614,8 @@
       (is (= 202 (:status response)))
       (is (= "start" (get-in @action-request [:params :action])))
       (is (= "STARTED" (get-in @action-request [:body :changeStateTo])))
+      (is (= "OPERATE" (get-in @action-request [:body :job-attrs :mec-operation-type])))
+      (is (= "deployment/test-123" (get-in @action-request [:body :job-attrs :mec-app-instance-id])))
       (is (= "OPERATE" (get-in response [:body :operationType])))))
 
   (testing "Operate rejects invalid requested state"
@@ -579,6 +631,73 @@
                      (app-lcm-v2/operate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                :body   {:changeStateTo "STARTED"}}))]
       (is (= 409 (:status response))))))
+
+
+(deftest test-mec-restart-preserves-deployment-parameters
+  (let [deleted?    (atom false)
+        created-job (atom nil)
+        request     {:params {:resource-name "deployment"
+                              :uuid          "test-123"
+                              :action        "start"}
+                     :body   {:job-attrs {:mec-operation-type   "OPERATE"
+                                          :mec-app-instance-id "deployment/test-123"}}}]
+    (with-redefs [crud/retrieve-by-id-as-admin (fn [_]
+                                                 (assoc sample-deployment
+                                                        :state "STOPPED"
+                                                        :execution-mode "push"))
+                  deployment-utils/throw-when-payment-required (fn [resource _] resource)
+                  deployment-utils/throw-can-not-access-registries-creds identity
+                  deployment-utils/throw-can-not-access-helm-repo-cred identity
+                  deployment-utils/throw-can-not-access-helm-repo-url identity
+                  deployment-utils/generate-api-key-secret (fn [_ _]
+                                                             {:api-key    "api-key"
+                                                              :api-secret "api-secret"})
+                  deployment-resource/edit-deployment (fn [resource _]
+                                                       resource)
+                  deployment-utils/delete-child-resources (fn [& _]
+                                                            (reset! deleted? true))
+                  deployment-utils/create-job (fn [_ _ action execution-mode & {:keys [job-attrs]}]
+                                                (reset! created-job {:action         action
+                                                                     :execution-mode execution-mode
+                                                                     :job-attrs      job-attrs})
+                                                {:status 202})]
+      (let [response (crud/do-action request)]
+        (is (= 202 (:status response)))
+        (is (false? @deleted?))
+        (is (= {:action         "start_deployment"
+                :execution-mode "push"
+                :job-attrs      {:mec-operation-type   "OPERATE"
+                                 :mec-app-instance-id "deployment/test-123"}}
+               @created-job))))))
+
+
+(deftest test-mec-terminate-allows-stopped-deployment
+  (let [created-job (atom nil)
+        request     {:params {:resource-name "deployment"
+                              :uuid          "test-123"
+                              :action        "stop"}
+                     :body   {:job-attrs {:mec-operation-type   "TERMINATE"
+                                          :mec-app-instance-id "deployment/test-123"}}}]
+    (with-redefs [crud/retrieve-by-id-as-admin (fn [_]
+                                                 (assoc sample-deployment
+                                                        :state "STOPPED"
+                                                        :execution-mode "push"))
+                  deployment-resource/edit-deployment (fn [resource _]
+                                                       resource)
+                  deployment-utils/create-job (fn [_ _ action execution-mode & {:keys [job-attrs payload]}]
+                                                (reset! created-job {:action         action
+                                                                     :execution-mode execution-mode
+                                                                     :job-attrs      job-attrs
+                                                                     :payload        payload})
+                                                {:status 202})]
+      (let [response (crud/do-action request)]
+        (is (= 202 (:status response)))
+        (is (= {:action         "stop_deployment"
+                :execution-mode "push"
+                :job-attrs      {:mec-operation-type   "TERMINATE"
+                                 :mec-app-instance-id "deployment/test-123"}
+                :payload        {}}
+               @created-job))))))
 
 
 (deftest test-mepm-resolution-behavior
@@ -602,7 +721,9 @@
                                                :body {:resources []}})]
                      (app-lcm-v2/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                    :body   {}}))]
-      (is (= 503 (:status response))))))
+      (is (= 503 (:status response)))
+      (is (= "Service Unavailable" (get-in response [:body :title])))
+      (is (= 503 (get-in response [:body :status]))))))
 
 
 ;;

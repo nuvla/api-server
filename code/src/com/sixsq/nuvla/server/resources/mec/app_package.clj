@@ -114,16 +114,16 @@
 
 
 (defn ensure-project-path!
-  [project-path]
+  [project-path authn]
   (when (seq project-path)
     (when-let [parent-path (module-utils/get-parent-path project-path)]
       (when (seq parent-path)
-        (ensure-project-path! parent-path)))
+        (ensure-project-path! parent-path authn)))
     (when-not (project-exists? project-path)
       (crud/add {:params {:resource-name "module"}
                  :body {:subtype "project"
                         :path project-path}
-                 :nuvla/authn auth/internal-identity}))))
+                 :nuvla/authn authn}))))
 
 
 (defn normalize-package-content
@@ -358,7 +358,7 @@
           ;; Create minimal MEC AppD module
           ;; This creates a placeholder module that can be updated with full AppD content later
           user-id (or (auth/current-user-id request) "internal")
-          _ (ensure-project-path! parent-path)
+          _ (ensure-project-path! parent-path (:nuvla/authn request))
           
           module-request {:params {:resource-name "module"}
                           :body {:name app-pkg-name
@@ -368,29 +368,29 @@
                                  :parent-path parent-path
                                  :versions [{:href (str app-pkg-name "/" (or app-pkg-version "1.0.0"))}]
                                  :published false
-                                 :content {:appName app-pkg-name
-                                           :appDescription (str "MEC Application Package: " app-pkg-name)
-                                           :appDId (str "module/" (u/rand-uuid))
-                                           :appProvider (or (:appProvider body) user-id)
-                                           :appSoftVersion (or app-pkg-version "1.0.0")
-                                           :appDVersion "3.2.1"
-                                           :mecVersion "2.2.1"
-                                           ;; Minimal required MEC AppD fields
-                                           :virtualComputeDescriptor {:virtualCpu {:numVirtualCpu 1}
-                                                                      :virtualMemory {:virtualMemSize 1024}}
-                                           :swImageDescriptor [{:swImageName app-pkg-name
-                                                                :swImageVersion (or app-pkg-version "1.0.0")
-                                                                :containerFormat :DOCKER
-                                                                :swImage "sixsq/example-mec-app:1.0.0"}]
-                                           :virtualStorageDescriptor []
-                                           :appExtCpd []
-                                           :appServiceRequired []
-                                           :trafficRuleDescriptor []
-                                           :dnsRuleDescriptor []
-                                           :appFeatureRequired []
-                                           ;; Store user-defined metadata
-                                           :userDefinedData user-defined-data}}
-                          :nuvla/authn auth/internal-identity}
+                                 :content (cond-> {:appName app-pkg-name
+                                                   :appDescription (str "MEC Application Package: " app-pkg-name)
+                                                   :appDId (str "module/" (u/rand-uuid))
+                                                   :appProvider (or (:appProvider body) user-id)
+                                                   :appSoftVersion (or app-pkg-version "1.0.0")
+                                                   :appDVersion "3.2.1"
+                                                   :mecVersion "2.2.1"
+                                                   ;; Minimal required MEC AppD fields
+                                                   :virtualComputeDescriptor {:virtualCpu {:numVirtualCpu 1}
+                                                                              :virtualMemory {:virtualMemSize 1024}}
+                                                   :swImageDescriptor [{:swImageName app-pkg-name
+                                                                        :swImageVersion (or app-pkg-version "1.0.0")
+                                                                        :containerFormat :DOCKER
+                                                                        :swImage "sixsq/example-mec-app:1.0.0"}]
+                                                   :virtualStorageDescriptor []
+                                                   :appExtCpd []
+                                                   :appServiceRequired []
+                                                   :trafficRuleDescriptor []
+                                                   :dnsRuleDescriptor []
+                                                   :appFeatureRequired []}
+                                            (some? user-defined-data)
+                                            (assoc :userDefinedData user-defined-data))}
+                          :nuvla/authn (:nuvla/authn request)}
           
           ;; Create the module
           create-response (crud/add module-request)
@@ -411,7 +411,9 @@
     
     (catch clojure.lang.ExceptionInfo e
       (let [data (ex-data e)]
-        (log/warn "Mm1: Bad request creating app_package:" (.getMessage e))
+        (log/warn e "Mm1: Bad request creating app_package"
+                  {:message (.getMessage e)
+                   :data    data})
         (problem-response (or (:status data) 400)
                           (or (:title data) "Bad Request")
                           (or (:detail data) (.getMessage e))

@@ -31,6 +31,11 @@
          :request-count   0
          :error-mode      nil}))
 
+(def ^:private max-request-log-size 200)
+
+(defonce ^:private request-log
+  (atom []))
+
 (defn reset-state!
   "Reset MEPM state to defaults."
   []
@@ -50,7 +55,8 @@
                                                     :gpu-count  2}}
                       :app-instances   {}
                       :request-count   0
-                      :error-mode      nil}))
+                      :error-mode      nil})
+  (reset! request-log []))
 
 (defn set-error-mode!
   "Set error mode for testing error handling.
@@ -63,12 +69,52 @@
   []
   @mepm-state)
 
+(defn clear-request-log!
+  "Clear the bounded request log used for demo inspection."
+  []
+  (reset! request-log []))
+
+(defn get-request-log
+  "Get the current bounded request log."
+  []
+  @request-log)
+
 ;;
 ;; Mm3 Endpoint Handlers
 ;;
 
 (defn- increment-request-count! []
   (swap! mepm-state update :request-count inc))
+
+(defn- request-operation
+  [{:keys [request-method uri]}]
+  (cond
+    (and (= request-method :get) (= uri "/mm3/health")) "health"
+    (and (= request-method :get) (= uri "/mm3/capabilities")) "capabilities"
+    (and (= request-method :get) (= uri "/mm3/resources")) "resources"
+    (and (= request-method :get) (= uri "/mm3/platform-info")) "platform-info"
+    (and (= request-method :post) (= uri "/mm3/configure")) "configure"
+    (and (= request-method :get) (= uri "/mm3/app-instances")) "list-app-instances"
+    (and (= request-method :post) (= uri "/mm3/app-instances")) "create-app-instance"
+    (and (= request-method :post) (re-matches #"/mm3/app-instances/(.+)/operate" uri)) "operate-app-instance"
+    (and (= request-method :get) (re-matches #"/mm3/app-instances/(.+)" uri)) "get-app-instance"
+    (and (= request-method :delete) (re-matches #"/mm3/app-instances/(.+)" uri)) "delete-app-instance"
+    :else "unknown"))
+
+(defn- append-request-log!
+  [request response]
+  (let [entry {:timestamp (str (java.time.Instant/now))
+               :method    (some-> (:request-method request) name)
+               :uri       (:uri request)
+               :operation (request-operation request)
+               :caller    (get-in request [:headers "x-nuvla-mm3-caller"])
+               :status    (:status response)
+               :body      (:body request)}]
+    (swap! request-log
+           (fn [entries]
+             (->> (conj entries entry)
+                  (take-last max-request-log-size)
+                  vec)))))
 
 (defn- check-error-mode
   "Check if we should simulate an error based on error-mode."
@@ -290,10 +336,17 @@
       (log/debug "Mock MEPM Response:" (:status response))
       response)))
 
+(defn- wrap-request-log [handler]
+  (fn [request]
+    (let [response (handler request)]
+      (append-request-log! request response)
+      response)))
+
 (defn create-handler
   "Create Ring handler for mock MEPM server."
   []
   (-> route-request
+      wrap-request-log
       (wrap-json-body {:keywords? true})
       wrap-json-response
       wrap-params
