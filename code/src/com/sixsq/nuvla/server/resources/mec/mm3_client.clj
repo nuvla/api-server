@@ -299,6 +299,36 @@
       retry-attempts)))
 
 
+(defn create-subscription
+  "Create a southbound lifecycle subscription via Mm3 interface.
+
+   Parameters:
+   - endpoint: MEPM base URL
+   - subscription: Subscription payload containing callback details
+   - options: HTTP client options (optional)"
+  [endpoint subscription & [{:keys [retry-attempts]
+                             :or {retry-attempts default-retry-attempts}
+                             :as options}]]
+  (log/info "Mm3: Creating lifecycle subscription on MEPM at" endpoint)
+  (let [url (str endpoint "/mm3/subscriptions")
+        http-opts (-> (build-http-options endpoint options)
+                      (assoc :body (json/write-value-as-string subscription)
+                             :content-type :json))]
+    (retry-request
+      (fn []
+        (try
+          (let [response (http/post url http-opts)]
+            (log/debug "Mm3 create subscription response:" response)
+            (parse-response response))
+          (catch Exception e
+            (log/error e "Mm3: Failed to create subscription")
+            {:success? false
+             :error    :connection-error
+             :message  (.getMessage e)
+             :exception e})))
+      retry-attempts)))
+
+
 ;;
 ;; Application Lifecycle Operations
 ;;
@@ -464,6 +494,34 @@
             (parse-response response))
           (catch Exception e
             (log/error e "Mm3: Failed to operate app instance")
+            {:success? false
+             :error    :connection-error
+             :message  (.getMessage e)
+             :exception e})))
+      retry-attempts)))
+
+
+(defn get-operation
+  "Get lifecycle operation status via Mm3 interface.
+
+   Parameters:
+   - endpoint: MEPM base URL
+   - operation-id: Southbound lifecycle operation identifier
+   - options: HTTP client options (optional)"
+  [endpoint operation-id & [{:keys [retry-attempts]
+                             :or {retry-attempts default-retry-attempts}
+                             :as options}]]
+  (log/info "Mm3: Getting operation" operation-id "from MEPM at" endpoint)
+  (let [url (str endpoint "/mm3/operations/" operation-id)
+        http-opts (build-http-options endpoint options)]
+    (retry-request
+      (fn []
+        (try
+          (let [response (http/get url http-opts)]
+            (log/debug "Mm3 get operation response:" response)
+            (parse-response response))
+          (catch Exception e
+            (log/error e "Mm3: Failed to get operation")
             {:success? false
              :error    :connection-error
              :message  (.getMessage e)

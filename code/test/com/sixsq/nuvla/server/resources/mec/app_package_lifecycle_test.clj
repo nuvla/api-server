@@ -2,6 +2,7 @@
   "Integration tests for ETSI MEC 010-2 Mm1 Application Package Lifecycle"
   (:require
     [cheshire.core :as json]
+    [clojure.string :as str]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -14,7 +15,8 @@
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context "mec/app_lcm/v2"))
+(def base-uri (str p/service-context "mec/mm1/app_pkgm/v1"))
+(def mm3-base-uri (str p/service-context "mec/mm3/app_pkgm/v1"))
 
 
 (deftest mm1-app-package-lifecycle
@@ -25,7 +27,7 @@
         session-user (-> (ltu/ring-app)
                          session
                          (content-type "application/json")
-                         (header authn-info-header "user/test-user user/test-user group/nuvla-anon"))]
+                         (header authn-info-header "user/test-user user/test-user group/nuvla-user group/nuvla-anon"))]
     
     (testing "POST /app_packages - Create MEC application package"
       (let [create-request {:appPkgName "test-mec-app"
@@ -68,9 +70,26 @@
             (is (= "test-mec-app" (:appName get-body)))
             (is (= "ONBOARDED" (:onboardingState get-body)))))
 
-        (testing "GET /app_packages/{appPkgId}/appD - Retrieve AppD descriptor"
+        (testing "GET /onboarded_app_packages and item aliases return the same package"
+          (let [query-response (-> session-admin
+                                   (request (str base-uri "/onboarded_app_packages")
+                                            :request-method :get)
+                                   :response)
+                query-body (json/parse-string (:body query-response) true)
+                packages (:AppPkgInfo query-body)
+                get-response (-> session-admin
+                                 (request (str base-uri "/onboarded_app_packages/" app-pkg-id)
+                                          :request-method :get)
+                                 :response)
+                get-body (json/parse-string (:body get-response) true)]
+            (is (= 200 (:status query-response)))
+            (is (some #(= app-pkg-id (:appPkgId %)) packages))
+            (is (= 200 (:status get-response)))
+            (is (= app-pkg-id (:appPkgId get-body)))))
+
+        (testing "GET /app_packages/{appPkgId}/appd - Retrieve AppD descriptor"
           (let [appd-response (-> session-admin
-                                  (request (str base-uri "/app_packages/" app-pkg-id "/appD")
+                                  (request (str base-uri "/app_packages/" app-pkg-id "/appd")
                                            :request-method :get)
                                   :response)
                 appd-body (json/parse-string (:body appd-response) true)]
@@ -79,6 +98,16 @@
             (is (= app-pkg-id (:appDId appd-body)))
             (is (= "test-mec-app" (:appName appd-body)))
             (is (re-find #"application/json" (get-in appd-response [:headers "Content-Type"] "")))))
+
+        (testing "GET /onboarded_app_packages/{appPkgId}/appd - Retrieve AppD descriptor alias"
+          (let [appd-response (-> session-admin
+                                  (request (str base-uri "/onboarded_app_packages/" app-pkg-id "/appd")
+                                           :request-method :get)
+                                  :response)
+                appd-body (json/parse-string (:body appd-response) true)]
+            (is (= 200 (:status appd-response)))
+            (is (= app-pkg-id (:appDId appd-body)))
+            (is (= "test-mec-app" (:appName appd-body)))))
 
         (testing "GET /app_packages/{appPkgId}/package_content - Retrieve package content"
           (let [content-response (-> session-admin
@@ -92,6 +121,70 @@
             (is (= "test-mec-app" (:appName content-body)))
             (is (re-find #"application/json" (get-in content-response [:headers "Content-Type"] "")))
             (is (string? (get-in content-response [:headers "Content-Disposition"])))))
+
+        (testing "GET /onboarded_app_packages/{appPkgId}/package_content - Retrieve package content alias"
+          (let [content-response (-> session-admin
+                                     (request (str base-uri "/onboarded_app_packages/" app-pkg-id "/package_content")
+                                              :request-method :get)
+                                     :response)
+                content-body (json/parse-string (:body content-response) true)]
+            (is (= 200 (:status content-response)))
+            (is (= app-pkg-id (:appDId content-body)))
+            (is (= "test-mec-app" (:appName content-body)))))
+
+        (testing "GET Mm3 package routes expose the same package subset read-only"
+          (let [query-response (-> session-admin
+                                   (request (str mm3-base-uri "/app_packages")
+                                            :request-method :get)
+                                   :response)
+                query-body (json/parse-string (:body query-response) true)
+                packages (:AppPkgInfo query-body)
+                get-response (-> session-admin
+                                 (request (str mm3-base-uri "/app_packages/" app-pkg-id)
+                                          :request-method :get)
+                                 :response)
+                get-body (json/parse-string (:body get-response) true)
+                appd-response (-> session-admin
+                                  (request (str mm3-base-uri "/app_packages/" app-pkg-id "/appd")
+                                           :request-method :get)
+                                  :response)
+                appd-body (json/parse-string (:body appd-response) true)
+                content-response (-> session-admin
+                                     (request (str mm3-base-uri "/app_packages/" app-pkg-id "/package_content")
+                                              :request-method :get)
+                                     :response)
+                content-body (json/parse-string (:body content-response) true)]
+            (is (= 200 (:status query-response)))
+            (is (= "/mec/mm3/app_pkgm/v1/app_packages" (get-in query-body [:_links :self :href])))
+            (is (some #(= (str "/mec/mm3/app_pkgm/v1/app_packages/" app-pkg-id)
+                          (get-in % [:_links :self :href]))
+                      packages))
+            (is (= 200 (:status get-response)))
+            (is (= (str "/mec/mm3/app_pkgm/v1/app_packages/" app-pkg-id)
+                   (get-in get-body [:_links :self :href])))
+            (is (= 200 (:status appd-response)))
+            (is (= app-pkg-id (:appDId appd-body)))
+            (is (= 200 (:status content-response)))
+            (is (= app-pkg-id (:appDId content-body)))))
+
+        (testing "Mm3 package routes reject write operations"
+          (let [post-response (-> session-admin
+                                  (request (str mm3-base-uri "/app_packages")
+                                           :request-method :post
+                                           :body (json/generate-string {:appPkgName "forbidden"}))
+                                  :response)
+                delete-response (-> session-admin
+                                    (request (str mm3-base-uri "/app_packages/" app-pkg-id)
+                                             :request-method :delete)
+                                    :response)
+                put-response (-> session-admin
+                                 (request (str mm3-base-uri "/app_packages/" app-pkg-id "/package_content")
+                                          :request-method :put
+                                          :body (json/generate-string {:appName "forbidden"}))
+                                 :response)]
+            (is (= 405 (:status post-response)))
+            (is (= 405 (:status delete-response)))
+            (is (= 405 (:status put-response)))))
 
         (testing "PUT /app_packages/{appPkgId}/package_content - Update package descriptor"
           (let [updated-content {:appName "updated-mec-app"
@@ -228,6 +321,75 @@
                                   :body (json/generate-string {:appName "missing"}))
                          :response)]
         (is (= 404 (:status response)))))))
+
+
+(deftest package-subscription-lifecycle
+  (let [session-user (-> (ltu/ring-app)
+                         session
+                         (content-type "application/json")
+                         (header authn-info-header "user/test-user user/test-user group/nuvla-user group/nuvla-anon"))]
+
+    (testing "Mm1 package subscriptions can be created, listed, retrieved, and deleted"
+      (let [create-request {:subscriptionType "AppPackageOnBoardingNotification"
+                            :callbackUri      "https://example.org/mm1-webhook"
+                            :appPkgFilter     {:appName "test-app"}}
+            create-response (-> session-user
+                                (request (str base-uri "/subscriptions")
+                                         :request-method :post
+                                         :body (json/generate-string create-request))
+                                :response)
+            create-body (json/parse-string (:body create-response) true)
+            sub-id (:id create-body)
+            self-uri (str "/api" (get-in create-body [:_links :self :href]))
+            list-response (-> session-user
+                              (request (str base-uri "/subscriptions")
+                                       :request-method :get)
+                              :response)
+            list-body (json/parse-string (:body list-response) true)
+            get-response (-> session-user
+                             (request self-uri
+                                      :request-method :get)
+                             :response)
+            get-body (json/parse-string (:body get-response) true)
+            delete-response (-> session-user
+                                (request self-uri
+                                         :request-method :delete)
+                                :response)]
+        (is (= 201 (:status create-response)) (pr-str create-body))
+        (is (= "AppPackageOnBoardingNotification" (:subscriptionType create-body)))
+        (is (str/starts-with? (get-in list-body [:_links :self :href])
+                              "/mec/mm1/app_pkgm/v1/subscriptions"))
+        (is (= 200 (:status get-response)))
+        (is (= sub-id (:id get-body)))
+        (is (= 204 (:status delete-response)))))
+
+    (testing "Mm3 package subscriptions use the Mm3 route context"
+      (let [create-request {:subscriptionType "AppPackageStateChangeNotification"
+                            :callbackUri      "https://example.org/mm3-webhook"
+                            :appPkgFilter     {:appPkgId "module/test-123"}}
+            create-response (-> session-user
+                                (request (str mm3-base-uri "/subscriptions")
+                                         :request-method :post
+                                         :body (json/generate-string create-request))
+                                :response)
+            create-body (json/parse-string (:body create-response) true)
+            sub-id (:id create-body)
+            self-uri (str "/api" (get-in create-body [:_links :self :href]))
+            get-response (-> session-user
+                             (request self-uri
+                                      :request-method :get)
+                             :response)
+            get-body (json/parse-string (:body get-response) true)
+            delete-response (-> session-user
+                                (request self-uri
+                                         :request-method :delete)
+                                :response)]
+        (is (= 201 (:status create-response)) (pr-str create-body))
+        (is (str/starts-with? (get-in create-body [:_links :self :href])
+                              "/mec/mm3/app_pkgm/v1/subscriptions/subscription/"))
+        (is (= 200 (:status get-response)))
+        (is (= sub-id (:id get-body)))
+        (is (= 204 (:status delete-response)))))))
 
 
 (deftest mm1-mec-module-integration

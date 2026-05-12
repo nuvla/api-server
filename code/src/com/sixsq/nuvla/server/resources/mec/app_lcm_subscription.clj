@@ -1,7 +1,8 @@
 (ns com.sixsq.nuvla.server.resources.mec.app-lcm-subscription
   "MEC 010-2 Application Lifecycle Subscription
    
-   Implements ETSI GS MEC 010-2 v2.2.1 subscription model for notifications:
+   Implements the ETSI GS MEC 010-2 lifecycle subscription model
+   using v4.1.1 as the current baseline:
    - AppInstanceStateChangeNotification: App instance state changes
    - AppLcmOpOccStateChangeNotification: Operation occurrence state changes
    
@@ -354,8 +355,8 @@
    :operational-state    (:operational-state app-instance)
    :change-type          change-type
    :previous-state       previous-state
-   :_links               {:subscription {:href (str "/mec/app_lcm/v2/subscriptions/" (:id subscription))}
-                          :app-instance {:href (str "/mec/app_lcm/v2/app_instances/" (:id app-instance))}}})
+   :_links               {:subscription {:href (str "/mec/mm1/app_lcm/v1/subscriptions/" (:id subscription))}
+                          :app-instance {:href (str "/mec/mm1/app_lcm/v1/app_instances/" (:id app-instance))}}})
 
 
 (defn build-app-lcm-op-occ-notification
@@ -382,9 +383,9 @@
    :previous-state          previous-state
    :start-time              (:start-time app-lcm-op-occ)
    :state-entered-time      (:state-entered-time app-lcm-op-occ)
-   :_links                  {:subscription {:href (str "/mec/app_lcm/v2/subscriptions/" (:id subscription))}
-                             :app-lcm-op-occ {:href (str "/mec/app_lcm/v2/app_lcm_op_occs/" (:id app-lcm-op-occ))}
-                             :app-instance {:href (str "/mec/app_lcm/v2/app_instances/" (:app-instance-id app-lcm-op-occ))}}})
+   :_links                  {:subscription {:href (str "/mec/mm1/app_lcm/v1/subscriptions/" (:id subscription))}
+                             :app-lcm-op-occ {:href (str "/mec/mm1/app_lcm/v1/app_lcm_op_occs/" (:id app-lcm-op-occ))}
+                             :app-instance {:href (str "/mec/mm1/app_lcm/v1/app_instances/" (:app-instance-id app-lcm-op-occ))}}})
 
 
 ;;

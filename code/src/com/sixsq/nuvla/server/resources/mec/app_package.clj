@@ -2,8 +2,8 @@
   "ETSI MEC 010-2 Mm1 Application Package Management API
    
    Reference Point: Mm1 (OSS ↔ MEO)
-   Standard: ETSI GS MEC 010-2 v2.2.1
-   Sections: 7.3.1, 7.3.2
+   Standard: ETSI GS MEC 010-2 v4.1.1
+   Canonical API tree: app_pkgm/v1
    
    The Mm1 reference point enables OSS to:
    - Query available application packages (GET /app_packages)
@@ -22,6 +22,7 @@
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
+    [com.sixsq.nuvla.server.resources.mec.notification-dispatcher :as dispatcher]
     [com.sixsq.nuvla.server.resources.module-application-mec :as module-app-mec]
     [com.sixsq.nuvla.server.resources.module.utils :as module-utils]
     [com.sixsq.nuvla.server.resources.spec.module-application-mec :as mec-spec]
@@ -31,7 +32,12 @@
 
 (def ^:const resource-type "mec-app-package")
 
-(def ^:const base-path "/mec/app_lcm/v2/app_packages")
+(def ^:const base-path "/mec/mm1/app_pkgm/v1/app_packages")
+
+
+(defn- request-base-path
+  [request]
+  (or (:mec/base-path request) base-path))
 
 
 ;;
@@ -56,10 +62,12 @@
 
 
 (defn package-links
-  [app-pkg-id]
-  {:self {:href (str base-path "/" app-pkg-id)}
-   :appPkgContent {:href (str base-path "/" app-pkg-id "/package_content")}
-   :appD {:href (str base-path "/" app-pkg-id "/appD")}})
+  ([app-pkg-id]
+   (package-links app-pkg-id base-path))
+  ([app-pkg-id route-base-path]
+   {:self {:href (str route-base-path "/" app-pkg-id)}
+    :appPkgContent {:href (str route-base-path "/" app-pkg-id "/package_content")}
+    :appD {:href (str route-base-path "/" app-pkg-id "/appd")}}))
 
 
 (defn onboarding-state
@@ -168,27 +176,29 @@
 
 (defn module->app-pkg-info
   "Converts a Nuvla module to MEC AppPkgInfo format (ETSI MEC 010-2 section 7.3.2.2)"
-  [module]
-  (let [content (:content module)
-        subtype (:subtype module)]
-    {:id (:id module)
-     :appPkgId (:id module)
-     :appDId (or (:appDId content) (:id module))
-     :appName (or (:appName content) (:name module))
-     :appProvider (or (:appProvider content) (:parent-path module))
-     :appSoftVersion (or (:appSoftVersion content) 
-                         (str (count (:versions module))))
-     :appDVersion (or (:appDVersion content) "1.0")
-     :checksum {:algorithm "SHA-256"
-                :hash (or (:content-id module) "not-computed")}
-     :operationalState (operational-state module)
-     :usageState (if (:published module) "IN_USE" "NOT_IN_USE")
-     :onboardingState (onboarding-state module)
-     :appPkgPath (:path module)
-     :moduletype (:subtype module)
-     :created (:created module)
-     :updated (:updated module)
-     :_links (package-links (:id module))}))
+  ([module]
+   (module->app-pkg-info module base-path))
+  ([module route-base-path]
+   (let [content (:content module)
+         subtype (:subtype module)]
+     {:id (:id module)
+      :appPkgId (:id module)
+      :appDId (or (:appDId content) (:id module))
+      :appName (or (:appName content) (:name module))
+      :appProvider (or (:appProvider content) (:parent-path module))
+      :appSoftVersion (or (:appSoftVersion content)
+                          (str (count (:versions module))))
+      :appDVersion (or (:appDVersion content) "1.0")
+      :checksum {:algorithm "SHA-256"
+                 :hash (or (:content-id module) "not-computed")}
+      :operationalState (operational-state module)
+      :usageState (if (:published module) "IN_USE" "NOT_IN_USE")
+      :onboardingState (onboarding-state module)
+      :appPkgPath (:path module)
+      :moduletype subtype
+      :created (:created module)
+      :updated (:updated module)
+      :_links (package-links (:id module) route-base-path)})))
 
 
 (defn app-pkg-filter
@@ -233,8 +243,9 @@
    
    Returns: AppPkgInfo[] (section 7.3.2.2)"
   [request]
-  (try
-    (let [params (:params request)
+  (let [route-base-path (request-base-path request)]
+    (try
+      (let [params (:params request)
           
           ;; Extract MEC query parameters
           app-pkg-id (:appPkgId params)
@@ -264,7 +275,7 @@
                             (map (fn [module]
                                    (-> module
                                        (module-utils/retrieve-module-content {:params {:uuid (u/id->uuid (:id module))}})
-                                       module->app-pkg-info)))
+                                       (module->app-pkg-info route-base-path))))
                             (filter #(matches-app-package-filters? % {:appPkgId app-pkg-id
                                                                       :appDId app-d-id
                                                                       :appName app-name
@@ -277,12 +288,12 @@
       (log/info "Mm1: Query app_packages, found" (count app-packages) "packages"
                 "filters:" filter-str)
       
-      (r/json-response {:AppPkgInfo app-packages
-                        :_links {:self {:href base-path}}}))
-    
-    (catch Exception e
-      (log/error e "Mm1: Error querying app_packages")
-      (problem-response 500 "Internal Server Error" (.getMessage e)))))
+        (r/json-response {:AppPkgInfo app-packages
+                          :_links {:self {:href route-base-path}}}))
+      
+      (catch Exception e
+        (log/error e "Mm1: Error querying app_packages")
+        (problem-response 500 "Internal Server Error" (.getMessage e))))))
 
 
 ;;
@@ -298,29 +309,30 @@
    
    Returns: AppPkgInfo (section 7.3.2.2)"
   [request]
-  (try
-    (let [app-pkg-id (get-in request [:params :appPkgId])
+  (let [route-base-path (request-base-path request)]
+    (try
+      (let [app-pkg-id (get-in request [:params :appPkgId])
           
-          module (ensure-mec-app-package! request app-pkg-id)
+            module (ensure-mec-app-package! request app-pkg-id)
 
-          ;; Convert to AppPkgInfo
-          app-pkg-info (module->app-pkg-info module)]
+            ;; Convert to AppPkgInfo
+            app-pkg-info (module->app-pkg-info module route-base-path)]
       
-      (log/info "Mm1: Get app_package" app-pkg-id)
+        (log/info "Mm1: Get app_package" app-pkg-id)
       
-      (r/json-response app-pkg-info))
-    
-    (catch clojure.lang.ExceptionInfo e
-      (let [data (ex-data e)]
-        (log/warn "Mm1: App package not found:" (get-in request [:params :appPkgId]))
-        (problem-response (or (:status data) 404)
-                          (or (:title data) "Not Found")
-                          (or (:detail data) (.getMessage e))
-                          (or (:type data) "about:blank"))))
-    
-    (catch Exception e
-      (log/error e "Mm1: Error getting app_package")
-      (problem-response 500 "Internal Server Error" (.getMessage e)))))
+        (r/json-response app-pkg-info))
+      
+      (catch clojure.lang.ExceptionInfo e
+        (let [data (ex-data e)]
+          (log/warn "Mm1: App package not found:" (get-in request [:params :appPkgId]))
+          (problem-response (or (:status data) 404)
+                            (or (:title data) "Not Found")
+                            (or (:detail data) (.getMessage e))
+                            (or (:type data) "about:blank"))))
+      
+      (catch Exception e
+        (log/error e "Mm1: Error getting app_package")
+        (problem-response 500 "Internal Server Error" (.getMessage e))))))
 
 
 ;;
@@ -405,9 +417,10 @@
           app-pkg-info (module->app-pkg-info module)]
       
       (log/info "Mm1: Created app_package" app-pkg-name "version" app-pkg-version "id" module-id)
+      (dispatcher/dispatch-app-package-onboarding! app-pkg-info)
       
       (-> (json-response-status app-pkg-info 201)
-          (rur/header "Location" (str "/mec/app_lcm/v2/app_packages/" module-id))))
+          (rur/header "Location" (str base-path "/" module-id))))
     
     (catch clojure.lang.ExceptionInfo e
       (let [data (ex-data e)]
@@ -438,9 +451,9 @@
    Returns: 204 No Content on success"
   [request]
   (try
-    (let [app-pkg-id (get-in request [:params :appPkgId])
-          
-          module (ensure-mec-app-package! request app-pkg-id)
+    (let [app-pkg-id    (get-in request [:params :appPkgId])
+          module        (ensure-mec-app-package! request app-pkg-id)
+          app-pkg-info  (module->app-pkg-info module)
           
           ;; Check if package is in use
           _ (when (:published module)
@@ -459,6 +472,7 @@
           _ (crud/delete delete-request)]
       
       (log/info "Mm1: Delete app_package" app-pkg-id)
+      (dispatcher/dispatch-app-package-state-change! app-pkg-info "DELETION" (:operationalState app-pkg-info))
       
       {:status 204
        :body nil})
@@ -483,7 +497,7 @@
     (let [app-pkg-id (get-in request [:params :appPkgId])
           module (ensure-mec-app-package! request app-pkg-id)
           appd (:content module)]
-      (log/info "Mm1: Get appD for app_package" app-pkg-id)
+      (log/info "Mm1: Get appd for app_package" app-pkg-id)
       (-> (r/json-response appd)
           (rur/content-type "application/json")))
     (catch clojure.lang.ExceptionInfo e
@@ -493,7 +507,7 @@
                           (or (:detail data) (.getMessage e))
                           (or (:type data) "about:blank"))))
     (catch Exception e
-      (log/error e "Mm1: Error getting appD")
+      (log/error e "Mm1: Error getting appd")
       (problem-response 500 "Internal Server Error" (.getMessage e)))))
 
 
@@ -529,9 +543,16 @@
    onboarded package content associated with the module-backed package."
   [request]
   (try
-    (let [app-pkg-id (get-in request [:params :appPkgId])
-          body (:body request)
-          _ (update-package-content! request app-pkg-id body)]
+    (let [app-pkg-id      (get-in request [:params :appPkgId])
+          body            (:body request)
+          previous-module (ensure-mec-app-package! request app-pkg-id)
+          previous-state  (operational-state previous-module)
+          updated-module  (update-package-content! request app-pkg-id body)
+          updated-info    (module->app-pkg-info updated-module)]
+      (when (not= previous-state (:operationalState updated-info))
+        (dispatcher/dispatch-app-package-state-change! updated-info
+                                                       "OPERATIONAL_STATE"
+                                                       previous-state))
       (log/info "Mm1: Updated package_content for app_package" app-pkg-id)
       {:status 204
        :body nil})
@@ -558,6 +579,12 @@
         :post create-app-package}]
    ["/:appPkgId" {:get get-app-package
                   :delete delete-app-package}]
-   ["/:appPkgId/appD" {:get get-app-package-appd}]
+   ["/:appPkgId/appd" {:get get-app-package-appd}]
+   ["/onboarded_app_packages" {:get query-app-packages}]
+   ["/onboarded_app_packages/:appPkgId" {:get get-app-package
+                                         :delete delete-app-package}]
+   ["/onboarded_app_packages/:appPkgId/appd" {:get get-app-package-appd}]
+   ["/onboarded_app_packages/:appPkgId/package_content" {:get get-app-package-content
+                                                         :put put-app-package-content}]
    ["/:appPkgId/package_content" {:get get-app-package-content
                                   :put put-app-package-content}]])

@@ -6,7 +6,7 @@
    existing deployment resources to expose MEC-compliant endpoints.
    
    Scope: MEO-level orchestration only
-   Standard: ETSI GS MEC 010-2 v2.2.1"
+   Standard baseline: ETSI GS MEC 010-2 v4.1.1"
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
@@ -122,10 +122,10 @@
       
       ;; Add HATEOAS links
       true
-      (assoc :_links {:self        {:href (str "/app_lcm/v2/app_instances/" deployment-id)}
-                      :instantiate {:href (str "/app_lcm/v2/app_instances/" deployment-id "/instantiate")}
-                      :terminate   {:href (str "/app_lcm/v2/app_instances/" deployment-id "/terminate")}
-                      :operate     {:href (str "/app_lcm/v2/app_instances/" deployment-id "/operate")}}))))
+      (assoc :_links {:self        {:href (str "/mec/mm1/app_lcm/v1/app_instances/" deployment-id)}
+                      :instantiate {:href (str "/mec/mm1/app_lcm/v1/app_instances/" deployment-id "/instantiate")}
+                      :terminate   {:href (str "/mec/mm1/app_lcm/v1/app_instances/" deployment-id "/terminate")}
+                      :operate     {:href (str "/mec/mm1/app_lcm/v1/app_instances/" deployment-id "/operate")}}))))
 
 
 (defn app-instance-info->deployment

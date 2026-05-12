@@ -6,7 +6,7 @@
    to ensure consistent error reporting.
    
    Standard: RFC 7807 (Problem Details for HTTP APIs)
-   MEC Standard: ETSI GS MEC 010-2 v2.2.1"
+   MEC baseline: ETSI GS MEC 010-2 v4.1.1"
   (:require
     [clojure.tools.logging :as log]))
 

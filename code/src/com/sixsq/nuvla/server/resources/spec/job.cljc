@@ -232,13 +232,31 @@
              :json-schema/order 42)))
 
 
+(s/def ::mec-last-notification
+  (-> (st/spec map?)
+      (assoc :name "mec-last-notification"
+             :json-schema/type "map"
+             :json-schema/description "summary of the most recent southbound Mm3.003 lifecycle notification correlated to this job"
+
+             :json-schema/order 43)))
+
+
+(s/def ::mec-southbound-operation-id
+  (-> (st/spec string?)
+      (assoc :name "mec-southbound-operation-id"
+             :json-schema/type "string"
+             :json-schema/description "southbound Mm3 lifecycle operation identifier correlated with this job"
+
+             :json-schema/order 44)))
+
+
 (s/def ::version
   (-> (st/spec nat-int?)
     (assoc :name "version"
            :json-schema/type "integer"
            :json-schema/description "Compatibility indicator which represent Job-engine major version"
 
-           :json-schema/order 43)))
+           :json-schema/order 45)))
 
 
 (s/def ::schema
@@ -266,4 +284,6 @@
                                ::mec-request-params
                                ::mepm-id
                                ::mepm-endpoint
-                               ::mec-host-id]}))
+                               ::mec-host-id
+                               ::mec-last-notification
+                               ::mec-southbound-operation-id]}))

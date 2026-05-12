@@ -1,4 +1,4 @@
-(ns com.sixsq.nuvla.server.resources.mec.app-lcm-v2-test
+(ns com.sixsq.nuvla.server.resources.mec.app-lcm-test
   "Tests for MEC 010-2 Application Lifecycle Management API
    
    Tests cover:
@@ -8,17 +8,18 @@
    - Operation occurrence tracking
    - Error handling (RFC 7807)
    
-   Standard: ETSI GS MEC 010-2 v2.2.1"
+   Standard: ETSI GS MEC 010-2 v4.1.1"
   (:require
+    [clojure.string :as str]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.deployment :as deployment-resource]
     [com.sixsq.nuvla.server.resources.deployment.utils :as deployment-utils]
     [com.sixsq.nuvla.server.resources.mec.app-instance :as app-instance]
+    [com.sixsq.nuvla.server.resources.mec.app-lcm :as app-lcm]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-op-occ :as app-lcm-op-occ]
     [com.sixsq.nuvla.server.resources.mec.mm3-client :as mm3]
-    [com.sixsq.nuvla.server.resources.mec.notification-dispatcher :as dispatcher]
-    [com.sixsq.nuvla.server.resources.mec.app-lcm-v2 :as app-lcm-v2]))
+    [com.sixsq.nuvla.server.resources.mec.notification-dispatcher :as dispatcher]))
 
 
 ;;
@@ -50,16 +51,17 @@
    :instantiationState "NOT_INSTANTIATED"
    :mecHostInformation {:hostId   "nuvlabox/edge-host-1"
                         :hostName "nuvlabox/edge-host-1"}
-   :_links             {:self        {:href "/app_lcm/v2/app_instances/deployment/test-123"}
-                        :instantiate {:href "/app_lcm/v2/app_instances/deployment/test-123/instantiate"}
-                        :terminate   {:href "/app_lcm/v2/app_instances/deployment/test-123/terminate"}
-                        :operate     {:href "/app_lcm/v2/app_instances/deployment/test-123/operate"}}})
+   :_links             {:self        {:href "/mec/mm1/app_lcm/v1/app_instances/deployment/test-123"}
+                        :instantiate {:href "/mec/mm1/app_lcm/v1/app_instances/deployment/test-123/instantiate"}
+                        :terminate   {:href "/mec/mm1/app_lcm/v1/app_instances/deployment/test-123/terminate"}
+                        :operate     {:href "/mec/mm1/app_lcm/v1/app_instances/deployment/test-123/operate"}}})
 
 
 (def sample-job
   {:id                "job/instantiate-123"
    :state             "RUNNING"
    :operation-type    "INSTANTIATE"
+   :mec-southbound-operation-id "op/southbound-123"
    :target-resource   "deployment/test-123"
    :start-time        "2025-10-21T10:00:00Z"
    :state-entered-time "2025-10-21T10:00:05Z"})
@@ -70,6 +72,8 @@
    :state              "QUEUED"
    :mec-operation-type "INSTANTIATE"
    :mec-app-instance-id "deployment/test-123"
+   :mec-southbound-operation-id "op/southbound-123"
+   :mepm-endpoint      "https://mepm.example.com:8443"
    :target-resource    {:href "deployment/test-123"}})
 
 
@@ -86,6 +90,8 @@
    :state              "QUEUED"
    :mec-operation-type "OPERATE"
    :mec-app-instance-id "deployment/test-123"
+   :mec-southbound-operation-id "op/southbound-456"
+   :mepm-endpoint      "https://mepm.example.com:8443"
    :target-resource    {:href "deployment/test-123"}})
 
 
@@ -231,6 +237,7 @@
       (is (= "INSTANTIATE" (:operationType result)))
       (is (= "PROCESSING" (:operationState result)))
       (is (= "deployment/test-123" (:appInstanceId result)))
+      (is (= "op/southbound-123" (:mepmOperationId result)))
       (is (= "2025-10-21T10:00:00Z" (:startTime result)))))
   
   (testing "Failed job includes error information"
@@ -254,7 +261,7 @@
 
 (deftest test-problem-details-format
   (testing "Not found error has correct structure"
-    (let [error (app-lcm-v2/not-found-error "deployment/missing")]
+    (let [error (app-lcm/not-found-error "deployment/missing")]
       (is (= 404 (:status error)))
       (is (= "Resource Not Found" (:title error)))
       (is (contains? error :type))
@@ -262,19 +269,19 @@
       (is (= "deployment/missing" (:instance error)))))
   
   (testing "Validation error has correct structure"
-    (let [error (app-lcm-v2/validation-error "Invalid input")]
+    (let [error (app-lcm/validation-error "Invalid input")]
       (is (= 400 (:status error)))
       (is (= "Validation Error" (:title error)))
       (is (= "Invalid input" (:detail error)))))
   
   (testing "Conflict error has correct structure"
-    (let [error (app-lcm-v2/conflict-error "Resource already exists")]
+    (let [error (app-lcm/conflict-error "Resource already exists")]
       (is (= 409 (:status error)))
       (is (= "Resource Conflict" (:title error)))
       (is (= "Resource already exists" (:detail error)))))
 
   (testing "Service unavailable error has correct structure"
-    (let [error (app-lcm-v2/service-unavailable-error "Upstream MEPM unavailable")]
+    (let [error (app-lcm/service-unavailable-error "Upstream MEPM unavailable")]
       (is (= 503 (:status error)))
       (is (= "Service Unavailable" (:title error)))
       (is (= "Upstream MEPM unavailable" (:detail error))))))
@@ -286,7 +293,7 @@
 
 (deftest test-api-routes-defined
   (testing "All required routes are defined"
-    (let [routes app-lcm-v2/routes
+    (let [routes app-lcm/routes
           paths  (map first routes)]
       (is (some #(re-find #"/app_instances$" %) paths))
       (is (some #(re-find #"/app_instances/:id$" %) paths))
@@ -299,7 +306,7 @@
 
 (deftest test-base-uri
   (testing "Base URI follows MEC 010-2 format"
-    (is (= "app_lcm/v2" app-lcm-v2/base-uri))))
+    (is (= "app_lcm/v1" app-lcm/base-uri))))
 
 
 (deftest test-create-app-instance-handler
@@ -313,7 +320,7 @@
                                  dispatcher/dispatch-app-instance-state-change! (fn [app-instance change-type previous-state]
                                                                                   (reset! dispatch-args [app-instance change-type previous-state])
                                                                                   [])]
-                     (app-lcm-v2/create-app-instance-handler {:body sample-create-request}))]
+                     (app-lcm/create-app-instance-handler {:body sample-create-request}))]
       (is (= 201 (:status response)))
       (is (= "deployment/test-123" (get-in response [:body :appInstanceId])))
       (is (= "module/nginx-app" (get-in response [:body :appDId])))
@@ -321,7 +328,7 @@
       (is (= "deployment/test-123" (get-in (first @dispatch-args) [:appInstanceId])))))
   
   (testing "Create app instance validates missing appDId"
-    (let [response (app-lcm-v2/create-app-instance-handler {:body {}})]
+    (let [response (app-lcm/create-app-instance-handler {:body {}})]
       (is (= 400 (:status response)))
       (is (= "Validation Error" (get-in response [:body :title]))))))
 
@@ -331,7 +338,7 @@
     (let [response (with-redefs [crud/query (fn [_]
                                               {:status 200
                                                :body {:resources [sample-deployment]}})]
-                     (app-lcm-v2/list-app-instances-handler {:params {}}))]
+                     (app-lcm/list-app-instances-handler {:params {}}))]
       (is (= 200 (:status response)))
       (is (= 1 (count (get-in response [:body :items]))))
       (is (= "deployment/test-123" (get-in response [:body :items 0 :appInstanceId]))))))
@@ -341,7 +348,7 @@
   (testing "Create subscription rejects duplicate active subscription"
     (let [add-called? (atom false)
           response    (with-redefs-fn
-                        {#'app-lcm-v2/query-user-subscriptions (fn [_]
+                        {#'app-lcm/query-user-subscriptions (fn [_]
                                                                  [{:id                  "mec-subscription/existing"
                                                                    :subscription-type   "AppLcmOpOccStateChangeNotification"
                                                                    :callback-uri        "http://localhost:18082"
@@ -352,7 +359,7 @@
                                                                    (reset! add-called? true)
                                                                    {:status 201
                                                                     :body {:resource-id "mec-subscription/new"}})}
-                        #(app-lcm-v2/create-subscription-handler
+                        #(app-lcm/create-subscription-handler
                            {:identity {:user-id "user/alice"}
                             :body     {:subscriptionType "AppLcmOpOccStateChangeNotification"
                                        :callbackUri      "http://localhost:18082"
@@ -363,7 +370,7 @@
 
   (testing "Create subscription accepts same callback with different filter"
     (let [response (with-redefs-fn
-                     {#'app-lcm-v2/query-user-subscriptions (fn [_]
+                     {#'app-lcm/query-user-subscriptions (fn [_]
                                                               [{:id                  "mec-subscription/existing"
                                                                 :subscription-type   "AppLcmOpOccStateChangeNotification"
                                                                 :callback-uri        "http://localhost:18082"
@@ -380,7 +387,7 @@
                                                                  :owner               "user/alice"
                                                                  :active              true
                                                                  :app-lcm-op-occ-filter {:operation-type "INSTANTIATE"}})}
-                     #(app-lcm-v2/create-subscription-handler
+                     #(app-lcm/create-subscription-handler
                         {:identity {:user-id "user/alice"}
                          :body     {:subscriptionType "AppLcmOpOccStateChangeNotification"
                                     :callbackUri      "http://localhost:18082"
@@ -393,7 +400,7 @@
   (testing "Get app instance returns translated deployment"
     (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
                                                                sample-deployment)]
-                     (app-lcm-v2/get-app-instance-handler {:params {:id "deployment/test-123"}}))]
+                     (app-lcm/get-app-instance-handler {:params {:id "deployment/test-123"}}))]
       (is (= 200 (:status response)))
       (is (= "deployment/test-123" (get-in response [:body :appInstanceId])))))
   
@@ -401,7 +408,7 @@
     (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
                                                                (throw (ex-info "missing"
                                                                                {:status 404})))]
-                     (app-lcm-v2/get-app-instance-handler {:params {:id "deployment/missing"}}))]
+                     (app-lcm/get-app-instance-handler {:params {:id "deployment/missing"}}))]
       (is (= 404 (:status response))))))
 
 
@@ -413,14 +420,14 @@
                                  crud/delete (fn [request]
                                                (reset! deleted request)
                                                {:status 200})]
-                     (app-lcm-v2/delete-app-instance-handler {:params {:id "deployment/test-123"}}))]
+                     (app-lcm/delete-app-instance-handler {:params {:id "deployment/test-123"}}))]
       (is (= 204 (:status response)))
       (is (= "deployment" (get-in @deleted [:params :resource-name])))))
   
   (testing "Delete app instance rejects instantiated deployment"
     (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
                                                                (assoc sample-deployment :state "STARTED"))]
-                     (app-lcm-v2/delete-app-instance-handler {:params {:id "deployment/test-123"}}))]
+                     (app-lcm/delete-app-instance-handler {:params {:id "deployment/test-123"}}))]
       (is (= 409 (:status response)))
       (is (= "Resource Conflict" (get-in response [:body :title]))))))
 
@@ -430,17 +437,31 @@
     (let [response (with-redefs [crud/query (fn [_]
                                               {:status 200
                                                :body {:resources [sample-job]}})]
-                     (app-lcm-v2/list-app-lcm-op-occs-handler {:params {}}))]
+                     (app-lcm/list-app-lcm-op-occs-handler {:params {}}))]
       (is (= 200 (:status response)))
       (is (= 1 (count (get-in response [:body :items]))))
-      (is (= "job/instantiate-123" (get-in response [:body :items 0 :lcmOpOccId]))))))
+      (is (= "job/instantiate-123" (get-in response [:body :items 0 :lcmOpOccId])))))
+
+  (testing "List operation occurrences overlays southbound state for non-final jobs"
+    (let [response (with-redefs [crud/query (fn [_]
+                                              {:status 200
+                                               :body {:resources [sample-mec-operate-job]}})
+                                 mm3/get-operation (fn [_ operation-id & _]
+                                                     {:success? true
+                                                      :status 200
+                                                      :data {:id operation-id
+                                                             :status "PROCESSING"}})]
+                     (app-lcm/list-app-lcm-op-occs-handler {:params {}}))]
+      (is (= 200 (:status response)))
+      (is (= "PROCESSING" (get-in response [:body :items 0 :operationState])))
+      (is (= "op/southbound-456" (get-in response [:body :items 0 :mepmOperationId]))))))
 
 
 (deftest test-get-app-lcm-op-occ-handler
   (testing "Get operation occurrence returns translated job"
     (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
                                                                sample-job)]
-                     (app-lcm-v2/get-app-lcm-op-occ-handler {:params {:id "job/instantiate-123"}}))]
+                     (app-lcm/get-app-lcm-op-occ-handler {:params {:id "job/instantiate-123"}}))]
       (is (= 200 (:status response)))
       (is (= "INSTANTIATE" (get-in response [:body :operationType])))))
   
@@ -450,8 +471,52 @@
                                                                 :action "start_deployment"
                                                                 :state "RUNNING"
                                                                 :target-resource "deployment/test-123"})]
-                     (app-lcm-v2/get-app-lcm-op-occ-handler {:params {:id "job/other"}}))]
-      (is (= 404 (:status response))))))
+                     (app-lcm/get-app-lcm-op-occ-handler {:params {:id "job/other"}}))]
+      (is (= 404 (:status response)))))
+
+  (testing "Get operation occurrence overlays southbound operation state when available"
+    (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               sample-mec-instantiate-job)
+                                 mm3/get-operation (fn [_ _ & _]
+                                                     {:success? true
+                                                      :status 200
+                                                      :data {:id "op/southbound-123"
+                                                             :status "COMPLETED"}})]
+                     (app-lcm/get-app-lcm-op-occ-handler {:params {:id "job/instantiate-123"}}))]
+      (is (= 200 (:status response)))
+      (is (= "COMPLETED" (get-in response [:body :operationState])))
+      (is (= "op/southbound-123" (get-in response [:body :mepmOperationId])))))
+
+  (testing "Get operation occurrence keeps local state if southbound lookup fails"
+    (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               sample-mec-instantiate-job)
+                                 mm3/get-operation (fn [_ _ & _]
+                                                     {:success? false
+                                                      :status 503
+                                                      :error :server-error
+                                                      :message "degraded"})]
+                     (app-lcm/get-app-lcm-op-occ-handler {:params {:id "job/instantiate-123"}}))]
+      (is (= 200 (:status response)))
+      (is (= "STARTING" (get-in response [:body :operationState]))))))
+
+
+(deftest test-lifecycle-handlers-use-shared-submit-path
+  (let [calls (atom [])]
+    (with-redefs [app-lcm/submit-lifecycle-operation! (fn [request operation-type]
+                                                        (swap! calls conj [operation-type request])
+                                                        {:lcmOpOccId    (str "job/" (str/lower-case operation-type))
+                                                         :operationType operation-type})]
+      (let [instantiate-response (app-lcm/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                                            :body   {:grantId "grant-123"}})
+            terminate-response   (app-lcm/terminate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                                          :body   {:terminationType "GRACEFUL"}})
+            operate-response     (app-lcm/operate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                                        :body   {:changeStateTo "STARTED"}})]
+        (is (= 202 (:status instantiate-response)))
+        (is (= 202 (:status terminate-response)))
+        (is (= 202 (:status operate-response)))
+        (is (= ["INSTANTIATE" "TERMINATE" "OPERATE"]
+               (map first @calls)))))))
 
 
 (deftest test-instantiate-app-instance-handler
@@ -485,7 +550,7 @@
                                  dispatcher/dispatch-app-lcm-op-occ-state-change! (fn [op-occ change-type previous-state]
                                                                                      (reset! dispatch-args [op-occ change-type previous-state])
                                                                                      [])]
-                     (app-lcm-v2/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
+                     (app-lcm/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                    :body   {}}))]
       (is (= 202 (:status response)))
       (is (= "start" (get-in @action-request [:params :action])))
@@ -526,7 +591,7 @@
                                   crud/retrieve-by-id-as-admin (fn [_]
                                                                  sample-mec-instantiate-job)
                                   dispatcher/dispatch-app-lcm-op-occ-state-change! (fn [& _] [])]
-                      (app-lcm-v2/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
+                      (app-lcm/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                     :body   nil}))]
       (is (nil? (get-in @action-request [:body :job-attrs :mec-host-id])))
       (is (nil? (get-in @action-request [:body :job-attrs :mec-request-params])))
@@ -538,7 +603,7 @@
   (testing "Instantiate rejects already instantiated app instance"
     (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
                                                                (assoc sample-deployment :state "STARTED"))]
-                     (app-lcm-v2/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
+                     (app-lcm/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                    :body   {}}))]
       (is (= 409 (:status response))))))
 
@@ -568,7 +633,7 @@
                                  crud/retrieve-by-id-as-admin (fn [_]
                                                                 sample-mec-terminate-job)
                                  dispatcher/dispatch-app-lcm-op-occ-state-change! (fn [& _] [])]
-                     (app-lcm-v2/terminate-app-instance-handler {:params {:id "deployment/test-123"}
+                     (app-lcm/terminate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                  :body   {:terminationType "GRACEFUL"}}))]
       (is (= 202 (:status response)))
       (is (= "stop" (get-in @action-request [:params :action])))
@@ -579,7 +644,7 @@
   (testing "Terminate rejects not-instantiated app instance"
     (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
                                                                sample-deployment)]
-                     (app-lcm-v2/terminate-app-instance-handler {:params {:id "deployment/test-123"}
+                     (app-lcm/terminate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                  :body   {:terminationType "GRACEFUL"}}))]
       (is (= 409 (:status response))))))
 
@@ -609,7 +674,7 @@
                                  crud/retrieve-by-id-as-admin (fn [_]
                                                                 sample-mec-operate-job)
                                  dispatcher/dispatch-app-lcm-op-occ-state-change! (fn [& _] [])]
-                     (app-lcm-v2/operate-app-instance-handler {:params {:id "deployment/test-123"}
+                     (app-lcm/operate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                :body   {:changeStateTo :STARTED}}))]
       (is (= 202 (:status response)))
       (is (= "start" (get-in @action-request [:params :action])))
@@ -621,14 +686,14 @@
   (testing "Operate rejects invalid requested state"
     (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
                                                                (assoc sample-deployment :state "STOPPED"))]
-                     (app-lcm-v2/operate-app-instance-handler {:params {:id "deployment/test-123"}
+                     (app-lcm/operate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                :body   {:changeStateTo "PAUSED"}}))]
       (is (= 400 (:status response)))))
 
   (testing "Operate STARTED requires STOPPED deployment state"
     (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
                                                                sample-deployment)]
-                     (app-lcm-v2/operate-app-instance-handler {:params {:id "deployment/test-123"}
+                     (app-lcm/operate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                :body   {:changeStateTo "STARTED"}}))]
       (is (= 409 (:status response))))))
 
@@ -709,7 +774,7 @@
                                               {:status 200
                                                :body {:resources [sample-mepm
                                                                   (assoc sample-mepm :id "mepm/test-2" :mec-host-id "nuvlabox/edge-host-2")]}})]
-                     (app-lcm-v2/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
+                     (app-lcm/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                    :body   {}}))]
       (is (= 409 (:status response)))))
 
@@ -719,7 +784,7 @@
                                  crud/query (fn [_]
                                               {:status 200
                                                :body {:resources []}})]
-                     (app-lcm-v2/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
+                     (app-lcm/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                    :body   {}}))]
       (is (= 503 (:status response)))
       (is (= "Service Unavailable" (get-in response [:body :title])))

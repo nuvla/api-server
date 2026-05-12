@@ -1,9 +1,13 @@
 (ns com.sixsq.nuvla.server.resources.mec.mm3-integration-test
   "Integration tests for Mm3 interface using mock MEPM server."
   (:require
+    [clj-http.client :as http]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [com.sixsq.nuvla.server.resources.mec.mm3-client :as mm3]
-    [com.sixsq.nuvla.server.resources.mec.mock-mepm-server :as mock-mepm]))
+    [com.sixsq.nuvla.server.resources.mec.mock-mepm-server :as mock-mepm]
+    [jsonista.core :as json]
+    [ring.adapter.jetty :as jetty]
+    [ring.middleware.json :refer [wrap-json-body]]))
 
 (def test-port 18080)
 (def test-endpoint (str "http://localhost:" test-port))
@@ -195,12 +199,14 @@
       (is (= 201 (:status create-response)))
       (let [app-id (:id (:data create-response))]
         (is (some? app-id))
+        (is (some? (:operationId (:data create-response))))
 
         ;; Query app instance
         (let [get-response (mm3/get-app-instance test-endpoint app-id)]
           (is (:success? get-response))
           (is (= "test-app" (:name (:data get-response))))
-          (is (= "INSTANTIATED" (:status (:data get-response)))))
+          (is (= "INSTANTIATED" (:instantiationState (:data get-response))))
+          (is (= "STARTED" (:operationalState (:data get-response)))))
 
         ;; Delete app instance
         (let [delete-response (mm3/delete-app-instance test-endpoint app-id)]
@@ -236,11 +242,81 @@
       (let [stop-response (mm3/operate-app-instance test-endpoint app-id "STOPPED")]
         (is (:success? stop-response))
         (is (= 200 (:status stop-response)))
-        (is (= "STOPPED" (:status (:data stop-response)))))
+        (is (some? (:operationId (:data stop-response))))
+        (is (= "INSTANTIATED" (:instantiationState (:data stop-response))))
+        (is (= "STOPPED" (:operationalState (:data stop-response)))))
       (let [start-response (mm3/operate-app-instance test-endpoint app-id "STARTED")]
         (is (:success? start-response))
         (is (= 200 (:status start-response)))
-        (is (= "STARTED" (:status (:data start-response))))))))
+        (is (some? (:operationId (:data start-response))))
+        (is (= "INSTANTIATED" (:instantiationState (:data start-response))))
+        (is (= "STARTED" (:operationalState (:data start-response))))))))
+
+(deftest test-mm3-get-operation
+  (testing "Query southbound lifecycle operation status via Mm3"
+    (let [create-response (mm3/create-app-instance test-endpoint {:name "app-op-status"})
+          create-op-id    (:operationId (:data create-response))
+          app-id          (:id (:data create-response))
+          operate-response (mm3/operate-app-instance test-endpoint app-id "STOPPED")
+          operate-op-id    (:operationId (:data operate-response))
+          get-create-op    (mm3/get-operation test-endpoint create-op-id)
+          get-operate-op   (mm3/get-operation test-endpoint operate-op-id)]
+      (is (:success? get-create-op))
+      (is (= 200 (:status get-create-op)))
+      (is (= create-op-id (get-in get-create-op [:data :id])))
+      (is (= "PROCESSING" (get-in get-create-op [:data :status])))
+      (is (:success? get-operate-op))
+      (is (= 200 (:status get-operate-op)))
+      (is (= "OPERATE" (get-in get-operate-op [:data :operationType]))))))
+
+(deftest test-mm3-create-subscription
+  (testing "Create southbound lifecycle subscription via Mm3"
+    (let [response (mm3/create-subscription test-endpoint
+                                            {:callbackUri "http://localhost:8200/api/mec/internal/mm3/app_lcm/v1/notifications"
+                                             :notificationTypes ["AppInstanceStateChangeNotification"
+                                                                 "AppLcmOpOccStateChangeNotification"]})]
+      (is (:success? response))
+      (is (= 201 (:status response)))
+      (is (some? (get-in response [:data :id])))
+      (is (= "http://localhost:8200/api/mec/internal/mm3/app_lcm/v1/notifications"
+             (get-in response [:data :callbackUri]))))))
+
+(deftest test-mock-mepm-emits-notification
+  (testing "Mock MEPM can emit a stored lifecycle notification to a callback URI"
+    (let [received      (promise)
+          callback-port (with-open [socket (java.net.ServerSocket. 0)]
+                          (.getLocalPort socket))
+          callback-uri  (str "http://localhost:" callback-port "/callback")
+          server        (jetty/run-jetty (wrap-json-body
+                                          (fn [request]
+                                            (deliver received (:body request))
+                                            {:status 204 :body ""})
+                                          {:keywords? true})
+                                         {:port callback-port :join? false})]
+      (try
+        (let [subscription (mm3/create-subscription test-endpoint
+                                                    {:callbackUri callback-uri
+                                                     :notificationTypes ["AppLcmOpOccStateChangeNotification"]})
+              subscription-id (get-in subscription [:data :id])
+              response        (http/post (str test-endpoint "/mm3/test/emit-notification")
+                                         {:body             (json/write-value-as-string
+                                                              {:subscriptionId subscription-id
+                                                               :notification {:notificationType "AppLcmOpOccStateChangeNotification"
+                                                                              :subscriptionId   subscription-id
+                                                                              :operationId      "op-emit-1"
+                                                                              :operationState   "COMPLETED"}})
+                                          :content-type     :json
+                                          :accept           :json
+                                          :throw-exceptions false
+                                          :as               :json
+                                          :coerce           :always})]
+          (is (:success? subscription))
+          (is (= 202 (:status response)))
+          (is (= 204 (get-in response [:body :callbackStatus])))
+          (is (= "AppLcmOpOccStateChangeNotification" (:notificationType @received)))
+          (is (= "op-emit-1" (:operationId @received))))
+        (finally
+          (.stop server))))))
 
 ;;
 ;; HTTP Options Tests

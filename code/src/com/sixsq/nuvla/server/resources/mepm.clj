@@ -18,6 +18,7 @@ with multiple MEPMs across distributed edge infrastructure.
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.db.impl :as db]
+    [com.sixsq.nuvla.server.middleware.base-uri :as base-uri]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.event-config :as ec]
     [com.sixsq.nuvla.server.resources.common.event-context :as ectx]
@@ -103,6 +104,65 @@ with multiple MEPMs across distributed edge infrastructure.
              %)
           resources)))
 
+
+(def ^:private mm3-lifecycle-callback-path
+  "mec/internal/mm3/app_lcm/v1/notifications")
+
+
+(def ^:private mm3-lifecycle-notification-types
+  ["AppInstanceStateChangeNotification"
+   "AppLcmOpOccStateChangeNotification"])
+
+
+(defn- lifecycle-callback-uri
+  [request]
+  (str (base-uri/construct-base-uri request) mm3-lifecycle-callback-path))
+
+
+(defn- lifecycle-subscription-request
+  [request]
+  {:callbackUri       (lifecycle-callback-uri request)
+   :notificationTypes mm3-lifecycle-notification-types})
+
+
+(defn- persist-lifecycle-subscription!
+  [mepm subscription-id callback-uri]
+  (let [updated-mepm (assoc mepm
+                       :mm3-subscription-id subscription-id
+                       :mm3-subscription-callback-uri callback-uri
+                       :updated (time/now-str))]
+    (db/edit updated-mepm)
+    updated-mepm))
+
+
+(defn- ensure-lifecycle-subscription!
+  [mepm request]
+  (if (:mm3-subscription-id mepm)
+    {:created?     false
+     :subscription-id (:mm3-subscription-id mepm)
+     :callback-uri (or (:mm3-subscription-callback-uri mepm)
+                       (lifecycle-callback-uri request))
+     :mepm         mepm}
+    (let [subscription-request (lifecycle-subscription-request request)
+          callback-uri         (:callbackUri subscription-request)
+          result               (mm3/create-subscription (:endpoint mepm) subscription-request {:retry-attempts 1})]
+      (if (:success? result)
+        (let [subscription-id (or (get-in result [:data :id])
+                                  (get-in result [:data :subscriptionId]))]
+          (when-not subscription-id
+            (throw (ex-info "MEPM lifecycle subscription response did not include an id"
+                            {:mepm-id (:id mepm)
+                             :endpoint (:endpoint mepm)})))
+          {:created?        true
+           :subscription-id subscription-id
+           :callback-uri    callback-uri
+           :mepm            (persist-lifecycle-subscription! mepm subscription-id callback-uri)})
+        (throw (ex-info (str "Failed to create southbound lifecycle subscription: " (:message result))
+                        {:status   (or (:status result) 503)
+                         :mepm-id  (:id mepm)
+                         :endpoint (:endpoint mepm)
+                         :error    (:error result)}))))))
+
 (defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
@@ -139,7 +199,14 @@ with multiple MEPMs across distributed edge infrastructure.
                               (:credential-id body) (assoc :credential-id (:credential-id body))
                               (:version body) (assoc :version (:version body))
                               (:tags body) (assoc :tags (:tags body)))]
-    (add-impl (assoc request :body mepm-resource))))
+    (let [response (add-impl (assoc request :body mepm-resource))
+          mepm-id  (get-in response [:body :resource-id])]
+      (when mepm-id
+        (try
+          (ensure-lifecycle-subscription! (crud/retrieve-by-id-as-admin mepm-id) request)
+          (catch Exception e
+            (log/warn e "Unable to create southbound lifecycle subscription during MEPM registration" mepm-id))))
+      response)))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -191,7 +258,8 @@ with multiple MEPMs across distributed edge infrastructure.
     (cond-> (crud/set-standard-operations resource request)
             can-manage? (update :operations conj (u/action-map id :check-health))
             can-manage? (update :operations conj (u/action-map id :query-capabilities))
-            can-manage? (update :operations conj (u/action-map id :query-resources)))))
+            can-manage? (update :operations conj (u/action-map id :query-resources))
+            can-manage? (update :operations conj (u/action-map id :ensure-lifecycle-subscription)))))
 
 
 ;;
@@ -302,3 +370,28 @@ with multiple MEPMs across distributed edge infrastructure.
     (catch Exception e
       (log/error e "Failed to query MEPM resources")
       (r/map-response (str "Resources query failed: " (.getMessage e)) 500))))
+
+
+(defmethod crud/do-action [resource-type "ensure-lifecycle-subscription"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id                                (str resource-type "/" uuid)
+          mepm                              (crud/retrieve-by-id-as-admin id)
+          {:keys [created? subscription-id callback-uri]}
+          (ensure-lifecycle-subscription! mepm request)]
+      (log/info "MEPM" id
+                (if created?
+                  "registered southbound lifecycle subscription"
+                  "already has southbound lifecycle subscription")
+                subscription-id)
+      (r/map-response {:message        (if created?
+                                         "Southbound lifecycle subscription created"
+                                         "Southbound lifecycle subscription already present")
+                       :subscriptionId subscription-id
+                       :callbackUri    callback-uri}
+                      200
+                      id))
+    (catch Exception e
+      (log/error e "Failed to ensure southbound lifecycle subscription")
+      (r/map-response (str "Southbound lifecycle subscription failed: " (.getMessage e))
+                      (or (:status (ex-data e)) 503)))))

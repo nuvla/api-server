@@ -16,6 +16,7 @@
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-subscription :as subscription]
+    [com.sixsq.nuvla.server.resources.mec.app-package-subscription :as package-subscription]
     [jsonista.core :as json]))
 
 
@@ -236,11 +237,11 @@
 ;;
 
 (defn- active-subscriptions
-  [subscription-type]
-  (let [[_ resources] (crud/query-as-admin subscription/resource-type {:last 1000})]
+  [resource-type resource->api subscription-type]
+  (let [[_ resources] (crud/query-as-admin resource-type {:last 1000})]
     (->> resources
          (filter :active)
-         (map subscription/resource->api-subscription)
+         (map resource->api)
          (filter #(= subscription-type (:subscription-type %)))
          vec)))
 
@@ -272,6 +273,20 @@
                            (:startTime app-lcm-op-occ))
    :state-entered-time (or (:state-entered-time app-lcm-op-occ)
                            (:stateEnteredTime app-lcm-op-occ))})
+
+(defn- normalize-app-package
+  [app-pkg]
+  {:app-pkg-id        (or (:app-pkg-id app-pkg)
+                          (:appPkgId app-pkg)
+                          (:id app-pkg))
+   :app-d-id          (or (:app-d-id app-pkg)
+                          (:appDId app-pkg))
+   :app-name          (or (:app-name app-pkg)
+                          (:appName app-pkg))
+   :operational-state (or (:operational-state app-pkg)
+                          (:operationalState app-pkg))
+   :onboarding-state  (or (:onboarding-state app-pkg)
+                          (:onboardingState app-pkg))})
 
 (defn handle-app-instance-state-change
   "Handle app instance state change event.
@@ -346,7 +361,9 @@
    Best effort only: dispatch failures are logged and do not propagate."
   [app-instance change-type previous-state]
   (try
-    (handle-app-instance-state-change (active-subscriptions "AppInstanceStateChangeNotification")
+    (handle-app-instance-state-change (active-subscriptions subscription/resource-type
+                                                            subscription/resource->api-subscription
+                                                            "AppInstanceStateChangeNotification")
                                       (normalize-app-instance app-instance)
                                       change-type
                                       previous-state)
@@ -360,12 +377,77 @@
    Best effort only: dispatch failures are logged and do not propagate."
   [app-lcm-op-occ change-type previous-state]
   (try
-    (handle-app-lcm-op-occ-state-change (active-subscriptions "AppLcmOpOccStateChangeNotification")
+    (handle-app-lcm-op-occ-state-change (active-subscriptions subscription/resource-type
+                                                              subscription/resource->api-subscription
+                                                              "AppLcmOpOccStateChangeNotification")
                                         (normalize-app-lcm-op-occ app-lcm-op-occ)
                                         change-type
                                         previous-state)
     (catch Exception e
       (log/error e "Failed to dispatch operation occurrence notifications")
+      [])))
+
+(defn handle-app-package-onboarding
+  "Handle app package onboarding events."
+  [subscriptions app-pkg]
+  (let [active-subs   (package-subscription/get-active-subscriptions-for-type
+                        subscriptions
+                        "AppPackageOnBoardingNotification")
+        matching-subs (filter #(package-subscription/matches-app-pkg-filter? % app-pkg)
+                              active-subs)]
+    (log/info "App package" (:app-pkg-id app-pkg) "onboarded - Matching subscriptions:" (count matching-subs))
+    (mapv (fn [sub]
+            (let [notification (package-subscription/build-app-package-onboarding-notification
+                                 sub
+                                 app-pkg)]
+              (dispatch-notification-async sub notification)))
+          matching-subs)))
+
+(defn handle-app-package-state-change
+  "Handle app package state-change events."
+  [subscriptions app-pkg change-type previous-state]
+  (let [active-subs   (package-subscription/get-active-subscriptions-for-type
+                        subscriptions
+                        "AppPackageStateChangeNotification")
+        matching-subs (filter #(package-subscription/matches-app-pkg-filter? % app-pkg)
+                              active-subs)]
+    (log/info "App package" (:app-pkg-id app-pkg) "state changed -" change-type
+              "- Matching subscriptions:" (count matching-subs))
+    (mapv (fn [sub]
+            (let [notification (package-subscription/build-app-package-state-change-notification
+                                 sub
+                                 app-pkg
+                                 change-type
+                                 previous-state)]
+              (dispatch-notification-async sub notification)))
+          matching-subs)))
+
+(defn dispatch-app-package-onboarding!
+  "Load durable subscriptions and dispatch app package onboarding notifications.
+   Best effort only: dispatch failures are logged and do not propagate."
+  [app-pkg]
+  (try
+    (handle-app-package-onboarding (active-subscriptions package-subscription/resource-type
+                                                         package-subscription/resource->api-subscription
+                                                         "AppPackageOnBoardingNotification")
+                                   (normalize-app-package app-pkg))
+    (catch Exception e
+      (log/error e "Failed to dispatch app package onboarding notifications")
+      [])))
+
+(defn dispatch-app-package-state-change!
+  "Load durable subscriptions and dispatch app package state-change notifications.
+   Best effort only: dispatch failures are logged and do not propagate."
+  [app-pkg change-type previous-state]
+  (try
+    (handle-app-package-state-change (active-subscriptions package-subscription/resource-type
+                                                           package-subscription/resource->api-subscription
+                                                           "AppPackageStateChangeNotification")
+                                     (normalize-app-package app-pkg)
+                                     change-type
+                                     previous-state)
+    (catch Exception e
+      (log/error e "Failed to dispatch app package state-change notifications")
       [])))
 
 

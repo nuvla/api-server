@@ -4,7 +4,7 @@
    Tracks lifecycle operations (instantiate, terminate, operate) and their status.
    Maps to Nuvla's job resource with MEC-specific state tracking.
    
-   Standard: ETSI GS MEC 010-2 v2.2.1 Section 6.2.3"
+   Standard baseline: ETSI GS MEC 010-2 v4.1.1 Section 6.2.3"
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
@@ -64,6 +64,7 @@
                                      (:operation-type job)
                                      "INSTANTIATE"))
         mec-state      (get nuvla-job-to-mec-operation-state job-state :STARTING)
+        mepm-op-id     (:mec-southbound-operation-id job)
         target-resource (:target-resource job)
         target-id       (or (:mec-app-instance-id job)
                             (if (map? target-resource)
@@ -80,6 +81,9 @@
                                     (:created job)
                                     (time-utils/now-str))
              :appInstanceId     target-id}
+
+      mepm-op-id
+      (assoc :mepmOperationId mepm-op-id)
       
       ;; Add error information if job failed
       (#{:FAILED :STOPPED} job-state)
@@ -91,8 +95,8 @@
       
       ;; Add HATEOAS links
       true
-      (assoc :_links {:self        {:href (str "/app_lcm/v2/app_lcm_op_occs/" job-id)}
-                      :appInstance {:href (str "/app_lcm/v2/app_instances/" target-id)}}))))
+      (assoc :_links {:self        {:href (str "/mec/mm1/app_lcm/v1/app_lcm_op_occs/" job-id)}
+                      :appInstance {:href (str "/mec/mm1/app_lcm/v1/app_instances/" target-id)}}))))
 
 
 (defn app-lcm-op-occ->job

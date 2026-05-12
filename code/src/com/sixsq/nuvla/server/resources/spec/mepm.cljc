@@ -152,6 +152,28 @@
              :json-schema/order 37)))
 
 
+(s/def ::mm3-subscription-id
+  (-> (st/spec ::cimi-core/nonblank-string)
+      (assoc :name "mm3-subscription-id"
+             :json-schema/description "southbound Mm3.003 lifecycle subscription identifier"
+             :json-schema/order 38)))
+
+
+(s/def ::mm3-subscription-callback-uri
+  (-> (st/spec ::cimi-core/nonblank-string)
+      (assoc :name "mm3-subscription-callback-uri"
+             :json-schema/description "callback URI registered with the MEPM for southbound lifecycle notifications"
+             :json-schema/order 39)))
+
+
+(s/def ::mm3-last-notification
+  (-> (st/spec map?)
+      (assoc :name "mm3-last-notification"
+             :json-schema/type "map"
+             :json-schema/description "summary of the most recent southbound Mm3.003 lifecycle notification"
+             :json-schema/order 40)))
+
+
 (s/def ::schema
   (su/only-keys-maps c/common-attrs
                      {:req-un [::name ::endpoint ::capabilities ::status]
@@ -161,4 +183,7 @@
                                ::credential-id
                                ::version
                                ::tags
-                               ::last-check]}))
+                               ::last-check
+                               ::mm3-subscription-id
+                               ::mm3-subscription-callback-uri
+                               ::mm3-last-notification]}))

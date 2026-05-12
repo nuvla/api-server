@@ -6,6 +6,7 @@
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.mec :as mec]
     [com.sixsq.nuvla.server.resources.module.utils :as module-utils]
+    [com.sixsq.nuvla.server.resources.mec.app-package-subscription :as package-subscription]
     [com.sixsq.nuvla.server.resources.mec.app-package :as t]))
 
 (def valid-appd
@@ -60,7 +61,7 @@
       (is (= "ONBOARDED" (:onboardingState app-pkg-info)))
       (is (= "acme/apps/test" (:appPkgPath app-pkg-info)))
       (is (= "application_mec" (:moduletype app-pkg-info)))
-      (is (= "/mec/app_lcm/v2/app_packages/module/test-123/appD"
+      (is (= "/mec/mm1/app_pkgm/v1/app_packages/module/test-123/appd"
              (get-in app-pkg-info [:_links :appD :href])))))
   
   (testing "Module without content uses fallback values"
@@ -155,7 +156,8 @@
                              (reset! created-request request)
                              {:body {:resource-id module-id}})
                   t/ensure-mec-app-package! (fn [_ _] module)
-                  t/sync-appd-id! identity]
+                  t/sync-appd-id! identity
+                  com.sixsq.nuvla.server.resources.mec.notification-dispatcher/dispatch-app-package-onboarding! (fn [_] [])]
       (let [response (t/create-app-package {:body        {:appPkgName    "demo-mec-app"
                                                           :appPkgVersion "1.0.0"
                                                           :appProvider   "Acme Corp"}
@@ -226,7 +228,8 @@
                     module-utils/retrieve-module-content (fn [module _] module)
                     crud/edit-by-id-as-admin (fn [_ body]
                                               (reset! edited-body body)
-                                              {:status 200})]
+                                              {:status 200})
+                    com.sixsq.nuvla.server.resources.mec.notification-dispatcher/dispatch-app-package-state-change! (fn [& _] [])]
         (let [response (t/put-app-package-content {:params {:appPkgId module-id}
                                                    :body valid-appd})]
           (is (= 204 (:status response)))
@@ -253,14 +256,123 @@
           (is (= "Bad Request" (get-in response [:body :title]))))))))
 
 
+(deftest test-package-notification-hooks
+  (testing "Create app package emits onboarding notification"
+    (let [dispatched      (atom nil)
+          module-id       "module/test-123"
+          authn-info      {:user-id "user/test"}
+          module          {:id          module-id
+                           :subtype     "application_mec"
+                           :name        "demo-mec-app"
+                           :description "MEC Application Package: demo-mec-app"
+                           :parent-path "mec-apps"
+                           :published   false
+                           :versions    []
+                           :content     {:appDId module-id
+                                         :appName "demo-mec-app"
+                                         :appProvider "Acme Corp"
+                                         :appSoftVersion "1.0.0"
+                                         :appDVersion "3.2.1"}}]
+      (with-redefs [t/ensure-project-path! (fn [_ _] nil)
+                    crud/add (fn [_] {:body {:resource-id module-id}})
+                    t/ensure-mec-app-package! (fn [_ _] module)
+                    t/sync-appd-id! identity
+                    com.sixsq.nuvla.server.resources.mec.notification-dispatcher/dispatch-app-package-onboarding! (fn [app-pkg]
+                                                                                                                    (reset! dispatched app-pkg)
+                                                                                                                    [])]
+        (let [response (t/create-app-package {:body {:appPkgName "demo-mec-app"}
+                                              :nuvla/authn authn-info})]
+          (is (= 201 (:status response)))
+          (is (= module-id (:appPkgId @dispatched)))
+          (is (= "demo-mec-app" (:appName @dispatched)))))))
+
+  (testing "Delete app package emits state-change notification"
+    (let [dispatched (atom nil)
+          module-id  "module/test-123"
+          module     {:id          module-id
+                      :subtype     "application_mec"
+                      :name        "demo-mec-app"
+                      :description "MEC Application Package: demo-mec-app"
+                      :parent-path "mec-apps"
+                      :published   false
+                      :versions    []
+                      :content     {:appDId module-id
+                                    :appName "demo-mec-app"
+                                    :appProvider "Acme Corp"
+                                    :appSoftVersion "1.0.0"
+                                    :appDVersion "3.2.1"}}]
+      (with-redefs [t/ensure-mec-app-package! (fn [_ _] module)
+                    crud/delete (fn [_] {:status 200})
+                    com.sixsq.nuvla.server.resources.mec.notification-dispatcher/dispatch-app-package-state-change! (fn [app-pkg change-type previous-state]
+                                                                                                                      (reset! dispatched [app-pkg change-type previous-state])
+                                                                                                                      [])]
+        (let [response (t/delete-app-package {:params {:appPkgId module-id}})]
+          (is (= 204 (:status response)))
+          (is (= "DELETION" (second @dispatched)))
+          (is (= "ENABLED" (nth @dispatched 2)))
+          (is (= module-id (get-in @dispatched [0 :appPkgId]))))))))
+
+
 (deftest test-top-level-mec-routes
   (testing "top-level MEC handler routes app_packages requests"
     (with-redefs [t/query-app-packages (fn [_] {:status 200 :body {:ok true}})]
       (let [response (mec/routes {:request-method :get
-                                  :uri "/api/mec/app_lcm/v2/app_packages"
+                                  :uri "/api/mec/mm1/app_pkgm/v1/app_packages"
                                   :params {}})]
         (is (= 200 (:status response)))
-        (is (= {:ok true} (:body response)))))))
+        (is (= {:ok true} (:body response))))))
+
+  (testing "top-level MEC handler routes onboarded_app_packages requests"
+    (with-redefs [t/query-app-packages (fn [_] {:status 200 :body {:ok true}})]
+      (let [response (mec/routes {:request-method :get
+                                  :uri "/api/mec/mm1/app_pkgm/v1/onboarded_app_packages"
+                                  :params {}})]
+        (is (= 200 (:status response)))
+        (is (= {:ok true} (:body response))))))
+
+  (testing "top-level MEC handler routes Mm3 app_packages requests"
+    (with-redefs [t/query-app-packages (fn [_] {:status 200 :body {:ok true}})]
+      (let [response (mec/routes {:request-method :get
+                                  :uri "/api/mec/mm3/app_pkgm/v1/app_packages"
+                                  :params {}})]
+        (is (= 200 (:status response)))
+        (is (= {:ok true} (:body response))))))
+
+  (testing "top-level MEC handler routes package subscriptions on Mm1 and Mm3"
+    (with-redefs [package-subscription/list-subscriptions-handler (fn [_] {:status 200 :body {:subscriptions true}})
+                  package-subscription/create-subscription-handler (fn [_] {:status 201 :body {:created true}})
+                  package-subscription/get-subscription-handler (fn [_] {:status 200 :body {:subscription true}})
+                  package-subscription/delete-subscription-handler (fn [_] {:status 204 :body nil})]
+      (let [mm1-get (mec/routes {:request-method :get
+                                 :uri "/api/mec/mm1/app_pkgm/v1/subscriptions"
+                                 :params {}})
+            mm3-get (mec/routes {:request-method :get
+                                 :uri "/api/mec/mm3/app_pkgm/v1/subscriptions"
+                                 :params {}})
+            mm3-post (mec/routes {:request-method :post
+                                  :uri "/api/mec/mm3/app_pkgm/v1/subscriptions"
+                                  :params {}})
+            mm3-item-get (mec/routes {:request-method :get
+                                      :uri "/api/mec/mm3/app_pkgm/v1/subscriptions/subscription/1234"
+                                      :params {}})
+            mm3-item-delete (mec/routes {:request-method :delete
+                                         :uri "/api/mec/mm3/app_pkgm/v1/subscriptions/subscription/1234"
+                                         :params {}})]
+        (is (= 200 (:status mm1-get)))
+        (is (= 200 (:status mm3-get)))
+        (is (= 201 (:status mm3-post)))
+        (is (= 200 (:status mm3-item-get)))
+        (is (= 204 (:status mm3-item-delete))))))
+
+  (testing "top-level MEC handler rejects Mm3 package writes"
+    (let [error (try
+                  (mec/routes {:request-method :post
+                               :uri "/api/mec/mm3/app_pkgm/v1/app_packages"
+                               :params {}})
+                  nil
+                  (catch clojure.lang.ExceptionInfo e
+                    (ex-data e)))]
+      (is (= 405 (:status error))))))
 
 
 (deftest test-main-routes-include-mec-handler
@@ -268,7 +380,7 @@
     (with-redefs [mec/routes (fn [_] {:status 200 :body {:ok true}})]
       (let [handler (app-routes/get-main-routes)
             response (handler {:request-method :get
-                               :uri "/api/mec/app_lcm/v2/app_packages"
+                               :uri "/api/mec/mm1/app_pkgm/v1/app_packages"
                                :params {}})]
         (is (= 200 (:status response)))
         (is (= {:ok true} (:body response)))))))

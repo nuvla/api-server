@@ -9,7 +9,7 @@
 
  (use-fixtures :each ltu/with-test-server-fixture)
 
- (def base-uri (str p/service-context "mec/app_lcm/v2"))
+(def base-uri (str p/service-context "mec/mm1/app_lcm/v1"))
 
  (deftest subscription-lifecycle
    (let [session-user-1 (-> (ltu/ring-app)
@@ -34,7 +34,7 @@
              sub-id (:id created)]
 
          (is (= 201 (:status create-response)) (pr-str created))
-         (is (= "AppInstanceStateChangeNotification" (:subscription-type created)))
+        (is (= "AppInstanceStateChangeNotification" (:subscriptionType created)))
          (is (= "user/alice" (:owner created)))
          (is (.startsWith sub-id "subscription/"))
 

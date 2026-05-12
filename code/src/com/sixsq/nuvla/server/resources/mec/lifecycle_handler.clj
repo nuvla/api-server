@@ -7,7 +7,7 @@
    3. Delegating to MEPM via the selected Mm3 southbound interface
    4. Tracking operation status
    
-   Standard: ETSI GS MEC 010-2 v2.2.1"
+   Standard baseline: ETSI GS MEC 010-2 v4.1.1"
   (:require
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.server.resources.mec.mm3-client :as mm3]
@@ -226,8 +226,8 @@
                           :stateEnteredTime  (time-utils/now-str)
                           :startTime         (:start-time context)
                           :appInstanceId     app-instance-id
-                          :_links            {:self        {:href (str "/app_lcm/v2/app_lcm_op_occs/" op-occ-id)}
-                                              :appInstance {:href (str "/app_lcm/v2/app_instances/" app-instance-id)}}}]
+                          :_links            {:self        {:href (str "/mec/mm1/app_lcm/v1/app_lcm_op_occs/" op-occ-id)}
+                                              :appInstance {:href (str "/mec/mm1/app_lcm/v1/app_instances/" app-instance-id)}}}]
           
           ;; Add error if operation failed
           (if (= :FAILED (:status result))

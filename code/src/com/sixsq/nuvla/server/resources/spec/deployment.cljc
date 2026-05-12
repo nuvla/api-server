@@ -341,6 +341,14 @@
 
     :json-schema/section "meta"))
 
+(s/def ::mec-last-notification
+  (assoc (st/spec map?)
+    :name "mec-last-notification"
+    :json-schema/type "map"
+    :json-schema/description "summary of the most recent southbound Mm3.003 lifecycle notification correlated to this deployment"
+
+    :json-schema/section "meta"))
+
 (def deployment-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::module
@@ -360,6 +368,7 @@
                                   ::deployment-set
                                   ::deployment-set-name
                                   ::app-set
+                                 ::mec-last-notification
                                   ::data-objects            ;; deprecated
                                   ::data-records            ;; deprecated
                                   ::data-records-filter     ;; deprecated

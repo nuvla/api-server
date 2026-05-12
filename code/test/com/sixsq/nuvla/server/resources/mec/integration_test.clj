@@ -4,7 +4,7 @@
    Tests validate end-to-end workflows across multiple MEC modules to ensure
    all components work together correctly for standards-compliant MEC orchestration.
    
-   Standard: ETSI GS MEC 010-2 v2.2.1"
+   Standard baseline: ETSI GS MEC 010-2 v4.1.1"
   (:require
     [clojure.test :refer [deftest is testing]]
     [com.sixsq.nuvla.server.resources.mec.lifecycle-handler :as lifecycle]
@@ -129,8 +129,8 @@
     (let [op-occ (lifecycle/instantiate test-app-instance-id {})]
       (is (contains? (:_links op-occ) :self))
       (is (contains? (:_links op-occ) :appInstance))
-      (is (re-find #"/app_lcm/v2/app_lcm_op_occs/" (get-in op-occ [:_links :self :href])))
-      (is (re-find #"/app_lcm/v2/app_instances/" (get-in op-occ [:_links :appInstance :href]))))))
+      (is (re-find #"/mec/mm1/app_lcm/v1/app_lcm_op_occs/" (get-in op-occ [:_links :self :href])))
+      (is (re-find #"/mec/mm1/app_lcm/v1/app_instances/" (get-in op-occ [:_links :appInstance :href]))))))
 
 
 ;;

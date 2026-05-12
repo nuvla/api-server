@@ -9,7 +9,7 @@
    - Provide operation history queries
    - Track operation progress and completion
    
-   Standard: ETSI GS MEC 010-2 v2.2.1
+   Standard baseline: ETSI GS MEC 010-2 v4.1.1
    Section: 6.2.3 AppLcmOpOcc (Application LCM Operation Occurrence)"
   (:require
     [clojure.tools.logging :as log]

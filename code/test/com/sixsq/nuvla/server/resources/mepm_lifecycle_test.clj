@@ -53,7 +53,12 @@
                                        :data {:cpu-cores 64
                                               :memory-gb 256
                                               :storage-gb 1000
-                                              :gpu-count 2}})]
+                                              :gpu-count 2}})
+                mm3/create-subscription (fn [_endpoint payload & [_opts]]
+                                          {:success? true
+                                           :status 201
+                                           :data {:id "mm3-sub-123"
+                                                  :callbackUri (:callbackUri payload)}})]
     (let [session-anon  (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
@@ -112,6 +117,9 @@
         (is (= "ONLINE" (:status mepm)))
         (is (= ["x86_64" "arm64"] (get-in mepm [:capabilities :platforms])))
         (is (= 64 (get-in mepm [:resources :cpu-cores])))
+        (is (= "mm3-sub-123" (:mm3-subscription-id mepm)))
+        (is (re-find #"/api/mec/internal/mm3/app_lcm/v1/notifications$"
+                     (:mm3-subscription-callback-uri mepm)))
         (is (:created mepm))
         (is (:updated mepm)))
 
@@ -142,7 +150,8 @@
                     :operations)]
         (is (some #(= "check-health" (:rel %)) ops))
         (is (some #(= "query-capabilities" (:rel %)) ops))
-        (is (some #(= "query-resources" (:rel %)) ops)))
+        (is (some #(= "query-resources" (:rel %)) ops))
+        (is (some #(= "ensure-lifecycle-subscription" (:rel %)) ops)))
 
       ;; Test check-health action
       (-> session-user
@@ -179,6 +188,16 @@
                      (ltu/is-status 200)
                      (ltu/body))]
         (is (= 64 (get-in resp [:message :cpu-cores]))))
+
+      ;; Test ensure-lifecycle-subscription action is idempotent
+      (let [resp (-> session-user
+                     (request (str uri "/ensure-lifecycle-subscription")
+                              :request-method :post
+                              :body (json/write-value-as-string {}))
+                     (ltu/body->edn)
+                     (ltu/is-status 200)
+                     (ltu/body))]
+        (is (= "mm3-sub-123" (get-in resp [:message :subscriptionId]))))
 
       ;; Delete MEPM
       (-> session-user

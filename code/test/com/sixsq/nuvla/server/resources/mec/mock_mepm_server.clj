@@ -2,7 +2,9 @@
   "Mock MEPM server for testing the selected Mm3 interface path.
    Implements ETSI MEC 003 southbound endpoints for integration testing."
   (:require
+    [clj-http.client :as http]
     [clojure.tools.logging :as log]
+    [jsonista.core :as json]
     [ring.adapter.jetty :as jetty]
     [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
     [ring.middleware.params :refer [wrap-params]]
@@ -27,7 +29,9 @@
                                        :memory-gb  128
                                        :storage-gb 1000
                                        :gpu-count  2}}
+         :subscriptions   {}
          :app-instances   {}
+         :operations      {}
          :request-count   0
          :error-mode      nil}))
 
@@ -53,7 +57,9 @@
                                                     :memory-gb  128
                                                     :storage-gb 1000
                                                     :gpu-count  2}}
+                      :subscriptions   {}
                       :app-instances   {}
+                      :operations      {}
                       :request-count   0
                       :error-mode      nil})
   (reset! request-log []))
@@ -94,6 +100,8 @@
     (and (= request-method :get) (= uri "/mm3/resources")) "resources"
     (and (= request-method :get) (= uri "/mm3/platform-info")) "platform-info"
     (and (= request-method :post) (= uri "/mm3/configure")) "configure"
+    (and (= request-method :post) (= uri "/mm3/subscriptions")) "create-subscription"
+    (and (= request-method :post) (= uri "/mm3/test/emit-notification")) "emit-notification"
     (and (= request-method :get) (= uri "/mm3/app-instances")) "list-app-instances"
     (and (= request-method :post) (= uri "/mm3/app-instances")) "create-app-instance"
     (and (= request-method :post) (re-matches #"/mm3/app-instances/(.+)/operate" uri)) "operate-app-instance"
@@ -190,6 +198,55 @@
                 :message "Platform configured successfully"
                 :config  config}})))
 
+(defn handle-create-subscription
+  "Handle POST /mm3/subscriptions - Create lifecycle notification subscription."
+  [request]
+  (increment-request-count!)
+  (if-let [error-response (check-error-mode)]
+    error-response
+    (let [subscription (:body request)
+          subscription-id (str "sub-" (java.util.UUID/randomUUID))
+          persisted       (assoc subscription
+                            :id subscription-id
+                            :created (str (java.time.Instant/now)))]
+      (swap! mepm-state assoc-in [:subscriptions subscription-id] persisted)
+      {:status 201
+       :body   persisted})))
+
+(defn handle-emit-notification
+  "Handle POST /mm3/test/emit-notification - emit a stored notification to a callback URI."
+  [request]
+  (increment-request-count!)
+  (if-let [error-response (check-error-mode)]
+    error-response
+    (let [{:keys [subscriptionId callbackUri notification]} (:body request)
+          callback-uri (or callbackUri
+                           (get-in @mepm-state [:subscriptions subscriptionId :callbackUri]))]
+      (cond
+        (nil? callback-uri)
+        {:status 404
+         :body   {:error "Not Found"
+                  :message "Notification callback URI not found"}}
+
+        (nil? notification)
+        {:status 400
+         :body   {:error "Bad Request"
+                  :message "Notification payload is required"}}
+
+        :else
+        (let [response (http/post callback-uri
+                                  {:body             (json/write-value-as-string notification)
+                                   :content-type     :json
+                                   :accept           :json
+                                   :throw-exceptions false
+                                   :as               :json
+                                   :coerce           :always})]
+          {:status 202
+           :body   {:callbackUri      callback-uri
+                    :callbackStatus   (:status response)
+                    :subscriptionId   subscriptionId
+                    :notificationType (:notificationType notification)}})))))
+
 (defn handle-create-app-instance
   "Handle POST /mm3/app-instances - Create application instance."
   [request]
@@ -198,14 +255,21 @@
     error-response
     (let [app-desc (:body request)
           app-id (str "app-" (java.util.UUID/randomUUID))
+          op-id  (str "op-" (java.util.UUID/randomUUID))
           instance {:id          app-id
                    :name        (:name app-desc)
-                   :status      "INSTANTIATED"
+                   :instantiationState "INSTANTIATED"
+                   :operationalState   "STARTED"
                    :created     (str (java.time.Instant/now))
                    :descriptor  app-desc}]
       (swap! mepm-state assoc-in [:app-instances app-id] instance)
+      (swap! mepm-state assoc-in [:operations op-id]
+             {:id            op-id
+              :operationType "INSTANTIATE"
+              :appInstanceId app-id
+              :status        "PROCESSING"})
       {:status 201
-       :body   instance})))
+       :body   (assoc instance :operationId op-id)})))
 
 (defn handle-get-app-instance
   "Handle GET /mm3/app-instances/:id - Get application instance status."
@@ -242,6 +306,20 @@
       {:status 404
        :body   {:error "Not Found" :message (str "Application instance " app-id " not found")}})))
 
+(defn handle-get-operation
+  "Handle GET /mm3/operations/:id - Get lifecycle operation status."
+  [request operation-id]
+  (increment-request-count!)
+  (if-let [error-response (check-error-mode)]
+    error-response
+    (let [operation (get-in @mepm-state [:operations operation-id])]
+      (if operation
+        {:status 200
+         :body   operation}
+        {:status 404
+         :body   {:error "Not Found"
+                  :message (str "Operation " operation-id " not found")}}))))
+
 (defn handle-operate-app-instance
   "Handle POST /mm3/app-instances/:id/operate - Change application instance state."
   [request app-id]
@@ -260,10 +338,19 @@
          :body   {:error "Bad Request" :message (str "Unsupported changeStateTo: " change-state-to)}}
 
         :else
-        (let [updated-instance (assoc instance :status change-state-to)]
+        (let [op-id            (str "op-" (java.util.UUID/randomUUID))
+              updated-instance (assoc instance
+                                      :instantiationState "INSTANTIATED"
+                                      :operationalState change-state-to)]
           (swap! mepm-state assoc-in [:app-instances app-id] updated-instance)
+          (swap! mepm-state assoc-in [:operations op-id]
+                 {:id            op-id
+                  :operationType "OPERATE"
+                  :appInstanceId app-id
+                  :status        "PROCESSING"
+                  :targetState   change-state-to})
           {:status 200
-           :body   updated-instance})))))
+           :body   (assoc updated-instance :operationId op-id)})))))
 
 ;;
 ;; Router
@@ -296,6 +383,19 @@
         ;; Configure platform
         (and (= method :post) (= path "/mm3/configure"))
         (handle-configure-platform request)
+
+        ;; Subscriptions - create
+        (and (= method :post) (= path "/mm3/subscriptions"))
+        (handle-create-subscription request)
+
+        ;; Test helper - emit notification to callback
+        (and (= method :post) (= path "/mm3/test/emit-notification"))
+        (handle-emit-notification request)
+
+        ;; Operations - get single
+        (and (= method :get) (re-matches #"/mm3/operations/(.+)" path))
+        (let [operation-id (second (re-matches #"/mm3/operations/(.+)" path))]
+          (handle-get-operation request operation-id))
 
         ;; App instances - list (must come before single instance match)
         (and (= method :get) (= path "/mm3/app-instances"))
