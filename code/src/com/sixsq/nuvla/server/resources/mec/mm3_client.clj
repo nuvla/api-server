@@ -38,6 +38,18 @@
   "Delay between retry attempts in milliseconds"
   1000)
 
+(def ^:private mm3-lifecycle-base-path
+  "/mm3/app_lcm/v1")
+
+(def ^:private mm3-lifecycle-subscriptions-path
+  (str mm3-lifecycle-base-path "/subscriptions"))
+
+(def ^:private mm3-lifecycle-app-instances-path
+  (str mm3-lifecycle-base-path "/app_instances"))
+
+(def ^:private mm3-lifecycle-op-occs-path
+  (str mm3-lifecycle-base-path "/app_lcm_op_occs"))
+
 
 ;;
 ;; HTTP Client Utilities
@@ -310,7 +322,7 @@
                              :or {retry-attempts default-retry-attempts}
                              :as options}]]
   (log/info "Mm3: Creating lifecycle subscription on MEPM at" endpoint)
-  (let [url (str endpoint "/mm3/subscriptions")
+  (let [url (str endpoint mm3-lifecycle-subscriptions-path)
         http-opts (-> (build-http-options endpoint options)
                       (assoc :body (json/write-value-as-string subscription)
                              :content-type :json))]
@@ -350,7 +362,7 @@
                                :or {retry-attempts default-retry-attempts}
                                :as options}]]
   (log/info "Mm3: Creating app instance on MEPM at" endpoint)
-  (let [url (str endpoint "/mm3/app-instances")
+  (let [url (str endpoint mm3-lifecycle-app-instances-path)
         http-opts (build-http-options endpoint options)
         http-opts (assoc http-opts :body (json/write-value-as-string app-descriptor)
                                    :content-type :json)]
@@ -386,7 +398,7 @@
                        :or {retry-attempts default-retry-attempts}
                        :as options}]]
   (log/info "Mm3: Getting app instance" app-id "from MEPM at" endpoint)
-  (let [url (str endpoint "/mm3/app-instances/" app-id)
+  (let [url (str endpoint mm3-lifecycle-app-instances-path "/" app-id)
         http-opts (build-http-options endpoint options)]
     (retry-request
       (fn []
@@ -419,7 +431,7 @@
                 :or {retry-attempts default-retry-attempts}
                 :as options}]]
   (log/info "Mm3: Listing app instances from MEPM at" endpoint)
-  (let [url (str endpoint "/mm3/app-instances")
+  (let [url (str endpoint mm3-lifecycle-app-instances-path)
         http-opts (build-http-options endpoint options)]
     (retry-request
       (fn []
@@ -453,7 +465,7 @@
                        :or {retry-attempts default-retry-attempts}
                        :as options}]]
   (log/info "Mm3: Deleting app instance" app-id "from MEPM at" endpoint)
-  (let [url (str endpoint "/mm3/app-instances/" app-id)
+  (let [url (str endpoint mm3-lifecycle-app-instances-path "/" app-id)
         http-opts (build-http-options endpoint options)]
     (retry-request
       (fn []
@@ -482,7 +494,7 @@
                                        :or {retry-attempts default-retry-attempts}
                                        :as options}]]
   (log/info "Mm3: Operating app instance" app-id "to" change-state-to "via MEPM at" endpoint)
-  (let [url (str endpoint "/mm3/app-instances/" app-id "/operate")
+  (let [url (str endpoint mm3-lifecycle-app-instances-path "/" app-id "/operate")
         http-opts (-> (build-http-options endpoint options)
                       (assoc :body (json/write-value-as-string {:changeStateTo change-state-to})
                              :content-type :json))]
@@ -512,7 +524,7 @@
                              :or {retry-attempts default-retry-attempts}
                              :as options}]]
   (log/info "Mm3: Getting operation" operation-id "from MEPM at" endpoint)
-  (let [url (str endpoint "/mm3/operations/" operation-id)
+  (let [url (str endpoint mm3-lifecycle-op-occs-path "/" operation-id)
         http-opts (build-http-options endpoint options)]
     (retry-request
       (fn []

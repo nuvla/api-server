@@ -350,7 +350,7 @@
           response    (with-redefs-fn
                         {#'app-lcm/query-user-subscriptions (fn [_]
                                                                  [{:id                  "mec-subscription/existing"
-                                                                   :subscription-type   "AppLcmOpOccStateChangeNotification"
+                                                                   :subscription-type   "AppLcmOpOccStateChange"
                                                                    :callback-uri        "http://localhost:18082"
                                                                    :owner               "user/alice"
                                                                    :active              true
@@ -361,7 +361,7 @@
                                                                     :body {:resource-id "mec-subscription/new"}})}
                         #(app-lcm/create-subscription-handler
                            {:identity {:user-id "user/alice"}
-                            :body     {:subscriptionType "AppLcmOpOccStateChangeNotification"
+                            :body     {:subscriptionType "AppLcmOpOccStateChange"
                                        :callbackUri      "http://localhost:18082"
                                        :appLcmOpOccFilter {:operationType "INSTANTIATE"}}}))]
       (is (= 409 (:status response)))
@@ -372,7 +372,7 @@
     (let [response (with-redefs-fn
                      {#'app-lcm/query-user-subscriptions (fn [_]
                                                               [{:id                  "mec-subscription/existing"
-                                                                :subscription-type   "AppLcmOpOccStateChangeNotification"
+                                                                :subscription-type   "AppLcmOpOccStateChange"
                                                                 :callback-uri        "http://localhost:18082"
                                                                 :owner               "user/alice"
                                                                 :active              true
@@ -382,14 +382,14 @@
                                                                  :body {:resource-id "mec-subscription/new"}})
                       #'crud/retrieve-by-id-as-admin1        (fn [_]
                                                                 {:id                  "mec-subscription/new"
-                                                                 :subscription-type   "AppLcmOpOccStateChangeNotification"
+                                                                 :subscription-type   "AppLcmOpOccStateChange"
                                                                  :callback-uri        "http://localhost:18082"
                                                                  :owner               "user/alice"
                                                                  :active              true
                                                                  :app-lcm-op-occ-filter {:operation-type "INSTANTIATE"}})}
                      #(app-lcm/create-subscription-handler
                         {:identity {:user-id "user/alice"}
-                         :body     {:subscriptionType "AppLcmOpOccStateChangeNotification"
+                         :body     {:subscriptionType "AppLcmOpOccStateChange"
                                     :callbackUri      "http://localhost:18082"
                                     :appLcmOpOccFilter {:operationType "INSTANTIATE"}}}))]
       (is (= 201 (:status response)))

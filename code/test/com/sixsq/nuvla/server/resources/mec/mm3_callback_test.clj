@@ -1,6 +1,7 @@
  (ns com.sixsq.nuvla.server.resources.mec.mm3-callback-test
    (:require
      [clojure.test :refer [deftest is testing]]
+    [com.sixsq.nuvla.db.filter.parser :as parser]
      [com.sixsq.nuvla.server.resources.common.crud :as crud]
      [com.sixsq.nuvla.server.resources.mec :as mec]
      [com.sixsq.nuvla.server.resources.mec.mm3-callback :as mm3-callback]
@@ -81,7 +82,7 @@
                    dispatcher/dispatch-app-lcm-op-occ-state-change! (fn [op-occ change-type previous-state]
                                                                       (swap! op-calls conj [op-occ change-type previous-state])
                                                                       [])]
-       (let [response (mm3-callback/handle-notification {:body {:notificationType "AppLcmOpOccStateChangeNotification"
+      (let [response (mm3-callback/handle-notification {:body {:notificationType "AppLcmOpOccNotification"
                                                                 :subscriptionId   "mm3-sub-1"
                                                                 :operationId      "op-123"
                                                                 :operationState   "PROCESSING"}})]
@@ -123,7 +124,7 @@
                                                          "job/terminate-123" @job-state
                                                          "deployment/test-1" @deployment-state
                                                          nil)})]
-       (let [response (mm3-callback/handle-notification {:body {:notificationType "AppLcmOpOccStateChangeNotification"
+      (let [response (mm3-callback/handle-notification {:body {:notificationType "AppLcmOpOccNotification"
                                                                 :subscriptionId   "mm3-sub-1"
                                                                 :operationId      "op-terminate-1"
                                                                 :operationState   "COMPLETED"}})]
@@ -159,7 +160,7 @@
                    dispatcher/dispatch-app-instance-state-change! (fn [app-instance change-type previous-state]
                                                                     (swap! app-calls conj [app-instance change-type previous-state])
                                                                     [])]
-       (let [response (mm3-callback/handle-notification {:body {:notificationType   "AppInstanceStateChangeNotification"
+      (let [response (mm3-callback/handle-notification {:body {:notificationType   "AppInstNotification"
                                                                 :subscriptionId     "mm3-sub-1"
                                                                 :appInstanceId      "southbound-app-1"
                                                                 :instantiationState "INSTANTIATED"
@@ -199,7 +200,7 @@
                   dispatcher/dispatch-app-instance-state-change! (fn [app-instance change-type previous-state]
                                                                    (swap! app-calls conj [app-instance change-type previous-state])
                                                                    [])]
-      (let [response (mm3-callback/handle-notification {:body {:notificationType   "AppLcmOpOccStateChangeNotification"
+      (let [response (mm3-callback/handle-notification {:body {:notificationType   "AppLcmOpOccNotification"
                                                                :subscriptionId     "mm3-sub-1"
                                                                :operationId        "op-terminate-1"
                                                                :operationState     "COMPLETED"
@@ -245,7 +246,7 @@
                   dispatcher/dispatch-app-instance-state-change! (fn [app-instance change-type previous-state]
                                                                    (swap! app-calls conj [app-instance change-type previous-state])
                                                                    [])]
-      (let [response (mm3-callback/handle-notification {:body {:notificationType   "AppLcmOpOccStateChangeNotification"
+      (let [response (mm3-callback/handle-notification {:body {:notificationType   "AppLcmOpOccNotification"
                                                                :subscriptionId     "mm3-sub-1"
                                                                :operationId        "op-operate-1"
                                                                :operationState     "FAILED"
@@ -275,3 +276,45 @@
                                    :body {}})]
          (is (= 202 (:status response)))
          (is (= {:ok true} (:body response)))))))
+
+(deftest test-handle-notification-uses-cimi-filtered-correlation-queries
+  (let [job-state        (atom sample-instantiate-job)
+        deployment-state (atom sample-deployment)
+        query-calls      (atom [])]
+    (with-redefs [crud/query-as-admin (fn [collection options]
+                                        (swap! query-calls conj [collection options])
+                                        (let [filter-expr (get-in options [:cimi-params :filter])]
+                                          (case collection
+                                            "mepm" (if (= (parser/parse-cimi-filter "mm3-subscription-id='mm3-sub-1'") filter-expr)
+                                                     [1 [sample-mepm]]
+                                                     [0 []])
+                                            "job" (if (= (parser/parse-cimi-filter "mec-southbound-operation-id='op-123'") filter-expr)
+                                                    [1 [@job-state]]
+                                                    [0 []])
+                                            [0 []])))
+                  crud/retrieve-by-id-as-admin (fn [resource-id]
+                                                 (case resource-id
+                                                   "deployment/test-1" @deployment-state
+                                                   "mepm/test-1" sample-mepm
+                                                   nil))
+                  crud/edit-by-id-as-admin (fn [resource-id body]
+                                             (case resource-id
+                                               "job/instantiate-123" (swap! job-state merge body)
+                                               "deployment/test-1" (swap! deployment-state merge body)
+                                               nil)
+                                             {:status 200 :body body})
+                  dispatcher/dispatch-app-lcm-op-occ-state-change! (fn [& _] [])
+                  dispatcher/dispatch-app-instance-state-change! (fn [& _] [])]
+      (let [response (mm3-callback/handle-notification {:body {:notificationType   "AppLcmOpOccNotification"
+                                                               :subscriptionId     "mm3-sub-1"
+                                                               :operationId        "op-123"
+                                                               :operationState     "COMPLETED"
+                                                               :appInstanceId      "southbound-app-1"
+                                                               :instantiationState "INSTANTIATED"
+                                                               :operationalState   "STARTED"}})]
+        (is (= 202 (:status response)))
+        (is (= [["mepm" {:cimi-params {:last 2
+                                       :filter (parser/parse-cimi-filter "mm3-subscription-id='mm3-sub-1'")}}]
+                ["job" {:cimi-params {:last 2
+                                      :filter (parser/parse-cimi-filter "mec-southbound-operation-id='op-123'")}}]]
+               @query-calls))))))

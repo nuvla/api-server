@@ -3,8 +3,10 @@
    (:require
      [clojure.string :as str]
      [clojure.tools.logging :as log]
+    [com.sixsq.nuvla.db.filter.parser :as parser]
      [com.sixsq.nuvla.server.resources.common.crud :as crud]
      [com.sixsq.nuvla.server.resources.mec.app-instance :as app-instance]
+    [com.sixsq.nuvla.server.resources.mec.app-lcm-subscription :as subscription]
      [com.sixsq.nuvla.server.resources.mec.app-lcm-op-occ :as app-lcm-op-occ]
      [com.sixsq.nuvla.server.resources.mec.notification-dispatcher :as dispatcher]
      [com.sixsq.nuvla.server.util.response :as r]
@@ -26,16 +28,17 @@
 
  (defn- query-first-as-admin
    [collection-id filter-expr]
-   (some->> (crud/query-as-admin collection-id {:last 2
-                                                :filter filter-expr})
+  (some->> (crud/query-as-admin collection-id {:cimi-params {:last 2
+                                                             :filter (parser/parse-cimi-filter filter-expr)}})
             second
             first))
 
 
  (defn- normalize-notification
    [body]
-   {:notification-type   (or (:notificationType body)
-                             (:notification-type body))
+  {:notification-type   (some-> (or (:notificationType body)
+                                    (:notification-type body))
+                                subscription/canonical-notification-type)
     :subscription-id     (or (:subscriptionId body)
                              (:subscription-id body))
     :mepm-id             (or (:mepmId body)
@@ -329,8 +332,8 @@
                           :mepm-id (:mepm-id notification)})))
        (persist-mepm-notification! mepm notification)
        (-> (case (:notification-type notification)
-             "AppLcmOpOccStateChangeNotification" (reconcile-operation-notification! notification mepm)
-             "AppInstanceStateChangeNotification" (reconcile-app-instance-notification! notification)
+             "AppLcmOpOccNotification" (reconcile-operation-notification! notification mepm)
+             "AppInstNotification" (reconcile-app-instance-notification! notification)
              (throw (ex-info "Unsupported Mm3.003 notification type"
                              {:status 400
                               :notification-type (:notification-type notification)})))

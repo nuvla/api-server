@@ -304,7 +304,7 @@
   [subscriptions app-instance change-type previous-state]
   (let [active-subs (subscription/get-active-subscriptions-for-type
                       subscriptions
-                      "AppInstanceStateChangeNotification")
+                      subscription/app-instance-subscription-type)
         
         matching-subs (filter #(subscription/matches-app-instance-filter? % app-instance)
                               active-subs)]
@@ -338,7 +338,7 @@
   [subscriptions app-lcm-op-occ change-type previous-state]
   (let [active-subs (subscription/get-active-subscriptions-for-type
                       subscriptions
-                      "AppLcmOpOccStateChangeNotification")
+                      subscription/app-lcm-op-occ-subscription-type)
         
         matching-subs (filter #(subscription/matches-app-lcm-op-occ-filter? % app-lcm-op-occ)
                               active-subs)]
@@ -363,7 +363,7 @@
   (try
     (handle-app-instance-state-change (active-subscriptions subscription/resource-type
                                                             subscription/resource->api-subscription
-                                                            "AppInstanceStateChangeNotification")
+                                                            subscription/app-instance-subscription-type)
                                       (normalize-app-instance app-instance)
                                       change-type
                                       previous-state)
@@ -379,7 +379,7 @@
   (try
     (handle-app-lcm-op-occ-state-change (active-subscriptions subscription/resource-type
                                                               subscription/resource->api-subscription
-                                                              "AppLcmOpOccStateChangeNotification")
+                                                              subscription/app-lcm-op-occ-subscription-type)
                                         (normalize-app-lcm-op-occ app-lcm-op-occ)
                                         change-type
                                         previous-state)

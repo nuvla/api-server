@@ -2,9 +2,9 @@
   "MEC 010-2 Application Lifecycle Subscription
    
    Implements the ETSI GS MEC 010-2 lifecycle subscription model
-   using v4.1.1 as the current baseline:
-   - AppInstanceStateChangeNotification: App instance state changes
-   - AppLcmOpOccStateChangeNotification: Operation occurrence state changes
+   using the ETSI subscription names:
+   - AppInstanceStateChange: App instance state changes
+   - AppLcmOpOccStateChange: Operation occurrence state changes
    
    Subscriptions allow MEO consumers to receive asynchronous notifications
    about lifecycle events via HTTP callbacks."
@@ -34,20 +34,63 @@
 ;; Subscription Types
 ;;
 
+(def ^:const app-instance-subscription-type
+  "AppInstanceStateChange")
+
+(def ^:const app-lcm-op-occ-subscription-type
+  "AppLcmOpOccStateChange")
+
+(def ^:private legacy-subscription-type-aliases
+  {"AppInstanceStateChangeNotification" app-instance-subscription-type
+   "AppLcmOpOccStateChangeNotification" app-lcm-op-occ-subscription-type})
+
 (def subscription-types
   "Valid MEC 010-2 subscription types"
-  #{"AppInstanceStateChangeNotification"
-    "AppLcmOpOccStateChangeNotification"})
+  #{app-instance-subscription-type
+    app-lcm-op-occ-subscription-type})
+
+(def accepted-subscription-types
+  "Accepted subscription type values, including legacy aliases."
+  (into subscription-types (keys legacy-subscription-type-aliases)))
 
 
 ;;
 ;; Notification Types (aligned with subscription types)
 ;;
 
+(def ^:const app-instance-notification-type
+  "AppInstNotification")
+
+(def ^:const app-lcm-op-occ-notification-type
+  "AppLcmOpOccNotification")
+
+(def ^:private legacy-notification-type-aliases
+  {"AppInstanceStateChangeNotification" app-instance-notification-type
+   "AppLcmOpOccStateChangeNotification" app-lcm-op-occ-notification-type})
+
 (def notification-types
-  "Valid MEC 010-2 notification types"
-  #{"AppInstanceStateChangeNotification"
-    "AppLcmOpOccStateChangeNotification"})
+  "Valid MEC 010-2 notification payload types"
+  #{app-instance-notification-type
+    app-lcm-op-occ-notification-type})
+
+(def accepted-notification-types
+  "Accepted notification payload values, including legacy aliases."
+  (into notification-types (keys legacy-notification-type-aliases)))
+
+(defn canonical-subscription-type
+  [subscription-type]
+  (get legacy-subscription-type-aliases subscription-type subscription-type))
+
+(defn canonical-notification-type
+  [notification-type]
+  (get legacy-notification-type-aliases notification-type notification-type))
+
+(defn subscription-type->filter-key
+  [subscription-type]
+  (case (canonical-subscription-type subscription-type)
+    "AppInstanceStateChange" :app-instance-filter
+    "AppLcmOpOccStateChange" :app-lcm-op-occ-filter
+    nil))
 
 
 ;;
@@ -121,16 +164,10 @@
    Returns:
    Subscription resource map with generated ID"
   [subscription-type callback-uri filter-opts user-id]
-  (let [subscription-id (str api-resource-type "/" (java.util.UUID/randomUUID))
+  (let [subscription-type (canonical-subscription-type subscription-type)
+        subscription-id (str api-resource-type "/" (java.util.UUID/randomUUID))
         now             (str (java.time.Instant/now))
-        filter-key      (case subscription-type
-                          "AppInstanceStateChangeNotification"
-                          :app-instance-filter
-                          
-                          "AppLcmOpOccStateChangeNotification"
-                          :app-lcm-op-occ-filter
-                          
-                          nil)]
+        filter-key      (subscription-type->filter-key subscription-type)]
     (cond-> {:id                subscription-id
              :subscription-type subscription-type
              :callback-uri      callback-uri
@@ -173,7 +210,9 @@
 (defn resource->api-subscription
   [resource]
   (when resource
-    (update resource :id resource-id->api-id)))
+    (-> resource
+        (update :id resource-id->api-id)
+        (update :subscription-type canonical-subscription-type))))
 
 
 (def resource-metadata
@@ -333,7 +372,7 @@
 ;;
 
 (defn build-app-instance-notification
-  "Build AppInstanceStateChangeNotification.
+  "Build AppInstNotification.
    
    Parameters:
    - subscription: Subscription resource
@@ -344,7 +383,7 @@
    Returns:
    Notification map ready for delivery"
   [subscription app-instance change-type previous-state]
-  {:notification-type    "AppInstanceStateChangeNotification"
+  {:notification-type    app-instance-notification-type
    :notification-id      (str "notification/" (java.util.UUID/randomUUID))
    :subscription-id      (:id subscription)
    :timestamp            (java.time.Instant/now)
@@ -360,7 +399,7 @@
 
 
 (defn build-app-lcm-op-occ-notification
-  "Build AppLcmOpOccStateChangeNotification.
+  "Build AppLcmOpOccNotification.
    
    Parameters:
    - subscription: Subscription resource
@@ -371,7 +410,7 @@
    Returns:
    Notification map ready for delivery"
   [subscription app-lcm-op-occ change-type previous-state]
-  {:notification-type       "AppLcmOpOccStateChangeNotification"
+  {:notification-type       app-lcm-op-occ-notification-type
    :notification-id         (str "notification/" (java.util.UUID/randomUUID))
    :subscription-id         (:id subscription)
    :timestamp               (java.time.Instant/now)
@@ -408,17 +447,19 @@
    Filtered and paginated collection of subscriptions"
   [subscriptions {:keys [subscription-type owner active limit offset]
                   :or   {active true limit 100 offset 0}}]
-  (->> subscriptions
+  (let [subscription-type (some-> subscription-type canonical-subscription-type)]
+    (->> subscriptions
        (filter (fn [sub]
                  (and
                    (or (nil? subscription-type)
-                       (= (:subscription-type sub) subscription-type))
+                       (= (canonical-subscription-type (:subscription-type sub))
+                          subscription-type))
                    (or (nil? owner)
                        (= (:owner sub) owner))
                    (or (nil? active)
                        (= (:active sub) active)))))
        (drop offset)
-       (take limit)))
+       (take limit))))
 
 
 (defn get-subscription-by-id
@@ -444,7 +485,9 @@
    Returns:
    Collection of active subscriptions"
   [subscriptions subscription-type]
-  (filter (fn [sub]
-            (and (:active sub)
-                 (= (:subscription-type sub) subscription-type)))
-          subscriptions))
+  (let [subscription-type (canonical-subscription-type subscription-type)]
+    (filter (fn [sub]
+              (and (:active sub)
+                   (= (canonical-subscription-type (:subscription-type sub))
+                      subscription-type)))
+            subscriptions)))

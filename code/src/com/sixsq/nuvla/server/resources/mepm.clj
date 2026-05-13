@@ -110,8 +110,8 @@ with multiple MEPMs across distributed edge infrastructure.
 
 
 (def ^:private mm3-lifecycle-notification-types
-  ["AppInstanceStateChangeNotification"
-   "AppLcmOpOccStateChangeNotification"])
+  ["AppInstNotification"
+   "AppLcmOpOccNotification"])
 
 
 (defn- lifecycle-callback-uri

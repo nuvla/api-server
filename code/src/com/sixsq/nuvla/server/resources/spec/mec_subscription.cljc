@@ -8,8 +8,10 @@
 
  ;; Notification subscription type
  (s/def ::subscription-type
-   (-> (st/spec #{"AppInstanceStateChangeNotification"
-                  "AppLcmOpOccStateChangeNotification"})
+  (-> (st/spec #{"AppInstanceStateChange"
+                 "AppLcmOpOccStateChange"
+                 "AppInstanceStateChangeNotification"
+                 "AppLcmOpOccStateChangeNotification"})
        (assoc :name "subscription type"
               :json-schema/type "string"
               :json-schema/description "ETSI MEC lifecycle notification type"

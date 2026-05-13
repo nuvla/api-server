@@ -64,7 +64,7 @@
 (deftest test-dispatch-notification-failure
   (testing "Dispatch notification to invalid endpoint fails gracefully"
     (let [sub (subscription/create-subscription
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "http://localhost:99999/invalid"  ; Invalid port
                 {}
                 test-user-id)
@@ -90,7 +90,7 @@
 (deftest test-dispatch-notification-async-returns-future
   (testing "Dispatch notification asynchronously returns future"
     (let [sub (subscription/create-subscription
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "http://localhost:99999/invalid"
                 {}
                 test-user-id)
@@ -129,7 +129,7 @@
 (deftest test-handle-app-instance-state-change-matching-subscription
   (testing "Handle app instance state change with matching subscription"
     (let [sub (subscription/create-subscription
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "http://localhost:99999/webhook"  ; Will fail but that's OK for test
                 {:app-name "test-app"}
                 test-user-id)
@@ -155,7 +155,7 @@
 (deftest test-handle-app-instance-state-change-non-matching-subscription
   (testing "Handle app instance state change with non-matching subscription"
     (let [sub (subscription/create-subscription
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "http://localhost:99999/webhook"
                 {:app-name "different-app"}  ; Does not match
                 test-user-id)
@@ -174,7 +174,7 @@
   (testing "Handle app instance state change with inactive subscription"
     (let [sub (subscription/deactivate-subscription
                 (subscription/create-subscription
-                  "AppInstanceStateChangeNotification"
+                  "AppInstanceStateChange"
                   "http://localhost:99999/webhook"
                   {}
                   test-user-id))
@@ -192,17 +192,17 @@
 (deftest test-handle-app-instance-state-change-multiple-subscriptions
   (testing "Handle app instance state change with multiple subscriptions"
     (let [sub1 (subscription/create-subscription
-                 "AppInstanceStateChangeNotification"
+                 "AppInstanceStateChange"
                  "http://localhost:99999/webhook1"
                  {:operational-state "STARTED"}
                  test-user-id)
           sub2 (subscription/create-subscription
-                 "AppInstanceStateChangeNotification"
+                 "AppInstanceStateChange"
                  "http://localhost:99999/webhook2"
                  {:app-name "test-app"}
                  test-user-id)
           sub3 (subscription/create-subscription
-                 "AppLcmOpOccStateChangeNotification"  ; Wrong type
+                 "AppLcmOpOccStateChange"  ; Wrong type
                  "http://localhost:99999/webhook3"
                  {}
                  test-user-id)
@@ -231,7 +231,7 @@
 (deftest test-handle-app-lcm-op-occ-state-change-matching-subscription
   (testing "Handle operation state change with matching subscription"
     (let [sub (subscription/create-subscription
-                "AppLcmOpOccStateChangeNotification"
+                "AppLcmOpOccStateChange"
                 "http://localhost:99999/webhook"
                 {:operation-type "INSTANTIATE"}
                 test-user-id)
@@ -256,7 +256,7 @@
 (deftest test-handle-app-lcm-op-occ-state-change-filter-by-state
   (testing "Handle operation state change filtered by operation state"
     (let [sub (subscription/create-subscription
-                "AppLcmOpOccStateChangeNotification"
+                "AppLcmOpOccStateChange"
                 "http://localhost:99999/webhook"
                 {:operation-state "FAILED"}  ; Does not match COMPLETED
                 test-user-id)
@@ -278,7 +278,7 @@
 (deftest test-trigger-app-instance-notification
   (testing "Manually trigger app instance notification"
     (let [sub (subscription/create-subscription
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "http://localhost:99999/webhook"
                 {}
                 test-user-id)
@@ -302,7 +302,7 @@
 (deftest test-trigger-app-lcm-op-occ-notification
   (testing "Manually trigger operation occurrence notification"
     (let [sub (subscription/create-subscription
-                "AppLcmOpOccStateChangeNotification"
+                "AppLcmOpOccStateChange"
                 "http://localhost:99999/webhook"
                 {}
                 test-user-id)
@@ -329,14 +329,14 @@
       (with-redefs [crud/query-as-admin (fn [_ _]
                                           [{} [(subscription/resource->api-subscription
                                                 {:id "mec-subscription/sub-1"
-                                                 :subscription-type "AppInstanceStateChangeNotification"
+                                                 :subscription-type "AppInstanceStateChange"
                                                  :callback-uri "https://example.org/webhook"
                                                  :app-instance-filter {:app-name "test-app"}
                                                  :owner test-user-id
                                                  :active true})
                                                (subscription/resource->api-subscription
                                                 {:id "mec-subscription/sub-2"
-                                                 :subscription-type "AppInstanceStateChangeNotification"
+                                                 :subscription-type "AppInstanceStateChange"
                                                  :callback-uri "https://example.org/webhook"
                                                  :app-instance-filter {:app-name "other-app"}
                                                  :owner test-user-id
@@ -367,7 +367,7 @@
       (with-redefs [crud/query-as-admin (fn [_ _]
                                           [{} [(subscription/resource->api-subscription
                                                 {:id "mec-subscription/sub-3"
-                                                 :subscription-type "AppLcmOpOccStateChangeNotification"
+                                                 :subscription-type "AppLcmOpOccStateChange"
                                                  :callback-uri "https://example.org/webhook"
                                                  :app-lcm-op-occ-filter {:operation-type "INSTANTIATE"}
                                                  :owner test-user-id
@@ -455,7 +455,7 @@
 (deftest test-delivery-stats
   (testing "Track delivery statistics"
     (let [sub-fail (subscription/create-subscription
-                     "AppInstanceStateChangeNotification"
+                     "AppInstanceStateChange"
                      "http://localhost:99999/invalid"
                      {}
                      test-user-id)
@@ -483,7 +483,7 @@
 (deftest test-reset-delivery-stats
   (testing "Reset delivery statistics"
     (let [sub (subscription/create-subscription
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "http://localhost:99999/webhook"
                 {}
                 test-user-id)

@@ -24,10 +24,10 @@ The runbook uses the explicit public API roots implemented in Nuvla today:
 flowchart LR
     Client["Demo operator shell / curl"]
     Webhook["Local webhook receiver"]
-    APIServer["Nuvla API server\nMm1 + MEC facade"]
+    APIServer["Nuvla API server\nMm1 + internal Mm3.003 receiver"]
     JobDistributor["job-engine distributor"]
     JobExecutor["job-engine executor"]
-    MockMEPM["Mock MEPM\nMm3 endpoints"]
+    MockMEPM["Mock MEPM\nMm3 app_lcm/v1 endpoints"]
     ES["Elasticsearch"]
     ZK["ZooKeeper"]
 
@@ -37,19 +37,21 @@ flowchart LR
     JobDistributor -->|consume / assign jobs| ZK
     JobExecutor -->|consume jobs| ZK
     JobExecutor -->|read / update deployment + job state| APIServer
-    APIServer -->|selected Mm3 interactions:\ncapabilities + resources| MockMEPM
-    JobExecutor -->|selected Mm3 interactions:\nlifecycle calls| MockMEPM
+    APIServer -->|Mm3 admin path:\ncapabilities + resources + subscription setup| MockMEPM
+    JobExecutor -->|Mm3.002 lifecycle calls:\napp_instances + operate| MockMEPM
     MockMEPM -->|Mm3 replies| APIServer
     MockMEPM -->|Mm3 replies| JobExecutor
-    APIServer -->|subscription notifications| Webhook
+    MockMEPM -->|Mm3.003 callback:\ninternal/mm3/app_lcm/v1/notifications| APIServer
+    APIServer -->|northbound subscription notifications| Webhook
 ```
 
-In this diagram, `Mm3` is shown as a neutral southbound reference point. In ETSI MEC `010-2` (cross-checked
-against `ETSI GS MEC 010-2 V4.1.1`), some `Mm3` sub-interfaces are produced by the `MEO` and some by the
-`MEPM`. This local demo mainly exercises the runtime path where Nuvla calls the external `MEPM` for
-capabilities/resources and application lifecycle.
 
 
+In this diagram, the southbound split is shown explicitly. The `job-engine` executor drives `Mm3.002`
+lifecycle commands against the external `MEPM`, while the API server handles the southbound
+subscription-management path and receives `Mm3.003` lifecycle callbacks on the internal receiver at
+`/api/mec/internal/mm3/app_lcm/v1/notifications`. The local demo therefore exercises both the command path
+from Nuvla to the `MEPM` and the event-ingestion path from the `MEPM` back into Nuvla.
 
 ## What This Demo Can Credibly Show
 
@@ -65,13 +67,9 @@ This runbook does **not** by itself close the remaining open items around:
 
 - policy/admission gates before instantiation
 - artifact signature or integrity enforcement
-- evidence packaging beyond collected traces and logs
 - a fully realistic commissioned `nuvlabox` inventory
-- autonomous host-failure detection independent of the `MEPM` event stream
 
 ## Recommended Topology
-
-For a local demo, I would use the following topology.
 
 ### Recommended baseline
 
@@ -82,23 +80,6 @@ For a local demo, I would use the following topology.
 - one `job-engine` executor started directly from the source tree
 - one mock `MEPM` started from the `api-server` source tree
 - one local webhook receiver started from the shell
-
-This is the best balance between realism and setup effort because:
-
-- the code you demo is the code in your current workspace
-- jobs are processed asynchronously by the real `job-engine`
-- the southbound dependency is still controllable via the built-in mock `MEPM`
-- you avoid the ambiguity of prebuilt images versus local source state
-
-### Important startup caveat
-
-This repository does not currently expose a simple committed `lein run` launcher for the full API server. For a source-tree demo, the practical approach is to:
-
-- start local Elasticsearch and ZooKeeper yourself
-- start the API server from a REPL with a thin Jetty wrapper
-- initialize the DB binding, ZooKeeper client, resources, and data explicitly
-
-That is slightly more manual than the containerized path, but it keeps the whole demo on your local source tree.
 
 ## Prerequisites
 
@@ -393,7 +374,7 @@ Create a subscription for operation-occurrence notifications:
 ```bash
 cat > subscription-op.json <<'EOF'
 {
-  "subscriptionType": "AppLcmOpOccStateChangeNotification",
+  "subscriptionType": "AppLcmOpOccStateChange",
   "callbackUri": "http://localhost:18082",
   "appLcmOpOccFilter": {
     "operationType": "INSTANTIATE"
@@ -414,7 +395,7 @@ Create a second subscription for app-instance state changes:
 ```bash
 cat > subscription-app.json <<'EOF'
 {
-  "subscriptionType": "AppInstanceStateChangeNotification",
+  "subscriptionType": "AppInstanceStateChange",
   "callbackUri": "http://localhost:18082"
 }
 EOF
@@ -611,13 +592,17 @@ curl -b nuvla-cookies.txt \
 Inspect the southbound app instance in the mock `MEPM` too:
 
 ```bash
-curl -s http://localhost:18081/mm3/app-instances | jq .
+curl -s http://localhost:18081/mm3/app_lcm/v1/app_instances | jq .
+
+curl -s \
+  "http://localhost:18081/mm3/app_lcm/v1/app_lcm_op_occs/${MEPM_OPERATION_ID}" | jq .
 ```
 
 Expected mock `MEPM` state after instantiate:
 
 - `instantiationState = INSTANTIATED`
 - `operationalState = STARTED`
+- southbound `app_lcm_op_occ` status = `COMPLETED`
 
 ### Optional: Replay a Southbound `Mm3.003` Callback
 
@@ -637,7 +622,7 @@ curl \
 {
   "subscriptionId": "${MM3_SUBSCRIPTION_ID}",
   "notification": {
-    "notificationType": "AppLcmOpOccStateChangeNotification",
+    "notificationType": "AppLcmOpOccNotification",
     "subscriptionId": "${MM3_SUBSCRIPTION_ID}",
     "operationId": "${MEPM_OPERATION_ID}",
     "operationState": "COMPLETED",
@@ -713,14 +698,14 @@ export MM3_SUBSCRIPTION_ID="$(
 
 export SOUTHBOUND_APP_INSTANCE_ID="$(
   curl -s \
-    http://localhost:18081/mm3/app-instances | tee mm3-app-instances.out | jq -r '.instances[0].id'
+    http://localhost:18081/mm3/app_lcm/v1/app_instances | tee mm3-app-instances.out | jq -r '.instances[0].id'
 )"
 
 echo "$MM3_SUBSCRIPTION_ID"
 echo "$SOUTHBOUND_APP_INSTANCE_ID"
 ```
 
-Then simulate an unexpected app stop by having the mock `MEPM` emit an unsolicited `AppInstanceStateChangeNotification`:
+Then simulate an unexpected app stop by having the mock `MEPM` emit an unsolicited `AppInstNotification`:
 
 ```bash
 curl \
@@ -731,7 +716,7 @@ curl \
 {
   "subscriptionId": "${MM3_SUBSCRIPTION_ID}",
   "notification": {
-    "notificationType": "AppInstanceStateChangeNotification",
+    "notificationType": "AppInstNotification",
     "subscriptionId": "${MM3_SUBSCRIPTION_ID}",
     "appInstanceId": "${SOUTHBOUND_APP_INSTANCE_ID}",
     "instantiationState": "INSTANTIATED",
@@ -741,7 +726,14 @@ curl \
 EOF
 ```
 
-Verify that Nuvla reflects the updated state and preserves the southbound evidence:
+First verify that the mock `MEPM` itself now reflects the unsolicited state change:
+
+```bash
+curl \
+  http://localhost:18081/mm3/app_lcm/v1/app_instances/${SOUTHBOUND_APP_INSTANCE_ID} | jq .
+```
+
+Then verify that Nuvla reflects the updated state and preserves the southbound evidence:
 
 ```bash
 curl -b nuvla-cookies.txt \
@@ -756,6 +748,7 @@ curl -b nuvla-cookies.txt \
 
 Expected outcome:
 
+- the mock `MEPM` app instance now reports `operationalState = STOPPED`
 - `AppInstanceInfo.operationalState` becomes `STOPPED`
 - `AppInstanceInfo.instantiationState` remains `INSTANTIATED`
 - the deployment keeps the latest `mec-last-notification`
@@ -848,79 +841,4 @@ This is useful to demonstrate:
 - observable failure behavior
 - operation error reporting
 - webhook notifications for final failed operations
-
-## Step 16: Capture Evidence
-
-For demo and rehearsal purposes, keep the following artifacts together in one folder:
-
-- every request payload
-- every JSON response
-- the ids of created resources
-- `AppLcmOpOcc.mepmOperationId` values for southbound correlation
-- `mepm.mm3-last-notification`
-- `deployment.mec-last-notification`
-- `job.mec-last-notification`
-- API server REPL console output
-- job distributor console output
-- job executor console output
-- mock `MEPM` console output
-- webhook receiver output
-
-Useful commands:
-
-Capture logs with shell redirection when starting each local process.
-
-## Suggested Demo Sequence
-
-If the goal is a 10-15 minute demo, I would present it in this order:
-
-1. Show the local topology and the registered `MEPM`.
-2. Show package onboarding with `POST /app_packages` and `GET /appd`.
-3. Show retained app instance creation.
-4. Show instantiate and the real `AppLcmOpOcc`, including `mepmOperationId`.
-5. Show that instantiate leads to `instantiationState = INSTANTIATED` and `operationalState = STARTED` on both the northbound view and the mock `MEPM`.
-6. Show the webhook receiver receiving notifications.
-7. Show `operate STOPPED`, then `operate STARTED`, while `instantiationState` remains `INSTANTIATED`.
-8. Optionally simulate an unsolicited app stop/crash notification from the `MEPM`.
-9. Show `terminate` returning the retained instance to `NOT_INSTANTIATED`.
-10. Show one negative path, preferably a forced southbound failure.
-
-## Suggested Scenario-to-Requirement Mapping
-
-For demo purposes, the most useful scenarios are:
-
-- `SCN-PKG-01`: valid package onboarding
-- `SCN-LCM-01`: create app instance
-- `SCN-LCM-03`: get app instance
-- `SCN-LCM-05`: instantiate through real flow
-- `SCN-LCM-06`: terminate to retained `NOT_INSTANTIATED`
-- `SCN-LCM-07`: operate start/stop subset
-- `SCN-LCM-08`: unsolicited app-state change reconciled from `Mm3.003`
-- `SCN-OPS-01`: list operation occurrences
-- `SCN-SUB-01`: durable subscription lifecycle
-- `SCN-SUB-02`: matching notifications
-- `SCN-ERR-01`: standards-aligned error handling
-
-## Optional Extension: Host-Targeted Demo
-
-If you specifically want to showcase the `WS3` placement story, extend the demo with:
-
-- one registered `nuvlabox`
-- one `MEPM` with `mec-host-id` set to that `nuvlabox`
-- app instance requests carrying `mecHostInformation.hostId`
-
-That variant is more realistic, but it is also more setup-heavy. For a first local compliance demo, I would keep the baseline single-`MEPM` flow above.
-
-## Recommended Claim Boundary for the Demo
-
-At the end of the demo, I would phrase the claim like this:
-
-> Nuvla locally demonstrates the selected MEC MVP subset with real northbound package and lifecycle APIs, real asynchronous execution through `job-engine`, southbound delegation to an external `MEPM` over `Mm3`, durable subscription-backed notifications, and persisted evidence for southbound commands and callbacks.
-
-I would explicitly avoid claiming, in the same demo, that:
-
-- policy-driven admission is complete
-- artifact integrity/signature enforcement is complete
-- the full validation evidence pack is already productized
-- Nuvla independently detects host or application crashes without a southbound `MEPM` event
 

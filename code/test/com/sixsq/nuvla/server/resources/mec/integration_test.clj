@@ -63,12 +63,12 @@
 (deftest test-subscription-creation
   (testing "Create and validate subscription"
     (let [sub (subscription/create-subscription 
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "https://webhook.example.com/notifications"
                 {:operationalState "STARTED"}
                 "user/test-user")]
       (is (contains? sub :id))
-      (is (= "AppInstanceStateChangeNotification" (:subscription-type sub)))
+      (is (= "AppInstanceStateChange" (:subscription-type sub)))
       (is (= "https://webhook.example.com/notifications" (:callback-uri sub))))))
 
 
@@ -103,7 +103,7 @@
       
       ;; Subscription can reference operation
       (let [sub (subscription/create-subscription 
-                  "AppLcmOpOccStateChangeNotification"
+                  "AppLcmOpOccStateChange"
                   "https://example.com/webhook"
                   {:operationType "INSTANTIATE"}
                   "user/test-user")]

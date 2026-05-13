@@ -32,9 +32,9 @@
 ;;
 
 (deftest test-create-subscription-app-instance
-  (testing "Create AppInstanceStateChangeNotification subscription"
+  (testing "Create AppInstanceStateChange subscription"
     (let [sub (subscription/create-subscription
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "https://example.com/webhook"
                 {:app-name "test-app"
                  :operational-state "STARTED"}
@@ -42,7 +42,7 @@
       
       (is (string? (:id sub)))
       (is (.startsWith (:id sub) "subscription/"))
-      (is (= "AppInstanceStateChangeNotification" (:subscription-type sub)))
+      (is (= "AppInstanceStateChange" (:subscription-type sub)))
       (is (= "https://example.com/webhook" (:callback-uri sub)))
       (is (= {:app-name "test-app"
               :operational-state "STARTED"}
@@ -54,16 +54,16 @@
 
 
 (deftest test-create-subscription-app-lcm-op-occ
-  (testing "Create AppLcmOpOccStateChangeNotification subscription"
+  (testing "Create AppLcmOpOccStateChange subscription"
     (let [sub (subscription/create-subscription
-                "AppLcmOpOccStateChangeNotification"
+                "AppLcmOpOccStateChange"
                 "https://example.com/webhook"
                 {:operation-type "INSTANTIATE"
                  :operation-state "COMPLETED"}
                 test-user-id)]
       
       (is (string? (:id sub)))
-      (is (= "AppLcmOpOccStateChangeNotification" (:subscription-type sub)))
+      (is (= "AppLcmOpOccStateChange" (:subscription-type sub)))
       (is (= {:operation-type "INSTANTIATE"
               :operation-state "COMPLETED"}
              (:app-lcm-op-occ-filter sub)))
@@ -73,13 +73,13 @@
 (deftest test-create-subscription-no-filter
   (testing "Create subscription without filter (match all)"
     (let [sub (subscription/create-subscription
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "https://example.com/webhook"
                 {}
                 test-user-id)]
       
       (is (nil? (:app-instance-filter sub)))
-      (is (= "AppInstanceStateChangeNotification" (:subscription-type sub))))))
+      (is (= "AppInstanceStateChange" (:subscription-type sub))))))
 
 
 ;;
@@ -89,7 +89,7 @@
 (deftest test-validate-subscription-valid
   (testing "Validate valid subscription"
     (let [sub (subscription/create-subscription
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "https://example.com/webhook"
                 {}
                 test-user-id)
@@ -102,7 +102,7 @@
 (deftest test-validate-subscription-invalid-callback-uri
   (testing "Validate subscription with invalid callback URI"
     (let [sub {:id                "subscription/test"
-               :subscription-type "AppInstanceStateChangeNotification"
+               :subscription-type "AppInstanceStateChange"
                :callback-uri      "not-a-uri"}
           result (subscription/validate-subscription sub)]
       
@@ -117,7 +117,7 @@
 (deftest test-update-subscription
   (testing "Update subscription callback URI and filter"
     (let [sub (subscription/create-subscription
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "https://example.com/webhook"
                 {:app-name "test-app"}
                 test-user-id)
@@ -138,7 +138,7 @@
 (deftest test-deactivate-subscription
   (testing "Deactivate subscription (soft delete)"
     (let [sub (subscription/create-subscription
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "https://example.com/webhook"
                 {}
                 test-user-id)
@@ -155,7 +155,7 @@
 (deftest test-matches-app-instance-filter-no-filter
   (testing "Empty filter matches all app instances"
     (let [sub (subscription/create-subscription
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "https://example.com/webhook"
                 {}
                 test-user-id)]
@@ -166,7 +166,7 @@
 (deftest test-matches-app-instance-filter-exact-match
   (testing "Filter matches app instance exactly"
     (let [sub (subscription/create-subscription
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "https://example.com/webhook"
                 {:app-name "test-app"
                  :operational-state "STARTED"}
@@ -178,7 +178,7 @@
 (deftest test-matches-app-instance-filter-no-match
   (testing "Filter does not match app instance"
     (let [sub (subscription/create-subscription
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "https://example.com/webhook"
                 {:app-name "different-app"}
                 test-user-id)]
@@ -189,7 +189,7 @@
 (deftest test-matches-app-instance-filter-partial-match
   (testing "Partial filter matches (only some fields specified)"
     (let [sub (subscription/create-subscription
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "https://example.com/webhook"
                 {:operational-state "STARTED"}
                 test-user-id)]
@@ -200,7 +200,7 @@
 (deftest test-matches-app-lcm-op-occ-filter-match
   (testing "Filter matches operation occurrence"
     (let [sub (subscription/create-subscription
-                "AppLcmOpOccStateChangeNotification"
+                "AppLcmOpOccStateChange"
                 "https://example.com/webhook"
                 {:operation-type "INSTANTIATE"
                  :operation-state "COMPLETED"}
@@ -212,7 +212,7 @@
 (deftest test-matches-app-lcm-op-occ-filter-no-match
   (testing "Filter does not match operation occurrence"
     (let [sub (subscription/create-subscription
-                "AppLcmOpOccStateChangeNotification"
+                "AppLcmOpOccStateChange"
                 "https://example.com/webhook"
                 {:operation-type "TERMINATE"}
                 test-user-id)]
@@ -225,9 +225,9 @@
 ;;
 
 (deftest test-build-app-instance-notification
-  (testing "Build AppInstanceStateChangeNotification"
+  (testing "Build AppInstNotification"
     (let [sub (subscription/create-subscription
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "https://example.com/webhook"
                 {}
                 test-user-id)
@@ -237,7 +237,7 @@
                          "OPERATIONAL_STATE"
                          "STOPPED")]
       
-      (is (= "AppInstanceStateChangeNotification" (:notification-type notification)))
+      (is (= "AppInstNotification" (:notification-type notification)))
       (is (string? (:notification-id notification)))
       (is (.startsWith (:notification-id notification) "notification/"))
       (is (= (:id sub) (:subscription-id notification)))
@@ -253,9 +253,9 @@
 
 
 (deftest test-build-app-lcm-op-occ-notification
-  (testing "Build AppLcmOpOccStateChangeNotification"
+  (testing "Build AppLcmOpOccNotification"
     (let [sub (subscription/create-subscription
-                "AppLcmOpOccStateChangeNotification"
+                "AppLcmOpOccStateChange"
                 "https://example.com/webhook"
                 {}
                 test-user-id)
@@ -265,7 +265,7 @@
                          "OPERATION_STATE"
                          "PROCESSING")]
       
-      (is (= "AppLcmOpOccStateChangeNotification" (:notification-type notification)))
+      (is (= "AppLcmOpOccNotification" (:notification-type notification)))
       (is (string? (:notification-id notification)))
       (is (= (:id sub) (:subscription-id notification)))
       (is (= "job/op-123" (:app-lcm-op-occ-id notification)))
@@ -289,12 +289,12 @@
 (deftest test-query-subscriptions-no-filter
   (testing "Query all subscriptions"
     (let [sub1 (subscription/create-subscription
-                 "AppInstanceStateChangeNotification"
+                 "AppInstanceStateChange"
                  "https://example.com/webhook1"
                  {}
                  test-user-id)
           sub2 (subscription/create-subscription
-                 "AppLcmOpOccStateChangeNotification"
+                 "AppLcmOpOccStateChange"
                  "https://example.com/webhook2"
                  {}
                  test-user-id)
@@ -309,19 +309,19 @@
 (deftest test-query-subscriptions-by-type
   (testing "Query subscriptions by type"
     (let [sub1 (subscription/create-subscription
-                 "AppInstanceStateChangeNotification"
+                 "AppInstanceStateChange"
                  "https://example.com/webhook1"
                  {}
                  test-user-id)
           sub2 (subscription/create-subscription
-                 "AppLcmOpOccStateChangeNotification"
+                 "AppLcmOpOccStateChange"
                  "https://example.com/webhook2"
                  {}
                  test-user-id)
           subs [sub1 sub2]
           result (subscription/query-subscriptions
                    subs
-                   {:subscription-type "AppInstanceStateChangeNotification"})]
+                   {:subscription-type "AppInstanceStateChange"})]
       
       (is (= 1 (count result)))
       (is (= (:id sub1) (:id (first result)))))))
@@ -330,12 +330,12 @@
 (deftest test-query-subscriptions-by-owner
   (testing "Query subscriptions by owner"
     (let [sub1 (subscription/create-subscription
-                 "AppInstanceStateChangeNotification"
+                 "AppInstanceStateChange"
                  "https://example.com/webhook1"
                  {}
                  "user/owner1")
           sub2 (subscription/create-subscription
-                 "AppInstanceStateChangeNotification"
+                 "AppInstanceStateChange"
                  "https://example.com/webhook2"
                  {}
                  "user/owner2")
@@ -349,7 +349,7 @@
 (deftest test-query-subscriptions-pagination
   (testing "Query subscriptions with pagination"
     (let [subs (mapv #(subscription/create-subscription
-                        "AppInstanceStateChangeNotification"
+                        "AppInstanceStateChange"
                         (str "https://example.com/webhook" %)
                         {}
                         test-user-id)
@@ -365,7 +365,7 @@
 (deftest test-get-subscription-by-id
   (testing "Get subscription by ID"
     (let [sub (subscription/create-subscription
-                "AppInstanceStateChangeNotification"
+                "AppInstanceStateChange"
                 "https://example.com/webhook"
                 {}
                 test-user-id)
@@ -387,25 +387,25 @@
 (deftest test-get-active-subscriptions-for-type
   (testing "Get active subscriptions for specific type"
     (let [sub1 (subscription/create-subscription
-                 "AppInstanceStateChangeNotification"
+                 "AppInstanceStateChange"
                  "https://example.com/webhook1"
                  {}
                  test-user-id)
           sub2 (subscription/create-subscription
-                 "AppLcmOpOccStateChangeNotification"
+                 "AppLcmOpOccStateChange"
                  "https://example.com/webhook2"
                  {}
                  test-user-id)
           sub3 (subscription/deactivate-subscription
                  (subscription/create-subscription
-                   "AppInstanceStateChangeNotification"
+                   "AppInstanceStateChange"
                    "https://example.com/webhook3"
                    {}
                    test-user-id))
           subs [sub1 sub2 sub3]
           result (subscription/get-active-subscriptions-for-type
                    subs
-                   "AppInstanceStateChangeNotification")]
+                   "AppInstanceStateChange")]
       
       (is (= 1 (count result)))
       (is (= (:id sub1) (:id (first result)))))))

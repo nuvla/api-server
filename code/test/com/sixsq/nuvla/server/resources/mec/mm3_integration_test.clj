@@ -264,17 +264,18 @@
       (is (:success? get-create-op))
       (is (= 200 (:status get-create-op)))
       (is (= create-op-id (get-in get-create-op [:data :id])))
-      (is (= "PROCESSING" (get-in get-create-op [:data :status])))
+      (is (= "COMPLETED" (get-in get-create-op [:data :status])))
       (is (:success? get-operate-op))
       (is (= 200 (:status get-operate-op)))
-      (is (= "OPERATE" (get-in get-operate-op [:data :operationType]))))))
+      (is (= "OPERATE" (get-in get-operate-op [:data :operationType])))
+      (is (= "COMPLETED" (get-in get-operate-op [:data :status]))))))
 
 (deftest test-mm3-create-subscription
   (testing "Create southbound lifecycle subscription via Mm3"
     (let [response (mm3/create-subscription test-endpoint
                                             {:callbackUri "http://localhost:8200/api/mec/internal/mm3/app_lcm/v1/notifications"
-                                             :notificationTypes ["AppInstanceStateChangeNotification"
-                                                                 "AppLcmOpOccStateChangeNotification"]})]
+                                             :notificationTypes ["AppInstNotification"
+                                                                 "AppLcmOpOccNotification"]})]
       (is (:success? response))
       (is (= 201 (:status response)))
       (is (some? (get-in response [:data :id])))
@@ -296,12 +297,12 @@
       (try
         (let [subscription (mm3/create-subscription test-endpoint
                                                     {:callbackUri callback-uri
-                                                     :notificationTypes ["AppLcmOpOccStateChangeNotification"]})
+                                                     :notificationTypes ["AppLcmOpOccNotification"]})
               subscription-id (get-in subscription [:data :id])
               response        (http/post (str test-endpoint "/mm3/test/emit-notification")
                                          {:body             (json/write-value-as-string
                                                               {:subscriptionId subscription-id
-                                                               :notification {:notificationType "AppLcmOpOccStateChangeNotification"
+                                                               :notification {:notificationType "AppLcmOpOccNotification"
                                                                               :subscriptionId   subscription-id
                                                                               :operationId      "op-emit-1"
                                                                               :operationState   "COMPLETED"}})
@@ -313,8 +314,60 @@
           (is (:success? subscription))
           (is (= 202 (:status response)))
           (is (= 204 (get-in response [:body :callbackStatus])))
-          (is (= "AppLcmOpOccStateChangeNotification" (:notificationType @received)))
+          (is (= "AppLcmOpOccNotification" (:notificationType @received)))
           (is (= "op-emit-1" (:operationId @received))))
+        (finally
+          (.stop server))))))
+
+(deftest test-mock-mepm-app-instance-notification-updates-local-state
+  (testing "Unsolicited AppInstNotification updates mock MEPM app instance state"
+    (let [callback-port (with-open [socket (java.net.ServerSocket. 0)]
+                          (.getLocalPort socket))
+          callback-uri  (str "http://localhost:" callback-port "/callback")
+          server        (jetty/run-jetty (wrap-json-body
+                                          (fn [_request]
+                                            {:status 204 :body ""})
+                                          {:keywords? true})
+                                         {:port callback-port :join? false})]
+      (try
+        (let [create-response  (mm3/create-app-instance test-endpoint {:name "app-crash-demo"})
+              app-id           (get-in create-response [:data :id])
+              subscription     (mm3/create-subscription test-endpoint
+                                                        {:callbackUri callback-uri
+                                                         :notificationTypes ["AppInstNotification"]})
+              subscription-id  (get-in subscription [:data :id])
+              stop-response    (http/post (str test-endpoint "/mm3/test/emit-notification")
+                                          {:body             (json/write-value-as-string
+                                                               {:subscriptionId subscription-id
+                                                                :notification {:notificationType   "AppInstNotification"
+                                                                               :subscriptionId     subscription-id
+                                                                               :appInstanceId      app-id
+                                                                               :instantiationState "INSTANTIATED"
+                                                                               :operationalState   "STOPPED"}})
+                                           :content-type     :json
+                                           :accept           :json
+                                           :throw-exceptions false
+                                           :as               :json
+                                           :coerce           :always})
+              disappeared-response (http/post (str test-endpoint "/mm3/test/emit-notification")
+                                              {:body             (json/write-value-as-string
+                                                                   {:subscriptionId subscription-id
+                                                                    :notification {:notificationType   "AppInstNotification"
+                                                                                   :subscriptionId     subscription-id
+                                                                                   :appInstanceId      app-id
+                                                                                   :instantiationState "NOT_INSTANTIATED"}})
+                                               :content-type     :json
+                                               :accept           :json
+                                               :throw-exceptions false
+                                               :as               :json
+                                               :coerce           :always})
+              final-instance   (get-in (mock-mepm/get-state) [:app-instances app-id])]
+          (is (:success? create-response))
+          (is (:success? subscription))
+          (is (= 202 (:status stop-response)))
+          (is (= 202 (:status disappeared-response)))
+          (is (= "NOT_INSTANTIATED" (:instantiationState final-instance)))
+          (is (nil? (:operationalState final-instance))))
         (finally
           (.stop server))))))
 
@@ -362,7 +415,31 @@
       (is (= ["api-server" "api-server" "api-server"]
              (mapv :caller request-log)))
       (is (= ["health" "capabilities" "resources"]
-             (mapv :operation request-log))))))
+             (mapv :operation request-log)))
+      (is (= ["/mm3/health" "/mm3/capabilities" "/mm3/resources"]
+             (mapv :uri request-log))))))
+
+(deftest test-mm3-canonical-lifecycle-routes
+  (testing "Lifecycle requests use canonical Mm3 app_lcm/v1 routes"
+    (mock-mepm/reset-state!)
+    (let [create-response (mm3/create-app-instance test-endpoint {:name "route-check"})
+          app-id          (:id (:data create-response))
+          op-id           (:operationId (:data create-response))]
+      (is (:success? create-response))
+      (is (:success? (mm3/get-app-instance test-endpoint app-id)))
+      (is (:success? (mm3/list-app-instances test-endpoint)))
+      (is (:success? (mm3/operate-app-instance test-endpoint app-id "STOPPED")))
+      (is (:success? (mm3/get-operation test-endpoint op-id)))
+      (is (:success? (mm3/create-subscription test-endpoint
+                                             {:callbackUri "http://localhost:8200/api/mec/internal/mm3/app_lcm/v1/notifications"
+                                              :notificationTypes ["AppInstNotification"]})))
+      (is (= ["/mm3/app_lcm/v1/app_instances"
+              (str "/mm3/app_lcm/v1/app_instances/" app-id)
+              "/mm3/app_lcm/v1/app_instances"
+              (str "/mm3/app_lcm/v1/app_instances/" app-id "/operate")
+              (str "/mm3/app_lcm/v1/app_lcm_op_occs/" op-id)
+              "/mm3/app_lcm/v1/subscriptions"]
+             (mapv :uri (take-last 6 (mock-mepm/get-request-log))))))))
 
 (deftest test-mm3-request-log-can-be-cleared
   (testing "Mock request log is separately inspectable and resettable"

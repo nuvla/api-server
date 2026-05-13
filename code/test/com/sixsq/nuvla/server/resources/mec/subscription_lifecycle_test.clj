@@ -21,7 +21,7 @@
                             (content-type "application/json")
                             (header authn-info-header "user/bob user/bob group/nuvla-user group/nuvla-anon"))]
      (testing "durable subscription CRUD is owner-scoped"
-       (let [create-body {:subscriptionType "AppInstanceStateChangeNotification"
+      (let [create-body {:subscriptionType "AppInstanceStateChange"
                           :callbackUri "https://example.org/webhooks/alice"
                           :appInstanceFilter {:app-name "demo-app"}}
              create-response (-> session-user-1
@@ -34,7 +34,7 @@
              sub-id (:id created)]
 
          (is (= 201 (:status create-response)) (pr-str created))
-        (is (= "AppInstanceStateChangeNotification" (:subscriptionType created)))
+        (is (= "AppInstanceStateChange" (:subscriptionType created)))
          (is (= "user/alice" (:owner created)))
          (is (.startsWith sub-id "subscription/"))
 

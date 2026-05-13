@@ -40,6 +40,24 @@
 (defonce ^:private request-log
   (atom []))
 
+(def ^:private mm3-lifecycle-base-path
+  "/mm3/app_lcm/v1")
+
+(def ^:private lifecycle-subscriptions-path
+  (str mm3-lifecycle-base-path "/subscriptions"))
+
+(def ^:private lifecycle-app-instances-path
+  (str mm3-lifecycle-base-path "/app_instances"))
+
+(def ^:private lifecycle-op-occs-re
+  (re-pattern (str mm3-lifecycle-base-path "/app_lcm_op_occs/(.+)")))
+
+(def ^:private lifecycle-app-instance-re
+  (re-pattern (str lifecycle-app-instances-path "/(.+)")))
+
+(def ^:private lifecycle-app-instance-operate-re
+  (re-pattern (str lifecycle-app-instances-path "/(.+)/operate")))
+
 (defn reset-state!
   "Reset MEPM state to defaults."
   []
@@ -100,13 +118,13 @@
     (and (= request-method :get) (= uri "/mm3/resources")) "resources"
     (and (= request-method :get) (= uri "/mm3/platform-info")) "platform-info"
     (and (= request-method :post) (= uri "/mm3/configure")) "configure"
-    (and (= request-method :post) (= uri "/mm3/subscriptions")) "create-subscription"
+    (and (= request-method :post) (= uri lifecycle-subscriptions-path)) "create-subscription"
     (and (= request-method :post) (= uri "/mm3/test/emit-notification")) "emit-notification"
-    (and (= request-method :get) (= uri "/mm3/app-instances")) "list-app-instances"
-    (and (= request-method :post) (= uri "/mm3/app-instances")) "create-app-instance"
-    (and (= request-method :post) (re-matches #"/mm3/app-instances/(.+)/operate" uri)) "operate-app-instance"
-    (and (= request-method :get) (re-matches #"/mm3/app-instances/(.+)" uri)) "get-app-instance"
-    (and (= request-method :delete) (re-matches #"/mm3/app-instances/(.+)" uri)) "delete-app-instance"
+    (and (= request-method :get) (= uri lifecycle-app-instances-path)) "list-app-instances"
+    (and (= request-method :post) (= uri lifecycle-app-instances-path)) "create-app-instance"
+    (and (= request-method :post) (re-matches lifecycle-app-instance-operate-re uri)) "operate-app-instance"
+    (and (= request-method :get) (re-matches lifecycle-app-instance-re uri)) "get-app-instance"
+    (and (= request-method :delete) (re-matches lifecycle-app-instance-re uri)) "delete-app-instance"
     :else "unknown"))
 
 (defn- append-request-log!
@@ -199,7 +217,7 @@
                 :config  config}})))
 
 (defn handle-create-subscription
-  "Handle POST /mm3/subscriptions - Create lifecycle notification subscription."
+  "Handle POST /mm3/app_lcm/v1/subscriptions - Create lifecycle notification subscription."
   [request]
   (increment-request-count!)
   (if-let [error-response (check-error-mode)]
@@ -212,6 +230,18 @@
       (swap! mepm-state assoc-in [:subscriptions subscription-id] persisted)
       {:status 201
        :body   persisted})))
+
+(defn- reconcile-app-instance-notification!
+  [{:keys [appInstanceId instantiationState operationalState] :as _notification}]
+  (when appInstanceId
+    (swap! mepm-state
+           (fn [state]
+             (let [current-instance (get-in state [:app-instances appInstanceId] {:id appInstanceId})
+                   updated-instance (cond-> current-instance
+                                      instantiationState (assoc :instantiationState instantiationState)
+                                      operationalState (assoc :operationalState operationalState)
+                                      (= "NOT_INSTANTIATED" instantiationState) (dissoc :operationalState))]
+               (assoc-in state [:app-instances appInstanceId] updated-instance))))))
 
 (defn handle-emit-notification
   "Handle POST /mm3/test/emit-notification - emit a stored notification to a callback URI."
@@ -234,7 +264,9 @@
                   :message "Notification payload is required"}}
 
         :else
-        (let [response (http/post callback-uri
+        (let [_ (when (= "AppInstNotification" (:notificationType notification))
+                  (reconcile-app-instance-notification! notification))
+              response (http/post callback-uri
                                   {:body             (json/write-value-as-string notification)
                                    :content-type     :json
                                    :accept           :json
@@ -248,7 +280,7 @@
                     :notificationType (:notificationType notification)}})))))
 
 (defn handle-create-app-instance
-  "Handle POST /mm3/app-instances - Create application instance."
+  "Handle POST /mm3/app_lcm/v1/app_instances - Create application instance."
   [request]
   (increment-request-count!)
   (if-let [error-response (check-error-mode)]
@@ -267,12 +299,12 @@
              {:id            op-id
               :operationType "INSTANTIATE"
               :appInstanceId app-id
-              :status        "PROCESSING"})
+              :status        "COMPLETED"})
       {:status 201
        :body   (assoc instance :operationId op-id)})))
 
 (defn handle-get-app-instance
-  "Handle GET /mm3/app-instances/:id - Get application instance status."
+  "Handle GET /mm3/app_lcm/v1/app_instances/:id - Get application instance status."
   [request app-id]
   (increment-request-count!)
   (if-let [error-response (check-error-mode)]
@@ -285,7 +317,7 @@
          :body   {:error "Not Found" :message (str "Application instance " app-id " not found")}}))))
 
 (defn handle-list-app-instances
-  "Handle GET /mm3/app-instances - List all application instances."
+  "Handle GET /mm3/app_lcm/v1/app_instances - List all application instances."
   [_request]
   (increment-request-count!)
   (if-let [error-response (check-error-mode)]
@@ -294,7 +326,7 @@
      :body   {:instances (vals (:app-instances @mepm-state))}}))
 
 (defn handle-delete-app-instance
-  "Handle DELETE /mm3/app-instances/:id - Terminate application instance."
+  "Handle DELETE /mm3/app_lcm/v1/app_instances/:id - Terminate application instance."
   [request app-id]
   (increment-request-count!)
   (if-let [error-response (check-error-mode)]
@@ -307,7 +339,7 @@
        :body   {:error "Not Found" :message (str "Application instance " app-id " not found")}})))
 
 (defn handle-get-operation
-  "Handle GET /mm3/operations/:id - Get lifecycle operation status."
+  "Handle GET /mm3/app_lcm/v1/app_lcm_op_occs/:id - Get lifecycle operation status."
   [request operation-id]
   (increment-request-count!)
   (if-let [error-response (check-error-mode)]
@@ -321,7 +353,7 @@
                   :message (str "Operation " operation-id " not found")}}))))
 
 (defn handle-operate-app-instance
-  "Handle POST /mm3/app-instances/:id/operate - Change application instance state."
+  "Handle POST /mm3/app_lcm/v1/app_instances/:id/operate - Change application instance state."
   [request app-id]
   (increment-request-count!)
   (if-let [error-response (check-error-mode)]
@@ -347,7 +379,7 @@
                  {:id            op-id
                   :operationType "OPERATE"
                   :appInstanceId app-id
-                  :status        "PROCESSING"
+                  :status        "COMPLETED"
                   :targetState   change-state-to})
           {:status 200
            :body   (assoc updated-instance :operationId op-id)})))))
@@ -385,7 +417,7 @@
         (handle-configure-platform request)
 
         ;; Subscriptions - create
-        (and (= method :post) (= path "/mm3/subscriptions"))
+        (and (= method :post) (= path lifecycle-subscriptions-path))
         (handle-create-subscription request)
 
         ;; Test helper - emit notification to callback
@@ -393,31 +425,31 @@
         (handle-emit-notification request)
 
         ;; Operations - get single
-        (and (= method :get) (re-matches #"/mm3/operations/(.+)" path))
-        (let [operation-id (second (re-matches #"/mm3/operations/(.+)" path))]
+        (and (= method :get) (re-matches lifecycle-op-occs-re path))
+        (let [operation-id (second (re-matches lifecycle-op-occs-re path))]
           (handle-get-operation request operation-id))
 
         ;; App instances - list (must come before single instance match)
-        (and (= method :get) (= path "/mm3/app-instances"))
+        (and (= method :get) (= path lifecycle-app-instances-path))
         (handle-list-app-instances request)
 
         ;; App instances - create
-        (and (= method :post) (= path "/mm3/app-instances"))
+        (and (= method :post) (= path lifecycle-app-instances-path))
         (handle-create-app-instance request)
 
         ;; App instances - get single
-        (and (= method :get) (re-matches #"/mm3/app-instances/(.+)" path))
-        (let [app-id (second (re-matches #"/mm3/app-instances/(.+)" path))]
+        (and (= method :get) (re-matches lifecycle-app-instance-re path))
+        (let [app-id (second (re-matches lifecycle-app-instance-re path))]
           (handle-get-app-instance request app-id))
 
         ;; App instances - operate
-        (and (= method :post) (re-matches #"/mm3/app-instances/(.+)/operate" path))
-        (let [app-id (second (re-matches #"/mm3/app-instances/(.+)/operate" path))]
+        (and (= method :post) (re-matches lifecycle-app-instance-operate-re path))
+        (let [app-id (second (re-matches lifecycle-app-instance-operate-re path))]
           (handle-operate-app-instance request app-id))
 
         ;; App instances - delete
-        (and (= method :delete) (re-matches #"/mm3/app-instances/(.+)" path))
-        (let [app-id (second (re-matches #"/mm3/app-instances/(.+)" path))]
+        (and (= method :delete) (re-matches lifecycle-app-instance-re path))
+        (let [app-id (second (re-matches lifecycle-app-instance-re path))]
           (handle-delete-app-instance request app-id))
 
         ;; Not found

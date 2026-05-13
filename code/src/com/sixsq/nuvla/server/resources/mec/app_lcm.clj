@@ -714,16 +714,15 @@
 
  (defn- duplicate-active-subscription
    [request subscription-type callback-uri filter-opts user-id]
-   (let [filter-key (case subscription-type
-                      "AppInstanceStateChangeNotification" :app-instance-filter
-                      "AppLcmOpOccStateChangeNotification" :app-lcm-op-occ-filter
-                      nil)
+  (let [subscription-type* (subscription/canonical-subscription-type subscription-type)
+        filter-key (subscription/subscription-type->filter-key subscription-type*)
          callback-uri* (normalize-callback-uri callback-uri)
          filter-opts*  (canonicalize-filter filter-opts)]
      (some (fn [existing]
              (and (:active existing)
                   (= user-id (:owner existing))
-                  (= subscription-type (:subscription-type existing))
+                 (= subscription-type*
+                    (subscription/canonical-subscription-type (:subscription-type existing)))
                   (= callback-uri* (normalize-callback-uri (:callback-uri existing)))
                   (= filter-opts* (canonicalize-filter (get existing filter-key)))))
            (query-user-subscriptions request))))
@@ -734,26 +733,23 @@
    [request]
    (try
      (let [body              (:body request)
-           subscription-type (:subscriptionType body)
+          subscription-type (subscription/canonical-subscription-type (:subscriptionType body))
            callback-uri      (:callbackUri body)
-           filter-opts       (case subscription-type
-                               "AppInstanceStateChangeNotification"
+          filter-opts       (case subscription-type
+                              "AppInstanceStateChange"
                                (normalize-app-instance-filter (:appInstanceFilter body))
-                               "AppLcmOpOccStateChangeNotification"
+                              "AppLcmOpOccStateChange"
                                (normalize-app-lcm-op-occ-filter (:appLcmOpOccFilter body))
                                {})
            user-id           (subscription-owner request)]
-       (when-not (contains? subscription/subscription-types subscription-type)
+      (when-not (contains? subscription/accepted-subscription-types subscription-type)
          (throw (ex-info "Invalid subscription type"
                          {:status 400
                           :subscription-type subscription-type})))
        (when (duplicate-active-subscription request subscription-type callback-uri filter-opts user-id)
          (throw (ex-info "An active MEC subscription with the same callback URI and filter already exists"
                          {:status 409})))
-       (let [filter-key (case subscription-type
-                          "AppInstanceStateChangeNotification" :app-instance-filter
-                          "AppLcmOpOccStateChangeNotification" :app-lcm-op-occ-filter
-                          nil)
+      (let [filter-key (subscription/subscription-type->filter-key subscription-type)
              preview    (subscription/create-subscription
                           subscription-type
                           (normalize-callback-uri callback-uri)
