@@ -44,6 +44,7 @@
    [compojure "1.7.1" :exclusions [[ring/ring-core]]]
    [instaparse "1.5.0"]
    [metosin/spec-tools "0.10.7"]
+   [clj-commons/clj-yaml "1.0.29"]
    [expound "0.9.0"]
    [com.draines/postal "2.0.5"]
    [org.clojure/data.csv "1.1.0"]

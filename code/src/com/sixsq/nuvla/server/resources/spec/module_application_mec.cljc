@@ -42,7 +42,7 @@
   (s/and string? #(<= 1 (count %) 100)))
 
 (s/def ::appSoftVersion
-  (s/and string? #(re-matches #"^\d+\.\d+(\.\d+)?$" %)))
+  (s/and string? #(<= 1 (count %) 100)))
 
 (s/def ::mecVersion
   (s/and string? #(re-matches #"^\d+\.\d+\.\d+$" %)))
@@ -121,7 +121,7 @@
   (s/and string? #(<= 1 (count %) 200)))
 
 (s/def ::swImageVersion
-  (s/and string? #(re-matches #"^\d+\.\d+(\.\d+)?$" %)))
+  (s/and string? #(<= 1 (count %) 100)))
 
 (s/def ::containerFormat
   (string-enum-spec #{:DOCKER :ACI :OCI}))
@@ -358,6 +358,55 @@
 (s/def ::userDefinedData
   (map-spec map?))
 
+(s/def ::packageContentData
+  (-> (st/spec string?)
+      (assoc :name "package content data"
+             :json-schema/type "string"
+             :json-schema/description "base64-encoded MEC package artifact"
+             :json-schema/indexed false)))
+
+(s/def ::packageContentEncoding
+  (-> (st/spec #{"base64"})
+      (assoc :name "package content encoding"
+             :json-schema/type "string"
+             :json-schema/description "encoding used for the persisted package artifact"
+             :json-schema/indexed false)))
+
+(s/def ::packageContentMediaType
+  (-> (st/spec ::core/mimetype)
+      (assoc :name "package content media type"
+             :json-schema/type "string"
+             :json-schema/description "media type of the persisted MEC package artifact"
+             :json-schema/indexed false)))
+
+(s/def ::packageContentFilename
+  (-> (st/spec ::core/filename)
+      (assoc :name "package content filename"
+             :json-schema/type "string"
+             :json-schema/description "filename used when downloading the persisted MEC package artifact"
+             :json-schema/indexed false)))
+
+(s/def ::packageContentSha256
+  (-> (st/spec (s/and string? #(re-matches #"^[0-9a-f]{64}$" %)))
+      (assoc :name "package content sha256"
+             :json-schema/type "string"
+             :json-schema/description "SHA-256 digest of the persisted MEC package artifact"
+             :json-schema/indexed false)))
+
+(s/def ::packageAppPkgPath
+  (-> (st/spec string?)
+      (assoc :name "application package path"
+             :json-schema/type "string"
+             :json-schema/description "external MEC application package path provided during onboarding"
+             :json-schema/indexed false)))
+
+(s/def ::packageAppPkgVersion
+  (-> (st/spec string?)
+      (assoc :name "application package version"
+             :json-schema/type "string"
+             :json-schema/description "external MEC application package version provided during onboarding"
+             :json-schema/indexed false)))
+
 
 ;;
 ;; Complete MEC AppD Content Schema
@@ -379,6 +428,13 @@
                              ::appServiceRequired
                              ::appFeatureRequired
                              ::userDefinedData
+                             ::packageAppPkgPath
+                             ::packageAppPkgVersion
+                             ::packageContentData
+                             ::packageContentEncoding
+                             ::packageContentMediaType
+                             ::packageContentFilename
+                             ::packageContentSha256
                              ::trafficRuleDescriptor
                              ::dnsRuleDescriptor
                              ::latencyDescriptor
@@ -416,6 +472,13 @@
                ::appServiceRequired
                ::appFeatureRequired
                ::userDefinedData
+               ::packageAppPkgPath
+               ::packageAppPkgVersion
+               ::packageContentData
+               ::packageContentEncoding
+               ::packageContentMediaType
+               ::packageContentFilename
+               ::packageContentSha256
                ::trafficRuleDescriptor
                ::dnsRuleDescriptor
                ::latencyDescriptor

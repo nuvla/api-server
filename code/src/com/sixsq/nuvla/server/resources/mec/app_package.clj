@@ -14,11 +14,15 @@
    This implementation integrates with Nuvla's module catalog,
    treating modules as application packages."
   (:require
+    [clojure.java.io :as io]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
+    [clojure.walk :as walk]
+    [clj-yaml.core :as yaml]
     [com.sixsq.nuvla.auth.acl-resource :as a]
     [com.sixsq.nuvla.auth.utils :as auth]
     [com.sixsq.nuvla.db.filter.parser :as parser]
+    [jsonista.core :as j]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [com.sixsq.nuvla.server.resources.common.utils :as u]
@@ -27,17 +31,186 @@
     [com.sixsq.nuvla.server.resources.module.utils :as module-utils]
     [com.sixsq.nuvla.server.resources.spec.module-application-mec :as mec-spec]
     [com.sixsq.nuvla.server.util.response :as r]
-    [ring.util.response :as rur]))
+    [ring.util.response :as rur])
+  (:import
+    (java.math BigInteger)
+    (java.io ByteArrayOutputStream InputStream)
+    (java.security MessageDigest)
+    (java.util Base64)
+    (java.util.zip ZipInputStream)))
 
 
 (def ^:const resource-type "mec-app-package")
 
 (def ^:const base-path "/mec/mm1/app_pkgm/v1/app_packages")
 
+(def ^:private zip-content-type "application/zip")
+
+(def ^:private accepted-package-content-types
+  #{zip-content-type
+    "application/octet-stream"
+    "application/x-zip-compressed"})
+
+(def ^:private package-content-encoding "base64")
+
+(def ^:private package-artifact-fields
+  [:packageContentData
+   :packageContentEncoding
+   :packageContentMediaType
+   :packageContentFilename
+   :packageContentSha256])
+
+(def ^:private package-metadata-fields
+  (conj package-artifact-fields
+        :packageAppPkgPath
+        :packageAppPkgVersion
+        :packageOperationalState))
+
+(def ^:private package-descriptor-entry-pattern #"(?i).*\.(json|ya?ml)$")
+
 
 (defn- request-base-path
   [request]
   (or (:mec/base-path request) base-path))
+
+
+(defn- normalize-app-pkg-id
+  [app-pkg-id]
+  (cond
+    (not (string? app-pkg-id))
+    app-pkg-id
+
+    (str/includes? app-pkg-id "/")
+    app-pkg-id
+
+    :else
+    (u/resource-id "module" app-pkg-id)))
+
+
+(defn- onboarded-request?
+  [request]
+  (str/includes? (or (:uri request) "") "/onboarded_app_packages"))
+
+
+(defn- public-appd-content
+  [content]
+  (apply dissoc content package-metadata-fields))
+
+
+(defn- package-content-present?
+  [content]
+  (boolean (some (comp seq #(get content %))
+                 package-artifact-fields)))
+
+
+(defn- internal-app-package-path
+  []
+  (str "mec-apps/" (u/rand-uuid)))
+
+
+(defn- package-version-or-default
+  [app-pkg-version]
+  (or (some-> app-pkg-version str/trim not-empty)
+      "1.0.0"))
+
+
+(defn- bytes->base64
+  [^bytes content-bytes]
+  (.encodeToString (Base64/getEncoder) content-bytes))
+
+
+(defn- base64->bytes
+  [encoded]
+  (.decode (Base64/getDecoder) encoded))
+
+
+(defn- sha256-hex
+  [^bytes content-bytes]
+  (let [digest (.digest (MessageDigest/getInstance "SHA-256") content-bytes)]
+    (format "%064x" (BigInteger. 1 digest))))
+
+
+(defn- input-stream->bytes
+  [^InputStream input-stream]
+  (with-open [in input-stream
+              out (ByteArrayOutputStream.)]
+    (io/copy in out)
+    (.toByteArray out)))
+
+
+(defn- request-body->bytes
+  [body]
+  (cond
+    (nil? body)
+    nil
+
+    (bytes? body)
+    body
+
+    (instance? InputStream body)
+    (input-stream->bytes body)
+
+    :else
+    (throw (ex-info "Package content body must contain ZIP bytes"
+                    {:status 400
+                     :type "https://forge.etsi.org/rep/mec/gs010-2-app-pkg-lcm-api/problems/bad-request"
+                     :title "Bad Request"
+                     :detail "Package content body must contain ZIP bytes"}))))
+
+
+(defn- request-content-type
+  [request]
+  (some-> (or (get-in request [:headers "content-type"])
+              (:content-type request))
+          str/lower-case
+          (str/split #";")
+          first
+          str/trim))
+
+(defn- request-accept-type
+  [request]
+  (some-> (get-in request [:headers "accept"])
+          str/lower-case
+          (str/split #",")
+          first
+          (str/split #";")
+          first
+          str/trim))
+
+
+(defn- zip-request?
+  [request]
+  (contains? accepted-package-content-types (request-content-type request)))
+
+
+(defn- package-filename
+  [app-pkg-id content]
+  (or (:packageContentFilename content)
+      (str (u/id->uuid (normalize-app-pkg-id app-pkg-id)) ".zip")))
+
+
+(defn- zip-entry->bytes
+  [^ZipInputStream zip-stream]
+  (let [out (ByteArrayOutputStream.)]
+    (io/copy zip-stream out)
+    (.toByteArray out)))
+
+
+(defn- canonicalize-package-descriptor
+  [value]
+  (walk/postwalk
+    (fn [node]
+      (cond
+        (map? node)
+        (into {} node)
+
+        (and (sequential? node)
+             (not (vector? node)))
+        (vec node)
+
+        :else
+        node))
+    value))
 
 
 ;;
@@ -72,21 +245,19 @@
 
 (defn onboarding-state
   [module]
-  (if (get-in module [:content :appDId])
+  (if (package-content-present? (:content module))
     "ONBOARDED"
     "CREATED"))
 
-
 (defn operational-state
   [module]
-  (if (= "ONBOARDED" (onboarding-state module))
-    "ENABLED"
-    "DISABLED"))
+  (or (get-in module [:content :packageOperationalState]) "ENABLED"))
 
 
 (defn ensure-mec-app-package!
   [request app-pkg-id]
-  (let [module (crud/retrieve-by-id-as-admin app-pkg-id)]
+  (let [normalized-app-pkg-id (normalize-app-pkg-id app-pkg-id)
+        module (crud/retrieve-by-id-as-admin normalized-app-pkg-id)]
     (when-not module
       (throw (ex-info "Application package not found"
                       {:status 404
@@ -99,8 +270,8 @@
                        :type "https://forge.etsi.org/rep/mec/gs010-2-app-pkg-lcm-api/problems/not-found"
                        :title "Not Found"
                        :detail (str "Application package " app-pkg-id " not found")})))
-    (let [module-with-content (module-utils/retrieve-module-content module {:params {:uuid (u/id->uuid app-pkg-id)}})]
-      (update module-with-content :content #(assoc % :appDId app-pkg-id)))))
+    (let [module-with-content (module-utils/retrieve-module-content module {:params {:uuid (u/id->uuid normalized-app-pkg-id)}})]
+      (update module-with-content :content #(assoc % :appDId normalized-app-pkg-id)))))
 
 
 (defn sync-appd-id!
@@ -163,16 +334,93 @@
     normalized-content))
 
 
+(defn- parse-package-descriptor-candidate
+  [entry-name entry-bytes]
+  (let [entry-name-lc (some-> entry-name str/lower-case)
+        entry-text    (String. ^bytes entry-bytes "UTF-8")]
+    (try
+      (some-> (cond
+                (str/ends-with? entry-name-lc ".json")
+                (j/read-value entry-text j/keyword-keys-object-mapper)
+
+                (or (str/ends-with? entry-name-lc ".yaml")
+                    (str/ends-with? entry-name-lc ".yml"))
+                (yaml/parse-string entry-text :keywords true)
+
+                :else
+                nil)
+              canonicalize-package-descriptor)
+      (catch Exception e
+        (log/debug e "Ignoring unparsable package descriptor candidate" entry-name)
+        nil))))
+
+
+(defn- extract-package-appd
+  [module content-bytes]
+  (with-open [zip-stream (ZipInputStream. (io/input-stream content-bytes))]
+    (loop [entry (.getNextEntry zip-stream)]
+      (if-not entry
+        nil
+        (let [entry-name (.getName entry)
+              entry-bytes (zip-entry->bytes zip-stream)
+              _ (.closeEntry zip-stream)]
+          (if (and (not (.isDirectory entry))
+                   (re-matches package-descriptor-entry-pattern entry-name))
+            (if-let [parsed-content (parse-package-descriptor-candidate entry-name entry-bytes)]
+              (let [validated-appd (try
+                                     (validate-package-content! module parsed-content)
+                                     (catch clojure.lang.ExceptionInfo _
+                                       nil))]
+                (if validated-appd
+                  (do
+                    (log/info "Extracted AppD from package artifact entry" entry-name)
+                    validated-appd)
+                  (recur (.getNextEntry zip-stream))))
+              (recur (.getNextEntry zip-stream)))
+            (recur (.getNextEntry zip-stream))))))))
+
+
 (defn update-package-content!
   [request app-pkg-id content]
   (let [module (ensure-mec-app-package! request app-pkg-id)
         normalized-content (validate-package-content! module content)
+        existing-package-content (select-keys (:content module) package-metadata-fields)
         updated-module (-> module
                            (assoc :name (:appName normalized-content))
                            (assoc :description (:appDescription normalized-content))
-                           (assoc :content normalized-content))]
+                           (assoc :content (-> (merge normalized-content existing-package-content)
+                                               (dissoc :packageAppPkgVersion))))]
     (crud/edit-by-id-as-admin app-pkg-id updated-module)
     (ensure-mec-app-package! request app-pkg-id)))
+
+
+(defn update-package-zip-content!
+  [request app-pkg-id body]
+  (let [module        (ensure-mec-app-package! request app-pkg-id)
+        content-bytes (request-body->bytes body)]
+    (when-not (seq content-bytes)
+      (throw (ex-info "Package content body must contain ZIP bytes"
+                      {:status 400
+                       :type "https://forge.etsi.org/rep/mec/gs010-2-app-pkg-lcm-api/problems/bad-request"
+                       :title "Bad Request"
+                       :detail "Package content body must contain ZIP bytes"})))
+    (let [extracted-appd (extract-package-appd module content-bytes)
+          appd-content   (or extracted-appd
+                             (public-appd-content (:content module)))
+          existing-package-content (select-keys (:content module) package-metadata-fields)
+          updated-module (-> module
+                             (assoc :name (:appName appd-content))
+                             (assoc :description (:appDescription appd-content))
+                             (assoc :content (cond-> (merge appd-content
+                                                            existing-package-content
+                                                            {:packageContentData (bytes->base64 content-bytes)
+                                                             :packageContentEncoding package-content-encoding
+                                                             :packageContentMediaType (or (request-content-type request) zip-content-type)
+                                                             :packageContentFilename (package-filename app-pkg-id (:content module))
+                                                             :packageContentSha256 (sha256-hex content-bytes)})
+                                               extracted-appd (dissoc :packageAppPkgVersion))))]
+      (crud/edit-by-id-as-admin app-pkg-id updated-module)
+      (ensure-mec-app-package! request app-pkg-id))))
 
 (defn module->app-pkg-info
   "Converts a Nuvla module to MEC AppPkgInfo format (ETSI MEC 010-2 section 7.3.2.2)"
@@ -180,25 +428,34 @@
    (module->app-pkg-info module base-path))
   ([module route-base-path]
    (let [content (:content module)
-         subtype (:subtype module)]
-     {:id (:id module)
-      :appPkgId (:id module)
-      :appDId (or (:appDId content) (:id module))
-      :appName (or (:appName content) (:name module))
-      :appProvider (or (:appProvider content) (:parent-path module))
-      :appSoftVersion (or (:appSoftVersion content)
-                          (str (count (:versions module))))
-      :appDVersion (or (:appDVersion content) "1.0")
-      :checksum {:algorithm "SHA-256"
-                 :hash (or (:content-id module) "not-computed")}
-      :operationalState (operational-state module)
-      :usageState (if (:published module) "IN_USE" "NOT_IN_USE")
-      :onboardingState (onboarding-state module)
-      :appPkgPath (:path module)
-      :moduletype subtype
-      :created (:created module)
-      :updated (:updated module)
-      :_links (package-links (:id module) route-base-path)})))
+         subtype (:subtype module)
+         app-soft-version (or (:packageAppPkgVersion content)
+                              (:appSoftVersion content)
+                              (str (count (:versions module))))]
+     {:id                 (:id module)
+      :appPkgId           (:id module)
+      :appDId             (or (:appDId content) (:id module))
+      :appName            (or (:appName content) (:name module))
+      :appProvider        (or (:appProvider content) (:parent-path module))
+      :appSoftVersion     app-soft-version
+      :appSoftwareVersion app-soft-version
+      :appDVersion        (or (:appDVersion content) "1.0")
+      :checksum           {:algorithm "SHA-256"
+                           :hash      (or (:packageContentSha256 content)
+                                          (:content-id module)
+                                          "not-computed")}
+      :softwareImages     (or (:swImageDescriptor content) [])
+      :additionalArtifacts []
+      :operationalState   (operational-state module)
+      :usageState         (if (:published module) "IN_USE" "NOT_IN_USE")
+      :onboardingState    (onboarding-state module)
+      :mecInfo            (cond-> []
+                            (:mecVersion content) (conj (:mecVersion content)))
+      :appPkgPath         (or (:packageAppPkgPath content) (:path module))
+      :moduletype         subtype
+      :created            (:created module)
+      :updated            (:updated module)
+      :_links             (package-links (:id module) route-base-path)})))
 
 
 (defn app-pkg-filter
@@ -221,6 +478,30 @@
        (or (nil? operationalState) (= operationalState (:operationalState app-pkg-info)))
        (or (nil? usageState) (= usageState (:usageState app-pkg-info)))
        (or (nil? onboardingState) (= onboardingState (:onboardingState app-pkg-info)))))
+
+(def ^:private supported-query-params
+  #{"appPkgId"
+    "appDId"
+    "appName"
+    "appProvider"
+    "appSoftVersion"
+    "operationalState"
+    "usageState"
+    "onboardingState"})
+
+(defn- unsupported-query-params
+  [params]
+  (->> (keys params)
+       (keep (fn [k]
+               (let [param-name (cond
+                                  (keyword? k) (name k)
+                                  (string? k) k
+                                  :else nil)]
+                 (when (and param-name
+                            (not (supported-query-params param-name)))
+                   param-name))))
+       distinct
+       seq))
 
 
 ;;
@@ -246,6 +527,15 @@
   (let [route-base-path (request-base-path request)]
     (try
       (let [params (:params request)
+          onboarded-view? (onboarded-request? request)
+          unsupported-params (unsupported-query-params params)
+          _ (when unsupported-params
+              (throw (ex-info "Unsupported query parameters"
+                              {:status 400
+                               :type "https://forge.etsi.org/rep/mec/gs010-2-app-pkg-lcm-api/problems/bad-request"
+                               :title "Bad Request"
+                               :detail (str "Unsupported query parameter(s): "
+                                            (str/join ", " unsupported-params))})))
           
           ;; Extract MEC query parameters
           app-pkg-id (:appPkgId params)
@@ -276,6 +566,9 @@
                                    (-> module
                                        (module-utils/retrieve-module-content {:params {:uuid (u/id->uuid (:id module))}})
                                        (module->app-pkg-info route-base-path))))
+                            (filter #(if onboarded-view?
+                                       (= "ONBOARDED" (:onboardingState %))
+                                       (= "CREATED" (:onboardingState %))))
                             (filter #(matches-app-package-filters? % {:appPkgId app-pkg-id
                                                                       :appDId app-d-id
                                                                       :appName app-name
@@ -288,9 +581,15 @@
       (log/info "Mm1: Query app_packages, found" (count app-packages) "packages"
                 "filters:" filter-str)
       
-        (r/json-response {:AppPkgInfo app-packages
-                          :_links {:self {:href route-base-path}}}))
+        (r/json-response app-packages))
       
+      (catch clojure.lang.ExceptionInfo e
+        (let [data (ex-data e)]
+          (problem-response (or (:status data) 400)
+                            (or (:title data) "Bad Request")
+                            (or (:detail data) (.getMessage e))
+                            (or (:type data) "about:blank"))))
+
       (catch Exception e
         (log/error e "Mm1: Error querying app_packages")
         (problem-response 500 "Internal Server Error" (.getMessage e))))))
@@ -355,9 +654,11 @@
     (let [body (:body request)
           app-pkg-name (:appPkgName body)
           app-pkg-version (:appPkgVersion body)
-          app-pkg-path (or (:appPkgPath body) (str "mec-apps/" app-pkg-name))
+          external-app-pkg-path (some-> (:appPkgPath body) str/trim not-empty)
+          internal-app-pkg-path (internal-app-package-path)
           user-defined-data (:userDefinedData body)
-          parent-path (module-utils/get-parent-path app-pkg-path)
+          parent-path (module-utils/get-parent-path internal-app-pkg-path)
+          placeholder-version (package-version-or-default app-pkg-version)
           
           ;; Validate required fields
           _ (when-not app-pkg-name
@@ -376,22 +677,22 @@
                           :body {:name app-pkg-name
                                  :description (str "MEC Application Package: " app-pkg-name)
                                  :subtype "application_mec"
-                                 :path app-pkg-path
+                                 :path internal-app-pkg-path
                                  :parent-path parent-path
-                                 :versions [{:href (str app-pkg-name "/" (or app-pkg-version "1.0.0"))}]
+                                 :versions [{:href (str app-pkg-name "/" placeholder-version)}]
                                  :published false
                                  :content (cond-> {:appName app-pkg-name
                                                    :appDescription (str "MEC Application Package: " app-pkg-name)
                                                    :appDId (str "module/" (u/rand-uuid))
                                                    :appProvider (or (:appProvider body) user-id)
-                                                   :appSoftVersion (or app-pkg-version "1.0.0")
+                                                   :appSoftVersion placeholder-version
                                                    :appDVersion "3.2.1"
                                                    :mecVersion "2.2.1"
                                                    ;; Minimal required MEC AppD fields
                                                    :virtualComputeDescriptor {:virtualCpu {:numVirtualCpu 1}
                                                                               :virtualMemory {:virtualMemSize 1024}}
                                                    :swImageDescriptor [{:swImageName app-pkg-name
-                                                                        :swImageVersion (or app-pkg-version "1.0.0")
+                                                                        :swImageVersion placeholder-version
                                                                         :containerFormat :DOCKER
                                                                         :swImage "sixsq/example-mec-app:1.0.0"}]
                                                    :virtualStorageDescriptor []
@@ -399,7 +700,10 @@
                                                    :appServiceRequired []
                                                    :trafficRuleDescriptor []
                                                    :dnsRuleDescriptor []
-                                                   :appFeatureRequired []}
+                                                   :appFeatureRequired []
+                                                   :packageAppPkgPath (or external-app-pkg-path internal-app-pkg-path)}
+                                            (some-> app-pkg-version str/trim not-empty)
+                                            (assoc :packageAppPkgVersion app-pkg-version)
                                             (some? user-defined-data)
                                             (assoc :userDefinedData user-defined-data))}
                           :nuvla/authn (:nuvla/authn request)}
@@ -454,6 +758,7 @@
     (let [app-pkg-id    (get-in request [:params :appPkgId])
           module        (ensure-mec-app-package! request app-pkg-id)
           app-pkg-info  (module->app-pkg-info module)
+          normalized-app-pkg-id (:id module)
           
           ;; Check if package is in use
           _ (when (:published module)
@@ -465,7 +770,7 @@
           
           ;; Delete the module
           delete-request {:params {:resource-name "module"
-                                   :uuid (u/id->uuid app-pkg-id)}
+                                   :uuid (u/id->uuid normalized-app-pkg-id)}
                           :identity {:user "internal"
                                      :active-claim "internal"}
                           :nuvla/authn auth/internal-identity}
@@ -490,13 +795,61 @@
       (problem-response 500 "Internal Server Error" (.getMessage e)))))
 
 
+(def ^:private supported-operational-states
+  #{"ENABLED" "DISABLED"})
+
+
+(defn update-app-package
+  "Update mutable application package fields for the supported subset.
+
+   ETSI PKGM currently exercises `operationalState` updates through PATCH."
+  [request]
+  (try
+    (let [app-pkg-id        (get-in request [:params :appPkgId])
+          {:keys [operationalState] :as body} (:body request)
+          module            (ensure-mec-app-package! request app-pkg-id)
+          _                 (when-not (map? body)
+                              (throw (ex-info "Patch body must be a JSON object"
+                                              {:status 400
+                                               :type "https://forge.etsi.org/rep/mec/gs010-2-app-pkg-lcm-api/problems/bad-request"
+                                               :title "Bad Request"
+                                               :detail "Patch body must be a JSON object"})))
+          _                 (when-not (contains? supported-operational-states operationalState)
+                              (throw (ex-info "Invalid operationalState"
+                                              {:status 400
+                                               :type "https://forge.etsi.org/rep/mec/gs010-2-app-pkg-lcm-api/problems/bad-request"
+                                               :title "Bad Request"
+                                               :detail "operationalState must be ENABLED or DISABLED"})))
+          previous-state    (operational-state module)
+          updated-module    (assoc-in module [:content :packageOperationalState] operationalState)
+          _                 (crud/edit-by-id-as-admin (:id module) updated-module)
+          refreshed-module  (ensure-mec-app-package! request app-pkg-id)
+          updated-state     (operational-state refreshed-module)
+          updated-info      (module->app-pkg-info refreshed-module)]
+      (when (not= previous-state updated-state)
+        (dispatcher/dispatch-app-package-state-change! updated-info
+                                                       "OPERATIONAL_STATE"
+                                                       previous-state))
+      (log/info "Mm1: Updated app_package" app-pkg-id "operationalState" updated-state)
+      (r/json-response {:operationalState updated-state}))
+    (catch clojure.lang.ExceptionInfo e
+      (let [data (ex-data e)]
+        (problem-response (or (:status data) 400)
+                          (or (:title data) "Bad Request")
+                          (or (:detail data) (.getMessage e))
+                          (or (:type data) "about:blank"))))
+    (catch Exception e
+      (log/error e "Mm1: Error updating app_package")
+      (problem-response 500 "Internal Server Error" (.getMessage e)))))
+
+
 (defn get-app-package-appd
   "Get the AppD JSON descriptor for an onboarded package."
   [request]
   (try
     (let [app-pkg-id (get-in request [:params :appPkgId])
           module (ensure-mec-app-package! request app-pkg-id)
-          appd (:content module)]
+          appd (public-appd-content (:content module))]
       (log/info "Mm1: Get appd for app_package" app-pkg-id)
       (-> (r/json-response appd)
           (rur/content-type "application/json")))
@@ -514,17 +867,31 @@
 (defn get-app-package-content
   "Get package content for the supported subset.
 
-   For the current MVP subset, the onboarded package content is the persisted
-   AppD JSON descriptor stored in the Nuvla module catalogue."
+   If a ZIP artifact has been uploaded for the package, return the persisted ZIP.
+   Otherwise fall back to the legacy JSON AppD representation stored in the
+   Nuvla module catalogue."
   [request]
   (try
-    (let [app-pkg-id (get-in request [:params :appPkgId])
+    (let [accept-type (request-accept-type request)
+          _          (when (and accept-type
+                                (not= accept-type "*/*")
+                                (not (contains? accepted-package-content-types accept-type)))
+                       (throw (ex-info "Unsupported Accept header for package content"
+                                       {:status 400
+                                        :type "https://forge.etsi.org/rep/mec/gs010-2-app-pkg-lcm-api/problems/bad-request"
+                                        :title "Bad Request"
+                                        :detail "Only application/zip is supported for package_content retrieval"})))
+          app-pkg-id (get-in request [:params :appPkgId])
           module (ensure-mec-app-package! request app-pkg-id)
-          filename (str (u/id->uuid app-pkg-id) "-appd.json")]
+          content (:content module)]
       (log/info "Mm1: Get package_content for app_package" app-pkg-id)
-      (-> (r/json-response (:content module))
-          (rur/content-type "application/json")
-          (rur/header "Content-Disposition" (str "attachment; filename=\"" filename "\""))))
+      (if (package-content-present? content)
+        (-> (rur/response (base64->bytes (:packageContentData content)))
+            (rur/content-type (or (:packageContentMediaType content) zip-content-type))
+            (rur/header "Content-Disposition" (str "attachment; filename=\"" (package-filename app-pkg-id content) "\"")))
+        (-> (r/json-response (public-appd-content content))
+            (rur/content-type "application/json")
+            (rur/header "Content-Disposition" (str "attachment; filename=\"" (str (u/id->uuid app-pkg-id) "-appd.json") "\"")))))
     (catch clojure.lang.ExceptionInfo e
       (let [data (ex-data e)]
         (problem-response (or (:status data) 404)
@@ -539,22 +906,34 @@
 (defn put-app-package-content
   "Upload package content for the supported subset.
 
-   The current MVP accepts a JSON MEC AppD document and persists it as the
-   onboarded package content associated with the module-backed package."
+   The current implementation accepts either:
+   - a JSON MEC AppD document, persisted as the package descriptor
+   - a ZIP package artifact, persisted as base64-encoded bytes alongside the
+     descriptor for POC storage in Elasticsearch."
   [request]
   (try
     (let [app-pkg-id      (get-in request [:params :appPkgId])
           body            (:body request)
           previous-module (ensure-mec-app-package! request app-pkg-id)
           previous-state  (operational-state previous-module)
-          updated-module  (update-package-content! request app-pkg-id body)
-          updated-info    (module->app-pkg-info updated-module)]
-      (when (not= previous-state (:operationalState updated-info))
+          submit-request? (or (nil? body)
+                              (and (string? body) (str/blank? body)))
+          _               (when submit-request?
+                            (log/info "Mm1: Accepted asynchronous package submission request for" app-pkg-id))
+          updated-module  (when-not submit-request?
+                            (if (zip-request? request)
+                              (update-package-zip-content! request app-pkg-id body)
+                              (update-package-content! request app-pkg-id body)))
+          updated-info    (when updated-module
+                            (module->app-pkg-info updated-module))]
+      (when (and updated-info
+                 (not= previous-state (:operationalState updated-info)))
         (dispatcher/dispatch-app-package-state-change! updated-info
                                                        "OPERATIONAL_STATE"
                                                        previous-state))
-      (log/info "Mm1: Updated package_content for app_package" app-pkg-id)
-      {:status 204
+      (when-not submit-request?
+        (log/info "Mm1: Updated package_content for app_package" app-pkg-id))
+      {:status (if submit-request? 202 204)
        :body nil})
     (catch clojure.lang.ExceptionInfo e
       (let [data (ex-data e)]
@@ -578,10 +957,12 @@
    ["" {:get query-app-packages
         :post create-app-package}]
    ["/:appPkgId" {:get get-app-package
+                  :patch update-app-package
                   :delete delete-app-package}]
    ["/:appPkgId/appd" {:get get-app-package-appd}]
    ["/onboarded_app_packages" {:get query-app-packages}]
    ["/onboarded_app_packages/:appPkgId" {:get get-app-package
+                                         :patch update-app-package
                                          :delete delete-app-package}]
    ["/onboarded_app_packages/:appPkgId/appd" {:get get-app-package-appd}]
    ["/onboarded_app_packages/:appPkgId/package_content" {:get get-app-package-content

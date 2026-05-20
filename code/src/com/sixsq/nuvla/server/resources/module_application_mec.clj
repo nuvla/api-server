@@ -53,6 +53,15 @@
     :diskFormat
     :ipAddressType})
 
+(def ^:private package-metadata-keys
+  [:packageContentData
+   :packageContentEncoding
+   :packageContentMediaType
+   :packageContentFilename
+   :packageContentSha256
+   :packageAppPkgPath
+   :packageAppPkgVersion])
+
 
 ;;
 ;; Validation Functions
@@ -254,7 +263,9 @@
 
 (defn validate-appd-request
   [request]
-  (let [content (normalize-appd-content (:body request))]
+  (let [body            (:body request)
+        package-content (select-keys body package-metadata-keys)
+        content         (normalize-appd-content (apply dissoc body package-metadata-keys))]
     (-> content
         validate-appd-content
         validate-resource-requirements
@@ -262,7 +273,7 @@
         validate-container-images
         validate-traffic-rules
         validate-dns-rules)
-    (assoc request :body content)))
+    (assoc request :body (merge content package-content))))
 
 (defmethod crud/add resource-type
   [request]

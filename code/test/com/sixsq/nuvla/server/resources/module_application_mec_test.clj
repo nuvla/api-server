@@ -36,10 +36,63 @@
                                            :minRam 512}]}]
       (is (= valid-appd (t/validate-appd-content valid-appd)))))
 
+  (testing "String software versions are accepted"
+    (let [valid-appd {:appDId "module/test-app-123"
+                      :appDVersion "1.0"
+                      :appName "Test MEC App"
+                      :appProvider "Test Provider"
+                      :appSoftVersion "APP_SOFTWARE_VERSION"
+                      :mecVersion "3.1.1"
+                      :virtualComputeDescriptor {:virtualCpu {:numVirtualCpu 2}
+                                                 :virtualMemory {:virtualMemSize 2048}}
+                      :swImageDescriptor [{:swImageName "test-image"
+                                           :swImageVersion "APP_SOFTWARE_VERSION"
+                                           :containerFormat :DOCKER
+                                           :swImage "registry.example.com/test:latest"
+                                           :minDisk 1
+                                           :minRam 512}]}]
+      (is (= valid-appd (t/validate-appd-content valid-appd)))))
+
   (testing "Invalid MEC AppD content throws exception"
     (let [invalid-appd {:appName "Test" ;; Missing required fields
                         :appProvider "Provider"}]
       (is (thrown? Exception (t/validate-appd-content invalid-appd))))))
+
+
+(deftest test-validate-appd-request-preserves-package-metadata
+  (let [zip-aware-appd {:appDId "module/test-app-123"
+                        :appDVersion "1.0"
+                        :appName "Test MEC App"
+                        :appProvider "Test Provider"
+                        :appSoftVersion "1.0.0"
+                        :mecVersion "3.1.1"
+                        :virtualComputeDescriptor {:virtualCpu {:numVirtualCpu 2}
+                                                   :virtualMemory {:virtualMemSize 2048}}
+                        :swImageDescriptor [{:swImageName "test-image"
+                                             :swImageVersion "1.0"
+                                             :containerFormat :DOCKER
+                                             :swImage "registry.example.com/test:1.0"
+                                             :minDisk 1
+                                             :minRam 512}]
+                        :packageContentData "UEsDBBQAAAAIA"
+                        :packageContentEncoding "base64"
+                        :packageContentMediaType "application/zip"
+                        :packageContentFilename "test-app.zip"
+                        :packageContentSha256 (apply str (repeat 64 "a"))
+                        :packageAppPkgPath "someuri.com"
+                        :packageAppPkgVersion "APP_SOFTWARE_VERSION"}]
+    (testing "schema accepts ZIP package metadata alongside the AppD"
+      (is (s/valid? ::spec-mec/content zip-aware-appd)))
+
+    (testing "request validation keeps persisted package metadata intact"
+      (let [validated (:body (t/validate-appd-request {:body zip-aware-appd}))]
+        (is (= "UEsDBBQAAAAIA" (:packageContentData validated)))
+        (is (= "base64" (:packageContentEncoding validated)))
+        (is (= "application/zip" (:packageContentMediaType validated)))
+        (is (= "test-app.zip" (:packageContentFilename validated)))
+        (is (= (apply str (repeat 64 "a")) (:packageContentSha256 validated)))
+        (is (= "someuri.com" (:packageAppPkgPath validated)))
+        (is (= "APP_SOFTWARE_VERSION" (:packageAppPkgVersion validated)))))))
 
 
 (deftest test-validate-container-images

@@ -30,8 +30,25 @@
    #{"AppPackageOnBoardingNotification"
      "AppPackageStateChangeNotification"})
 
+(def ^:private legacy-subscription-type-aliases
+  {"AppPackageOnBoardingSubscription" "AppPackageOnBoardingNotification"})
+
+(def accepted-subscription-types
+  (into subscription-types (keys legacy-subscription-type-aliases)))
+
+(def ^:private public-subscription-type-aliases
+  {"AppPackageOnBoardingNotification" "AppPackageOnBoardingSubscription"})
+
  (def ^:private operational-states #{"ENABLED" "DISABLED"})
  (def ^:private onboarding-states #{"CREATED" "PROCESSING" "ONBOARDED" "FAILED"})
+
+(defn canonical-subscription-type
+  [subscription-type]
+  (get legacy-subscription-type-aliases subscription-type subscription-type))
+
+(defn public-subscription-type
+  [subscription-type]
+  (get public-subscription-type-aliases subscription-type subscription-type))
  
  (defn- request-base-path
    [request]
@@ -152,7 +169,7 @@
    (let [callback-uri (:callback-uri subscription)
          filter       (:app-pkg-filter subscription)
          errors       (cond-> []
-                        (not (contains? subscription-types (:subscription-type subscription)))
+                       (not (contains? accepted-subscription-types (:subscription-type subscription)))
                         (conj {:field :subscription-type :message "Invalid package subscription type"})
                         (or (not (string? callback-uri))
                             (nil? (re-matches #"https?://.*" callback-uri)))
@@ -215,7 +232,8 @@
  (defn get-active-subscriptions-for-type
    [subscriptions subscription-type]
    (filterv #(and (:active %)
-                  (= subscription-type (:subscription-type %)))
+                 (= (canonical-subscription-type subscription-type)
+                    (canonical-subscription-type (:subscription-type %))))
             subscriptions))
  
  (defn matches-app-pkg-filter?
@@ -279,7 +297,7 @@
    [resource route-base-path]
    (when resource
      (cond-> {:id               (some-> (:id resource) resource-id->api-id)
-              :subscriptionType (:subscription-type resource)
+             :subscriptionType (some-> (:subscription-type resource) public-subscription-type)
               :callbackUri      (:callback-uri resource)
               :_links           {:self {:href (str route-base-path
                                                    "/subscriptions/"
@@ -312,11 +330,12 @@
  (defn- duplicate-active-subscription
    [request subscription-type callback-uri filter-opts user-id]
    (let [callback-uri* (normalize-callback-uri callback-uri)
-         filter-opts*  (canonicalize-filter filter-opts)]
+        filter-opts*  (canonicalize-filter filter-opts)
+        subscription-type* (canonical-subscription-type subscription-type)]
      (some (fn [existing]
              (and (:active existing)
                   (= user-id (:owner existing))
-                  (= subscription-type (:subscription-type existing))
+                 (= subscription-type* (canonical-subscription-type (:subscription-type existing)))
                   (= callback-uri* (normalize-callback-uri (:callback-uri existing)))
                   (= filter-opts* (canonicalize-filter (:app-pkg-filter existing)))))
            (query-user-subscriptions request))))
@@ -325,7 +344,7 @@
    [request]
    (try
      (let [body              (:body request)
-           subscription-type (:subscriptionType body)
+          subscription-type (canonical-subscription-type (:subscriptionType body))
            callback-uri      (:callbackUri body)
            filter-opts       (normalize-app-pkg-filter (:appPkgFilter body))
            user-id           (subscription-owner request)
