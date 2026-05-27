@@ -50,6 +50,15 @@
   {:NOT_INSTANTIATED :CREATED
    :INSTANTIATED      :STARTED})
 
+(def ^:private relative-public-base-uri
+  "/mec/mm1/app_lcm/v1")
+
+(defn- public-base-uri
+  [request]
+  (if-let [base-uri (:base-uri request)]
+    (str base-uri "mec/mm1/app_lcm/v1")
+    relative-public-base-uri))
+
 
 ;;
 ;; Schema Definitions (MEC 010-2)
@@ -77,55 +86,65 @@
 
 (defn deployment->app-instance-info
   "Translates a Nuvla deployment resource to MEC AppInstanceInfo"
-  [deployment]
-  (let [deployment-id   (:id deployment)
+  ([deployment]
+   (deployment->app-instance-info deployment nil))
+  ([deployment request]
+   (let [deployment-id   (:id deployment)
         module-ref      (:module deployment)
         module-id       (if (map? module-ref) (:href module-ref) module-ref)
+        module-content  (or (:module/content deployment)
+                            (get-in deployment [:module :content]))
+        module-author   (or (:module/author deployment)
+                            (get-in deployment [:module :author])
+                            (:owner deployment))
         state           (keyword (:state deployment))
         host-id         (or (:nuvlabox deployment) (:parent deployment))
         instantiation   (get nuvla-to-mec-instantiation-state state :NOT_INSTANTIATED)
-        operational     (get nuvla-to-mec-operational-state state)]
-    (cond-> {:id                 deployment-id
-             :appInstanceId      deployment-id
-             :appDId             module-id
-             :instantiationState (name instantiation)}
+        operational     (get nuvla-to-mec-operational-state state)
+        base-uri        (public-base-uri request)]
+     (cond-> {:id                 deployment-id
+              :appInstanceId      deployment-id
+              :appDId             module-id
+              :appPkgId           module-id
+              :instantiationState (name instantiation)}
       
-      ;; Add appName from module if available
-      (or (:module/content deployment)
-          (get-in deployment [:module :content]))
-      (assoc :appName (or (get-in deployment [:module/content :name])
-                          (get-in deployment [:module :content :name])
-                          (get-in deployment [:module :name])))
+       ;; Add appName from module if available
+       module-content
+       (assoc :appName (or (:name module-content)
+                           (get-in deployment [:module :name])))
 
-      ;; Add appDescription from module if available
-      (or (get-in deployment [:module/content :description])
-          (get-in deployment [:module :content :description])
-          (get-in deployment [:module :description]))
-      (assoc :appDescription (or (get-in deployment [:module/content :description])
-                                 (get-in deployment [:module :content :description])
-                                 (get-in deployment [:module :description])))
+       ;; Add appDescription from module if available
+       (or (:description module-content)
+           (get-in deployment [:module :description]))
+       (assoc :appDescription (or (:description module-content)
+                                  (get-in deployment [:module :description])))
       
-      ;; Add appProvider if available
-      (or (:module/author deployment)
-          (get-in deployment [:module :author]))
-      (assoc :appProvider (or (:module/author deployment)
-                              (get-in deployment [:module :author])))
+       ;; Add appProvider if available
+       module-author
+       (assoc :appProvider module-author)
+
+       ;; Add package/AppD versioning fields when available on the descriptor.
+       (:appSoftVersion module-content)
+       (assoc :appSoftVersion (:appSoftVersion module-content))
+
+       (:appDVersion module-content)
+       (assoc :appDVersion (:appDVersion module-content))
       
-      ;; Add operational state if applicable
-      operational
-      (assoc :operationalState (name operational))
+       ;; Add operational state if applicable
+       operational
+       (assoc :operationalState (name operational))
       
-      ;; Add MEC host information if deployed
-      host-id
-      (assoc :mecHostInformation {:hostId   host-id
-                                  :hostName (or (:nuvlabox-name deployment) host-id)})
+       ;; Add MEC host information if deployed
+       host-id
+       (assoc :mecHostInformation {:hostId   host-id
+                                   :hostName (or (:nuvlabox-name deployment) host-id)})
       
-      ;; Add HATEOAS links
-      true
-      (assoc :_links {:self        {:href (str "/mec/mm1/app_lcm/v1/app_instances/" deployment-id)}
-                      :instantiate {:href (str "/mec/mm1/app_lcm/v1/app_instances/" deployment-id "/instantiate")}
-                      :terminate   {:href (str "/mec/mm1/app_lcm/v1/app_instances/" deployment-id "/terminate")}
-                      :operate     {:href (str "/mec/mm1/app_lcm/v1/app_instances/" deployment-id "/operate")}}))))
+       ;; Add HATEOAS links
+       true
+       (assoc :_links {:self        {:href (str base-uri "/app_instances/" deployment-id)}
+                       :instantiate {:href (str base-uri "/app_instances/" deployment-id "/instantiate")}
+                       :terminate   {:href (str base-uri "/app_instances/" deployment-id "/terminate")}
+                       :operate     {:href (str base-uri "/app_instances/" deployment-id "/operate")}})))))
 
 
 (defn app-instance-info->deployment

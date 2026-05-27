@@ -236,6 +236,15 @@
   (let-routes [uri (str mm1-lcm-base-uri "/app_lcm_op_occs/:resourceName/:uuid")]
     (GET uri request
       (app-lcm/get-app-lcm-op-occ-handler (with-full-id request :id))))
+  (let-routes [uri (str mm1-lcm-base-uri "/app_lcm_op_occs/:resourceName/:uuid/cancel")]
+    (POST uri request
+      (app-lcm/cancel-app-lcm-op-occ-handler (with-full-id request :id))))
+  (let-routes [uri (str mm1-lcm-base-uri "/app_lcm_op_occs/:resourceName/:uuid/fail")]
+    (POST uri request
+      (app-lcm/fail-app-lcm-op-occ-handler (with-full-id request :id))))
+  (let-routes [uri (str mm1-lcm-base-uri "/app_lcm_op_occs/:resourceName/:uuid/retry")]
+    (POST uri request
+      (app-lcm/retry-app-lcm-op-occ-handler (with-full-id request :id))))
   (GET (str mm1-lcm-base-uri "/subscriptions") request
     (app-lcm/list-subscriptions-handler request))
   (POST (str mm1-lcm-base-uri "/subscriptions") request

@@ -32,7 +32,10 @@
    :state   "CREATED"
    :nuvlabox "nuvlabox/edge-host-1"
    :parent  "nuvlabox/edge-host-1"
-   :module/content {:name "NGINX Application"}
+   :module/content {:name "NGINX Application"
+                    :description "Example app instance"
+                    :appSoftVersion "1.2.3"
+                    :appDVersion "3.2.1"}
    :module/author "test-provider"})
 
 
@@ -55,6 +58,9 @@
                         :instantiate {:href "/mec/mm1/app_lcm/v1/app_instances/deployment/test-123/instantiate"}
                         :terminate   {:href "/mec/mm1/app_lcm/v1/app_instances/deployment/test-123/terminate"}
                         :operate     {:href "/mec/mm1/app_lcm/v1/app_instances/deployment/test-123/operate"}}})
+
+(def sample-request
+  {:base-uri "https://nuvla.example/api/"})
 
 
 (def sample-job
@@ -196,8 +202,11 @@
     (let [result (app-instance/deployment->app-instance-info sample-deployment)]
       (is (= "deployment/test-123" (:appInstanceId result)))
       (is (= "module/nginx-app" (:appDId result)))
+      (is (= "module/nginx-app" (:appPkgId result)))
       (is (= "NOT_INSTANTIATED" (:instantiationState result)))
       (is (= "NGINX Application" (:appName result)))
+      (is (= "1.2.3" (:appSoftVersion result)))
+      (is (= "3.2.1" (:appDVersion result)))
       (is (= "test-provider" (:appProvider result)))
       (is (= "nuvlabox/edge-host-1" (get-in result [:mecHostInformation :hostId])))))
   
@@ -218,7 +227,21 @@
       (is (contains? (:_links result) :self))
       (is (contains? (:_links result) :instantiate))
       (is (contains? (:_links result) :terminate))
-      (is (contains? (:_links result) :operate)))))
+      (is (contains? (:_links result) :operate))))
+
+  (testing "HATEOAS links use request base URI when available"
+    (let [result (app-instance/deployment->app-instance-info sample-deployment sample-request)]
+      (is (= "https://nuvla.example/api/mec/mm1/app_lcm/v1/app_instances/deployment/test-123"
+             (get-in result [:_links :self :href])))
+      (is (= "https://nuvla.example/api/mec/mm1/app_lcm/v1/app_instances/deployment/test-123/instantiate"
+             (get-in result [:_links :instantiate :href])))))
+
+  (testing "appProvider falls back to deployment owner"
+    (let [result (app-instance/deployment->app-instance-info
+                   (-> sample-deployment
+                       (dissoc :module/author)
+                       (assoc :owner "user/test-owner")))]
+      (is (= "user/test-owner" (:appProvider result))))))
 
 
 (deftest test-app-instance-info-to-deployment-translation
@@ -235,10 +258,13 @@
     (let [result (app-lcm-op-occ/job->app-lcm-op-occ sample-job)]
       (is (= "job/instantiate-123" (:lcmOpOccId result)))
       (is (= "INSTANTIATE" (:operationType result)))
+      (is (= "INSTANTIATE" (:lcmOperation result)))
       (is (= "PROCESSING" (:operationState result)))
       (is (= "deployment/test-123" (:appInstanceId result)))
       (is (= "op/southbound-123" (:mepmOperationId result)))
-      (is (= "2025-10-21T10:00:00Z" (:startTime result)))))
+      (is (= {:seconds 1761040800
+              :nanoSeconds 0}
+             (:startTime result)))))
   
   (testing "Failed job includes error information"
     (let [failed-job (assoc sample-job
@@ -324,6 +350,8 @@
       (is (= 201 (:status response)))
       (is (= "deployment/test-123" (get-in response [:body :appInstanceId])))
       (is (= "module/nginx-app" (get-in response [:body :appDId])))
+      (is (= "/mec/mm1/app_lcm/v1/app_instances/deployment/test-123"
+             (get-in response [:headers "Location"])))
       (is (= "INSTANTIATION_STATE" (second @dispatch-args)))
       (is (= "deployment/test-123" (get-in (first @dispatch-args) [:appInstanceId])))))
   
@@ -553,6 +581,8 @@
                      (app-lcm/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                    :body   {}}))]
       (is (= 202 (:status response)))
+      (is (= "/mec/mm1/app_lcm/v1/app_lcm_op_occs/job/instantiate-123"
+             (get-in response [:headers "Location"])))
       (is (= "start" (get-in @action-request [:params :action])))
       (is (= "INSTANTIATE" (get-in @action-request [:body :job-attrs :mec-operation-type])))
       (is (= "deployment/test-123" (get-in @action-request [:body :job-attrs :mec-app-instance-id])))
@@ -605,7 +635,16 @@
                                                                (assoc sample-deployment :state "STARTED"))]
                      (app-lcm/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                    :body   {}}))]
-      (is (= 409 (:status response))))))
+      (is (= 409 (:status response)))))
+
+  (testing "Instantiate rejects unsupported request fields"
+    (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               sample-deployment)]
+                     (app-lcm/instantiate-app-instance-handler
+                       {:params {:id "deployment/test-123"}
+                        :body   {:appERRORId "1234"}}))]
+      (is (= 400 (:status response)))))
+  )
 
 
 (deftest test-terminate-app-instance-handler
@@ -636,10 +675,20 @@
                      (app-lcm/terminate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                  :body   {:terminationType "GRACEFUL"}}))]
       (is (= 202 (:status response)))
+      (is (= "/mec/mm1/app_lcm/v1/app_lcm_op_occs/job/terminate-123"
+             (get-in response [:headers "Location"])))
       (is (= "stop" (get-in @action-request [:params :action])))
       (is (= "TERMINATE" (get-in @action-request [:body :job-attrs :mec-operation-type])))
       (is (= "deployment/test-123" (get-in @action-request [:body :job-attrs :mec-app-instance-id])))
       (is (= "TERMINATE" (get-in response [:body :operationType])))))
+
+  (testing "Terminate rejects unsupported request fields"
+    (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                               (assoc sample-deployment :state "STARTED"))]
+                     (app-lcm/terminate-app-instance-handler
+                       {:params {:id "deployment/test-123"}
+                        :body   {:terminationERRORType "FORCEFUL"}}))]
+      (is (= 400 (:status response)))))
 
   (testing "Terminate rejects not-instantiated app instance"
     (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]

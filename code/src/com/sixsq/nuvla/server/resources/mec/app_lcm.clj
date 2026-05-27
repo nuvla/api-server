@@ -29,13 +29,16 @@
      [com.sixsq.nuvla.server.resources.common.crud :as crud]
      [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
      [com.sixsq.nuvla.server.resources.common.utils :as u]
+    [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
      [com.sixsq.nuvla.server.resources.mec.app-instance :as app-instance]
      [com.sixsq.nuvla.server.resources.mec.app-lcm-op-occ :as app-lcm-op-occ]
      [com.sixsq.nuvla.server.resources.mec.app-lcm-subscription :as subscription]
      [com.sixsq.nuvla.server.resources.mec.mm3-client :as mm3]
      [com.sixsq.nuvla.server.resources.mec.notification-dispatcher :as dispatcher]
      [com.sixsq.nuvla.server.resources.mec.query-filter :as qf]
-     [com.sixsq.nuvla.server.util.response :as r]))
+    [com.sixsq.nuvla.server.util.response :as r]
+    [com.sixsq.nuvla.server.util.time :as time-utils]
+    [ring.util.response :as rur]))
 
 
  ;;
@@ -47,6 +50,16 @@
  (def ^:const api-version "v1")
  (def ^:const base-uri (str "app_lcm/" api-version))
  (def ^:private public-base-uri "/mec/mm1/app_lcm/v1")
+
+(defn- request-public-base-uri
+  [request]
+  (if-let [base-uri (:base-uri request)]
+    (str base-uri "mec/mm1/app_lcm/v1")
+    public-base-uri))
+
+(defn- op-occ-location
+  [request op-occ-id]
+  (str (request-public-base-uri request) "/app_lcm_op_occs/" op-occ-id))
 
 
  ;;
@@ -114,6 +127,11 @@
 
  (def ^:private eligible-mepm-statuses
    #{"ONLINE" "DEGRADED"})
+
+(def ^:private allowed-cancel-modes
+  #{"GRACEFUL" "FORCEFUL"})
+
+(declare job->northbound-op-occ)
 
 
  (defn- exception-status
@@ -190,6 +208,42 @@
    [status detail & [data]]
    (throw (ex-info detail (merge {:status status} data))))
 
+(defn- ensure-mec-operation-job!
+  [request lcm-op-occ-id]
+  (let [job (crud/get-resource-throw-nok lcm-op-occ-id request)]
+    (when-not (mec-operation-job? job)
+      (throw-status 404 (str lcm-op-occ-id " not found")
+                    {:lcm-op-occ-id lcm-op-occ-id}))
+    job))
+
+(defn- update-operation-job!
+  [request lcm-op-occ-id updates]
+  (let [now       (time-utils/now-str)
+        body      (merge {:updated            now
+                          :state-entered-time now
+                          :time-of-status-change now}
+                         updates)
+        _         (crud/edit-by-id-as-admin lcm-op-occ-id body)
+        job       (crud/retrieve-by-id-as-admin lcm-op-occ-id)
+        op-occ    (job->northbound-op-occ job request)]
+    (dispatcher/dispatch-app-lcm-op-occ-state-change! op-occ "OPERATION_STATE" nil)
+    op-occ))
+
+(defn- validate-cancel-request!
+  [body]
+  (let [body             (or body {})
+        unsupported-keys (seq (remove #{:CancelMode} (keys body)))
+        cancel-mode      (some-> (:CancelMode body) str/upper-case)]
+    (when unsupported-keys
+      (throw-status 400
+                    (str "Unsupported cancel request fields: "
+                         (str/join ", " (map name unsupported-keys)))
+                    {:unsupported-fields unsupported-keys}))
+    (when-not (contains? allowed-cancel-modes cancel-mode)
+      (throw-status 400 "CancelMode must be GRACEFUL or FORCEFUL"
+                    {:cancel-mode (:CancelMode body)}))
+    (assoc body :CancelMode cancel-mode)))
+
 
  (defn- retrieve-app-instance-deployment
    [request app-instance-id]
@@ -200,7 +254,7 @@
    [request app-instance-id]
    (->> app-instance-id
         (retrieve-app-instance-deployment request)
-        app-instance/deployment->app-instance-info))
+       (#(app-instance/deployment->app-instance-info % request))))
 
 
  (defn- request-change-state->target-state
@@ -211,22 +265,44 @@
      :else nil))
 
 
- (defn- validate-instantiate-request!
-   [request app-instance-id]
+(def ^:private allowed-instantiate-request-keys
+  #{:selectedMECHostInfo :grantId})
+
+(def ^:private allowed-terminate-request-keys
+  #{:terminationType :gracefulTerminationTimeout})
+
+(defn- validate-instantiate-request!
+  [request app-instance-id body]
    (let [{:keys [instantiationState]} (retrieve-app-instance-info request app-instance-id)]
      (when-not (= "NOT_INSTANTIATED" instantiationState)
        (throw-status 409 "App instance must be NOT_INSTANTIATED before instantiation"
                      {:app-instance-id app-instance-id
-                      :instantiation-state instantiationState}))))
+                     :instantiation-state instantiationState})))
+  (let [unsupported-keys (seq (remove allowed-instantiate-request-keys (keys (or body {}))))]
+    (when unsupported-keys
+      (throw-status 400
+                    (str "Unsupported instantiate request fields: "
+                         (str/join ", " (map name unsupported-keys)))
+                    {:app-instance-id app-instance-id
+                     :unsupported-fields unsupported-keys})))
+  body)
 
 
  (defn- validate-terminate-request!
-   [request app-instance-id]
+  [request app-instance-id body]
+  (let [unsupported-keys (seq (remove allowed-terminate-request-keys (keys (or body {}))))]
+    (when unsupported-keys
+      (throw-status 400
+                    (str "Unsupported terminate request fields: "
+                         (str/join ", " (map name unsupported-keys)))
+                    {:app-instance-id app-instance-id
+                     :unsupported-fields unsupported-keys})))
    (let [{:keys [instantiationState]} (retrieve-app-instance-info request app-instance-id)]
      (when (= "NOT_INSTANTIATED" instantiationState)
        (throw-status 409 "App instance must be INSTANTIATED before termination"
                      {:app-instance-id app-instance-id
-                      :instantiation-state instantiationState}))))
+                     :instantiation-state instantiationState})))
+  body)
 
 
  (defn- validate-operate-request!
@@ -350,9 +426,13 @@
 
 
 (defn- job->northbound-op-occ
-  [job]
-  (->> (app-lcm-op-occ/job->app-lcm-op-occ job)
-       (overlay-southbound-operation-status job)))
+  ([job]
+   (job->northbound-op-occ job nil))
+  ([job request]
+   (let [op-occ (app-lcm-op-occ/job->app-lcm-op-occ
+                  job
+                  {:base-uri (request-public-base-uri request)})]
+     (overlay-southbound-operation-status job op-occ))))
 
 
  (defn- tag-mec-operation-job!
@@ -391,7 +471,7 @@
                        {:app-instance-id app-instance-id
                         :action action}))
        (let [op-occ (-> (tag-mec-operation-job! job-id app-instance-id operation-type request-params metadata)
-                        job->northbound-op-occ)]
+                        (job->northbound-op-occ request))]
          (dispatcher/dispatch-app-lcm-op-occ-state-change! op-occ "OPERATION_STATE" nil)
          op-occ))))
 
@@ -399,13 +479,11 @@
 (def ^:private lifecycle-operation-config
   {"INSTANTIATE" {:log-prefix "Instantiate request for"
                   :validate   (fn [request app-instance-id body]
-                                (validate-instantiate-request! request app-instance-id)
-                                body)
+                                (validate-instantiate-request! request app-instance-id body))
                   :action     (constantly "start")}
    "TERMINATE"   {:log-prefix "Terminate request for"
                   :validate   (fn [request app-instance-id body]
-                                (validate-terminate-request! request app-instance-id)
-                                body)
+                                (validate-terminate-request! request app-instance-id body))
                   :action     (constantly "stop")}
    "OPERATE"     {:log-prefix "Operate request for"
                   :validate   validate-operate-request!
@@ -453,9 +531,11 @@
                                          :body deployment-body))
            deployment-id     (get-in create-response [:body :resource-id])
            deployment        (crud/get-resource-throw-nok deployment-id request)
-           app-instance-info (app-instance/deployment->app-instance-info deployment)]
+          app-instance-info (app-instance/deployment->app-instance-info deployment request)
+          location         (str (request-public-base-uri request) "/app_instances/" deployment-id)]
        (dispatcher/dispatch-app-instance-state-change! app-instance-info "INSTANTIATION_STATE" nil)
-       (json-response-status app-instance-info 201))
+      (-> (json-response-status app-instance-info 201)
+          (rur/header "Location" location)))
      (catch clojure.lang.ExceptionInfo e
        (log/error e "Failed to create app instance")
        (exception-response e 400))
@@ -468,12 +548,13 @@
    "GET /app_lcm/v1/app_instances - List all app instances"
    [request]
    (try
-     (let [params      (:params request)
+    (let [params      (:params request)
+          base-uri    (request-public-base-uri request)
            deployments (query-resources request "deployment")
-           resources   (mapv app-instance/deployment->app-instance-info deployments)]
+          resources   (mapv #(app-instance/deployment->app-instance-info % request) deployments)]
        (r/json-response (qf/process-query resources
                                           (merge params
-                                                 {:base-uri (str public-base-uri "/app_instances")}))))
+                                                {:base-uri (str base-uri "/app_instances")}))))
      (catch clojure.lang.ExceptionInfo e
        (log/error e "Failed to list app instances")
        (exception-response e 400))
@@ -489,7 +570,7 @@
      (try
        (-> app-instance-id
            (crud/get-resource-throw-nok request)
-           app-instance/deployment->app-instance-info
+          (app-instance/deployment->app-instance-info request)
            r/json-response)
        (catch clojure.lang.ExceptionInfo e
          (log/error e "Failed to get app instance" app-instance-id)
@@ -505,7 +586,7 @@
    (let [app-instance-id (get-in request [:params :id])]
      (try
        (let [deployment        (crud/get-resource-throw-nok app-instance-id request)
-             app-instance-info (app-instance/deployment->app-instance-info deployment)
+            app-instance-info (app-instance/deployment->app-instance-info deployment request)
              inst-state        (:instantiationState app-instance-info)
              [_ uuid]          (u/parse-id app-instance-id)]
          (when-not (= "NOT_INSTANTIATED" inst-state)
@@ -533,7 +614,8 @@
      (try
        (let [op-occ (submit-lifecycle-operation! request "INSTANTIATE")]
          (log/info "Instantiation operation created:" (:lcmOpOccId op-occ))
-         (json-response-status op-occ 202))
+        (-> (json-response-status op-occ 202)
+            (rur/header "Location" (op-occ-location request (:lcmOpOccId op-occ)))))
        (catch clojure.lang.ExceptionInfo e
          (log/error e "Failed to instantiate app instance" app-instance-id)
          (exception-response e 400))
@@ -549,7 +631,8 @@
      (try
        (let [op-occ (submit-lifecycle-operation! request "TERMINATE")]
          (log/info "Termination operation created:" (:lcmOpOccId op-occ))
-         (json-response-status op-occ 202))
+        (-> (json-response-status op-occ 202)
+            (rur/header "Location" (op-occ-location request (:lcmOpOccId op-occ)))))
        (catch clojure.lang.ExceptionInfo e
          (log/error e "Failed to terminate app instance" app-instance-id)
          (exception-response e 400))
@@ -565,7 +648,8 @@
      (try
        (let [op-occ (submit-lifecycle-operation! request "OPERATE")]
          (log/info "Operate operation created:" (:lcmOpOccId op-occ))
-         (json-response-status op-occ 202))
+        (-> (json-response-status op-occ 202)
+            (rur/header "Location" (op-occ-location request (:lcmOpOccId op-occ)))))
        (catch clojure.lang.ExceptionInfo e
          (log/error e "Failed to operate app instance" app-instance-id)
          (exception-response e 400))
@@ -582,11 +666,11 @@
            jobs      (query-resources request "job")
            resources (->> jobs
                           (filter mec-operation-job?)
-                          (map job->northbound-op-occ)
+                         (map #(job->northbound-op-occ % request))
                           vec)]
        (r/json-response (qf/process-query resources
                                           (merge params
-                                                 {:base-uri (str public-base-uri "/app_lcm_op_occs")}))))
+                                                 {:base-uri (str (request-public-base-uri request) "/app_lcm_op_occs")}))))
      (catch clojure.lang.ExceptionInfo e
        (log/error e "Failed to list operation occurrences")
        (exception-response e 400))
@@ -600,9 +684,9 @@
    [request]
    (let [lcm-op-occ-id (get-in request [:params :id])]
      (try
-       (let [job (crud/get-resource-throw-nok lcm-op-occ-id request)]
+        (let [job (crud/get-resource-throw-nok lcm-op-occ-id request)]
          (if (mec-operation-job? job)
-           (r/json-response (job->northbound-op-occ job))
+          (r/json-response (job->northbound-op-occ job request))
            (json-response-status (not-found-error lcm-op-occ-id) 404)))
        (catch clojure.lang.ExceptionInfo e
          (log/error e "Failed to get operation occurrence" lcm-op-occ-id)
@@ -610,6 +694,63 @@
        (catch Exception e
          (log/error e "Unexpected error getting operation occurrence" lcm-op-occ-id)
          (exception-response e 500)))))
+
+
+(defn cancel-app-lcm-op-occ-handler
+  "POST /app_lcm/v1/app_lcm_op_occs/{id}/cancel - Cancel an operation occurrence"
+  [request]
+  (let [lcm-op-occ-id (get-in request [:params :id])]
+    (try
+      (ensure-mec-operation-job! request lcm-op-occ-id)
+      (validate-cancel-request! (:body request))
+      (let [op-occ (update-operation-job! request lcm-op-occ-id {:state job-utils/state-canceled})]
+        (json-response-status op-occ 202))
+      (catch clojure.lang.ExceptionInfo e
+        (log/error e "Failed to cancel operation occurrence" lcm-op-occ-id)
+        (exception-response e 400))
+      (catch Exception e
+        (log/error e "Unexpected error canceling operation occurrence" lcm-op-occ-id)
+        (exception-response e 500)))))
+
+
+(defn fail-app-lcm-op-occ-handler
+  "POST /app_lcm/v1/app_lcm_op_occs/{id}/fail - Force an operation occurrence to failed"
+  [request]
+  (let [lcm-op-occ-id (get-in request [:params :id])]
+    (try
+      (ensure-mec-operation-job! request lcm-op-occ-id)
+      (let [op-occ (update-operation-job! request
+                                          lcm-op-occ-id
+                                          {:state          job-utils/state-failed
+                                           :status-message "Operation failed by request"
+                                           :return-code    1})]
+        (json-response-status op-occ 200))
+      (catch clojure.lang.ExceptionInfo e
+        (log/error e "Failed to fail operation occurrence" lcm-op-occ-id)
+        (exception-response e 400))
+      (catch Exception e
+        (log/error e "Unexpected error failing operation occurrence" lcm-op-occ-id)
+        (exception-response e 500)))))
+
+
+(defn retry-app-lcm-op-occ-handler
+  "POST /app_lcm/v1/app_lcm_op_occs/{id}/retry - Retry an operation occurrence"
+  [request]
+  (let [lcm-op-occ-id (get-in request [:params :id])]
+    (try
+      (ensure-mec-operation-job! request lcm-op-occ-id)
+      (let [op-occ (update-operation-job! request
+                                          lcm-op-occ-id
+                                          {:state          job-utils/state-queued
+                                           :status-message "Operation retried"
+                                           :return-code    nil})]
+        (json-response-status op-occ 202))
+      (catch clojure.lang.ExceptionInfo e
+        (log/error e "Failed to retry operation occurrence" lcm-op-occ-id)
+        (exception-response e 400))
+      (catch Exception e
+        (log/error e "Unexpected error retrying operation occurrence" lcm-op-occ-id)
+        (exception-response e 500)))))
 
 
  (defn- subscription-authn
@@ -628,8 +769,9 @@
  (defn- subscription-response
    [resource]
    (when resource
-     (cond-> {:id               (some-> (:id resource) subscription/resource-id->api-id)
-              :subscriptionType (:subscription-type resource)
+    (cond-> {:id               (some-> (:id resource) subscription/resource-id->api-id)
+             :subscriptionType (some-> (:subscription-type resource)
+                                       subscription/public-subscription-type)
               :callbackUri      (:callback-uri resource)
               :created          (:created resource)
               :updated          (:updated resource)
@@ -795,12 +937,12 @@
    [request]
    (try
      (let [query-params     (:params request)
-           active-user-subs (->> (query-user-subscriptions request)
+          active-user-subs (->> (query-user-subscriptions request)
                                  (filter :active)
                                  (mapv subscription-response))]
        (r/json-response (qf/process-query active-user-subs
                                           (merge query-params
-                                                 {:base-uri (str public-base-uri "/subscriptions")}))))
+                                                 {:base-uri (str (request-public-base-uri request) "/subscriptions")}))))
      (catch Exception e
        (log/error e "Failed to list subscriptions")
        (json-response-status (problem-details
@@ -908,6 +1050,18 @@
     [(str "/" base-uri "/app_lcm_op_occs/:id")
      {:get {:handler get-app-lcm-op-occ-handler
             :summary "Get operation occurrence"}}]
+
+    [(str "/" base-uri "/app_lcm_op_occs/:id/cancel")
+     {:post {:handler cancel-app-lcm-op-occ-handler
+             :summary "Cancel operation occurrence"}}]
+
+    [(str "/" base-uri "/app_lcm_op_occs/:id/fail")
+     {:post {:handler fail-app-lcm-op-occ-handler
+             :summary "Fail operation occurrence"}}]
+
+    [(str "/" base-uri "/app_lcm_op_occs/:id/retry")
+     {:post {:handler retry-app-lcm-op-occ-handler
+             :summary "Retry operation occurrence"}}]
 
     [(str "/" base-uri "/subscriptions")
      {:get  {:handler list-subscriptions-handler

@@ -11,6 +11,9 @@
     [com.sixsq.nuvla.server.resources.job :as job]
     [com.sixsq.nuvla.server.util.time :as time-utils]))
 
+(def ^:private default-base-uri
+  "/mec/mm1/app_lcm/v1")
+
 
 ;;
 ;; State Mapping: Nuvla Job <-> MEC Operation
@@ -50,6 +53,16 @@
 (defn valid-operation-state? [state]
   (contains? #{:STARTING :PROCESSING :COMPLETED :FAILED :FAILED_TEMP :ROLLED_BACK} (keyword state)))
 
+(defn- mec-time
+  [timestamp]
+  (let [date (or (cond
+                   (string? timestamp) (time-utils/parse-date timestamp)
+                   timestamp timestamp
+                   :else nil)
+                 (time-utils/now))]
+    {:seconds     (.toEpochSecond date)
+     :nanoSeconds (.getNano date)}))
+
 
 ;;
 ;; Translation Functions
@@ -57,46 +70,52 @@
 
 (defn job->app-lcm-op-occ
   "Translates a Nuvla job to MEC AppLcmOpOcc"
-  [job]
-  (let [job-id          (:id job)
-        job-state       (keyword (:state job))
-        operation-type  (keyword (or (:mec-operation-type job)
-                                     (:operation-type job)
-                                     "INSTANTIATE"))
-        mec-state      (get nuvla-job-to-mec-operation-state job-state :STARTING)
-        mepm-op-id     (:mec-southbound-operation-id job)
-        target-resource (:target-resource job)
-        target-id       (or (:mec-app-instance-id job)
-                            (if (map? target-resource)
-                              (:href target-resource)
-                              target-resource))]
-    (cond-> {:lcmOpOccId        job-id
-             :id                job-id
-             :operationType     (name operation-type)
-             :operationState    (name mec-state)
-             :stateEnteredTime  (or (:state-entered-time job)
-                                    (:updated job)
-                                    (time-utils/now-str))
-             :startTime         (or (:start-time job)
-                                    (:created job)
-                                    (time-utils/now-str))
-             :appInstanceId     target-id}
+  ([job]
+   (job->app-lcm-op-occ job {}))
+  ([job {:keys [base-uri]
+         :or   {base-uri default-base-uri}}]
+   (let [job-id           (:id job)
+         job-state        (keyword (:state job))
+         operation-type   (keyword (or (:mec-operation-type job)
+                                       (:operation-type job)
+                                       "INSTANTIATE"))
+         mec-state        (get nuvla-job-to-mec-operation-state job-state :STARTING)
+         mepm-op-id       (:mec-southbound-operation-id job)
+         target-resource  (:target-resource job)
+         target-id        (or (:mec-app-instance-id job)
+                              (if (map? target-resource)
+                                (:href target-resource)
+                                target-resource))
+         start-time       (or (:start-time job)
+                              (:created job)
+                              (time-utils/now-str))
+         entered-time     (or (:state-entered-time job)
+                              (:updated job)
+                              start-time)]
+     (cond-> {:lcmOpOccId       job-id
+              :id               job-id
+              :operationType    (name operation-type)
+              :lcmOperation     (name operation-type)
+              :operationState   (name mec-state)
+              :stateEnteredTime (mec-time entered-time)
+              :startTime        (mec-time start-time)
+              :appInstanceId    target-id}
 
-      mepm-op-id
-      (assoc :mepmOperationId mepm-op-id)
-      
-      ;; Add error information if job failed
-      (#{:FAILED :STOPPED} job-state)
-      (assoc :error {:type     "about:blank"
-                     :title    "Operation Failed"
-                     :status   500
-                     :detail   (or (:status-message job) "Operation failed")
-                     :instance job-id})
-      
-      ;; Add HATEOAS links
-      true
-      (assoc :_links {:self        {:href (str "/mec/mm1/app_lcm/v1/app_lcm_op_occs/" job-id)}
-                      :appInstance {:href (str "/mec/mm1/app_lcm/v1/app_instances/" target-id)}}))))
+       mepm-op-id
+       (assoc :mepmOperationId mepm-op-id)
+
+       ;; Add error information if job failed
+       (#{:FAILED :STOPPED} job-state)
+       (assoc :error {:type     "about:blank"
+                      :title    "Operation Failed"
+                      :status   500
+                      :detail   (or (:status-message job) "Operation failed")
+                      :instance job-id})
+
+       ;; Add HATEOAS links
+       true
+       (assoc :_links {:self        {:href (str base-uri "/app_lcm_op_occs/" job-id)}
+                       :appInstance {:href (str base-uri "/app_instances/" target-id)}})))))
 
 
 (defn app-lcm-op-occ->job

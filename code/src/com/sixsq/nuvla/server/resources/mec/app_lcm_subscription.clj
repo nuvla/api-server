@@ -41,8 +41,14 @@
   "AppLcmOpOccStateChange")
 
 (def ^:private legacy-subscription-type-aliases
-  {"AppInstanceStateChangeNotification" app-instance-subscription-type
-   "AppLcmOpOccStateChangeNotification" app-lcm-op-occ-subscription-type})
+  {"AppInstanceStateChangeNotification"   app-instance-subscription-type
+   "AppLcmOpOccStateChangeNotification"   app-lcm-op-occ-subscription-type
+   "AppInstanceStateChangeSubscription"   app-instance-subscription-type
+   "AppLcmOpOccStateChangeSubscription"   app-lcm-op-occ-subscription-type})
+
+(def ^:private public-subscription-type-aliases
+  {app-instance-subscription-type   "AppInstanceStateChangeSubscription"
+   app-lcm-op-occ-subscription-type "AppLcmOpOccStateChangeSubscription"})
 
 (def subscription-types
   "Valid MEC 010-2 subscription types"
@@ -80,6 +86,10 @@
 (defn canonical-subscription-type
   [subscription-type]
   (get legacy-subscription-type-aliases subscription-type subscription-type))
+
+(defn public-subscription-type
+  [subscription-type]
+  (get public-subscription-type-aliases subscription-type subscription-type))
 
 (defn canonical-notification-type
   [notification-type]
