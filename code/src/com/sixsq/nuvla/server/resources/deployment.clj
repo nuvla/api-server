@@ -189,14 +189,15 @@ a container orchestration engine.
   [{{:keys [parent execution-mode deployment-set app-set api-endpoint]} :body :as request}]
   ;; TODO only allow creation with specific version to always have a version without needing to check versions map
   (a/throw-cannot-add collection-acl request)
-  (-> request
-      module-utils/resolve-from-module
-      (cond-> deployment-set (assoc :deployment-set deployment-set)
-              app-set (assoc :app-set app-set)
-              parent (assoc :parent parent)
-              execution-mode (assoc :execution-mode execution-mode)
-              api-endpoint (assoc :api-endpoint api-endpoint))
-      (create-deployment request)))
+  (let [body (:body request)]
+    (-> (merge (select-keys body [:data :name :description :tags])
+               (module-utils/resolve-from-module request))
+        (cond-> deployment-set (assoc :deployment-set deployment-set)
+                app-set (assoc :app-set app-set)
+                parent (assoc :parent parent)
+                execution-mode (assoc :execution-mode execution-mode)
+                api-endpoint (assoc :api-endpoint api-endpoint))
+        (create-deployment request))))
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 

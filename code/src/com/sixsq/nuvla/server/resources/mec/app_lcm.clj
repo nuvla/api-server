@@ -28,12 +28,15 @@
      [com.sixsq.nuvla.db.filter.parser :as parser]
      [com.sixsq.nuvla.server.resources.common.crud :as crud]
      [com.sixsq.nuvla.server.resources.common.std-crud :as std-crud]
-     [com.sixsq.nuvla.server.resources.common.utils :as u]
+    [com.sixsq.nuvla.server.resources.common.utils :as u]
+    [com.sixsq.nuvla.server.resources.deployment-parameter :as deployment-parameter]
+    [com.sixsq.nuvla.server.resources.deployment.utils :as deployment-utils]
     [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
      [com.sixsq.nuvla.server.resources.mec.app-instance :as app-instance]
      [com.sixsq.nuvla.server.resources.mec.app-lcm-op-occ :as app-lcm-op-occ]
      [com.sixsq.nuvla.server.resources.mec.app-lcm-subscription :as subscription]
      [com.sixsq.nuvla.server.resources.mec.mm3-client :as mm3]
+     [com.sixsq.nuvla.server.resources.mepm :as mepm-resource]
      [com.sixsq.nuvla.server.resources.mec.notification-dispatcher :as dispatcher]
      [com.sixsq.nuvla.server.resources.mec.query-filter :as qf]
     [com.sixsq.nuvla.server.util.response :as r]
@@ -130,6 +133,12 @@
 
 (def ^:private allowed-cancel-modes
   #{"GRACEFUL" "FORCEFUL"})
+
+(def ^:private default-mepm-backend-mode
+  "MOCK")
+
+(def ^:private southbound-app-instance-param-name
+  "mec.app-instance-id")
 
 (declare job->northbound-op-occ)
 
@@ -256,6 +265,12 @@
         (retrieve-app-instance-deployment request)
        (#(app-instance/deployment->app-instance-info % request))))
 
+(defn- target-host-id
+  [deployment]
+  (or (:mec-host-id deployment)
+      (:nuvlabox deployment)
+      (:parent deployment)))
+
 
  (defn- request-change-state->target-state
    [change-state]
@@ -351,46 +366,122 @@
                     :error (:error response)}))
    response)
 
+(defn- mepm-manages-edge?
+  [mepm edge-id]
+  (contains? (set (mepm-resource/managed-edge-ids mepm)) edge-id))
+
+(defn- eligible-mepms-for-host
+  [edge-id]
+  (let [eligible? #(contains? eligible-mepm-statuses (:status %))]
+    (cond->> (query-resources-as-admin "mepm")
+      true (filter eligible?)
+      edge-id (filter #(mepm-manages-edge? % edge-id)))))
+
+
+(defn- filter-by-persisted-mepm-id
+  [eligible persisted-mepm-id]
+  (if persisted-mepm-id
+    (filterv #(= persisted-mepm-id (:id %)) eligible)
+    (vec eligible)))
+
 
  (defn- resolve-mepm-for-deployment!
    [deployment]
-   (let [nuvlabox-id (:nuvlabox deployment)
-         eligible?   #(contains? eligible-mepm-statuses (:status %))
-         mepms       (if nuvlabox-id
-                       (query-resources-as-admin "mepm" (str "mec-host-id='" nuvlabox-id "'"))
-                       (query-resources-as-admin "mepm"))
-         eligible    (filter eligible? mepms)]
+  (let [host-id            (target-host-id deployment)
+        persisted-mepm-id  (:mec-mepm-id deployment)
+        eligible           (eligible-mepms-for-host host-id)
+        narrowed-eligible  (filter-by-persisted-mepm-id eligible persisted-mepm-id)]
      (cond
-       (and nuvlabox-id (= 1 (count eligible))) (first eligible)
-       (and nuvlabox-id (empty? eligible))
+      (and host-id (= 1 (count narrowed-eligible)))
+      (assoc (first narrowed-eligible) :selected-mec-host-id host-id)
+
+       (and host-id (empty? narrowed-eligible))
        (throw-status 503
-                     (str "No eligible MEPM found for target NuvlaBox " nuvlabox-id)
-                     {:nuvlabox-id nuvlabox-id})
-       (and nuvlabox-id (> (count eligible) 1))
+                     (str "No eligible MEPM found for target NuvlaBox " host-id)
+                     {:nuvlabox-id host-id
+                      :mec-mepm-id persisted-mepm-id})
+       (and host-id (> (count narrowed-eligible) 1))
        (throw-status 409
-                     (str "Multiple eligible MEPMs found for target NuvlaBox " nuvlabox-id)
-                     {:nuvlabox-id nuvlabox-id})
-       (= 1 (count eligible)) (first eligible)
-       (empty? eligible) (throw-status 503 "No eligible MEPM available")
+                     (str "Multiple eligible MEPMs found for target NuvlaBox " host-id)
+                     {:nuvlabox-id host-id
+                      :mec-mepm-id persisted-mepm-id})
+       (= 1 (count narrowed-eligible)) (first narrowed-eligible)
+       (empty? narrowed-eligible) (throw-status 503 "No eligible MEPM available")
        :else (throw-status 409 "Multiple eligible MEPMs available; explicit host targeting is required"))))
+
+(defn- correlation-snapshot-for-create
+  [deployment-id deployment-body]
+  (let [host-id   (target-host-id deployment-body)
+        mepms     (when host-id
+                    (eligible-mepms-for-host host-id))
+        mepm      (when (= 1 (count mepms))
+                    (first mepms))]
+    (cond-> {:mec-app-instance-id deployment-id}
+      host-id (assoc :mec-host-id host-id)
+      (:id mepm) (assoc :mec-mepm-id (:id mepm))
+      (:name mepm) (assoc :mec-mepm-name (:name mepm))
+      mepm (assoc :mec-backend-mode (or (:backend-mode mepm)
+                                        default-mepm-backend-mode)))))
 
 
  (defn- resolve-mepm-for-app-instance!
    [request app-instance-id]
    (let [deployment (retrieve-app-instance-deployment request app-instance-id)
-         mepm       (resolve-mepm-for-deployment! deployment)
-         endpoint   (:endpoint mepm)
-         _          (-> (mm3/query-capabilities endpoint)
-                        (throw-on-unsuccessful-mm3-response! endpoint "capability query"))
-         _          (-> (mm3/query-resources endpoint)
-                        (throw-on-unsuccessful-mm3-response! endpoint "resource query"))]
-     mepm))
+        mepm       (resolve-mepm-for-deployment! deployment)
+        endpoint   (:endpoint mepm)
+        _          (-> (mm3/query-capabilities endpoint)
+                       (throw-on-unsuccessful-mm3-response! endpoint "capability query"))
+        _          (-> (mm3/query-resources endpoint)
+                       (throw-on-unsuccessful-mm3-response! endpoint "resource query"))]
+    mepm))
 
 
  (defn- action-response->job-id
    [response]
    (or (get-in response [:body :location])
        (get-in response [:headers "Location"])))
+
+
+(defn- upsert-deployment-parameter!
+  [deployment-id name value]
+  (let [parameter {:parent deployment-id
+                   :name   name
+                   :value  value}
+        id        (deployment-parameter/parameter->id parameter)
+        existing  (try
+                    (crud/retrieve-by-id-as-admin id)
+                    (catch Exception _
+                      nil))]
+    (if existing
+      (crud/edit-by-id-as-admin id {:value value})
+      (crud/add {:params      {:resource-name deployment-parameter/resource-type}
+                 :body        parameter
+                 :nuvla/authn auth/internal-identity}))
+    (crud/retrieve-by-id-as-admin id)))
+
+
+(defn- persisted-southbound-app-instance-id
+  [deployment]
+  (or (:mec-backing-deployment-id deployment)
+      (try
+        (some-> (crud/retrieve-by-id-as-admin
+                 (deployment-parameter/parameter->id {:parent (:id deployment)
+                                                      :name   southbound-app-instance-param-name}))
+                :value)
+        (catch Exception _
+          nil))))
+
+
+(defn- persist-southbound-app-instance-correlation!
+  [deployment southbound-app-instance-id]
+  (when (and southbound-app-instance-id
+             (not= southbound-app-instance-id (:id deployment)))
+    (if (str/starts-with? southbound-app-instance-id "deployment/")
+      (crud/edit-by-id-as-admin (:id deployment)
+                                {:mec-backing-deployment-id southbound-app-instance-id})
+      (upsert-deployment-parameter! (:id deployment)
+                                    southbound-app-instance-param-name
+                                    southbound-app-instance-id))))
 
 
 (def ^:private final-job-states
@@ -435,45 +526,45 @@
      (overlay-southbound-operation-status job op-occ))))
 
 
- (defn- tag-mec-operation-job!
-   [job-id app-instance-id operation-type request-params metadata]
-   (crud/edit-by-id-as-admin
-     job-id
-     (cond-> {:mec-operation-type  operation-type
-              :mec-app-instance-id app-instance-id}
-       (some? request-params) (assoc :mec-request-params request-params)
-       (some? (:mepm-id metadata)) (assoc :mepm-id (:mepm-id metadata))
-       (some? (:mepm-endpoint metadata)) (assoc :mepm-endpoint (:mepm-endpoint metadata))
-       (some? (:mec-host-id metadata)) (assoc :mec-host-id (:mec-host-id metadata))))
-   (crud/retrieve-by-id-as-admin job-id))
-
-
- (defn- run-mec-lifecycle-action!
-   [request app-instance-id action operation-type request-params metadata]
+(defn- create-southbound-operation-job!
+  [request deployment action operation-type request-params metadata]
    (let [job-attrs (cond-> {:mec-operation-type  operation-type
-                            :mec-app-instance-id app-instance-id}
+                           :mec-app-instance-id (:id deployment)}
                      (some? request-params) (assoc :mec-request-params request-params)
                      (some? (:mepm-id metadata)) (assoc :mepm-id (:mepm-id metadata))
                      (some? (:mepm-endpoint metadata)) (assoc :mepm-endpoint (:mepm-endpoint metadata))
                      (some? (:mec-host-id metadata)) (assoc :mec-host-id (:mec-host-id metadata)))
-         response (crud/do-action (deployment-action-request request app-instance-id action request-params job-attrs))
-         status   (:status response)]
+        response (crud/do-action (deployment-action-request request
+                                                            (:id deployment)
+                                                            action
+                                                            nil
+                                                            job-attrs))
+        status   (:status response)]
      (when-not (= 202 status)
        (throw-status (or status 500)
-                     (or (get-in response [:body :detail])
-                         (get-in response [:body :message])
-                         "Lifecycle action failed")
-                     {:app-instance-id app-instance-id
-                      :action action}))
-     (let [job-id (action-response->job-id response)]
-       (when-not job-id
-         (throw-status 500 "Lifecycle action did not return a job identifier"
-                       {:app-instance-id app-instance-id
-                        :action action}))
-       (let [op-occ (-> (tag-mec-operation-job! job-id app-instance-id operation-type request-params metadata)
-                        (job->northbound-op-occ request))]
-         (dispatcher/dispatch-app-lcm-op-occ-state-change! op-occ "OPERATION_STATE" nil)
-         op-occ))))
+                    (or (get-in response [:body :detail])
+                        (get-in response [:body :message])
+                        "Lifecycle job creation failed")
+                    {:app-instance-id (:id deployment)
+                     :operation-type operation-type}))
+    (let [job-id (action-response->job-id response)]
+      (when-not job-id
+        (throw-status 500 "Lifecycle action did not return a job identifier"
+                      {:app-instance-id (:id deployment)
+                       :operation-type operation-type}))
+      job-id)))
+
+
+(defn- submit-southbound-lifecycle-operation!
+  [request app-instance-id action operation-type request-params mepm]
+  (let [deployment   (retrieve-app-instance-deployment request app-instance-id)
+        endpoint     (:endpoint mepm)
+        metadata     {:mepm-id       (:id mepm)
+                      :mepm-endpoint endpoint
+                      :mec-host-id   (:selected-mec-host-id mepm)}
+        job-id       (create-southbound-operation-job! request deployment action operation-type request-params metadata)
+        job          (crud/retrieve-by-id-as-admin job-id)]
+    (job->northbound-op-occ job request)))
 
 
 (def ^:private lifecycle-operation-config
@@ -509,14 +600,12 @@
       (if (= "OPERATE" operation-type)
         (log/info log-prefix app-instance-id "changeStateTo" (:changeStateTo validated-body))
         (log/info log-prefix app-instance-id))
-      (run-mec-lifecycle-action! request
-                                 app-instance-id
-                                 action-name
-                                 operation-type
-                                 validated-body
-                                 {:mepm-id       (:id mepm)
-                                  :mepm-endpoint (:endpoint mepm)
-                                  :mec-host-id   (:mec-host-id mepm)}))))
+      (submit-southbound-lifecycle-operation! request
+                                              app-instance-id
+                                              action-name
+                                              operation-type
+                                              validated-body
+                                              mepm))))
 
 
  (defn create-app-instance-handler
@@ -530,6 +619,9 @@
                                          :params {:resource-name "deployment"}
                                          :body deployment-body))
            deployment-id     (get-in create-response [:body :resource-id])
+           correlation       (correlation-snapshot-for-create deployment-id deployment-body)
+           _                 (when (seq correlation)
+                               (crud/edit-by-id-as-admin deployment-id correlation))
            deployment        (crud/get-resource-throw-nok deployment-id request)
           app-instance-info (app-instance/deployment->app-instance-info deployment request)
           location         (str (request-public-base-uri request) "/app_instances/" deployment-id)]

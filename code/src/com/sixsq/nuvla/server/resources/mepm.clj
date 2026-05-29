@@ -37,6 +37,9 @@ with multiple MEPMs across distributed edge infrastructure.
 
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
+(def ^:private default-backend-mode
+  "MOCK")
+
 
 ;; Only authenticated users can view and manage MEPMs
 (def collection-acl {:query ["group/nuvla-user"]
@@ -95,6 +98,103 @@ with multiple MEPMs across distributed edge infrastructure.
           str
           str/trim
           (str/replace #"/+$" "")))
+
+(defn- normalize-managed-edge-id
+  [edge-id]
+  (some-> edge-id
+          str
+          str/trim
+          not-empty))
+
+(defn- normalize-backend-mode
+  [backend-mode]
+  (some-> backend-mode
+          str
+          str/trim
+          str/upper-case
+          not-empty))
+
+(def ^:private allowed-capability-keys
+  [:platforms :services :api-version])
+
+(def ^:private allowed-resource-keys
+  [:cpu-cores :memory-gb :storage-gb :gpu-count])
+
+(defn- sanitize-map
+  [value allowed-keys]
+  (let [sanitized (some-> value
+                          (select-keys allowed-keys)
+                          not-empty)]
+    (if (contains? #{nil {}} value)
+      value
+      sanitized)))
+
+(defn- normalize-capabilities
+  [capabilities]
+  (sanitize-map capabilities allowed-capability-keys))
+
+(defn- normalize-resources
+  [resources]
+  (sanitize-map resources allowed-resource-keys))
+
+(defn managed-edge-ids
+  "Returns the MEPM managed edge ids with `managed-edges` taking precedence over
+   the legacy single-host `mec-host-id` field."
+  [mepm]
+  (let [managed-edges (->> (:managed-edges mepm)
+                           (map normalize-managed-edge-id)
+                           (remove nil?)
+                           distinct
+                           vec)]
+    (if (contains? mepm :managed-edges)
+      managed-edges
+      (cond-> []
+        (:mec-host-id mepm) (conj (:mec-host-id mepm))))))
+
+(defn- normalize-managed-edges
+  [managed-edges mec-host-id]
+  (let [normalized-edges (->> (concat managed-edges
+                                      (when mec-host-id [mec-host-id]))
+                              (map normalize-managed-edge-id)
+                              (remove nil?)
+                              distinct
+                              vec)]
+    (cond-> {:managed-edges normalized-edges}
+      (seq normalized-edges) (assoc :mec-host-id (first normalized-edges)))))
+
+(defn- normalize-mepm-fields
+  ([resource]
+   (normalize-mepm-fields resource nil))
+  ([resource request]
+   (let [{:keys [managed-edges mec-host-id endpoint backend-mode capabilities resources]} resource
+         request-body                             (:body request)
+         edge-fields-present?                     (or (contains? resource :managed-edges)
+                                                     (contains? resource :mec-host-id))
+         explicit-empty-managed-edges?            (and (map? request-body)
+                                                      (contains? request-body :managed-edges)
+                                                      (empty? (:managed-edges request-body))
+                                                      (not (contains? request-body :mec-host-id)))
+         effective-mec-host-id                    (if explicit-empty-managed-edges?
+                                                    nil
+                                                    mec-host-id)
+         managed-edge-fields                      (when edge-fields-present?
+                                                   (normalize-managed-edges managed-edges effective-mec-host-id))
+         cleared-managed-edges?                   (or explicit-empty-managed-edges?
+                                                      (and edge-fields-present?
+                                                           (empty? (:managed-edges managed-edge-fields))))
+         normalized-backend-mode                  (or (normalize-backend-mode backend-mode)
+                                                      (when (contains? resource :backend-mode)
+                                                        default-backend-mode))
+         normalized-capabilities                  (when (contains? resource :capabilities)
+                                                   (normalize-capabilities capabilities))
+         normalized-resources                     (when (contains? resource :resources)
+                                                   (normalize-resources resources))]
+     (cond-> (merge resource managed-edge-fields)
+       cleared-managed-edges? (dissoc :mec-host-id)
+       endpoint (assoc :endpoint (normalize-endpoint endpoint))
+       normalized-backend-mode (assoc :backend-mode normalized-backend-mode)
+       (contains? resource :capabilities) (assoc :capabilities normalized-capabilities)
+       (contains? resource :resources) (assoc :resources normalized-resources)))))
 
 (defn- find-mepm-by-endpoint
   [endpoint]
@@ -185,20 +285,25 @@ with multiple MEPMs across distributed edge infrastructure.
         authn-info    (auth/current-authentication request)
         current-user  (auth/current-user-id request)
         desc-attr     (u/select-desc-keys body)
-        mepm-resource (cond-> (merge desc-attr
+        mepm-resource (-> (cond-> (merge desc-attr
                                      {:resource-type resource-type
                                       :name          name
                                       :endpoint      normalized-endpoint
                                       :capabilities  capabilities
+                                      :backend-mode  (or (normalize-backend-mode (:backend-mode body))
+                                                         default-backend-mode)
                                       :status        (or status "ONLINE")
                                       :created       (time/now-str)
                                       :updated       (time/now-str)})
                               (:description body) (assoc :description (:description body))
                               (:mec-host-id body) (assoc :mec-host-id (:mec-host-id body))
+                              (contains? body :managed-edges) (assoc :managed-edges (:managed-edges body))
+                              (:backend-mode body) (assoc :backend-mode (:backend-mode body))
                               (:resources body) (assoc :resources (:resources body))
                               (:credential-id body) (assoc :credential-id (:credential-id body))
                               (:version body) (assoc :version (:version body))
-                              (:tags body) (assoc :tags (:tags body)))]
+                              (:tags body) (assoc :tags (:tags body)))
+                         (normalize-mepm-fields request))]
     (let [response (add-impl (assoc request :body mepm-resource))
           mepm-id  (get-in response [:body :resource-id])]
       (when mepm-id
@@ -216,7 +321,9 @@ with multiple MEPMs across distributed edge infrastructure.
   (retrieve-impl request))
 
 
-(def edit-impl (std-crud/edit-fn resource-type))
+(def edit-impl (std-crud/edit-fn resource-type
+                                 :pre-validate-hook (fn [resource request]
+                                                      (normalize-mepm-fields resource request))))
 
 (defmethod crud/edit resource-type
   [request]
@@ -321,7 +428,7 @@ with multiple MEPMs across distributed edge infrastructure.
           cap-result (mm3/query-capabilities endpoint)]
       
       (if (:success? cap-result)
-        (let [capabilities (:data cap-result)]
+        (let [capabilities (normalize-capabilities (:data cap-result))]
           ;; Update stored capabilities with fresh data from MEPM
           (db/edit (assoc mepm 
                           :capabilities capabilities
@@ -354,7 +461,7 @@ with multiple MEPMs across distributed edge infrastructure.
           res-result (mm3/query-resources endpoint)]
       
       (if (:success? res-result)
-        (let [resources (:data res-result)]
+        (let [resources (normalize-resources (:data res-result))]
           ;; Update stored resources with fresh data from MEPM
           (db/edit (assoc mepm 
                           :resources resources

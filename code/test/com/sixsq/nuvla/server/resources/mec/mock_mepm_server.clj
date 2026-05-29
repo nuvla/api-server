@@ -3,7 +3,10 @@
    Implements ETSI MEC 003 southbound endpoints for integration testing."
   (:require
     [clj-http.client :as http]
+    [clojure.string :as str]
     [clojure.tools.logging :as log]
+    [com.sixsq.nuvla.server.resources.mec.app-instance :as app-instance]
+    [com.sixsq.nuvla.server.resources.mec.nuvla-backed-mepm :as nuvla-backed-mepm]
     [jsonista.core :as json]
     [ring.adapter.jetty :as jetty]
     [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
@@ -16,6 +19,8 @@
 
 (defonce ^:private mepm-state
   (atom {:status          :online
+         :backend-mode    "MOCK"
+         :mepm-id         "mepm/mock-server"
          :capabilities    {:platforms        ["kubernetes" "docker"]
                           :services         ["app-lifecycle" "traffic-rules"]
                           :api-version      "3.1.1"
@@ -40,6 +45,18 @@
 (defonce ^:private request-log
   (atom []))
 
+(def ^:private backed-poll-interval-ms
+  2000)
+
+(def ^:private backed-poll-max-attempts
+  150)
+
+(defonce ^:private operation-watchers
+  (atom {}))
+
+(defonce ^:private app-instance-reconciler
+  (atom nil))
+
 (def ^:private mm3-lifecycle-base-path
   "/mm3/app_lcm/v1")
 
@@ -58,10 +75,26 @@
 (def ^:private lifecycle-app-instance-operate-re
   (re-pattern (str lifecycle-app-instances-path "/(.+)/operate")))
 
+(defn- cancel-operation-watchers!
+  []
+  (doseq [[_ watcher] @operation-watchers]
+    (future-cancel watcher))
+  (reset! operation-watchers {}))
+
+(defn- cancel-app-instance-reconciler!
+  []
+  (when-let [reconciler @app-instance-reconciler]
+    (future-cancel reconciler)
+    (reset! app-instance-reconciler nil)))
+
 (defn reset-state!
   "Reset MEPM state to defaults."
   []
+  (cancel-operation-watchers!)
+  (cancel-app-instance-reconciler!)
   (reset! mepm-state {:status          :online
+                      :backend-mode    "MOCK"
+                      :mepm-id         "mepm/mock-server"
                       :capabilities    {:platforms        ["kubernetes" "docker"]
                                        :services         ["app-lifecycle" "traffic-rules"]
                                        :api-version      "3.1.1"
@@ -88,6 +121,33 @@
   [mode]
   (swap! mepm-state assoc :error-mode mode))
 
+(defn set-backend-mode!
+  "Set mock MEPM backend mode."
+  [mode]
+  (swap! mepm-state assoc :backend-mode mode))
+
+(defn set-nuvla-auth!
+  "Configure how the NUVLA_BACKED mock MEPM authenticates back into Nuvla."
+  [endpoint api-key api-secret]
+  (nuvla-backed-mepm/set-nuvla-auth! {:endpoint endpoint
+                                      :api-key api-key
+                                      :api-secret api-secret}))
+
+(defn clear-nuvla-debug-log!
+  "Clear the buffered reverse Nuvla API debug log for NUVLA_BACKED mode."
+  []
+  (nuvla-backed-mepm/clear-debug-log!))
+
+(defn get-nuvla-debug-log
+  "Return the buffered reverse Nuvla API debug log for NUVLA_BACKED mode."
+  []
+  (nuvla-backed-mepm/get-debug-log))
+
+(defn set-mepm-id!
+  "Set the MEPM id reported by the mock server when running NUVLA_BACKED flows."
+  [mepm-id]
+  (swap! mepm-state assoc :mepm-id mepm-id))
+
 (defn get-state
   "Get current MEPM state."
   []
@@ -97,6 +157,353 @@
   "Clear the bounded request log used for demo inspection."
   []
   (reset! request-log []))
+
+(declare reconcile-app-instance-notification!
+         recover-lifecycle-subscription-from-nuvla!
+         recover-app-instances-from-nuvla!)
+
+(defn- now-str
+  []
+  (str (java.time.Instant/now)))
+
+(defn- emit-notification-to-callback!
+  [callback-uri notification]
+  (when (= "AppInstNotification" (:notificationType notification))
+    (reconcile-app-instance-notification! notification))
+  (http/post callback-uri
+             {:body             (json/write-value-as-string notification)
+              :content-type     :json
+              :accept           :json
+              :throw-exceptions false
+              :as               :json
+              :coerce           :always}))
+
+(defn- emit-notification-to-subscribers!
+  [notification-builder]
+  (doseq [[subscription-id {:keys [callbackUri active]}] (:subscriptions @mepm-state)
+          :when (and callbackUri (not= false active))]
+    (let [notification (notification-builder subscription-id)
+          response     (emit-notification-to-callback! callbackUri notification)]
+      (log/info "Mock MEPM delivered notification"
+                {:subscription-id subscription-id
+                 :notification-type (:notificationType notification)
+                 :callback-uri callbackUri
+                 :status (:status response)}))))
+
+(defn- operation-error-detail
+  [backing]
+  (or (:status-message backing)
+      (get-in backing [:error :detail])
+      (get-in backing [:error :message])
+      (some-> (:state backing) (->> (str "Backing deployment entered ")))))
+
+(defn- terminal-backing-outcome
+  [{:keys [operationType targetState]} backing]
+  (let [state        (:state backing)
+        error-detail (operation-error-detail backing)]
+    (case operationType
+      "INSTANTIATE"
+      (case state
+        "STARTED" {:operationState "COMPLETED"
+                   :instantiationState "INSTANTIATED"
+                   :operationalState "STARTED"}
+        "ERROR"   {:operationState "FAILED"
+                   :instantiationState "NOT_INSTANTIATED"
+                   :error {:detail (or error-detail "Backing deployment failed during instantiate")}}
+        "STOPPED" {:operationState "FAILED"
+                   :instantiationState "NOT_INSTANTIATED"
+                   :error {:detail (or error-detail "Backing deployment stopped before instantiate completed")}}
+        "CREATED" nil
+        nil)
+
+      "OPERATE"
+      (case targetState
+        "STARTED"
+        (case state
+          "STARTED" {:operationState "COMPLETED"
+                     :instantiationState "INSTANTIATED"
+                     :operationalState "STARTED"}
+          "ERROR"   {:operationState "FAILED"
+                     :instantiationState "INSTANTIATED"
+                     :operationalState "STOPPED"
+                     :error {:detail (or error-detail "Backing deployment failed while starting")}}
+          "STOPPED" {:operationState "FAILED"
+                     :instantiationState "INSTANTIATED"
+                     :operationalState "STOPPED"
+                     :error {:detail (or error-detail "Backing deployment did not reach STARTED")}}
+          nil)
+
+        "STOPPED"
+        (case state
+          "STOPPED" {:operationState "COMPLETED"
+                     :instantiationState "INSTANTIATED"
+                     :operationalState "STOPPED"}
+          "CREATED" {:operationState "COMPLETED"
+                     :instantiationState "INSTANTIATED"
+                     :operationalState "STOPPED"}
+          "ERROR"   {:operationState "FAILED"
+                     :instantiationState "INSTANTIATED"
+                     :operationalState "STARTED"
+                     :error {:detail (or error-detail "Backing deployment failed while stopping")}}
+          nil)
+        nil)
+
+      "TERMINATE"
+      (case state
+        "STOPPED" {:operationState "COMPLETED"
+                   :instantiationState "NOT_INSTANTIATED"}
+        "CREATED" {:operationState "COMPLETED"
+                   :instantiationState "NOT_INSTANTIATED"}
+        "ERROR"   {:operationState "FAILED"
+                   :instantiationState "INSTANTIATED"
+                   :operationalState "STARTED"
+                   :error {:detail (or error-detail "Backing deployment failed while terminating")}}
+        nil)
+
+      nil)))
+
+(defn- apply-backed-operation-outcome!
+  [{:keys [id appInstanceId operationType] :as operation} outcome]
+  (swap! mepm-state
+         (fn [state]
+           (let [current-instance (get-in state [:app-instances appInstanceId] {:id appInstanceId})
+                 updated-instance (cond-> current-instance
+                                    (:instantiationState outcome) (assoc :instantiationState (:instantiationState outcome))
+                                    (contains? outcome :operationalState)
+                                    ((fn [instance]
+                                       (if-let [operational-state (:operationalState outcome)]
+                                         (assoc instance :operationalState operational-state)
+                                         (dissoc instance :operationalState)))))
+                 updated-operation (cond-> (get-in state [:operations id] operation)
+                                     true (assoc :status (:operationState outcome)
+                                                 :operationState (:operationState outcome)
+                                                 :stateEnteredTime (now-str))
+                                     (:error outcome) (assoc :error (:error outcome)))]
+             (cond-> (assoc-in state [:operations id] updated-operation)
+               (not (and (= "TERMINATE" operationType)
+                         (= "COMPLETED" (:operationState outcome))))
+               (assoc-in [:app-instances appInstanceId] updated-instance)
+
+               (and (= "TERMINATE" operationType)
+                    (= "COMPLETED" (:operationState outcome)))
+               (update :app-instances dissoc appInstanceId))))))
+
+(defn- emit-operation-outcome-notification!
+  [{:keys [id appInstanceId operationType]} outcome]
+  (emit-notification-to-subscribers!
+    (fn [subscription-id]
+      (cond-> {:notificationType "AppLcmOpOccNotification"
+               :subscriptionId   subscription-id
+               :operationId      id
+               :appInstanceId    appInstanceId
+               :operationType    operationType
+               :operationState   (:operationState outcome)}
+        (:instantiationState outcome) (assoc :instantiationState (:instantiationState outcome))
+        (contains? outcome :operationalState) (assoc :operationalState (:operationalState outcome))
+        (:error outcome) (assoc :error (:error outcome))))))
+
+(defn- poll-backed-operation-step!
+  [operation-id]
+  (when-let [operation (get-in @mepm-state [:operations operation-id])]
+    (try
+      (let [backing (nuvla-backed-mepm/retrieve-backing-deployment! (:appInstanceId operation))]
+        (when-let [outcome (terminal-backing-outcome operation backing)]
+          (apply-backed-operation-outcome! operation outcome)
+          (emit-operation-outcome-notification! operation outcome)
+          :completed))
+      (catch clojure.lang.ExceptionInfo e
+        (if (and (= "TERMINATE" (:operationType operation))
+                 (= 404 (:status (ex-data e))))
+          (let [outcome {:operationState "COMPLETED"
+                         :instantiationState "NOT_INSTANTIATED"}]
+            (apply-backed-operation-outcome! operation outcome)
+            (emit-operation-outcome-notification! operation outcome)
+            :completed)
+          (throw e))))))
+
+(defn- watch-backed-operation!
+  [operation-id]
+  (let [watcher (future
+                  (loop [attempt 1]
+                    (let [result (try
+                                   (poll-backed-operation-step! operation-id)
+                                   (catch Exception e
+                                     (log/warn e "Mock MEPM backing operation poll failed" operation-id)
+                                     nil))]
+                      (cond
+                        (= :completed result)
+                        (swap! operation-watchers dissoc operation-id)
+
+                        (>= attempt backed-poll-max-attempts)
+                        (do
+                          (log/warn "Mock MEPM backing operation poll timed out" operation-id)
+                          (swap! operation-watchers dissoc operation-id))
+
+                        :else
+                        (do
+                          (Thread/sleep backed-poll-interval-ms)
+                          (recur (inc attempt)))))))]
+    (swap! operation-watchers assoc operation-id watcher)
+    watcher))
+
+(defn- processing-operation?
+  [{:keys [status operationState]}]
+  (or (= "PROCESSING" status)
+      (= "PROCESSING" operationState)))
+
+(defn- backing->app-instance-notification
+  [app-instance-id backing]
+  (let [state (some-> (:state backing) str str/upper-case)]
+    (case state
+      "STARTED" {:notificationType   "AppInstNotification"
+                 :appInstanceId      app-instance-id
+                 :instantiationState "INSTANTIATED"
+                 :operationalState   "STARTED"}
+      "STOPPED" {:notificationType   "AppInstNotification"
+                 :appInstanceId      app-instance-id
+                 :instantiationState "INSTANTIATED"
+                 :operationalState   "STOPPED"}
+      "CREATED" {:notificationType   "AppInstNotification"
+                 :appInstanceId      app-instance-id
+                 :instantiationState "NOT_INSTANTIATED"}
+      nil)))
+
+(defn- notification-matches-instance?
+  [instance {:keys [instantiationState operationalState]}]
+  (and (= instantiationState (:instantiationState instance))
+       (= operationalState (:operationalState instance))))
+
+(defn- emit-app-instance-notification!
+  [notification]
+  (emit-notification-to-subscribers!
+    (fn [subscription-id]
+      (assoc notification :subscriptionId subscription-id))))
+
+(defn- reconcile-backed-app-instance-step!
+  [app-instance-id instance]
+  (let [notification (try
+                       (some->> (nuvla-backed-mepm/retrieve-backing-deployment! app-instance-id)
+                                (backing->app-instance-notification app-instance-id))
+                       (catch clojure.lang.ExceptionInfo e
+                         (when (= 404 (:status (ex-data e)))
+                           {:notificationType   "AppInstNotification"
+                            :appInstanceId      app-instance-id
+                            :instantiationState "NOT_INSTANTIATED"})))]
+    (when (and notification
+               (not (notification-matches-instance? instance notification)))
+      (emit-app-instance-notification! notification)
+      :updated)))
+
+(defn- reconcile-backed-app-instances-step!
+  []
+  (when (empty? (:subscriptions @mepm-state))
+    (try
+      (recover-lifecycle-subscription-from-nuvla!)
+      (catch Exception e
+        (log/warn e "Failed to recover mock MEPM subscription from Nuvla"))))
+  (when (empty? (:app-instances @mepm-state))
+    (try
+      (recover-app-instances-from-nuvla!)
+      (catch Exception e
+        (log/warn e "Failed to recover mock MEPM app instances from Nuvla"))))
+  (when (= "NUVLA_BACKED" (:backend-mode @mepm-state))
+    (doseq [[app-instance-id instance] (:app-instances @mepm-state)]
+      (try
+        (reconcile-backed-app-instance-step! app-instance-id instance)
+        (catch Exception e
+          (log/warn e "Mock MEPM backing app-instance reconcile failed" app-instance-id))))))
+
+(defn- start-app-instance-reconciler!
+  []
+  (when-not @app-instance-reconciler
+    (reset! app-instance-reconciler
+            (future
+              (loop []
+                (try
+                  (reconcile-backed-app-instances-step!)
+                  (catch Exception e
+                    (log/warn e "Mock MEPM app-instance reconciler loop failed")))
+                (Thread/sleep backed-poll-interval-ms)
+                (recur))))))
+
+(defn- recovered-app-instance
+  [deployment]
+  (when-let [backing-id (:mec-backing-deployment-id deployment)]
+    (let [info (app-instance/deployment->app-instance-info deployment)]
+      (cond-> {:id          backing-id
+               :name        (or (:appName info)
+                                (:name deployment)
+                                backing-id)
+               :created     (:created deployment)
+               :backendMode "NUVLA_BACKED"
+               :descriptor  {:appInstanceId (:id deployment)
+                             :appDId        (get-in deployment [:module :href])
+                             :mecHostId     (or (:mec-host-id deployment)
+                                                (:nuvlabox deployment)
+                                                (:parent deployment))
+                             :name          (:name deployment)}}
+        (:instantiationState info) (assoc :instantiationState (:instantiationState info))
+        (:operationalState info) (assoc :operationalState (:operationalState info))))))
+
+(defn recover-app-instances-from-nuvla!
+  "Rehydrate tracked southbound app instances from persisted MEC-facing
+   deployments stored in Nuvla."
+  []
+  (when-let [mepm-id (:mepm-id @mepm-state)]
+    (let [deployments (nuvla-backed-mepm/query-nuvla-resources!
+                        "deployment"
+                        (str "mec-mepm-id='" mepm-id "'")
+                        {:last 200})
+          instances   (->> deployments
+                           (filter #(and (= (:id %) (:mec-app-instance-id %))
+                                         (:mec-backing-deployment-id %)))
+                           (map recovered-app-instance)
+                           (remove nil?)
+                           (map (juxt :id identity))
+                           (into {}))]
+      (when (seq instances)
+        (swap! mepm-state update :app-instances merge instances))
+      instances)))
+
+(defn recover-lifecycle-subscription-from-nuvla!
+  "Rehydrate the local in-memory subscription registry from the persisted MEPM
+   resource stored in Nuvla."
+  []
+  (when-let [mepm-id (:mepm-id @mepm-state)]
+    (when-let [mepm (nuvla-backed-mepm/retrieve-nuvla-resource! mepm-id)]
+      (let [subscription-id (or (:mm3-subscription-id mepm)
+                                (get-in mepm [:subscription :id]))
+            callback-uri    (or (:mm3-subscription-callback-uri mepm)
+                                (get-in mepm [:subscription :callbackUri]))]
+        (when (and subscription-id callback-uri)
+          (swap! mepm-state assoc-in [:subscriptions subscription-id]
+                 {:id                   subscription-id
+                  :subscriptionId       subscription-id
+                  :callbackUri          callback-uri
+                  :notificationTypes    ["AppInstNotification"
+                                         "AppLcmOpOccNotification"]
+                  :source               :nuvla-recovered
+                  :created              (now-str)})
+          (get-in @mepm-state [:subscriptions subscription-id]))))))
+
+(defn- resume-backed-operation-watchers!
+  []
+  (when (empty? (:subscriptions @mepm-state))
+    (try
+      (recover-lifecycle-subscription-from-nuvla!)
+      (catch Exception e
+        (log/warn e "Failed to recover mock MEPM subscription from Nuvla"))))
+  (when (empty? (:app-instances @mepm-state))
+    (try
+      (recover-app-instances-from-nuvla!)
+      (catch Exception e
+        (log/warn e "Failed to recover mock MEPM app instances from Nuvla"))))
+  (when (= "NUVLA_BACKED" (:backend-mode @mepm-state))
+    (doseq [[operation-id operation] (:operations @mepm-state)
+            :when (and (processing-operation? operation)
+                       (nil? (get @operation-watchers operation-id)))]
+      (log/info "Resuming mock MEPM watcher for operation" operation-id)
+      (watch-backed-operation! operation-id))))
 
 (defn get-request-log
   "Get the current bounded request log."
@@ -264,15 +671,7 @@
                   :message "Notification payload is required"}}
 
         :else
-        (let [_ (when (= "AppInstNotification" (:notificationType notification))
-                  (reconcile-app-instance-notification! notification))
-              response (http/post callback-uri
-                                  {:body             (json/write-value-as-string notification)
-                                   :content-type     :json
-                                   :accept           :json
-                                   :throw-exceptions false
-                                   :as               :json
-                                   :coerce           :always})]
+        (let [response (emit-notification-to-callback! callback-uri notification)]
           {:status 202
            :body   {:callbackUri      callback-uri
                     :callbackStatus   (:status response)
@@ -286,22 +685,44 @@
   (if-let [error-response (check-error-mode)]
     error-response
     (let [app-desc (:body request)
-          app-id (str "app-" (java.util.UUID/randomUUID))
-          op-id  (str "op-" (java.util.UUID/randomUUID))
-          instance {:id          app-id
-                   :name        (:name app-desc)
-                   :instantiationState "INSTANTIATED"
-                   :operationalState   "STARTED"
-                   :created     (str (java.time.Instant/now))
-                   :descriptor  app-desc}]
-      (swap! mepm-state assoc-in [:app-instances app-id] instance)
-      (swap! mepm-state assoc-in [:operations op-id]
-             {:id            op-id
-              :operationType "INSTANTIATE"
-              :appInstanceId app-id
-              :status        "COMPLETED"})
-      {:status 201
-       :body   (assoc instance :operationId op-id)})))
+          op-id    (str "op-" (java.util.UUID/randomUUID))
+          backed?  (= "NUVLA_BACKED" (:backend-mode @mepm-state))]
+      (try
+        (let [backed-result (when backed?
+                              (nuvla-backed-mepm/create-backing-deployment! (:mepm-id @mepm-state) app-desc))
+              app-id        (or (:mec-backing-deployment-id backed-result)
+                                (str "app-" (java.util.UUID/randomUUID)))
+              instance      (cond-> {:id                 app-id
+                                     :name               (:name app-desc)
+                                     :created            (now-str)
+                                     :backendMode        (:backend-mode @mepm-state)
+                                     :descriptor         app-desc
+                                     :instantiationState (if backed?
+                                                           "NOT_INSTANTIATED"
+                                                           "INSTANTIATED")}
+                              (not backed?) (assoc :operationalState "STARTED"))
+              operation     (cond-> {:id             op-id
+                                     :operationType  "INSTANTIATE"
+                                     :appInstanceId  app-id
+                                     :status         (if backed? "PROCESSING" "COMPLETED")
+                                     :operationState (if backed? "PROCESSING" "COMPLETED")
+                                     :stateEnteredTime (now-str)}
+                              backed? (assoc :backingDeploymentId app-id))]
+          (swap! mepm-state assoc-in [:app-instances app-id] instance)
+          (swap! mepm-state assoc-in [:operations op-id] operation)
+          (when backed?
+            (watch-backed-operation! op-id))
+          {:status 201
+           :body   (assoc instance :operationId op-id)})
+        (catch clojure.lang.ExceptionInfo e
+          {:status (or (:status (ex-data e)) 500)
+           :body   {:error "MEPM instantiate failed"
+                    :message (ex-message e)
+                    :details (ex-data e)}})
+        (catch Exception e
+          {:status 500
+           :body   {:error "MEPM instantiate failed"
+                    :message (.getMessage e)}})))))
 
 (defn handle-get-app-instance
   "Handle GET /mm3/app_lcm/v1/app_instances/:id - Get application instance status."
@@ -332,9 +753,40 @@
   (if-let [error-response (check-error-mode)]
     error-response
     (if (get-in @mepm-state [:app-instances app-id])
-      (do
-        (swap! mepm-state update :app-instances dissoc app-id)
-        {:status 204})
+      (try
+        (if (= "NUVLA_BACKED" (:backend-mode @mepm-state))
+          (let [result    (nuvla-backed-mepm/terminate-backing-deployment! (:mepm-id @mepm-state)
+                                                                           {:appInstanceId app-id})
+                op-id     (str "op-" (java.util.UUID/randomUUID))
+                operation {:id                op-id
+                           :operationType     "TERMINATE"
+                           :appInstanceId     app-id
+                           :status            (if (= "delete" (:action result)) "COMPLETED" "PROCESSING")
+                           :operationState    (if (= "delete" (:action result)) "COMPLETED" "PROCESSING")
+                           :stateEnteredTime  (now-str)
+                           :backingDeploymentId (or (:backing-deployment-id result) app-id)}]
+            (swap! mepm-state assoc-in [:operations op-id] operation)
+            (if (= "delete" (:action result))
+              (let [outcome {:operationState "COMPLETED"
+                             :instantiationState "NOT_INSTANTIATED"}]
+                (apply-backed-operation-outcome! operation outcome)
+                (emit-operation-outcome-notification! operation outcome))
+              (watch-backed-operation! op-id))
+            {:status 202
+             :body   {:operationId op-id
+                      :appInstanceId app-id}})
+          (do
+            (swap! mepm-state update :app-instances dissoc app-id)
+            {:status 204}))
+        (catch clojure.lang.ExceptionInfo e
+          {:status (or (:status (ex-data e)) 500)
+           :body   {:error "MEPM terminate failed"
+                    :message (ex-message e)
+                    :details (ex-data e)}})
+        (catch Exception e
+          {:status 500
+           :body   {:error "MEPM terminate failed"
+                    :message (.getMessage e)}}))
       {:status 404
        :body   {:error "Not Found" :message (str "Application instance " app-id " not found")}})))
 
@@ -370,19 +822,45 @@
          :body   {:error "Bad Request" :message (str "Unsupported changeStateTo: " change-state-to)}}
 
         :else
-        (let [op-id            (str "op-" (java.util.UUID/randomUUID))
-              updated-instance (assoc instance
-                                      :instantiationState "INSTANTIATED"
-                                      :operationalState change-state-to)]
-          (swap! mepm-state assoc-in [:app-instances app-id] updated-instance)
-          (swap! mepm-state assoc-in [:operations op-id]
-                 {:id            op-id
-                  :operationType "OPERATE"
-                  :appInstanceId app-id
-                  :status        "COMPLETED"
-                  :targetState   change-state-to})
-          {:status 200
-           :body   (assoc updated-instance :operationId op-id)})))))
+        (try
+          (let [backed?       (= "NUVLA_BACKED" (:backend-mode @mepm-state))
+                backed-result (when backed?
+                                (nuvla-backed-mepm/operate-backing-deployment! (:mepm-id @mepm-state)
+                                                                               {:appInstanceId app-id
+                                                                                :changeStateTo change-state-to}))
+                op-id         (str "op-" (java.util.UUID/randomUUID))
+                response-body (assoc instance
+                                     :instantiationState "INSTANTIATED"
+                                     :operationalState change-state-to
+                                     :operationId op-id)
+                operation     (cond-> {:id             op-id
+                                       :operationType  "OPERATE"
+                                       :appInstanceId  app-id
+                                       :status         (if backed? "PROCESSING" "COMPLETED")
+                                       :operationState (if backed? "PROCESSING" "COMPLETED")
+                                       :targetState    change-state-to
+                                       :stateEnteredTime (now-str)}
+                                backed? (assoc :backingDeploymentId (or (:backing-deployment-id backed-result)
+                                                                        app-id)))]
+            (when-not backed?
+              (let [updated-instance (assoc instance
+                                            :instantiationState "INSTANTIATED"
+                                            :operationalState change-state-to)]
+                (swap! mepm-state assoc-in [:app-instances app-id] updated-instance)))
+            (swap! mepm-state assoc-in [:operations op-id] operation)
+            (when backed?
+              (watch-backed-operation! op-id))
+            {:status 200
+             :body   response-body})
+          (catch clojure.lang.ExceptionInfo e
+            {:status (or (:status (ex-data e)) 500)
+             :body   {:error "MEPM operate failed"
+                      :message (ex-message e)
+                      :details (ex-data e)}})
+          (catch Exception e
+            {:status 500
+             :body   {:error "MEPM operate failed"
+                      :message (.getMessage e)}}))))))
 
 ;;
 ;; Router
@@ -499,7 +977,6 @@
   ([port options]
    (when @server
      (stop-server!))
-   (reset-state!)
    (log/info "Starting mock MEPM server on port" port)
    (let [server-instance (jetty/run-jetty
                           (create-handler)
@@ -507,12 +984,16 @@
                                   :join? false}
                                  options))]
      (reset! server server-instance)
+     (start-app-instance-reconciler!)
+     (resume-backed-operation-watchers!)
      (log/info "Mock MEPM server started on port" port)
      server-instance)))
 
 (defn stop-server!
   "Stop mock MEPM server."
   []
+  (cancel-operation-watchers!)
+  (cancel-app-instance-reconciler!)
   (when-let [s @server]
     (log/info "Stopping mock MEPM server")
     (.stop s)

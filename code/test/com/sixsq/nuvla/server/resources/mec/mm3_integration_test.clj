@@ -5,6 +5,7 @@
     [clojure.test :refer [deftest is testing use-fixtures]]
     [com.sixsq.nuvla.server.resources.mec.mm3-client :as mm3]
     [com.sixsq.nuvla.server.resources.mec.mock-mepm-server :as mock-mepm]
+    [com.sixsq.nuvla.server.resources.mec.nuvla-backed-mepm :as nuvla-backed-mepm]
     [jsonista.core :as json]
     [ring.adapter.jetty :as jetty]
     [ring.middleware.json :refer [wrap-json-body]]))
@@ -217,6 +218,59 @@
         (let [get-after-delete (mm3/get-app-instance test-endpoint app-id)]
           (is (not (:success? get-after-delete)))
           (is (= 404 (:status get-after-delete))))))))
+
+(deftest test-mm3-app-instance-creation-nuvla-backed
+  (testing "NUVLA_BACKED mock MEPM delegates instantiate to backing deployment creation"
+    (mock-mepm/set-backend-mode! "NUVLA_BACKED")
+    (mock-mepm/set-mepm-id! "mepm/mock-backed")
+    (with-redefs [nuvla-backed-mepm/create-backing-deployment! (fn [mepm-id payload]
+                                                                 (is (= "mepm/mock-backed" mepm-id))
+                                                                 (is (= "deployment/mec-1" (:appInstanceId payload)))
+                                                                 {:mec-app-instance-id       "deployment/mec-1"
+                                                                  :mec-backing-deployment-id "deployment/backing-1"})]
+      (let [create-response (mm3/create-app-instance test-endpoint
+                                                     {:appInstanceId "deployment/mec-1"
+                                                      :appDId        "module/test-app"
+                                                      :mecHostId     "nuvlabox/edge-1"})]
+        (is (:success? create-response))
+        (is (= 201 (:status create-response)))
+        (is (= "deployment/backing-1" (get-in create-response [:data :id])))
+        (is (= "NUVLA_BACKED" (get-in create-response [:data :backendMode])))
+        (is (some? (get-in create-response [:data :operationId])))))))
+
+(deftest test-mm3-operate-and-terminate-nuvla-backed
+  (testing "NUVLA_BACKED mock MEPM delegates operate and terminate to backing deployment helpers"
+    (mock-mepm/set-backend-mode! "NUVLA_BACKED")
+    (mock-mepm/set-mepm-id! "mepm/mock-backed")
+    (with-redefs [nuvla-backed-mepm/create-backing-deployment! (fn [_ _]
+                                                                 {:mec-app-instance-id       "deployment/mec-1"
+                                                                  :mec-backing-deployment-id "deployment/backing-1"})
+                  nuvla-backed-mepm/operate-backing-deployment! (fn [mepm-id payload]
+                                                                  (is (= "mepm/mock-backed" mepm-id))
+                                                                  (is (= "deployment/backing-1" (:appInstanceId payload)))
+                                                                  (is (= "STOPPED" (:changeStateTo payload)))
+                                                                  {:backing-deployment-id "deployment/backing-1"
+                                                                   :action                "stop"})
+                  nuvla-backed-mepm/terminate-backing-deployment! (fn [mepm-id payload]
+                                                                    (is (= "mepm/mock-backed" mepm-id))
+                                                                    (is (= "deployment/backing-1" (:appInstanceId payload)))
+                                                                    {:backing-deployment-id "deployment/backing-1"
+                                                                     :action                "delete"})]
+      (let [create-response (mm3/create-app-instance test-endpoint
+                                                     {:appInstanceId "deployment/mec-1"
+                                                      :appDId        "module/test-app"
+                                                      :mecHostId     "nuvlabox/edge-1"})
+            app-id          (get-in create-response [:data :id])
+            operate-response (mm3/operate-app-instance test-endpoint app-id "STOPPED")
+            delete-response  (mm3/delete-app-instance test-endpoint app-id)]
+        (is (:success? create-response))
+        (is (= "deployment/backing-1" app-id))
+        (is (:success? operate-response))
+        (is (= 200 (:status operate-response)))
+        (is (= "STOPPED" (get-in operate-response [:data :operationalState])))
+        (is (:success? delete-response))
+        (is (= 202 (:status delete-response)))
+        (is (some? (get-in delete-response [:data :operationId])))))))
 
 (deftest test-mm3-list-app-instances
   (testing "List application instances via Mm3"

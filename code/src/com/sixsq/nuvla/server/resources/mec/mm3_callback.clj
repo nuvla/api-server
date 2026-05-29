@@ -34,6 +34,13 @@
             first))
 
 
+(defn- query-all-as-admin
+  [collection-id filter-expr]
+  (some-> (crud/query-as-admin collection-id {:cimi-params {:last 10
+                                                            :filter (parser/parse-cimi-filter filter-expr)}})
+          second))
+
+
  (defn- normalize-notification
    [body]
   {:notification-type   (some-> (or (:notificationType body)
@@ -116,12 +123,16 @@
 
  (defn- deployment-from-southbound-app-id
    [southbound-app-id]
-   (when southbound-app-id
-     (some-> (query-first-as-admin "deployment-parameter"
-                                   (str "name='" southbound-app-instance-param-name
-                                        "' and value='" (escape-filter-value southbound-app-id) "'"))
-             :parent
-             crud/retrieve-by-id-as-admin)))
+  (when southbound-app-id
+    (or (some->> (query-all-as-admin "deployment"
+                                     (str "mec-backing-deployment-id='" (escape-filter-value southbound-app-id) "'"))
+                 (remove #(= (:id %) southbound-app-id))
+                 first)
+        (some-> (query-first-as-admin "deployment-parameter"
+                                      (str "name='" southbound-app-instance-param-name
+                                           "' and value='" (escape-filter-value southbound-app-id) "'"))
+                :parent
+                crud/retrieve-by-id-as-admin))))
 
 
  (defn- job-for-operation-id
@@ -239,6 +250,7 @@
    [job new-state notification]
    (let [old-op-occ       (app-lcm-op-occ/job->app-lcm-op-occ job)
          previous-op-state (:operationState old-op-occ)
+        final-job-state?  (#{"SUCCESS" "FAILED" "STOPPED" "CANCELED"} new-state)
          edit-body        (cond-> {:state new-state
                                    :mec-last-notification (notification-evidence notification)}
                             (and (= new-state "FAILED")
@@ -249,10 +261,11 @@
      (crud/edit-by-id-as-admin (:id job) edit-body)
      (let [updated-job (crud/retrieve-by-id-as-admin (:id job))
            updated-op  (app-lcm-op-occ/job->app-lcm-op-occ updated-job)]
-       (when-not (#{"SUCCESS" "FAILED" "STOPPED" "CANCELED"} new-state)
-         (dispatcher/dispatch-app-lcm-op-occ-state-change! updated-op
-                                                           "OPERATION_STATE"
-                                                           previous-op-state))
+      (dispatcher/dispatch-app-lcm-op-occ-state-change! updated-op
+                                                        (if final-job-state?
+                                                          "OPERATION_RESULT"
+                                                          "OPERATION_STATE")
+                                                        previous-op-state)
        updated-job)))
 
 
@@ -291,8 +304,7 @@
        :else
       (let [updated-deployment (and deployment
                                     (persist-deployment-notification! deployment notification deployment-state))]
-        (when (and updated-deployment
-                   (not= new-job-state "SUCCESS"))
+        (when updated-deployment
           (dispatch-app-instance-change! deployment updated-deployment))
         (update-job-state! job new-job-state notification)
          {:action "updated"

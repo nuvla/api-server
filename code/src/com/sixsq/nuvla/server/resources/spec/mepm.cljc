@@ -41,12 +41,29 @@
              :json-schema/order 23)))
 
 
+(s/def ::managed-edges
+  (-> (st/spec (s/coll-of ::cimi-core/nonblank-string :kind vector?))
+      (assoc :name "managed-edges"
+             :json-schema/type "array"
+             :json-schema/description "Nuvla Edge identifiers managed by this MEPM"
+             :json-schema/order 24)))
+
+(s/def ::backend-mode
+  (-> (st/spec #{"MOCK" "NUVLA_BACKED"})
+      (assoc :name "backend-mode"
+             :json-schema/type "string"
+             :json-schema/description "execution backend used by this MEPM"
+             :json-schema/value-scope {:values  ["MOCK" "NUVLA_BACKED"]
+                                       :default "MOCK"}
+             :json-schema/order 25)))
+
+
 (s/def ::platforms
   (-> (st/spec (s/coll-of ::cimi-core/nonblank-string :kind vector?))
       (assoc :name "platforms"
              :json-schema/type "array"
              :json-schema/description "supported container platforms (e.g., kubernetes, docker)"
-             :json-schema/order 24)))
+             :json-schema/order 26)))
 
 
 (s/def ::services
@@ -54,14 +71,14 @@
       (assoc :name "services"
              :json-schema/type "array"
              :json-schema/description "available MEC platform services (e.g., traffic-rules, dns-rules)"
-             :json-schema/order 25)))
+             :json-schema/order 27)))
 
 
 (s/def ::api-version
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "api-version"
              :json-schema/description "MEC API version supported (e.g., 3.1.1)"
-             :json-schema/order 26)))
+             :json-schema/order 28)))
 
 
 (s/def ::capabilities
@@ -70,7 +87,7 @@
       (assoc :name "capabilities"
              :json-schema/type "map"
              :json-schema/description "MEPM capabilities and supported features"
-             :json-schema/order 27)))
+             :json-schema/order 29)))
 
 
 (s/def ::cpu-cores
@@ -78,7 +95,7 @@
       (assoc :name "cpu-cores"
              :json-schema/type "integer"
              :json-schema/description "number of CPU cores available"
-             :json-schema/order 28)))
+             :json-schema/order 30)))
 
 
 (s/def ::memory-gb
@@ -86,7 +103,7 @@
       (assoc :name "memory-gb"
              :json-schema/type "integer"
              :json-schema/description "memory available in GB"
-             :json-schema/order 29)))
+             :json-schema/order 31)))
 
 
 (s/def ::storage-gb
@@ -94,7 +111,7 @@
       (assoc :name "storage-gb"
              :json-schema/type "integer"
              :json-schema/description "storage available in GB"
-             :json-schema/order 30)))
+             :json-schema/order 32)))
 
 
 (s/def ::gpu-count
@@ -102,7 +119,7 @@
       (assoc :name "gpu-count"
              :json-schema/type "integer"
              :json-schema/description "number of GPUs available"
-             :json-schema/order 31)))
+             :json-schema/order 33)))
 
 
 (s/def ::resources
@@ -110,7 +127,7 @@
       (assoc :name "resources"
              :json-schema/type "map"
              :json-schema/description "available compute resources managed by MEPM"
-             :json-schema/order 32)))
+             :json-schema/order 34)))
 
 
 (s/def ::status
@@ -120,21 +137,21 @@
              :json-schema/description "current status of the MEPM"
              :json-schema/value-scope {:values  ["ONLINE" "OFFLINE" "DEGRADED" "ERROR"]
                                        :default "ONLINE"}
-             :json-schema/order 33)))
+             :json-schema/order 35)))
 
 
 (s/def ::credential-id
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "credential-id"
              :json-schema/description "reference to credential resource for Mm3 authentication"
-             :json-schema/order 34)))
+             :json-schema/order 36)))
 
 
 (s/def ::version
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "version"
              :json-schema/description "MEPM software version"
-             :json-schema/order 35)))
+             :json-schema/order 37)))
 
 
 (s/def ::tags
@@ -142,28 +159,28 @@
       (assoc :name "tags"
              :json-schema/type "array"
              :json-schema/description "tags for categorization (e.g., production, 5g, edge)"
-             :json-schema/order 36)))
+             :json-schema/order 38)))
 
 
 (s/def ::last-check
   (-> (st/spec ::cimi-core/timestamp)
       (assoc :name "last-check"
              :json-schema/description "timestamp of last health check"
-             :json-schema/order 37)))
+             :json-schema/order 39)))
 
 
 (s/def ::mm3-subscription-id
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "mm3-subscription-id"
              :json-schema/description "southbound Mm3.003 lifecycle subscription identifier"
-             :json-schema/order 38)))
+             :json-schema/order 40)))
 
 
 (s/def ::mm3-subscription-callback-uri
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "mm3-subscription-callback-uri"
              :json-schema/description "callback URI registered with the MEPM for southbound lifecycle notifications"
-             :json-schema/order 39)))
+             :json-schema/order 41)))
 
 
 (s/def ::mm3-last-notification
@@ -171,7 +188,7 @@
       (assoc :name "mm3-last-notification"
              :json-schema/type "map"
              :json-schema/description "summary of the most recent southbound Mm3.003 lifecycle notification"
-             :json-schema/order 40)))
+             :json-schema/order 42)))
 
 
 (s/def ::schema
@@ -179,6 +196,8 @@
                      {:req-un [::name ::endpoint ::capabilities ::status]
                       :opt-un [::description
                                ::mec-host-id
+                               ::managed-edges
+                               ::backend-mode
                                ::resources
                                ::credential-id
                                ::version

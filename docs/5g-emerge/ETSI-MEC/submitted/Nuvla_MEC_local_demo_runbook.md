@@ -27,7 +27,8 @@ flowchart LR
     APIServer["Nuvla API server\nMm1 + internal Mm3.003 receiver"]
     JobDistributor["job-engine distributor"]
     JobExecutor["job-engine executor"]
-    MockMEPM["Mock MEPM\nMm3 app_lcm/v1 endpoints"]
+    MockMEPM["Mock MEPM\nMOCK mode\nMm3 app_lcm/v1 endpoints"]
+    BackedMEPM["Mock MEPM\nNUVLA_BACKED mode\nMm3 app_lcm/v1 endpoints"]
     ES["Elasticsearch"]
     ZK["ZooKeeper"]
 
@@ -38,10 +39,15 @@ flowchart LR
     JobExecutor -->|consume jobs| ZK
     JobExecutor -->|read / update deployment + job state| APIServer
     APIServer -->|Mm3 admin path:\ncapabilities + resources + subscription setup| MockMEPM
+    APIServer -->|Mm3 admin path:\ncapabilities + resources + subscription setup| BackedMEPM
     JobExecutor -->|Mm3.002 lifecycle calls:\napp_instances + operate| MockMEPM
+    JobExecutor -->|Mm3.002 lifecycle calls:\napp_instances + operate| BackedMEPM
     MockMEPM -->|Mm3 replies| APIServer
+    BackedMEPM -->|Mm3 replies| APIServer
     MockMEPM -->|Mm3 replies| JobExecutor
+    BackedMEPM -->|Mm3 replies| JobExecutor
     MockMEPM -->|Mm3.003 callback:\ninternal/mm3/app_lcm/v1/notifications| APIServer
+    BackedMEPM -->|Mm3.003 callback:\ninternal/mm3/app_lcm/v1/notifications| APIServer
     APIServer -->|northbound subscription notifications| Webhook
 ```
 
@@ -78,7 +84,9 @@ This runbook does **not** by itself close the remaining open items around:
 - one `api-server` started directly from the source tree
 - one `job-engine` distributor started directly from the source tree
 - one `job-engine` executor started directly from the source tree
-- one mock `MEPM` started from the `api-server` source tree
+- two local `MEPM` processes started from the `api-server` source tree:
+  - one running in plain `MOCK` mode
+  - one running in `NUVLA_BACKED` mode
 - one local webhook receiver started from the shell
 
 ## Prerequisites
@@ -93,7 +101,7 @@ This runbook does **not** by itself close the remaining open items around:
 
 ## Recommended Directory Roles
 
-- `api-server/code`: source tree used to run the API server and mock `MEPM`
+- `api-server/code`: source tree used to run the API server and both local `MEPM` processes
 - `job-engine`: source tree used to run the distributor and executor
 
 ## Step 1: Start Local Elasticsearch and ZooKeeper
@@ -175,28 +183,49 @@ This should expose the API on:
 curl http://localhost:8200/api/cloud-entry-point | jq .
 ```
 
-## Step 4: Start the Mock MEPM
+## Step 4: Start Two Local MEPM Processes
 
-Open a second shell:
+The local demo now keeps two `MEPM` processes running side by side:
+
+- a plain `MOCK` `MEPM`
+- a `NUVLA_BACKED` `MEPM` that creates a backing Nuvla deployment when instantiated
+
+Open a second shell for the plain `MOCK` `MEPM`:
 
 ```bash
 cd "/Users/ale/projects/nuvla/api-server/code"
 lein with-profile +dev,+test repl
 ```
 
-In the REPL:
+In that REPL:
 
 ```clojure
 (require '[com.sixsq.nuvla.server.resources.mec.mock-mepm-server :as mock])
-(mock/start-server! 18081)
+(mock/start-server! 19081)
 (mock/reset-state!)
 ```
 
-Leave this REPL running during the demo.
+Open a third shell for the `NUVLA_BACKED` `MEPM`:
+
+```bash
+cd "/Users/ale/projects/nuvla/api-server/code"
+lein with-profile +dev,+test repl
+```
+
+In that REPL:
+
+```clojure
+(require '[com.sixsq.nuvla.server.resources.mec.mock-mepm-server :as mock])
+(mock/start-server! 19082)
+```
+
+Leave the `NUVLA_BACKED` process running for now. After logging into Nuvla in Step 6, you will create a dedicated API key/secret and then bind that credential into this REPL before enabling `NUVLA_BACKED` mode.
+
+Leave both REPLs running during the demo.
 
 ## Step 5: Start the Job Distributor and Job Executor from the Source Tree
 
-Open a third shell for the distributor:
+Open a fourth shell for the distributor:
 
 ```bash
 cd "/Users/ale/projects/nuvla/job-engine"
@@ -208,7 +237,7 @@ poetry run python nuvla/scripts/job_distributor.py \
   --zk-hosts localhost:2181
 ```
 
-Open a fourth shell for the executor:
+Open a fifth shell for the executor:
 
 ```bash
 cd "/Users/ale/projects/nuvla/job-engine"
@@ -282,6 +311,45 @@ curl \
   http://localhost:8200/api/session | jq .
 ```
 
+Create a dedicated API key for the `NUVLA_BACKED` `MEPM` so it can call back into the Nuvla HTTP API:
+
+```bash
+cat > mepm-api-key.json <<'EOF'
+{
+  "name": "NUVLA_BACKED_MEPM API Key",
+  "description": "API key used by the local NUVLA_BACKED MEPM to call back into Nuvla during the MEC demo",
+  "template": {
+    "href": "credential-template/generate-api-key",
+    "ttl": 86400
+  }
+}
+EOF
+
+curl \
+  -X POST \
+  -H 'content-type: application/json' \
+  -d @mepm-api-key.json \
+  -c nuvla-cookies.txt \
+  -b nuvla-cookies.txt \
+  http://localhost:8200/api/credential | tee mepm-api-key-response.json | jq .
+
+export NUVLA_BACKED_MEPM_API_KEY="$(jq -r '."resource-id"' mepm-api-key-response.json)"
+export NUVLA_BACKED_MEPM_API_SECRET="$(jq -r '."secret-key"' mepm-api-key-response.json)"
+export NUVLA_BACKED_MEPM_NUVLA_ENDPOINT="http://localhost:8200"
+```
+
+Return to the REPL running the `NUVLA_BACKED` `MEPM` and configure its reverse Nuvla API access before enabling `NUVLA_BACKED` mode:
+
+```clojure
+(require '[com.sixsq.nuvla.server.resources.mec.mock-mepm-server :as mock] :reload)
+(mock/set-nuvla-auth! "http://localhost:8200"
+                      "REPLACE_WITH_NUVLA_BACKED_MEPM_API_KEY"
+                      "REPLACE_WITH_NUVLA_BACKED_MEPM_API_SECRET")
+(mock/set-backend-mode! "NUVLA_BACKED")
+```
+
+Use the values from `NUVLA_BACKED_MEPM_API_KEY` and `NUVLA_BACKED_MEPM_API_SECRET` in that REPL call.
+
 You can inspect or change MEPM behavior later:
 
 ```clojure
@@ -290,16 +358,20 @@ You can inspect or change MEPM behavior later:
 (mock/set-error-mode! nil)
 ```
 
-## Step 7: Register the MEPM in Nuvla
+## Step 7: Register Both MEPMs in Nuvla
 
-Because everything is running locally in this variant, register the MEPM on `localhost`.
+Because everything is running locally in this variant, register both `MEPM` resources on `localhost`.
+
+First register the plain `MOCK` `MEPM`:
 
 ```bash
-cat > mepm.json <<'EOF'
+cat > mepm-mock.json <<'EOF'
 {
   "name": "Local Mock MEPM",
   "description": "Mock MEC Platform Manager for local compliance demo",
-  "endpoint": "http://localhost:18081",
+  "endpoint": "http://localhost:19081",
+  "backend-mode": "MOCK",
+  "managed-edges": [],
   "capabilities": {
     "platforms": ["kubernetes", "docker"],
     "services": ["app-lifecycle", "traffic-rules"],
@@ -309,40 +381,147 @@ cat > mepm.json <<'EOF'
 }
 EOF
 
-export MEPM_ID="$(
+export MOCK_MEPM_ID="$(
   curl -s \
     -X POST \
     -H 'content-type: application/json' \
-    -d @mepm.json \
+    -d @mepm-mock.json \
     -b nuvla-cookies.txt \
     http://localhost:8200/api/mepm | jq -r '."resource-id"'
 )"
 
-echo "$MEPM_ID"
+echo "$MOCK_MEPM_ID"
 ```
 
-Then confirm the southbound actions work:
+Then register the `NUVLA_BACKED` `MEPM`:
 
 ```bash
-curl -X POST -b nuvla-cookies.txt \
-  "http://localhost:8200/api/${MEPM_ID}/check-health" | jq .
+cat > mepm-backed.json <<'EOF'
+{
+  "name": "Local Nuvla-Backed MEPM",
+  "description": "Mock MEPM process running in NUVLA_BACKED mode for the local compliance demo",
+  "endpoint": "http://localhost:19082",
+  "backend-mode": "NUVLA_BACKED",
+  "managed-edges": [],
+  "capabilities": {
+    "platforms": ["kubernetes", "docker"],
+    "services": ["app-lifecycle", "traffic-rules"],
+    "api-version": "3.1.1"
+  },
+  "status": "ONLINE"
+}
+EOF
 
-curl -X POST -b nuvla-cookies.txt \
-  "http://localhost:8200/api/${MEPM_ID}/query-capabilities" | jq .
+export BACKED_MEPM_ID="$(
+  curl -s \
+    -X POST \
+    -H 'content-type: application/json' \
+    -d @mepm-backed.json \
+    -b nuvla-cookies.txt \
+    http://localhost:8200/api/mepm | jq -r '."resource-id"'
+)"
 
-curl -X POST -b nuvla-cookies.txt \
-  "http://localhost:8200/api/${MEPM_ID}/query-resources" | jq .
+echo "$BACKED_MEPM_ID"
 ```
 
-Confirm that Nuvla also created the southbound lifecycle subscription it uses for `Mm3.003` callbacks:
+Define the endpoints explicitly for later steps:
 
 ```bash
-curl -b nuvla-cookies.txt \
-  "http://localhost:8200/api/${MEPM_ID}" | jq '{
-    id: .id,
-    mm3SubscriptionId: ."mm3-subscription-id",
-    mm3SubscriptionCallbackUri: ."mm3-subscription-callback-uri"
-  }'
+export MOCK_MEPM_ENDPOINT="http://localhost:19081"
+export BACKED_MEPM_ENDPOINT="http://localhost:19082"
+```
+
+Return to the REPL running the `NUVLA_BACKED` `MEPM` and bind it to the resource id you just created:
+
+```clojure
+(mock/set-mepm-id! "REPLACE_WITH_BACKED_MEPM_ID")
+```
+
+Then confirm the southbound actions work for both `MEPM`s:
+
+```bash
+for MEPM_ID in "${MOCK_MEPM_ID}" "${BACKED_MEPM_ID}"; do
+  curl -X POST -b nuvla-cookies.txt \
+    "http://localhost:8200/api/${MEPM_ID}/check-health" | jq .
+
+  curl -X POST -b nuvla-cookies.txt \
+    "http://localhost:8200/api/${MEPM_ID}/query-capabilities" | jq .
+
+  curl -X POST -b nuvla-cookies.txt \
+    "http://localhost:8200/api/${MEPM_ID}/query-resources" | jq .
+done
+```
+
+Confirm that Nuvla also created the southbound lifecycle subscription it uses for `Mm3.003` callbacks on both resources:
+
+```bash
+for MEPM_ID in "${MOCK_MEPM_ID}" "${BACKED_MEPM_ID}"; do
+  curl -b nuvla-cookies.txt \
+    "http://localhost:8200/api/${MEPM_ID}" | jq '{
+      id: .id,
+      backendMode: ."backend-mode",
+      mm3SubscriptionId: ."mm3-subscription-id",
+      mm3SubscriptionCallbackUri: ."mm3-subscription-callback-uri"
+    }'
+done
+```
+
+### Step 7a: Choose the Demo Execution Strategy
+
+The cleanest demo flow is to run the lifecycle portion twice as two explicit passes:
+
+1. one full pass against the plain `MOCK` `MEPM`
+2. one full pass against the `NUVLA_BACKED` `MEPM`
+
+This is easier to explain live than alternating every single operation between the two `MEPM`s.
+
+Define which edge each pass should target:
+
+```bash
+export MOCK_EDGE_ID="REPLACE_WITH_EDGE_ID_FOR_MOCK_PASS"
+export BACKED_EDGE_ID="REPLACE_WITH_EDGE_ID_FOR_BACKED_PASS"
+```
+
+If you only have one local Nuvla Edge available, set both variables to the same edge id and use the MEC admin UI before each pass so that only the active `MEPM` manages that edge. The inactive `MEPM` should have no managed edges for that pass.
+
+If you have two distinct edges available, assign one edge to each `MEPM` in the MEC admin UI and leave both running for the entire demo.
+
+The remainder of the runbook uses an active target. Select it before Step 11 and again before repeating the lifecycle flow for the second pass:
+
+```bash
+select_demo_target() {
+  case "$1" in
+    mock)
+      export ACTIVE_DEMO_LABEL="mock"
+      export ACTIVE_MEPM_ID="${MOCK_MEPM_ID}"
+      export ACTIVE_MEPM_ENDPOINT="${MOCK_MEPM_ENDPOINT}"
+      export ACTIVE_EDGE_ID="${MOCK_EDGE_ID}"
+      ;;
+    backed)
+      export ACTIVE_DEMO_LABEL="nuvla-backed"
+      export ACTIVE_MEPM_ID="${BACKED_MEPM_ID}"
+      export ACTIVE_MEPM_ENDPOINT="${BACKED_MEPM_ENDPOINT}"
+      export ACTIVE_EDGE_ID="${BACKED_EDGE_ID}"
+      ;;
+    *)
+      echo "usage: select_demo_target mock|backed" >&2
+      return 1
+      ;;
+  esac
+
+  printf 'Demo pass: %s\nMEPM: %s\nEndpoint: %s\nEdge: %s\n' \
+    "${ACTIVE_DEMO_LABEL}" "${ACTIVE_MEPM_ID}" "${ACTIVE_MEPM_ENDPOINT}" "${ACTIVE_EDGE_ID}"
+}
+```
+
+Recommended sequence:
+
+```bash
+select_demo_target mock
+# run Steps 11-14 once
+
+select_demo_target backed
+# run Steps 11-14 again
 ```
 
 ## Step 8: Prepare a Local Webhook Receiver
@@ -363,7 +542,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"ok")
 
-HTTPServer(("127.0.0.1", 18082), Handler).serve_forever()
+HTTPServer(("127.0.0.1", 19083), Handler).serve_forever()
 PY
 ```
 
@@ -375,7 +554,7 @@ Create a subscription for operation-occurrence notifications:
 cat > subscription-op.json <<'EOF'
 {
   "subscriptionType": "AppLcmOpOccStateChange",
-  "callbackUri": "http://localhost:18082",
+  "callbackUri": "http://localhost:19083",
   "appLcmOpOccFilter": {
     "operationType": "INSTANTIATE"
   }
@@ -396,7 +575,7 @@ Create a second subscription for app-instance state changes:
 cat > subscription-app.json <<'EOF'
 {
   "subscriptionType": "AppInstanceStateChange",
-  "callbackUri": "http://localhost:18082"
+  "callbackUri": "http://localhost:19083"
 }
 EOF
 
@@ -446,7 +625,7 @@ Then upload a valid descriptor to `package_content`:
 cat > appd.json <<EOF
 {
   "appName": "demo-mec-app",
-  "appDescription": "Local MEC demo application",
+  "appDescription": "Local MEC demo application backed by a public nginx container",
   "appProvider": "Acme Corp",
   "appDVersion": "3.2.1",
   "appSoftVersion": "1.0.0",
@@ -460,7 +639,7 @@ cat > appd.json <<EOF
       "swImageName": "demo-mec-app",
       "swImageVersion": "1.0.0",
       "containerFormat": "DOCKER",
-      "swImage": "sixsq/demo-mec-app:1.0.0"
+      "swImage": "nginx:1.27-alpine"
     }
   ],
   "virtualStorageDescriptor": [],
@@ -494,14 +673,25 @@ curl -b nuvla-cookies.txt \
   "http://localhost:8200/api/mec/mm1/app_pkgm/v1/app_packages/${APP_PKG_ID}/package_content" | jq .
 ```
 
-## Step 11: Create an App Instance
+## Step 11: Create an App Instance for the Active Demo Pass
 
-Create the retained app instance resource:
+Before running this step, select the target pass:
+
+```bash
+select_demo_target mock
+# or later:
+# select_demo_target backed
+```
+
+Create the retained app instance resource targeted to the active edge:
 
 ```bash
 cat > app-instance-create.json <<EOF
 {
-  "appDId": "${APP_PKG_ID}"
+  "appDId": "${APP_PKG_ID}",
+  "mecHostInformation": {
+    "hostId": "${ACTIVE_EDGE_ID}"
+  }
 }
 EOF
 
@@ -528,6 +718,7 @@ Expected demo state before instantiate:
 
 - `instantiationState = NOT_INSTANTIATED`
 - `operationalState` is absent
+- `mecHostInformation.hostId = ${ACTIVE_EDGE_ID}`
 
 ## Step 12: Instantiate the App
 
@@ -586,39 +777,80 @@ curl -b nuvla-cookies.txt \
   "http://localhost:8200/api/${APP_INSTANCE_ID}" | jq '."mec-last-notification"'
 
 curl -b nuvla-cookies.txt \
-  "http://localhost:8200/api/${MEPM_ID}" | jq '."mm3-last-notification"'
+  "http://localhost:8200/api/${ACTIVE_MEPM_ID}" | jq '."mm3-last-notification"'
 ```
 
-Inspect the southbound app instance in the mock `MEPM` too:
+Capture the southbound app-instance id created on the active `MEPM` and inspect its state:
 
 ```bash
-curl -s http://localhost:18081/mm3/app_lcm/v1/app_instances | jq .
+export SOUTHBOUND_APP_INSTANCE_ID="$(
+  curl -s "${ACTIVE_MEPM_ENDPOINT}/mm3/app_lcm/v1/app_instances" \
+    | tee mm3-app-instances.out \
+    | jq -r --arg app "${APP_INSTANCE_ID}" '.instances[] | select(.descriptor.appInstanceId == $app) | .id'
+)"
+
+echo "$SOUTHBOUND_APP_INSTANCE_ID"
+
+curl -s "${ACTIVE_MEPM_ENDPOINT}/mm3/app_lcm/v1/app_instances" | jq .
 
 curl -s \
-  "http://localhost:18081/mm3/app_lcm/v1/app_lcm_op_occs/${MEPM_OPERATION_ID}" | jq .
+  "${ACTIVE_MEPM_ENDPOINT}/mm3/app_lcm/v1/app_lcm_op_occs/${MEPM_OPERATION_ID}" | jq .
 ```
 
-Expected mock `MEPM` state after instantiate:
+Expected active `MEPM` state after instantiate:
 
 - `instantiationState = INSTANTIATED`
 - `operationalState = STARTED`
 - southbound `app_lcm_op_occ` status = `COMPLETED`
 
+For the `NUVLA_BACKED` pass, the `SOUTHBOUND_APP_INSTANCE_ID` should be a `deployment/...`
+identifier corresponding to the backing deployment created by the active `MEPM`.
+
+For the `NUVLA_BACKED` pass, capture and verify the backing deployment directly in Nuvla as well:
+
+```bash
+export BACKING_DEPLOYMENT_ID="${SOUTHBOUND_APP_INSTANCE_ID}"
+
+curl -b nuvla-cookies.txt \
+  "http://localhost:8200/api/${BACKING_DEPLOYMENT_ID}" | tee backing-deployment.out | jq .
+```
+
+Expected backing deployment state for the `NUVLA_BACKED` pass:
+
+- `parent` points to a native `credential/...`
+- `module.subtype = application`
+- `module.content.docker-compose` contains `nginx:1.27-alpine`
+- deployment state converges to `STARTED`
+
+If you have shell access to the target Nuvla Edge host, you can add one concrete runtime probe to show that the container is really up on the host and not just accepted by the control plane:
+
+```bash
+docker ps --filter "ancestor=nginx:1.27-alpine" \
+  --format 'table {{.Image}}\t{{.Status}}\t{{.Names}}'
+```
+
+Expected probe outcome:
+
+- at least one running container is shown for `nginx:1.27-alpine`
+- the `Status` column reports an `Up ...` value
+
+If your target edge is the same local machine running the demo, run the probe directly in a local shell. If the edge is remote, run the same command over your normal shell access path to that host.
+
 ### Optional: Replay a Southbound `Mm3.003` Callback
 
-The mock `MEPM` can emit a representative lifecycle notification into Nuvla's internal callback receiver. This is useful when you want to show the southbound reconciliation path and the persisted callback evidence explicitly:
+The active `MEPM` can emit a representative lifecycle notification into Nuvla's internal callback receiver. This is useful when you want to show the southbound reconciliation path and the persisted callback evidence explicitly:
 
 ```bash
 export MM3_SUBSCRIPTION_ID="$(
   curl -s -b nuvla-cookies.txt \
-    "http://localhost:8200/api/${MEPM_ID}" | jq -r '."mm3-subscription-id"'
+    "http://localhost:8200/api/${ACTIVE_MEPM_ID}" | jq -r '."mm3-subscription-id"'
 )"
 
 curl \
   -X POST \
   -H 'content-type: application/json' \
   -d @- \
-  http://localhost:18081/mm3/test/emit-notification <<EOF | jq .
+  "${ACTIVE_MEPM_ENDPOINT}/mm3/test/emit-notification" <<EOF | jq .
 {
   "subscriptionId": "${MM3_SUBSCRIPTION_ID}",
   "notification": {
@@ -626,7 +858,7 @@ curl \
     "subscriptionId": "${MM3_SUBSCRIPTION_ID}",
     "operationId": "${MEPM_OPERATION_ID}",
     "operationState": "COMPLETED",
-    "appInstanceId": "${APP_INSTANCE_ID}",
+    "appInstanceId": "${SOUTHBOUND_APP_INSTANCE_ID}",
     "instantiationState": "INSTANTIATED",
     "operationalState": "STARTED"
   }
@@ -688,31 +920,31 @@ Expected state after `operate STARTED`:
 
 This variant demonstrates that Nuvla updates its view when the `MEPM` reports an unsolicited state change for a running app instance. It does **not** prove that Nuvla independently detects the crash on its own; it proves the southbound reconciliation path once the `MEPM` emits the event.
 
-First capture the southbound subscription id and the southbound app-instance id currently known by the mock `MEPM`:
+First capture the southbound subscription id and the southbound app-instance id currently known by the active `MEPM`:
 
 ```bash
 export MM3_SUBSCRIPTION_ID="$(
   curl -s -b nuvla-cookies.txt \
-    "http://localhost:8200/api/${MEPM_ID}" | jq -r '."mm3-subscription-id"'
+    "http://localhost:8200/api/${ACTIVE_MEPM_ID}" | jq -r '."mm3-subscription-id"'
 )"
 
 export SOUTHBOUND_APP_INSTANCE_ID="$(
   curl -s \
-    http://localhost:18081/mm3/app_lcm/v1/app_instances | tee mm3-app-instances.out | jq -r '.instances[0].id'
+    "${ACTIVE_MEPM_ENDPOINT}/mm3/app_lcm/v1/app_instances" | tee mm3-app-instances.out | jq -r --arg app "${APP_INSTANCE_ID}" '.instances[] | select(.descriptor.appInstanceId == $app) | .id'
 )"
 
 echo "$MM3_SUBSCRIPTION_ID"
 echo "$SOUTHBOUND_APP_INSTANCE_ID"
 ```
 
-Then simulate an unexpected app stop by having the mock `MEPM` emit an unsolicited `AppInstNotification`:
+Then simulate an unexpected app stop by having the active `MEPM` emit an unsolicited `AppInstNotification`:
 
 ```bash
 curl \
   -X POST \
   -H 'content-type: application/json' \
   -d @- \
-  http://localhost:18081/mm3/test/emit-notification <<EOF | jq .
+  "${ACTIVE_MEPM_ENDPOINT}/mm3/test/emit-notification" <<EOF | jq .
 {
   "subscriptionId": "${MM3_SUBSCRIPTION_ID}",
   "notification": {
@@ -726,11 +958,11 @@ curl \
 EOF
 ```
 
-First verify that the mock `MEPM` itself now reflects the unsolicited state change:
+First verify that the active `MEPM` itself now reflects the unsolicited state change:
 
 ```bash
 curl \
-  http://localhost:18081/mm3/app_lcm/v1/app_instances/${SOUTHBOUND_APP_INSTANCE_ID} | jq .
+  "${ACTIVE_MEPM_ENDPOINT}/mm3/app_lcm/v1/app_instances/${SOUTHBOUND_APP_INSTANCE_ID}" | jq .
 ```
 
 Then verify that Nuvla reflects the updated state and preserves the southbound evidence:
@@ -743,12 +975,12 @@ curl -b nuvla-cookies.txt \
   "http://localhost:8200/api/${APP_INSTANCE_ID}" | jq '."mec-last-notification"'
 
 curl -b nuvla-cookies.txt \
-  "http://localhost:8200/api/${MEPM_ID}" | jq '."mm3-last-notification"'
+  "http://localhost:8200/api/${ACTIVE_MEPM_ID}" | jq '."mm3-last-notification"'
 ```
 
 Expected outcome:
 
-- the mock `MEPM` app instance now reports `operationalState = STOPPED`
+- the active `MEPM` app instance now reports `operationalState = STOPPED`
 - `AppInstanceInfo.operationalState` becomes `STOPPED`
 - `AppInstanceInfo.instantiationState` remains `INSTANTIATED`
 - the deployment keeps the latest `mec-last-notification`
@@ -774,6 +1006,14 @@ Expected outcome:
 - retained app instance returns to `instantiationState = NOT_INSTANTIATED`
 - `operationalState` is absent again
 - the underlying deployment is normalized back to the retained, non-instantiated state
+
+After finishing the first pass, switch targets and repeat Steps 11-14 for the second `MEPM`:
+
+```bash
+select_demo_target backed
+```
+
+If you started with the `NUVLA_BACKED` pass instead, switch back to `mock` here instead.
 
 ## Step 15: Demonstrate Negative Paths
 
@@ -824,7 +1064,7 @@ Expected outcome:
 
 ### Southbound error path
 
-In the REPL running the mock `MEPM`:
+In the REPL running the active `MEPM` for the current pass:
 
 ```clojure
 (mock/set-error-mode! :server-error)

@@ -28,8 +28,10 @@
                    :memory-gb   256
                    :storage-gb  2048
                    :gpu-count   8}
+   :backend-mode  "NUVLA_BACKED"
    :status        "ONLINE"
    :mec-host-id   "nuvlabox/test-host-123"
+   :managed-edges ["nuvlabox/test-host-123" "nuvlabox/test-host-456"]
    :credential-id "credential/test-credential-456"
    :version       "2.1.0"
    :tags          ["production" "edge"]})
@@ -46,14 +48,17 @@
                                           :status 200
                                           :data {:platforms ["x86_64" "arm64"]
                                                  :services ["mec-service-1" "mec-service-2"]
-                                                 :api-version "v2"}})
+                                                 :api-version "v2"
+                                                 :mec-version "4.1.1"
+                                                 :supported-vnfds ["vnfd-1"]}})
                 mm3/query-resources (fn [_endpoint & [_opts]]
                                       {:success? true
                                        :status 200
                                        :data {:cpu-cores 64
                                               :memory-gb 256
                                               :storage-gb 1000
-                                              :gpu-count 2}})
+                                              :gpu-count 2
+                                              :available true}})
                 mm3/create-subscription (fn [_endpoint payload & [_opts]]
                                           {:success? true
                                            :status 201
@@ -115,13 +120,37 @@
         (is (= "Test MEPM" (:name mepm)))
         (is (= "https://mepm.example.com:8443" (:endpoint mepm)))
         (is (= "ONLINE" (:status mepm)))
+        (is (= "NUVLA_BACKED" (:backend-mode mepm)))
         (is (= ["x86_64" "arm64"] (get-in mepm [:capabilities :platforms])))
         (is (= 64 (get-in mepm [:resources :cpu-cores])))
+        (is (= ["nuvlabox/test-host-123" "nuvlabox/test-host-456"] (:managed-edges mepm)))
+        (is (= "nuvlabox/test-host-123" (:mec-host-id mepm)))
         (is (= "mm3-sub-123" (:mm3-subscription-id mepm)))
         (is (re-find #"/api/mec/internal/mm3/app_lcm/v1/notifications$"
                      (:mm3-subscription-callback-uri mepm)))
         (is (:created mepm))
         (is (:updated mepm)))
+
+      ;; Creating a MEPM with an empty managed-edge set should not synthesize a nil mec-host-id.
+      (let [empty-edges-response (-> session-user
+                                     (request base-uri
+                                              :request-method :post
+                                              :body (json/write-value-as-string (-> valid-mepm
+                                                                                    (assoc :name "Test MEPM Empty Edges"
+                                                                                           :endpoint "https://mepm-empty.example.com:8443"
+                                                                                           :managed-edges [])
+                                                                                    (dissoc :mec-host-id))))
+                                     (ltu/body->edn)
+                                     (ltu/is-status 201))
+            empty-edges-id       (ltu/body-resource-id empty-edges-response)
+            empty-edges-uri      (str p/service-context empty-edges-id)
+            empty-edges-mepm     (-> session-user
+                                     (request empty-edges-uri)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/body))]
+        (is (= [] (:managed-edges empty-edges-mepm)))
+        (is (not (contains? empty-edges-mepm :mec-host-id))))
 
       ;; Duplicate endpoint create should fail, even with trailing slash variation
       (-> session-user
@@ -131,15 +160,22 @@
           (ltu/body->edn)
           (ltu/is-status 409))
 
-      ;; Update MEPM status
+      ;; Update MEPM status and managed edges
       (let [updated-mepm (-> session-user
                              (request uri
                                       :request-method :put
-                                      :body (json/write-value-as-string {:status "DEGRADED"}))
+                                      :body (json/write-value-as-string {:status "DEGRADED"
+                                                                         :backend-mode "MOCK"
+                                                                         :managed-edges ["nuvlabox/test-host-456"
+                                                                                         "nuvlabox/test-host-789"]
+                                                                         :mec-host-id "nuvlabox/test-host-456"}))
                              (ltu/body->edn)
                              (ltu/is-status 200)
                              (ltu/body))]
-        (is (= "DEGRADED" (:status updated-mepm))))
+        (is (= "DEGRADED" (:status updated-mepm)))
+        (is (= "MOCK" (:backend-mode updated-mepm)))
+        (is (= ["nuvlabox/test-host-456" "nuvlabox/test-host-789"] (:managed-edges updated-mepm)))
+        (is (= "nuvlabox/test-host-456" (:mec-host-id updated-mepm))))
 
       ;; Check available operations
       (let [ops (-> session-user
@@ -177,7 +213,8 @@
                      (ltu/body->edn)
                      (ltu/is-status 200)
                      (ltu/body))]
-        (is (= ["x86_64" "arm64"] (get-in resp [:message :platforms]))))
+        (is (= ["x86_64" "arm64"] (get-in resp [:message :platforms])))
+        (is (nil? (get-in resp [:message :mec-version]))))
 
       ;; Test query-resources action
       (let [resp (-> session-user
@@ -187,7 +224,31 @@
                      (ltu/body->edn)
                      (ltu/is-status 200)
                      (ltu/body))]
-        (is (= 64 (get-in resp [:message :cpu-cores]))))
+        (is (= 64 (get-in resp [:message :cpu-cores])))
+        (is (nil? (get-in resp [:message :available]))))
+
+      ;; Verify a subsequent edit still succeeds after sanitized Mm3 refreshes
+      (let [updated-mepm (-> session-user
+                             (request uri
+                                      :request-method :put
+                                      :body (json/write-value-as-string {:managed-edges ["nuvlabox/test-host-789"]
+                                                                         :mec-host-id "nuvlabox/test-host-789"}))
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/body))]
+        (is (= ["nuvlabox/test-host-789"] (:managed-edges updated-mepm)))
+        (is (= "nuvlabox/test-host-789" (:mec-host-id updated-mepm))))
+
+      ;; Removing the final managed edge should also clear the derived legacy mec-host-id.
+      (let [updated-mepm (-> session-user
+                             (request uri
+                                      :request-method :put
+                                      :body (json/write-value-as-string {:managed-edges []}))
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/body))]
+        (is (= [] (:managed-edges updated-mepm)))
+        (is (not (contains? updated-mepm :mec-host-id))))
 
       ;; Test ensure-lifecycle-subscription action is idempotent
       (let [resp (-> session-user

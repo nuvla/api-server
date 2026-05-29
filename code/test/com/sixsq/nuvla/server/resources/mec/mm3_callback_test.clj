@@ -101,7 +101,9 @@
  (deftest test-handle-completed-terminate-notification
    (let [job-state        (atom sample-terminate-job)
          deployment-state (atom (assoc sample-deployment :state "STOPPING"))
-         edit-calls       (atom [])]
+        edit-calls       (atom [])
+        app-calls        (atom [])
+        op-calls         (atom [])]
      (with-redefs [crud/query-as-admin (fn [collection _options]
                                          (case collection
                                            "mepm" [1 [sample-mepm]]
@@ -123,7 +125,13 @@
                                                :body   (case resource-id
                                                          "job/terminate-123" @job-state
                                                          "deployment/test-1" @deployment-state
-                                                         nil)})]
+                                                         nil)})
+                  dispatcher/dispatch-app-instance-state-change! (fn [app-instance change-type previous-state]
+                                                                   (swap! app-calls conj [app-instance change-type previous-state])
+                                                                   [])
+                  dispatcher/dispatch-app-lcm-op-occ-state-change! (fn [op-occ change-type previous-state]
+                                                                     (swap! op-calls conj [op-occ change-type previous-state])
+                                                                     [])]
       (let [response (mm3-callback/handle-notification {:body {:notificationType "AppLcmOpOccNotification"
                                                                 :subscriptionId   "mm3-sub-1"
                                                                 :operationId      "op-terminate-1"
@@ -134,7 +142,78 @@
          (is (= "CREATED" (get-in @edit-calls [1 1 :state])))
          (is (= "job/terminate-123" (first (nth @edit-calls 2))))
          (is (= "SUCCESS" (get-in @edit-calls [2 1 :state])))
-         (is (some? (get-in @edit-calls [2 1 :mec-last-notification :received])))))))
+         (is (some? (get-in @edit-calls [2 1 :mec-last-notification :received])))
+         (is (= 1 (count @app-calls)))
+         (is (= "NOT_INSTANTIATED" (get-in @app-calls [0 0 :instantiationState])))
+         (is (= "INSTANTIATION_STATE" (get-in @app-calls [0 1])))
+         (is (= "INSTANTIATED" (get-in @app-calls [0 2])))
+         (is (= 1 (count @op-calls)))
+         (is (= "OPERATION_RESULT" (get-in @op-calls [0 1])))
+         (is (= "PROCESSING" (get-in @op-calls [0 2])))))))
+
+
+(deftest test-handle-completed-operate-notification-via-backing-deployment-correlation
+  (let [job-state        (atom (-> sample-operate-job
+                                   (dissoc :target-resource)
+                                   (assoc :state "RUNNING")))
+        deployment-state (atom (assoc sample-deployment
+                                 :state "STARTED"
+                                 :mec-app-instance-id "deployment/test-1"
+                                 :mec-backing-deployment-id "deployment/backing-1"))
+        edit-calls       (atom [])
+        app-calls        (atom [])
+        op-calls         (atom [])]
+    (with-redefs [crud/query-as-admin (fn [collection _options]
+                                        (case collection
+                                          "mepm" [1 [sample-mepm]]
+                                          "job" [1 [@job-state]]
+                                          "deployment" [2 [@deployment-state
+                                                           {:id "deployment/backing-1"
+                                                            :mec-app-instance-id "deployment/test-1"
+                                                            :mec-backing-deployment-id "deployment/backing-1"}]]
+                                          [0 []]))
+                  crud/retrieve-by-id-as-admin (fn [resource-id]
+                                                 (case resource-id
+                                                   "job/operate-123" @job-state
+                                                   "deployment/test-1" @deployment-state
+                                                   "mepm/test-1" sample-mepm
+                                                   nil))
+                  crud/edit-by-id-as-admin (fn [resource-id body]
+                                             (swap! edit-calls conj [resource-id body])
+                                             (case resource-id
+                                               "job/operate-123" (swap! job-state merge body)
+                                               "deployment/test-1" (swap! deployment-state merge body)
+                                               nil)
+                                             {:status 200
+                                              :body   (case resource-id
+                                                        "job/operate-123" @job-state
+                                                        "deployment/test-1" @deployment-state
+                                                        nil)})
+                  dispatcher/dispatch-app-instance-state-change! (fn [app-instance change-type previous-state]
+                                                                   (swap! app-calls conj [app-instance change-type previous-state])
+                                                                   [])
+                  dispatcher/dispatch-app-lcm-op-occ-state-change! (fn [op-occ change-type previous-state]
+                                                                     (swap! op-calls conj [op-occ change-type previous-state])
+                                                                     [])]
+      (let [response (mm3-callback/handle-notification {:body {:notificationType "AppLcmOpOccNotification"
+                                                                :subscriptionId   "mm3-sub-1"
+                                                                :operationId      "op-operate-1"
+                                                                :appInstanceId    "deployment/backing-1"
+                                                                :operationState   "COMPLETED"
+                                                                :instantiationState "INSTANTIATED"
+                                                                :operationalState "STOPPED"}})]
+        (is (= 202 (:status response)))
+        (is (= "deployment/test-1" (first (second @edit-calls))))
+        (is (= "STOPPED" (get-in @edit-calls [1 1 :state])))
+        (is (= "job/operate-123" (first (nth @edit-calls 2))))
+        (is (= "SUCCESS" (get-in @edit-calls [2 1 :state])))
+        (is (= 1 (count @app-calls)))
+        (is (= "STOPPED" (get-in @app-calls [0 0 :operationalState])))
+        (is (= "OPERATIONAL_STATE" (get-in @app-calls [0 1])))
+        (is (= "STARTED" (get-in @app-calls [0 2])))
+        (is (= 1 (count @op-calls)))
+        (is (= "OPERATION_RESULT" (get-in @op-calls [0 1])))
+        (is (= "PROCESSING" (get-in @op-calls [0 2])))))))
 
 
  (deftest test-handle-app-instance-notification
@@ -174,6 +253,46 @@
          (is (= "STARTED" (get-in @app-calls [0 0 :operationalState])))
          (is (= "OPERATIONAL_STATE" (get-in @app-calls [0 1])))
          (is (= "STOPPED" (get-in @app-calls [0 2])))))))
+
+
+(deftest test-handle-app-instance-notification-via-backing-deployment-correlation
+  (let [deployment-state (atom (assoc sample-deployment
+                                      :mec-app-instance-id "deployment/test-1"
+                                      :mec-backing-deployment-id "deployment/backing-1"))
+        app-calls        (atom [])
+        edit-calls       (atom [])]
+    (with-redefs [crud/query-as-admin (fn [collection _options]
+                                        (case collection
+                                          "mepm" [1 [sample-mepm]]
+                                          "deployment" [2 [@deployment-state
+                                                           {:id "deployment/backing-1"
+                                                            :mec-app-instance-id "deployment/test-1"
+                                                            :mec-backing-deployment-id "deployment/backing-1"}]]
+                                          [0 []]))
+                  crud/retrieve-by-id-as-admin (fn [resource-id]
+                                                 (case resource-id
+                                                   "deployment/test-1" @deployment-state
+                                                   "mepm/test-1" sample-mepm
+                                                   nil))
+                  crud/edit-by-id-as-admin (fn [resource-id body]
+                                             (swap! edit-calls conj [resource-id body])
+                                             (when (= resource-id "deployment/test-1")
+                                               (swap! deployment-state merge body))
+                                             {:status 200
+                                              :body   @deployment-state})
+                  dispatcher/dispatch-app-instance-state-change! (fn [app-instance change-type previous-state]
+                                                                   (swap! app-calls conj [app-instance change-type previous-state])
+                                                                   [])]
+      (let [response (mm3-callback/handle-notification {:body {:notificationType   "AppInstNotification"
+                                                               :subscriptionId     "mm3-sub-1"
+                                                               :appInstanceId      "deployment/backing-1"
+                                                               :instantiationState "INSTANTIATED"
+                                                               :operationalState   "STARTED"}})]
+        (is (= 202 (:status response)))
+        (is (= "deployment/test-1" (first (second @edit-calls))))
+        (is (= "STARTED" (get-in @edit-calls [1 1 :state])))
+        (is (= 1 (count @app-calls)))
+        (is (= "STARTED" (get-in @app-calls [0 0 :operationalState])))))))
 
 
 (deftest test-repeated-completed-notification-reconciles-stale-deployment

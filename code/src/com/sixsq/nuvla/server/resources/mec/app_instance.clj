@@ -53,6 +53,14 @@
 (def ^:private relative-public-base-uri
   "/mec/mm1/app_lcm/v1")
 
+(def mec-correlation-keys
+  [:mec-app-instance-id
+   :mec-backing-deployment-id
+   :mec-mepm-id
+   :mec-mepm-name
+   :mec-host-id
+   :mec-backend-mode])
+
 (defn- public-base-uri
   [request]
   (if-let [base-uri (:base-uri request)]
@@ -172,9 +180,20 @@
 (defn create-request->deployment
   "Translates a CreateAppInstanceRequest to a Nuvla deployment create body."
   [create-request]
-  (cond-> {:module {:href (:appDId create-request)}}
+  (cond-> {:module {:href (:appDId create-request)}
+           :tags   ["MEC"]}
     (get-in create-request [:mecHostInformation :hostId])
     (assoc :parent (get-in create-request [:mecHostInformation :hostId]))))
+
+(defn deployment->mec-correlation
+  "Extracts Phase 1 MEC correlation metadata from a deployment."
+  [deployment]
+  (select-keys deployment mec-correlation-keys))
+
+(defn with-mec-correlation
+  "Associates Phase 1 MEC correlation metadata onto a deployment map."
+  [deployment correlation]
+  (merge deployment (select-keys correlation mec-correlation-keys)))
 
 
 ;;

@@ -10,16 +10,19 @@
    
    Standard: ETSI GS MEC 010-2 v4.1.1"
   (:require
+    [clojure.spec.alpha :as s]
     [clojure.string :as str]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.deployment :as deployment-resource]
+    [com.sixsq.nuvla.server.resources.deployment-parameter :as deployment-parameter]
     [com.sixsq.nuvla.server.resources.deployment.utils :as deployment-utils]
     [com.sixsq.nuvla.server.resources.mec.app-instance :as app-instance]
     [com.sixsq.nuvla.server.resources.mec.app-lcm :as app-lcm]
     [com.sixsq.nuvla.server.resources.mec.app-lcm-op-occ :as app-lcm-op-occ]
     [com.sixsq.nuvla.server.resources.mec.mm3-client :as mm3]
-    [com.sixsq.nuvla.server.resources.mec.notification-dispatcher :as dispatcher]))
+    [com.sixsq.nuvla.server.resources.mec.notification-dispatcher :as dispatcher]
+    [com.sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]))
 
 
 ;;
@@ -43,7 +46,8 @@
   {:id          "mepm/test-1"
    :endpoint    "https://mepm.example.com:8443"
    :status      "ONLINE"
-   :mec-host-id "nuvlabox/edge-host-1"})
+   :mec-host-id "nuvlabox/edge-host-1"
+   :managed-edges ["nuvlabox/edge-host-1" "nuvlabox/edge-host-2"]})
 
 
 (def sample-app-instance-info
@@ -252,6 +256,67 @@
       (is (= "CREATED" (:state result)))
       (is (= "nuvlabox/edge-host-1" (:parent result))))))
 
+(deftest test-create-request-to-deployment-translation
+  (testing "CreateAppInstanceRequest adds the MEC tag to the tracking deployment"
+    (let [result (app-instance/create-request->deployment
+                   {:appDId "module/nginx-app"
+                    :mecHostInformation {:hostId "nuvlabox/edge-host-1"}})]
+      (is (= {:href "module/nginx-app"} (:module result)))
+      (is (= "nuvlabox/edge-host-1" (:parent result)))
+      (is (= ["MEC"] (:tags result))))))
+
+(deftest test-phase1-mec-correlation-metadata
+  (testing "Deployment spec accepts MEC correlation fields"
+    (is (s/valid? ::deployment-spec/deployment
+                  {:id                        "deployment/test-123"
+                   :resource-type             "deployment"
+                   :created                   "2026-01-01T00:00:00Z"
+                   :updated                   "2026-01-01T00:00:00Z"
+                   :acl                       {:owners ["group/nuvla-admin"]}
+                   :module                    {:href "module/nginx-app"}
+                   :state                     "CREATED"
+                   :api-endpoint              "https://nuvla.example"
+                   :mec-app-instance-id       "deployment/test-123"
+                   :mec-backing-deployment-id "deployment/backing-123"
+                   :mec-mepm-id               "mepm/test-1"
+                   :mec-mepm-name             "Example MEPM"
+                   :mec-host-id               "nuvlabox/edge-host-1"
+                   :mec-backend-mode          "NUVLA_BACKED"})))
+
+  (testing "Correlation helper extracts only supported fields"
+    (let [result (app-instance/deployment->mec-correlation
+                  (assoc sample-deployment
+                         :mec-app-instance-id "deployment/test-123"
+                         :mec-backing-deployment-id "deployment/backing-123"
+                         :mec-mepm-id "mepm/test-1"
+                         :mec-mepm-name "Example MEPM"
+                         :mec-host-id "nuvlabox/edge-host-1"
+                         :mec-backend-mode "NUVLA_BACKED"
+                         :unexpected "ignored"))]
+      (is (= {:mec-app-instance-id "deployment/test-123"
+              :mec-backing-deployment-id "deployment/backing-123"
+              :mec-mepm-id "mepm/test-1"
+              :mec-mepm-name "Example MEPM"
+              :mec-host-id "nuvlabox/edge-host-1"
+              :mec-backend-mode "NUVLA_BACKED"}
+             result))))
+
+  (testing "Correlation helper merges only supported fields"
+    (let [result (app-instance/with-mec-correlation
+                   sample-deployment
+                   {:mec-backing-deployment-id "deployment/backing-123"
+                    :mec-mepm-id "mepm/test-1"
+                    :mec-mepm-name "Example MEPM"
+                    :mec-host-id "nuvlabox/edge-host-1"
+                    :mec-backend-mode "NUVLA_BACKED"
+                    :ignored "value"})]
+      (is (= "deployment/backing-123" (:mec-backing-deployment-id result)))
+      (is (= "mepm/test-1" (:mec-mepm-id result)))
+      (is (= "Example MEPM" (:mec-mepm-name result)))
+      (is (= "nuvlabox/edge-host-1" (:mec-host-id result)))
+      (is (= "NUVLA_BACKED" (:mec-backend-mode result)))
+      (is (nil? (:ignored result))))))
+
 
 (deftest test-job-to-app-lcm-op-occ-translation
   (testing "Job translates to AppLcmOpOcc"
@@ -337,12 +402,18 @@
 
 (deftest test-create-app-instance-handler
   (testing "Create app instance creates deployment-backed MEC resource"
-    (let [dispatch-args (atom nil)
+    (let [dispatch-args     (atom nil)
+          edited-correlation (atom nil)
+          deployment-state  (atom sample-deployment)
           response (with-redefs [crud/add (fn [_]
                                             {:status 201
                                              :body {:resource-id "deployment/test-123"}})
+                                 crud/edit-by-id-as-admin (fn [_ body]
+                                                            (reset! edited-correlation body)
+                                                            (swap! deployment-state merge body)
+                                                            {:status 200})
                                  crud/get-resource-throw-nok (fn [_ _]
-                                                               sample-deployment)
+                                                               @deployment-state)
                                  dispatcher/dispatch-app-instance-state-change! (fn [app-instance change-type previous-state]
                                                                                   (reset! dispatch-args [app-instance change-type previous-state])
                                                                                   [])]
@@ -352,8 +423,39 @@
       (is (= "module/nginx-app" (get-in response [:body :appDId])))
       (is (= "/mec/mm1/app_lcm/v1/app_instances/deployment/test-123"
              (get-in response [:headers "Location"])))
+      (is (= {:mec-app-instance-id "deployment/test-123"}
+             @edited-correlation))
       (is (= "INSTANTIATION_STATE" (second @dispatch-args)))
       (is (= "deployment/test-123" (get-in (first @dispatch-args) [:appInstanceId])))))
+
+  (testing "Create app instance snapshots host and unambiguous MEPM metadata when host is known"
+    (let [edited-correlation (atom nil)
+          deployment-state   (atom sample-deployment)
+          response           (with-redefs [crud/add (fn [_]
+                                                      {:status 201
+                                                       :body {:resource-id "deployment/test-123"}})
+                                           crud/edit-by-id-as-admin (fn [_ body]
+                                                                      (reset! edited-correlation body)
+                                                                      (swap! deployment-state merge body)
+                                                                      {:status 200})
+                                           crud/get-resource-throw-nok (fn [_ _]
+                                                                         @deployment-state)
+                                           crud/query (fn [_]
+                                                        {:status 200
+                                                         :body {:resources [(assoc sample-mepm
+                                                                                   :name "Example MEPM"
+                                                                                   :backend-mode "NUVLA_BACKED")]}})
+                                           dispatcher/dispatch-app-instance-state-change! (fn [& _] [])]
+                               (app-lcm/create-app-instance-handler
+                                 {:body {:appDId             "module/nginx-app"
+                                         :mecHostInformation {:hostId "nuvlabox/edge-host-1"}}}))]
+      (is (= 201 (:status response)))
+      (is (= {:mec-app-instance-id "deployment/test-123"
+              :mec-host-id         "nuvlabox/edge-host-1"
+              :mec-mepm-id         "mepm/test-1"
+              :mec-mepm-name       "Example MEPM"
+              :mec-backend-mode    "NUVLA_BACKED"}
+             @edited-correlation))))
   
   (testing "Create app instance validates missing appDId"
     (let [response (app-lcm/create-app-instance-handler {:body {}})]
@@ -548,87 +650,80 @@
 
 
 (deftest test-instantiate-app-instance-handler
-  (testing "Instantiate uses deployment start action and returns persisted MEC job"
-    (let [action-request (atom nil)
-          edit-request   (atom nil)
-          dispatch-args  (atom nil)
-          response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
-                                                               sample-deployment)
-                                 crud/query (fn [_]
-                                              {:status 200
-                                               :body {:resources [sample-mepm]}})
-                                 mm3/query-capabilities (fn [_ & _]
-                                                          {:success? true
-                                                           :status 200
-                                                           :data {:platforms ["kubernetes"]}})
-                                 mm3/query-resources (fn [_ & _]
-                                                       {:success? true
-                                                        :status 200
-                                                        :data {:cpu-cores 8}})
-                                 crud/do-action (fn [request]
-                                                  (reset! action-request request)
-                                                  {:status 202
-                                                   :body {:location "job/instantiate-123"}})
-                                 crud/edit-by-id-as-admin (fn [resource-id body]
-                                                            (reset! edit-request {:id resource-id
-                                                                                  :body body})
-                                                            {:status 200})
-                                 crud/retrieve-by-id-as-admin (fn [_]
-                                                                sample-mec-instantiate-job)
-                                 dispatcher/dispatch-app-lcm-op-occ-state-change! (fn [op-occ change-type previous-state]
-                                                                                     (reset! dispatch-args [op-occ change-type previous-state])
-                                                                                     [])]
-                     (app-lcm/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
-                                                                   :body   {}}))]
+  (testing "Instantiate enqueues a standard deployment start job with MEC metadata"
+    (let [created-job    (atom nil)
+          job-state      (assoc sample-mec-instantiate-job
+                           :state "QUEUED"
+                           :mec-southbound-operation-id nil)
+          response       (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                                     sample-deployment)
+                                       crud/query (fn [_]
+                                                    {:status 200
+                                                     :body {:resources [sample-mepm]}})
+                                       mm3/query-capabilities (fn [_ & _]
+                                                                {:success? true
+                                                                 :status 200
+                                                                 :data {:platforms ["kubernetes"]}})
+                                       mm3/query-resources (fn [_ & _]
+                                                             {:success? true
+                                                              :status 200
+                                                              :data {:cpu-cores 8}})
+                                       crud/do-action (fn [request]
+                                                        (reset! created-job request)
+                                                        {:status 202
+                                                         :body   {:location "job/instantiate-123"}})
+                                       crud/retrieve-by-id-as-admin (fn [resource-id]
+                                                                      (case resource-id
+                                                                        "job/instantiate-123" job-state
+                                                                        nil))]
+                           (app-lcm/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                                      :body   {}}))]
       (is (= 202 (:status response)))
       (is (= "/mec/mm1/app_lcm/v1/app_lcm_op_occs/job/instantiate-123"
              (get-in response [:headers "Location"])))
-      (is (= "start" (get-in @action-request [:params :action])))
-      (is (= "INSTANTIATE" (get-in @action-request [:body :job-attrs :mec-operation-type])))
-      (is (= "deployment/test-123" (get-in @action-request [:body :job-attrs :mec-app-instance-id])))
-      (is (= "mepm/test-1" (get-in @action-request [:body :job-attrs :mepm-id])))
-      (is (= "INSTANTIATE" (get-in @edit-request [:body :mec-operation-type])))
-      (is (= "mepm/test-1" (get-in @edit-request [:body :mepm-id])))
+      (is (= "start" (get-in @created-job [:params :action])))
+      (is (= "INSTANTIATE" (get-in @created-job [:body :job-attrs :mec-operation-type])))
+      (is (= "deployment/test-123" (get-in @created-job [:body :job-attrs :mec-app-instance-id])))
+      (is (= "mepm/test-1" (get-in @created-job [:body :job-attrs :mepm-id])))
+      (is (= "https://mepm.example.com:8443" (get-in @created-job [:body :job-attrs :mepm-endpoint])))
+      (is (= "nuvlabox/edge-host-1" (get-in @created-job [:body :job-attrs :mec-host-id])))
       (is (= "INSTANTIATE" (get-in response [:body :operationType])))
-      (is (= "OPERATION_STATE" (second @dispatch-args)))
-      (is (= "job/instantiate-123" (get-in (first @dispatch-args) [:lcmOpOccId])))))
+      (is (= "STARTING" (get-in response [:body :operationState])))))
 
   (testing "Instantiate omits nil MEC job attributes"
-    (let [action-request (atom nil)
-          edit-request   (atom nil)
-          hostless-mepm  (dissoc sample-mepm :mec-host-id)
-          _response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
-                                                                sample-deployment)
-                                  crud/query (fn [_]
-                                               {:status 200
-                                                :body {:resources [hostless-mepm]}})
-                                  mm3/query-capabilities (fn [_ & _]
-                                                           {:success? true
-                                                            :status 200
-                                                            :data {:platforms ["kubernetes"]}})
-                                  mm3/query-resources (fn [_ & _]
-                                                        {:success? true
-                                                         :status 200
-                                                         :data {:cpu-cores 8}})
-                                  crud/do-action (fn [request]
-                                                   (reset! action-request request)
-                                                   {:status 202
-                                                    :body {:location "job/instantiate-123"}})
-                                  crud/edit-by-id-as-admin (fn [resource-id body]
-                                                             (reset! edit-request {:id resource-id
-                                                                                   :body body})
-                                                             {:status 200})
-                                  crud/retrieve-by-id-as-admin (fn [_]
-                                                                 sample-mec-instantiate-job)
-                                  dispatcher/dispatch-app-lcm-op-occ-state-change! (fn [& _] [])]
-                      (app-lcm/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
-                                                                    :body   nil}))]
-      (is (nil? (get-in @action-request [:body :job-attrs :mec-host-id])))
-      (is (nil? (get-in @action-request [:body :job-attrs :mec-request-params])))
-      (is (not (contains? (get-in @action-request [:body :job-attrs]) :mec-host-id)))
-      (is (not (contains? (get-in @action-request [:body :job-attrs]) :mec-request-params)))
-      (is (not (contains? (:body @edit-request) :mec-host-id)))
-      (is (not (contains? (:body @edit-request) :mec-request-params)))))
+    (let [created-job   (atom nil)
+          hostless-mepm (assoc (dissoc sample-mepm :mec-host-id)
+                               :managed-edges [])
+          job-state     (assoc sample-mec-instantiate-job
+                          :state "QUEUED"
+                          :mec-southbound-operation-id nil)
+          _response     (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                                    sample-deployment)
+                                      crud/query (fn [_]
+                                                   {:status 200
+                                                    :body {:resources [hostless-mepm]}})
+                                      mm3/query-capabilities (fn [_ & _]
+                                                               {:success? true
+                                                                :status 200
+                                                                :data {:platforms ["kubernetes"]}})
+                                      mm3/query-resources (fn [_ & _]
+                                                            {:success? true
+                                                             :status 200
+                                                             :data {:cpu-cores 8}})
+                                      crud/do-action (fn [request]
+                                                       (reset! created-job request)
+                                                       {:status 202
+                                                        :body   {:location "job/instantiate-123"}})
+                                      crud/retrieve-by-id-as-admin (fn [resource-id]
+                                                                     (case resource-id
+                                                                       "job/instantiate-123" job-state
+                                                                       nil))]
+                          (app-lcm/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                                     :body   nil}))]
+      (is (nil? (get-in @created-job [:body :job-attrs :mec-host-id])))
+      (is (nil? (get-in @created-job [:body :job-attrs :mec-request-params])))
+      (is (not (contains? (get-in @created-job [:body :job-attrs]) :mec-host-id)))
+      (is (not (contains? (get-in @created-job [:body :job-attrs]) :mec-request-params)))))
 
   (testing "Instantiate rejects already instantiated app instance"
     (let [response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
@@ -648,38 +743,41 @@
 
 
 (deftest test-terminate-app-instance-handler
-  (testing "Terminate uses deployment stop action and returns persisted MEC job"
-    (let [action-request (atom nil)
-          response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
-                                                               (assoc sample-deployment :state "STARTED"))
-                                 crud/query (fn [_]
-                                              {:status 200
-                                               :body {:resources [sample-mepm]}})
-                                 mm3/query-capabilities (fn [_ & _]
+  (testing "Terminate enqueues a standard deployment stop job with MEC metadata"
+    (let [created-job (atom nil)
+          job-state   (assoc sample-mec-terminate-job
+                        :state "QUEUED"
+                        :mec-southbound-operation-id nil)
+          response    (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                                  (assoc sample-deployment :state "STARTED"))
+                                    crud/query (fn [_]
+                                                 {:status 200
+                                                  :body {:resources [sample-mepm]}})
+                                    mm3/query-capabilities (fn [_ & _]
+                                                             {:success? true
+                                                              :status 200
+                                                              :data {:platforms ["kubernetes"]}})
+                                    mm3/query-resources (fn [_ & _]
                                                           {:success? true
                                                            :status 200
-                                                           :data {:platforms ["kubernetes"]}})
-                                 mm3/query-resources (fn [_ & _]
-                                                       {:success? true
-                                                        :status 200
-                                                        :data {:cpu-cores 8}})
-                                 crud/do-action (fn [request]
-                                                  (reset! action-request request)
-                                                  {:status 202
-                                                   :body {:location "job/terminate-123"}})
-                                 crud/edit-by-id-as-admin (fn [_ _]
-                                                            {:status 200})
-                                 crud/retrieve-by-id-as-admin (fn [_]
-                                                                sample-mec-terminate-job)
-                                 dispatcher/dispatch-app-lcm-op-occ-state-change! (fn [& _] [])]
-                     (app-lcm/terminate-app-instance-handler {:params {:id "deployment/test-123"}
-                                                                 :body   {:terminationType "GRACEFUL"}}))]
+                                                           :data {:cpu-cores 8}})
+                                    crud/do-action (fn [request]
+                                                     (reset! created-job request)
+                                                     {:status 202
+                                                      :body   {:location "job/terminate-123"}})
+                                    crud/retrieve-by-id-as-admin (fn [resource-id]
+                                                                   (case resource-id
+                                                                     "job/terminate-123" job-state
+                                                                     nil))]
+                        (app-lcm/terminate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                                    :body   {:terminationType "GRACEFUL"}}))]
       (is (= 202 (:status response)))
       (is (= "/mec/mm1/app_lcm/v1/app_lcm_op_occs/job/terminate-123"
              (get-in response [:headers "Location"])))
-      (is (= "stop" (get-in @action-request [:params :action])))
-      (is (= "TERMINATE" (get-in @action-request [:body :job-attrs :mec-operation-type])))
-      (is (= "deployment/test-123" (get-in @action-request [:body :job-attrs :mec-app-instance-id])))
+      (is (= "stop" (get-in @created-job [:params :action])))
+      (is (= "TERMINATE" (get-in @created-job [:body :job-attrs :mec-operation-type])))
+      (is (= "deployment/test-123" (get-in @created-job [:body :job-attrs :mec-app-instance-id])))
+      (is (= "GRACEFUL" (get-in @created-job [:body :job-attrs :mec-request-params :terminationType])))
       (is (= "TERMINATE" (get-in response [:body :operationType])))))
 
   (testing "Terminate rejects unsupported request fields"
@@ -699,37 +797,39 @@
 
 
 (deftest test-operate-app-instance-handler
-  (testing "Operate STARTED uses deployment start action and returns persisted MEC job"
-    (let [action-request (atom nil)
-          response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
-                                                               (assoc sample-deployment :state "STOPPED"))
-                                 crud/query (fn [_]
-                                              {:status 200
-                                               :body {:resources [sample-mepm]}})
-                                 mm3/query-capabilities (fn [_ & _]
+  (testing "Operate STARTED enqueues a standard deployment start job with MEC metadata"
+    (let [created-job (atom nil)
+          job-state   (assoc sample-mec-operate-job
+                        :state "QUEUED"
+                        :mec-southbound-operation-id nil)
+          response    (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                                  (assoc sample-deployment :state "STOPPED"))
+                                    crud/query (fn [_]
+                                                 {:status 200
+                                                  :body {:resources [sample-mepm]}})
+                                    mm3/query-capabilities (fn [_ & _]
+                                                             {:success? true
+                                                              :status 200
+                                                              :data {:platforms ["kubernetes"]}})
+                                    mm3/query-resources (fn [_ & _]
                                                           {:success? true
                                                            :status 200
-                                                           :data {:platforms ["kubernetes"]}})
-                                 mm3/query-resources (fn [_ & _]
-                                                       {:success? true
-                                                        :status 200
-                                                        :data {:cpu-cores 8}})
-                                 crud/do-action (fn [request]
-                                                  (reset! action-request request)
-                                                  {:status 202
-                                                   :body {:location "job/operate-123"}})
-                                 crud/edit-by-id-as-admin (fn [_ _]
-                                                            {:status 200})
-                                 crud/retrieve-by-id-as-admin (fn [_]
-                                                                sample-mec-operate-job)
-                                 dispatcher/dispatch-app-lcm-op-occ-state-change! (fn [& _] [])]
-                     (app-lcm/operate-app-instance-handler {:params {:id "deployment/test-123"}
-                                                               :body   {:changeStateTo :STARTED}}))]
+                                                           :data {:cpu-cores 8}})
+                                    crud/do-action (fn [request]
+                                                     (reset! created-job request)
+                                                     {:status 202
+                                                      :body   {:location "job/operate-123"}})
+                                    crud/retrieve-by-id-as-admin (fn [resource-id]
+                                                                   (case resource-id
+                                                                     "job/operate-123" job-state
+                                                                     nil))]
+                        (app-lcm/operate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                                  :body   {:changeStateTo :STARTED}}))]
       (is (= 202 (:status response)))
-      (is (= "start" (get-in @action-request [:params :action])))
-      (is (= "STARTED" (get-in @action-request [:body :changeStateTo])))
-      (is (= "OPERATE" (get-in @action-request [:body :job-attrs :mec-operation-type])))
-      (is (= "deployment/test-123" (get-in @action-request [:body :job-attrs :mec-app-instance-id])))
+      (is (= "start" (get-in @created-job [:params :action])))
+      (is (= "OPERATE" (get-in @created-job [:body :job-attrs :mec-operation-type])))
+      (is (= "deployment/test-123" (get-in @created-job [:body :job-attrs :mec-app-instance-id])))
+      (is (= "STARTED" (get-in @created-job [:body :job-attrs :mec-request-params :changeStateTo])))
       (is (= "OPERATE" (get-in response [:body :operationType])))))
 
   (testing "Operate rejects invalid requested state"
@@ -816,13 +916,16 @@
 
 (deftest test-mepm-resolution-behavior
   (testing "Instantiate fails when multiple eligible MEPMs exist without explicit host association"
-    (let [hostless-deployment (dissoc sample-deployment :nuvlabox)
+    (let [hostless-deployment (dissoc sample-deployment :nuvlabox :parent :mec-host-id :mec-mepm-id)
           response (with-redefs [crud/get-resource-throw-nok (fn [_ _]
                                                                hostless-deployment)
                                  crud/query (fn [_]
                                               {:status 200
                                                :body {:resources [sample-mepm
-                                                                  (assoc sample-mepm :id "mepm/test-2" :mec-host-id "nuvlabox/edge-host-2")]}})]
+                                                                 (assoc sample-mepm
+                                                                        :id "mepm/test-2"
+                                                                        :mec-host-id "nuvlabox/edge-host-3"
+                                                                        :managed-edges ["nuvlabox/edge-host-3"])]}})]
                      (app-lcm/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
                                                                    :body   {}}))]
       (is (= 409 (:status response)))))
@@ -837,7 +940,117 @@
                                                                    :body   {}}))]
       (is (= 503 (:status response)))
       (is (= "Service Unavailable" (get-in response [:body :title])))
-      (is (= 503 (get-in response [:body :status]))))))
+      (is (= 503 (get-in response [:body :status])))))
+
+  (testing "Instantiate resolves a targeted host through managed-edges"
+    (let [created-job (atom nil)
+          job-state   (assoc sample-mec-instantiate-job
+                        :state "QUEUED"
+                        :mec-southbound-operation-id nil)
+          response       (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                                     sample-deployment)
+                                       crud/query (fn [_]
+                                                    {:status 200
+                                                     :body {:resources [(assoc sample-mepm
+                                                                               :id "mepm/test-managed"
+                                                                               :mec-host-id "nuvlabox/legacy-host"
+                                                                               :managed-edges ["nuvlabox/edge-host-1"
+                                                                                               "nuvlabox/edge-host-9"])]}})
+                                       mm3/query-capabilities (fn [_ & _]
+                                                                {:success? true
+                                                                 :status 200
+                                                                 :data {:platforms ["kubernetes"]}})
+                                       mm3/query-resources (fn [_ & _]
+                                                             {:success? true
+                                                              :status 200
+                                                              :data {:cpu-cores 8}})
+                                       crud/do-action (fn [request]
+                                                        (reset! created-job request)
+                                                        {:status 202
+                                                         :body   {:location "job/instantiate-123"}})
+                                       crud/retrieve-by-id-as-admin (fn [resource-id]
+                                                                      (case resource-id
+                                                                        "job/instantiate-123" job-state
+                                                                        nil))]
+                           (app-lcm/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                                      :body   {}}))]
+      (is (= 202 (:status response)))
+      (is (= "mepm/test-managed" (get-in @created-job [:body :job-attrs :mepm-id])))
+      (is (= "nuvlabox/edge-host-1" (get-in @created-job [:body :job-attrs :mec-host-id])))))
+
+  (testing "Instantiate resolves a persisted MEC host snapshot when nuvlabox is absent"
+    (let [created-job     (atom nil)
+          job-state       (assoc sample-mec-instantiate-job
+                            :state "QUEUED"
+                            :mec-southbound-operation-id nil)
+          deployment-body (-> sample-deployment
+                              (dissoc :nuvlabox)
+                              (assoc :mec-host-id "nuvlabox/edge-host-1"))
+          response        (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                                      deployment-body)
+                                        crud/query (fn [_]
+                                                     {:status 200
+                                                      :body {:resources [sample-mepm]}})
+                                        mm3/query-capabilities (fn [_ & _]
+                                                                 {:success? true
+                                                                  :status 200
+                                                                  :data {:platforms ["kubernetes"]}})
+                                        mm3/query-resources (fn [_ & _]
+                                                              {:success? true
+                                                               :status 200
+                                                               :data {:cpu-cores 8}})
+                                        crud/do-action (fn [request]
+                                                         (reset! created-job request)
+                                                         {:status 202
+                                                          :body   {:location "job/instantiate-123"}})
+                                        crud/retrieve-by-id-as-admin (fn [resource-id]
+                                                                       (case resource-id
+                                                                         "job/instantiate-123" job-state
+                                                                         nil))]
+                            (app-lcm/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                                       :body   {}}))]
+      (is (= 202 (:status response)))
+      (is (= "mepm/test-1" (get-in @created-job [:body :job-attrs :mepm-id])))
+      (is (= "nuvlabox/edge-host-1" (get-in @created-job [:body :job-attrs :mec-host-id])))))
+
+  (testing "Instantiate uses persisted MEC MEPM id to break ties on the same host"
+    (let [created-job     (atom nil)
+          job-state       (assoc sample-mec-instantiate-job
+                            :state "QUEUED"
+                            :mec-southbound-operation-id nil)
+          deployment-body (-> sample-deployment
+                              (dissoc :nuvlabox)
+                              (assoc :mec-host-id "nuvlabox/edge-host-1"
+                                     :mec-mepm-id "mepm/test-2"))
+          response        (with-redefs [crud/get-resource-throw-nok (fn [_ _]
+                                                                      deployment-body)
+                                        crud/query (fn [_]
+                                                     {:status 200
+                                                      :body {:resources [sample-mepm
+                                                                         (assoc sample-mepm
+                                                                                :id "mepm/test-2"
+                                                                                :managed-edges ["nuvlabox/edge-host-1"])]}})
+                                        mm3/query-capabilities (fn [_ & _]
+                                                                 {:success? true
+                                                                  :status 200
+                                                                  :data {:platforms ["kubernetes"]}})
+                                        mm3/query-resources (fn [_ & _]
+                                                              {:success? true
+                                                               :status 200
+                                                               :data {:cpu-cores 8}})
+                                        crud/do-action (fn [request]
+                                                         (reset! created-job request)
+                                                         {:status 202
+                                                          :body   {:location "job/instantiate-123"}})
+                                        crud/retrieve-by-id-as-admin (fn [resource-id]
+                                                                       (case resource-id
+                                                                         "job/instantiate-123" job-state
+                                                                         nil))]
+                            (app-lcm/instantiate-app-instance-handler {:params {:id "deployment/test-123"}
+                                                                       :body   {}}))]
+      (is (= 202 (:status response)))
+      (is (= "mepm/test-2" (get-in @created-job [:body :job-attrs :mepm-id])))
+      (is (= "nuvlabox/edge-host-1" (get-in @created-job [:body :job-attrs :mec-host-id]))))))
 
 
 ;;
