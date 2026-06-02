@@ -238,7 +238,7 @@
                                        :swImageDescriptor [{:swImageName "demo-mec-app"
                                                             :swImageVersion "1.0.0"
                                                             :containerFormat :DOCKER
-                                                            :swImage "sixsq/example-mec-app:1.0.0"}]
+                                                            :swImage "nginx:1.27-alpine"}]
                                        :virtualStorageDescriptor []
                                        :appExtCpd []
                                        :appServiceRequired []
@@ -288,7 +288,7 @@
                                        :swImageDescriptor [{:swImageName "APP_NAME"
                                                             :swImageVersion "1.0.0"
                                                             :containerFormat :DOCKER
-                                                            :swImage "sixsq/example-mec-app:1.0.0"}]
+                                                            :swImage "nginx:1.27-alpine"}]
                                        :virtualStorageDescriptor []
                                        :appExtCpd []
                                        :appServiceRequired []
@@ -632,7 +632,7 @@
                               :swImageDescriptor [{:swImageName "demo-mec-app"
                                                    :swImageVersion "1.0.0"
                                                    :containerFormat :DOCKER
-                                                   :swImage "sixsq/example-mec-app:1.0.0"}]}}
+                                                   :swImage "nginx:1.27-alpine"}]}}
         deleted-request (atom nil)]
     (testing "lookup accepts a bare UUID"
       (with-redefs [crud/retrieve-by-id-as-admin (fn [id]

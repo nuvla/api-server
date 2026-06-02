@@ -128,8 +128,8 @@
    #{"INSTANTIATE" "TERMINATE" "OPERATE"})
 
 
- (def ^:private eligible-mepm-statuses
-   #{"ONLINE" "DEGRADED"})
+(def ^:private eligible-mepm-statuses
+  #{"ONLINE"})
 
 (def ^:private allowed-cancel-modes
   #{"GRACEFUL" "FORCEFUL"})
@@ -265,11 +265,22 @@
         (retrieve-app-instance-deployment request)
        (#(app-instance/deployment->app-instance-info % request))))
 
+(defn- mec-app-instance-deployment?
+  [deployment]
+  (contains? (set (:tags deployment)) "MEC"))
+
 (defn- target-host-id
   [deployment]
   (or (:mec-host-id deployment)
       (:nuvlabox deployment)
       (:parent deployment)))
+
+
+(defn- infer-unambiguous-mepm-host-id
+  [mepm]
+  (let [managed-edge-ids (vec (mepm-resource/managed-edge-ids mepm))]
+    (when (= 1 (count managed-edge-ids))
+      (first managed-edge-ids))))
 
 
  (defn- request-change-state->target-state
@@ -390,10 +401,14 @@
   (let [host-id            (target-host-id deployment)
         persisted-mepm-id  (:mec-mepm-id deployment)
         eligible           (eligible-mepms-for-host host-id)
-        narrowed-eligible  (filter-by-persisted-mepm-id eligible persisted-mepm-id)]
+        narrowed-eligible  (filter-by-persisted-mepm-id eligible persisted-mepm-id)
+        selected-mepm      (when (= 1 (count narrowed-eligible))
+                             (first narrowed-eligible))
+        selected-host-id   (or host-id
+                               (some-> selected-mepm infer-unambiguous-mepm-host-id))]
      (cond
-      (and host-id (= 1 (count narrowed-eligible)))
-      (assoc (first narrowed-eligible) :selected-mec-host-id host-id)
+      (and host-id selected-mepm)
+      (assoc selected-mepm :selected-mec-host-id host-id)
 
        (and host-id (empty? narrowed-eligible))
        (throw-status 503
@@ -405,19 +420,21 @@
                      (str "Multiple eligible MEPMs found for target NuvlaBox " host-id)
                      {:nuvlabox-id host-id
                       :mec-mepm-id persisted-mepm-id})
-       (= 1 (count narrowed-eligible)) (first narrowed-eligible)
+      selected-mepm (cond-> selected-mepm
+                      selected-host-id (assoc :selected-mec-host-id selected-host-id))
        (empty? narrowed-eligible) (throw-status 503 "No eligible MEPM available")
        :else (throw-status 409 "Multiple eligible MEPMs available; explicit host targeting is required"))))
 
 (defn- correlation-snapshot-for-create
   [deployment-id deployment-body]
-  (let [host-id   (target-host-id deployment-body)
-        mepms     (when host-id
-                    (eligible-mepms-for-host host-id))
-        mepm      (when (= 1 (count mepms))
-                    (first mepms))]
+  (let [host-id           (target-host-id deployment-body)
+        mepms             (eligible-mepms-for-host host-id)
+        mepm              (when (= 1 (count mepms))
+                            (first mepms))
+        selected-host-id  (or host-id
+                              (some-> mepm infer-unambiguous-mepm-host-id))]
     (cond-> {:mec-app-instance-id deployment-id}
-      host-id (assoc :mec-host-id host-id)
+      selected-host-id (assoc :mec-host-id selected-host-id)
       (:id mepm) (assoc :mec-mepm-id (:id mepm))
       (:name mepm) (assoc :mec-mepm-name (:name mepm))
       mepm (assoc :mec-backend-mode (or (:backend-mode mepm)
@@ -642,7 +659,8 @@
    (try
     (let [params      (:params request)
           base-uri    (request-public-base-uri request)
-           deployments (query-resources request "deployment")
+          deployments (->> (query-resources request "deployment")
+                           (filter mec-app-instance-deployment?))
           resources   (mapv #(app-instance/deployment->app-instance-info % request) deployments)]
        (r/json-response (qf/process-query resources
                                           (merge params

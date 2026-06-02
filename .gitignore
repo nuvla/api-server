@@ -43,3 +43,4 @@ downloads/*
 test-reports/
 docs/5g-emerge/ETSI-MEC/submitted/5G-EMERGE_P2_TN_2.3.2\ Compliance_of_the_orchestration_software\ v06-pre-release.md
 docs/5g-emerge/ETSI-MEC/submitted/5G-EMERGE_P2_TN_2.3.2\ Compliance_of_the_orchestration_software\ v06-pre-release.pdf
+code/.nuvla-mock-mepm-*.json

@@ -85,8 +85,8 @@
       (is (empty? @app-calls)))))
 
 
-(deftest test-mec-job-on-cancel-dispatches_rolled_back_operation
-  (testing "canceled terminate dispatches rolled-back operation result without app instance change"
+(deftest test-mec-job-on-cancel-dispatches_failed_operation
+  (testing "canceled terminate dispatches failed operation result without app instance change"
     (let [op-calls  (atom [])
           app-calls (atom [])
           job       {:id                  "job/terminate-123"
@@ -106,14 +106,14 @@
                                                                      [])]
         (job-interface/on-cancel job))
       (is (= 1 (count @op-calls)))
-      (is (= "ROLLED_BACK" (get-in @op-calls [0 0 :operationState])))
+      (is (= "FAILED" (get-in @op-calls [0 0 :operationState])))
       (is (= "OPERATION_RESULT" (get-in @op-calls [0 1])))
       (is (= "PROCESSING" (get-in @op-calls [0 2])))
       (is (empty? @app-calls)))))
 
 
-(deftest test-mec-job-on-timeout-dispatches_rolled_back_operation
-  (testing "timed out operate dispatches rolled-back operation result without app instance change"
+(deftest test-mec-job-on-timeout-dispatches_failed_operation
+  (testing "timed out operate dispatches failed operation result without app instance change"
     (let [op-calls  (atom [])
           app-calls (atom [])
           job       {:id                  "job/operate-456"
@@ -134,7 +134,7 @@
                                                                      [])]
         (job-interface/on-timeout job))
       (is (= 1 (count @op-calls)))
-      (is (= "ROLLED_BACK" (get-in @op-calls [0 0 :operationState])))
+      (is (= "FAILED" (get-in @op-calls [0 0 :operationState])))
       (is (= "OPERATION_RESULT" (get-in @op-calls [0 1])))
       (is (= "PROCESSING" (get-in @op-calls [0 2])))
       (is (empty? @app-calls)))))

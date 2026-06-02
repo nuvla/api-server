@@ -24,11 +24,11 @@
 (def nuvla-to-mec-instantiation-state
   "Maps Nuvla deployment states to MEC instantiation states"
   {:CREATED            :NOT_INSTANTIATED
-   :STARTING           :INSTANTIATED
+   :STARTING           :NOT_INSTANTIATED
    :STARTED            :INSTANTIATED
-   :STOPPING           :INSTANTIATED
+   :STOPPING           :NOT_INSTANTIATED
    :STOPPED            :INSTANTIATED
-   :ERROR              :INSTANTIATED
+   :ERROR              :NOT_INSTANTIATED
    :PENDING            :NOT_INSTANTIATED
    :UNKNOWN            :NOT_INSTANTIATED})
 
@@ -88,6 +88,12 @@
   (contains? #{:STARTED :STOPPED} (keyword state)))
 
 
+(defn- notification-state
+  [deployment key]
+  (some-> (get-in deployment [:mec-last-notification key])
+          keyword))
+
+
 ;;
 ;; Translation Functions
 ;;
@@ -107,8 +113,10 @@
                             (:owner deployment))
         state           (keyword (:state deployment))
         host-id         (or (:nuvlabox deployment) (:parent deployment))
-        instantiation   (get nuvla-to-mec-instantiation-state state :NOT_INSTANTIATED)
-        operational     (get nuvla-to-mec-operational-state state)
+        instantiation   (or (notification-state deployment :instantiation-state)
+                            (get nuvla-to-mec-instantiation-state state :NOT_INSTANTIATED))
+        operational     (or (notification-state deployment :operational-state)
+                            (get nuvla-to-mec-operational-state state))
         base-uri        (public-base-uri request)]
      (cond-> {:id                 deployment-id
               :appInstanceId      deployment-id
@@ -138,9 +146,12 @@
        (:appDVersion module-content)
        (assoc :appDVersion (:appDVersion module-content))
       
-       ;; Add operational state if applicable
-       operational
-       (assoc :operationalState (name operational))
+      ;; Preserve the legacy top-level operationalState field used by the
+      ;; current robot suite, and also expose the ETSI-style nested
+      ;; instantiatedAppState block expected by the schema.
+      operational
+      (-> (assoc :operationalState (name operational))
+          (assoc :instantiatedAppState {:operationalState (name operational)}))
       
        ;; Add MEC host information if deployed
        host-id

@@ -691,10 +691,10 @@
                                                    ;; Minimal required MEC AppD fields
                                                    :virtualComputeDescriptor {:virtualCpu {:numVirtualCpu 1}
                                                                               :virtualMemory {:virtualMemSize 1024}}
-                                                   :swImageDescriptor [{:swImageName app-pkg-name
-                                                                        :swImageVersion placeholder-version
-                                                                        :containerFormat :DOCKER
-                                                                        :swImage "sixsq/example-mec-app:1.0.0"}]
+                                                  :swImageDescriptor [{:swImageName app-pkg-name
+                                                                       :swImageVersion placeholder-version
+                                                                       :containerFormat :DOCKER
+                                                                       :swImage "nginx:1.27-alpine"}]
                                                    :virtualStorageDescriptor []
                                                    :appExtCpd []
                                                    :appServiceRequired []

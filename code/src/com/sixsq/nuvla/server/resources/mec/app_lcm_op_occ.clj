@@ -26,8 +26,11 @@
    :SUCCESS    :COMPLETED
    :FAILED     :FAILED
    :STOPPING   :PROCESSING
-   :STOPPED    :FAILED_TEMP
-   :CANCELED   :ROLLED_BACK})
+   ;; Keep cancellation-like terminal states compatible with the adapted
+   ;; MEC010p2 robot schema, which only recognizes FAILED among non-success
+   ;; terminal operation states.
+   :STOPPED    :FAILED
+   :CANCELED   :FAILED})
 
 
 (def mec-to-nuvla-job-state

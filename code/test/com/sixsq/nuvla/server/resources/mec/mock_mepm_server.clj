@@ -3,6 +3,7 @@
    Implements ETSI MEC 003 southbound endpoints for integration testing."
   (:require
     [clj-http.client :as http]
+    [clojure.java.io :as io]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [com.sixsq.nuvla.server.resources.mec.app-instance :as app-instance]
@@ -51,11 +52,29 @@
 (def ^:private backed-poll-max-attempts
   150)
 
+(def ^:private mock-notification-delay-ms
+  ;; Plain MOCK operations complete immediately, but the northbound job may need
+  ;; a short window to persist `mec-southbound-operation-id` before the Mm3
+  ;; callback arrives and attempts correlation.
+  1000)
+
+(def ^:private persisted-runtime-state-keys
+  [:mepm-id :backend-mode :subscriptions])
+
+(defn- runtime-state-file
+  [port]
+  (str (System/getProperty "user.dir")
+       "/.nuvla-mock-mepm-"
+       port
+       ".json"))
+
 (defonce ^:private operation-watchers
   (atom {}))
 
 (defonce ^:private app-instance-reconciler
   (atom nil))
+
+(declare restore-local-runtime-state!)
 
 (def ^:private mm3-lifecycle-base-path
   "/mm3/app_lcm/v1")
@@ -90,6 +109,10 @@
 (defn reset-state!
   "Reset MEPM state to defaults."
   []
+  (when-let [server-port (:server-port @mepm-state)]
+    (let [state-file (runtime-state-file server-port)]
+      (when (.exists (io/file state-file))
+        (io/delete-file state-file true))))
   (cancel-operation-watchers!)
   (cancel-app-instance-reconciler!)
   (reset! mepm-state {:status          :online
@@ -124,7 +147,11 @@
 (defn set-backend-mode!
   "Set mock MEPM backend mode."
   [mode]
-  (swap! mepm-state assoc :backend-mode mode))
+  (swap! mepm-state assoc :backend-mode mode)
+  (when-let [server-port (:server-port @mepm-state)]
+    (spit (runtime-state-file server-port)
+          (json/write-value-as-string
+            (select-keys @mepm-state persisted-runtime-state-keys)))))
 
 (defn set-nuvla-auth!
   "Configure how the NUVLA_BACKED mock MEPM authenticates back into Nuvla."
@@ -146,7 +173,11 @@
 (defn set-mepm-id!
   "Set the MEPM id reported by the mock server when running NUVLA_BACKED flows."
   [mepm-id]
-  (swap! mepm-state assoc :mepm-id mepm-id))
+  (swap! mepm-state assoc :mepm-id mepm-id)
+  (when-let [server-port (:server-port @mepm-state)]
+    (spit (runtime-state-file server-port)
+          (json/write-value-as-string
+            (select-keys @mepm-state persisted-runtime-state-keys)))))
 
 (defn get-state
   "Get current MEPM state."
@@ -178,8 +209,15 @@
               :as               :json
               :coerce           :always}))
 
+(defn- ensure-local-runtime-state-loaded!
+  []
+  (when (empty? (:subscriptions @mepm-state))
+    (when-let [server-port (:server-port @mepm-state)]
+      (restore-local-runtime-state! server-port))))
+
 (defn- emit-notification-to-subscribers!
   [notification-builder]
+  (ensure-local-runtime-state-loaded!)
   (doseq [[subscription-id {:keys [callbackUri active]}] (:subscriptions @mepm-state)
           :when (and callbackUri (not= false active))]
     (let [notification (notification-builder subscription-id)
@@ -189,6 +227,38 @@
                  :notification-type (:notificationType notification)
                  :callback-uri callbackUri
                  :status (:status response)}))))
+
+(defn- schedule-notification-to-subscribers!
+  [notification-builder]
+  (future
+    (Thread/sleep mock-notification-delay-ms)
+    (emit-notification-to-subscribers! notification-builder)))
+
+(defn- persist-local-runtime-state!
+  []
+  (when-let [server-port (:server-port @mepm-state)]
+    (spit (runtime-state-file server-port)
+          (json/write-value-as-string
+            (select-keys @mepm-state persisted-runtime-state-keys)))))
+
+(defn- restore-local-runtime-state!
+  [port]
+  (let [state-file (runtime-state-file port)]
+    (when (.exists (io/file state-file))
+      (try
+        (let [persisted (json/read-value (slurp state-file) json/keyword-keys-object-mapper)
+              restored  (cond-> (select-keys persisted persisted-runtime-state-keys)
+                          (:subscriptions persisted)
+                          (assoc :subscriptions
+                                 (into {}
+                                       (map (fn [[subscription-id subscription]]
+                                              [(str subscription-id) subscription]))
+                                       (:subscriptions persisted))))]
+          (swap! mepm-state merge restored)
+          restored)
+        (catch Exception e
+          (log/warn e "Failed to restore mock MEPM runtime state from" state-file)
+          nil)))))
 
 (defn- operation-error-detail
   [backing]
@@ -301,6 +371,19 @@
         (:instantiationState outcome) (assoc :instantiationState (:instantiationState outcome))
         (contains? outcome :operationalState) (assoc :operationalState (:operationalState outcome))
         (:error outcome) (assoc :error (:error outcome))))))
+
+(defn- mock-terminal-outcome
+  [{:keys [operationType targetState]}]
+  (case operationType
+    "INSTANTIATE" {:operationState "COMPLETED"
+                   :instantiationState "INSTANTIATED"
+                   :operationalState "STARTED"}
+    "OPERATE"     {:operationState "COMPLETED"
+                   :instantiationState "INSTANTIATED"
+                   :operationalState targetState}
+    "TERMINATE"   {:operationState "COMPLETED"
+                   :instantiationState "NOT_INSTANTIATED"}
+    nil))
 
 (defn- poll-backed-operation-step!
   [operation-id]
@@ -484,6 +567,7 @@
                                          "AppLcmOpOccNotification"]
                   :source               :nuvla-recovered
                   :created              (now-str)})
+          (persist-local-runtime-state!)
           (get-in @mepm-state [:subscriptions subscription-id]))))))
 
 (defn- resume-backed-operation-watchers!
@@ -635,6 +719,7 @@
                             :id subscription-id
                             :created (str (java.time.Instant/now)))]
       (swap! mepm-state assoc-in [:subscriptions subscription-id] persisted)
+      (persist-local-runtime-state!)
       {:status 201
        :body   persisted})))
 
@@ -710,8 +795,19 @@
                               backed? (assoc :backingDeploymentId app-id))]
           (swap! mepm-state assoc-in [:app-instances app-id] instance)
           (swap! mepm-state assoc-in [:operations op-id] operation)
-          (when backed?
-            (watch-backed-operation! op-id))
+          (if backed?
+            (watch-backed-operation! op-id)
+            (when-let [outcome (mock-terminal-outcome operation)]
+              (schedule-notification-to-subscribers!
+                (fn [subscription-id]
+                  (cond-> {:notificationType "AppLcmOpOccNotification"
+                           :subscriptionId   subscription-id
+                           :operationId      op-id
+                           :appInstanceId    app-id
+                           :operationType    "INSTANTIATE"
+                           :operationState   (:operationState outcome)}
+                    (:instantiationState outcome) (assoc :instantiationState (:instantiationState outcome))
+                    (contains? outcome :operationalState) (assoc :operationalState (:operationalState outcome)))))))
           {:status 201
            :body   (assoc instance :operationId op-id)})
         (catch clojure.lang.ExceptionInfo e
@@ -775,9 +871,28 @@
             {:status 202
              :body   {:operationId op-id
                       :appInstanceId app-id}})
-          (do
-            (swap! mepm-state update :app-instances dissoc app-id)
-            {:status 204}))
+          (let [op-id      (str "op-" (java.util.UUID/randomUUID))
+                operation  {:id               op-id
+                            :operationType    "TERMINATE"
+                            :appInstanceId    app-id
+                            :status           "COMPLETED"
+                            :operationState   "COMPLETED"
+                            :stateEnteredTime (now-str)}
+                outcome    (mock-terminal-outcome operation)]
+            (swap! mepm-state assoc-in [:operations op-id] operation)
+            (apply-backed-operation-outcome! operation outcome)
+            (schedule-notification-to-subscribers!
+              (fn [subscription-id]
+                {:notificationType   "AppLcmOpOccNotification"
+                 :subscriptionId     subscription-id
+                 :operationId        op-id
+                 :appInstanceId      app-id
+                 :operationType      "TERMINATE"
+                 :operationState     "COMPLETED"
+                 :instantiationState "NOT_INSTANTIATED"}))
+            {:status 202
+             :body   {:operationId op-id
+                      :appInstanceId app-id}}))
         (catch clojure.lang.ExceptionInfo e
           {:status (or (:status (ex-data e)) 500)
            :body   {:error "MEPM terminate failed"
@@ -848,8 +963,19 @@
                                             :operationalState change-state-to)]
                 (swap! mepm-state assoc-in [:app-instances app-id] updated-instance)))
             (swap! mepm-state assoc-in [:operations op-id] operation)
-            (when backed?
-              (watch-backed-operation! op-id))
+            (if backed?
+              (watch-backed-operation! op-id)
+              (when-let [outcome (mock-terminal-outcome operation)]
+                (schedule-notification-to-subscribers!
+                  (fn [subscription-id]
+                    {:notificationType   "AppLcmOpOccNotification"
+                     :subscriptionId     subscription-id
+                     :operationId        op-id
+                     :appInstanceId      app-id
+                     :operationType      "OPERATE"
+                     :operationState     "COMPLETED"
+                     :instantiationState "INSTANTIATED"
+                     :operationalState   (:operationalState outcome)}))))
             {:status 200
              :body   response-body})
           (catch clojure.lang.ExceptionInfo e
@@ -978,6 +1104,8 @@
    (when @server
      (stop-server!))
    (log/info "Starting mock MEPM server on port" port)
+   (swap! mepm-state assoc :server-port port)
+   (restore-local-runtime-state! port)
    (let [server-instance (jetty/run-jetty
                           (create-handler)
                           (merge {:port  port

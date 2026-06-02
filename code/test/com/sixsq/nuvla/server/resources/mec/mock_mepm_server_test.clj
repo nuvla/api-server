@@ -1,6 +1,7 @@
  (ns com.sixsq.nuvla.server.resources.mec.mock-mepm-server-test
    (:require
      [clj-http.client :as http]
+    [clojure.java.io :as io]
      [clojure.test :refer [deftest is testing]]
      [com.sixsq.nuvla.server.resources.mec.mock-mepm-server :as mock]
      [com.sixsq.nuvla.server.resources.mec.nuvla-backed-mepm :as nuvla-backed-mepm]
@@ -11,6 +12,147 @@
    [request]
    (some-> (:body request)
            (json/read-value json/keyword-keys-object-mapper)))
+
+
+(deftest test-mock-instantiate-emits-completed-operation-notification
+  (mock/reset-state!)
+  (let [requests (atom [])]
+    (swap! (var-get #'mock/mepm-state)
+           assoc
+           :backend-mode "MOCK"
+           :subscriptions {"sub-1" {:id "sub-1"
+                                    :callbackUri "http://callback.local/mm3"
+                                    :active true}})
+    (with-redefs-fn {#'mock/schedule-notification-to-subscribers!
+                     (fn [builder]
+                       (#'mock/emit-notification-to-subscribers! builder))
+                     #'http/post
+                     (fn [url request]
+                       (swap! requests conj {:url url :request request})
+                       {:status 202})}
+      (fn []
+        (testing "plain MOCK instantiate sends a completed southbound operation callback"
+          (let [response (#'mock/handle-create-app-instance {:body {:name "demo-app"}})
+                op-id    (get-in response [:body :operationId])
+                notification (emitted-notification (:request (first @requests)))]
+            (is (= 201 (:status response)))
+            (is (some? op-id))
+            (is (= "COMPLETED" (get-in (mock/get-state) [:operations op-id :operationState])))
+            (is (= "AppLcmOpOccNotification" (:notificationType notification)))
+            (is (= op-id (:operationId notification)))
+            (is (= "INSTANTIATE" (:operationType notification)))
+            (is (= "COMPLETED" (:operationState notification)))
+            (is (= "INSTANTIATED" (:instantiationState notification)))
+            (is (= "STARTED" (:operationalState notification)))))))))
+
+
+(deftest test-mock-terminate-emits-completed-operation-notification
+  (mock/reset-state!)
+  (let [requests (atom [])]
+    (swap! (var-get #'mock/mepm-state)
+           assoc
+           :backend-mode "MOCK"
+           :subscriptions {"sub-1" {:id "sub-1"
+                                    :callbackUri "http://callback.local/mm3"
+                                    :active true}}
+           :app-instances {"app-1" {:id "app-1"
+                                    :instantiationState "INSTANTIATED"
+                                    :operationalState "STARTED"}})
+    (with-redefs-fn {#'mock/schedule-notification-to-subscribers!
+                     (fn [builder]
+                       (#'mock/emit-notification-to-subscribers! builder))
+                     #'http/post
+                     (fn [url request]
+                       (swap! requests conj {:url url :request request})
+                       {:status 202})}
+      (fn []
+        (testing "plain MOCK terminate returns an operationId and sends a completed callback"
+          (let [response (#'mock/handle-delete-app-instance {} "app-1")
+                op-id    (get-in response [:body :operationId])
+                notification (emitted-notification (:request (first @requests)))]
+            (is (= 202 (:status response)))
+            (is (some? op-id))
+            (is (nil? (get-in (mock/get-state) [:app-instances "app-1"])))
+            (is (= "COMPLETED" (get-in (mock/get-state) [:operations op-id :operationState])))
+            (is (= "AppLcmOpOccNotification" (:notificationType notification)))
+            (is (= op-id (:operationId notification)))
+            (is (= "TERMINATE" (:operationType notification)))
+            (is (= "COMPLETED" (:operationState notification)))
+            (is (= "NOT_INSTANTIATED" (:instantiationState notification)))))))))
+
+
+(deftest test-local-runtime-state-persistence-restores-subscriptions
+  (mock/reset-state!)
+  (let [state-file (str (System/getProperty "java.io.tmpdir")
+                        "/mock-mepm-runtime-state-"
+                        (java.util.UUID/randomUUID)
+                        ".json")]
+    (with-redefs-fn {#'mock/runtime-state-file (fn [_] state-file)}
+      (fn []
+        (swap! (var-get #'mock/mepm-state)
+               assoc
+               :server-port 19081
+               :mepm-id "mepm/test-1"
+               :backend-mode "MOCK"
+               :subscriptions {"sub-1" {:id "sub-1"
+                                        :callbackUri "http://localhost:8200/api/mec/internal/mm3/app_lcm/v1/notifications"
+                                        :notificationTypes ["AppInstNotification"
+                                                            "AppLcmOpOccNotification"]}})
+        (#'mock/persist-local-runtime-state!)
+        (swap! (var-get #'mock/mepm-state)
+               assoc
+               :mepm-id "mepm/other"
+               :backend-mode "NUVLA_BACKED"
+               :subscriptions {})
+        (#'mock/restore-local-runtime-state! 19081)
+        (testing "persisted local runtime state restores MEPM identity and subscriptions"
+          (is (= "mepm/test-1" (:mepm-id (mock/get-state))))
+          (is (= "MOCK" (:backend-mode (mock/get-state))))
+          (is (= "http://localhost:8200/api/mec/internal/mm3/app_lcm/v1/notifications"
+                 (some-> (mock/get-state) :subscriptions vals first :callbackUri))))))
+    (when (.exists (io/file state-file))
+      (io/delete-file state-file true))))
+
+(deftest test-emit-notification-reloads-subscriptions-from-runtime-state
+  (mock/reset-state!)
+  (let [state-file (str (System/getProperty "java.io.tmpdir")
+                        "/mock-mepm-runtime-state-"
+                        (java.util.UUID/randomUUID)
+                        ".json")
+        requests   (atom [])]
+    (with-redefs-fn {#'mock/runtime-state-file (fn [_] state-file)
+                     #'http/post
+                     (fn [url request]
+                       (swap! requests conj {:url url :request request})
+                       {:status 202})}
+      (fn []
+        (swap! (var-get #'mock/mepm-state)
+               assoc
+               :server-port 19081
+               :subscriptions {"sub-1" {:id "sub-1"
+                                        :callbackUri "http://localhost:8200/api/mec/internal/mm3/app_lcm/v1/notifications"
+                                        :notificationTypes ["AppInstNotification"
+                                                            "AppLcmOpOccNotification"]}})
+        (#'mock/persist-local-runtime-state!)
+        (swap! (var-get #'mock/mepm-state) assoc :subscriptions {})
+        (#'mock/emit-notification-to-subscribers!
+         (fn [subscription-id]
+           {:notificationType "AppLcmOpOccNotification"
+            :subscriptionId subscription-id
+            :operationId "op-1"
+            :appInstanceId "app-1"
+            :operationType "INSTANTIATE"
+            :operationState "COMPLETED"
+            :instantiationState "INSTANTIATED"
+            :operationalState "STARTED"}))
+        (testing "notification emission restores local subscriptions on demand"
+          (is (= 1 (count @requests)))
+          (is (= "http://localhost:8200/api/mec/internal/mm3/app_lcm/v1/notifications"
+                 (:url (first @requests))))
+          (is (= "http://localhost:8200/api/mec/internal/mm3/app_lcm/v1/notifications"
+                 (some-> (mock/get-state) :subscriptions vals first :callbackUri))))))
+    (when (.exists (io/file state-file))
+      (io/delete-file state-file true))))
 
 
  (deftest test-poll-backed-operation-step-failed-instantiate
