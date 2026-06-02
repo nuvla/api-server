@@ -509,8 +509,8 @@
                                                                          :tags nil)]}})]
                      (app-lcm/list-app-instances-handler {:params {}}))]
       (is (= 200 (:status response)))
-      (is (= 1 (count (get-in response [:body :items]))))
-      (is (= "deployment/test-123" (get-in response [:body :items 0 :appInstanceId]))))))
+      (is (= 1 (count (:body response))))
+      (is (= "deployment/test-123" (get-in response [:body 0 :appInstanceId]))))))
 
 
 (deftest test-create-subscription-handler
@@ -608,8 +608,8 @@
                                                :body {:resources [sample-job]}})]
                      (app-lcm/list-app-lcm-op-occs-handler {:params {}}))]
       (is (= 200 (:status response)))
-      (is (= 1 (count (get-in response [:body :items]))))
-      (is (= "job/instantiate-123" (get-in response [:body :items 0 :lcmOpOccId])))))
+      (is (= 1 (count (:body response))))
+      (is (= "job/instantiate-123" (get-in response [:body 0 :lcmOpOccId])))))
 
   (testing "List operation occurrences overlays southbound state for non-final jobs"
     (let [response (with-redefs [crud/query (fn [_]
@@ -622,8 +622,33 @@
                                                              :status "PROCESSING"}})]
                      (app-lcm/list-app-lcm-op-occs-handler {:params {}}))]
       (is (= 200 (:status response)))
-      (is (= "PROCESSING" (get-in response [:body :items 0 :operationState])))
-      (is (= "op/southbound-456" (get-in response [:body :items 0 :mepmOperationId]))))))
+      (is (= "PROCESSING" (get-in response [:body 0 :operationState])))
+      (is (= "op/southbound-456" (get-in response [:body 0 :mepmOperationId]))))))
+
+
+(deftest test-list-subscriptions-handler
+  (testing "List subscriptions returns ETSI link list"
+    (let [response (with-redefs [app-lcm/query-user-subscriptions (fn [_]
+                                                                    [{:id "mec-subscription/test-123"
+                                                                      :subscription-type "AppInstanceStateChange"
+                                                                      :callback-uri "http://localhost:18082"
+                                                                      :owner "user/alice"
+                                                                      :active true}
+                                                                     {:id "mec-subscription/inactive"
+                                                                      :subscription-type "AppLcmOpOccStateChange"
+                                                                      :callback-uri "http://localhost:18083"
+                                                                      :owner "user/alice"
+                                                                      :active false}])]
+                     (app-lcm/list-subscriptions-handler
+                       {:params {}
+                        :headers {"x-forwarded-proto" "https"
+                                  "x-forwarded-host" "nuvla.example"}}))]
+      (is (= 200 (:status response)))
+      (is (= "/mec/mm1/app_lcm/v1/subscriptions"
+             (get-in response [:body :_links :self :href])))
+      (is (= [{:href "/mec/mm1/app_lcm/v1/subscriptions/subscription/test-123"
+               :subscriptionType "AppInstanceStateChangeSubscription"}]
+             (get-in response [:body :_links :subscriptions]))))))
 
 
 (deftest test-get-app-lcm-op-occ-handler

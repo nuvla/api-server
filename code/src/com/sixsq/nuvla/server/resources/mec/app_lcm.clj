@@ -657,14 +657,10 @@
    "GET /app_lcm/v1/app_instances - List all app instances"
    [request]
    (try
-    (let [params      (:params request)
-          base-uri    (request-public-base-uri request)
-          deployments (->> (query-resources request "deployment")
-                           (filter mec-app-instance-deployment?))
-          resources   (mapv #(app-instance/deployment->app-instance-info % request) deployments)]
-       (r/json-response (qf/process-query resources
-                                          (merge params
-                                                {:base-uri (str base-uri "/app_instances")}))))
+   (let [deployments (->> (query-resources request "deployment")
+                          (filter mec-app-instance-deployment?))
+         resources   (mapv #(app-instance/deployment->app-instance-info % request) deployments)]
+      (r/json-response resources))
      (catch clojure.lang.ExceptionInfo e
        (log/error e "Failed to list app instances")
        (exception-response e 400))
@@ -772,15 +768,12 @@
    "GET /app_lcm/v1/app_lcm_op_occs - List all operation occurrences"
    [request]
    (try
-     (let [params    (:params request)
-           jobs      (query-resources request "job")
+    (let [jobs      (query-resources request "job")
            resources (->> jobs
                           (filter mec-operation-job?)
                          (map #(job->northbound-op-occ % request))
                           vec)]
-       (r/json-response (qf/process-query resources
-                                          (merge params
-                                                 {:base-uri (str (request-public-base-uri request) "/app_lcm_op_occs")}))))
+      (r/json-response resources))
      (catch clojure.lang.ExceptionInfo e
        (log/error e "Failed to list operation occurrences")
        (exception-response e 400))
@@ -902,6 +895,23 @@
                   (:app-instance-id filter) (assoc :appInstanceId (:app-instance-id filter))
                   (:operation-type filter) (assoc :operationType (:operation-type filter))
                   (:operation-state filter) (assoc :operationState (:operation-state filter))))))))
+
+
+(defn- subscription-link
+  [request subscription-resource]
+  (str (request-public-base-uri request)
+       "/subscriptions/"
+       (some-> (:id subscription-resource) subscription/resource-id->api-id)))
+
+
+(defn- subscription-link-list-response
+  [request subscription-resources]
+  {:_links {:self          {:href (str (request-public-base-uri request) "/subscriptions")}
+            :subscriptions (mapv (fn [resource]
+                                   {:href             (subscription-link request resource)
+                                    :subscriptionType (some-> (:subscription-type resource)
+                                                              subscription/public-subscription-type)})
+                                 subscription-resources)}})
 
 
  (defn- normalize-app-instance-filter
@@ -1046,13 +1056,10 @@
    "GET /app_lcm/v1/subscriptions - List subscriptions"
    [request]
    (try
-     (let [query-params     (:params request)
-          active-user-subs (->> (query-user-subscriptions request)
-                                 (filter :active)
-                                 (mapv subscription-response))]
-       (r/json-response (qf/process-query active-user-subs
-                                          (merge query-params
-                                                 {:base-uri (str (request-public-base-uri request) "/subscriptions")}))))
+    (let [active-user-subs (->> (query-user-subscriptions request)
+                                (filter :active)
+                                vec)]
+      (r/json-response (subscription-link-list-response request active-user-subs)))
      (catch Exception e
        (log/error e "Failed to list subscriptions")
        (json-response-status (problem-details
