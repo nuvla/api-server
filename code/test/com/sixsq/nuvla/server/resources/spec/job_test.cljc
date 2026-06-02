@@ -37,6 +37,7 @@
     (stu/is-valid ::job/schema (assoc job :progress 100))
     (stu/is-invalid ::job/schema (assoc job :priority 1000))
     (stu/is-valid ::job/schema (assoc job :priority 90))
+    (stu/is-valid ::job/schema (assoc job :mec-southbound-operation-id "op-123"))
 
     (stu/is-invalid ::job/schema (assoc job :progress 101))
     (stu/is-invalid ::job/schema (assoc job :state "XY"))

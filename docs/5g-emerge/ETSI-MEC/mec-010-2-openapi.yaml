@@ -1,0 +1,1086 @@
+openapi: 3.0.3
+info:
+  title: MEC 010-2 Application Lifecycle Management API
+  description: |
+    ETSI MEC 010-2 v2.2.1 compliant Application Lifecycle Management APIs implemented by Nuvla MEO.
+    
+    This API provides lifecycle management for MEC applications at the MEO (MEC Orchestrator) level,
+    including instantiation, termination, operation control, and subscription-based notifications.
+    
+    **Implementation Scope**: MEO-level only (orchestration layer)
+    **Project**: 5G-EMERGE / Nuvla.io
+    **Compliance**: ~90% ETSI GS MEC 010-2 v2.2.1
+    
+    ## Features
+    - Application instance lifecycle management (CRUD operations)
+    - Lifecycle operations (instantiate, terminate, operate)
+    - Operation occurrence tracking
+    - Subscription and notification system
+    - FIQL-like query filtering
+    - HAL-style pagination
+    - RFC 7807 error responses
+    
+    ## Authentication
+    All endpoints require Bearer token authentication via the `Authorization` header.
+    
+  version: 2.2.1
+  contact:
+    name: Nuvla Support
+    url: https://nuvla.io
+    email: support@sixsq.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: https://nuvla.io/api
+    description: Production Nuvla MEO
+  - url: https://nuvla-dev.io/api
+    description: Development Nuvla MEO
+
+tags:
+  - name: Application Instances
+    description: CRUD operations for application instances
+  - name: Lifecycle Operations
+    description: Instantiate, terminate, and operate applications
+  - name: Operation Occurrences
+    description: Track and query lifecycle operation status
+  - name: Subscriptions
+    description: Subscribe to application state change notifications
+
+paths:
+  /app_lcm/v2/app_instances:
+    post:
+      tags:
+        - Application Instances
+      summary: Create application instance
+      description: |
+        Creates a new application instance resource. The instance is created in NOT_INSTANTIATED state.
+        To deploy the application, use the instantiate operation.
+      operationId: createAppInstance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAppInstanceRequest'
+            example:
+              appDId: module/my-app-descriptor
+              appName: my-web-app
+              appDescription: "Web application for 5G edge"
+      responses:
+        '201':
+          description: Application instance created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppInstanceInfo'
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized - authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - bearerAuth: []
+    
+    get:
+      tags:
+        - Application Instances
+      summary: List application instances
+      description: |
+        Retrieves a list of application instances with optional filtering, pagination, and field selection.
+        
+        **Query Filtering**: Use FIQL-like syntax, e.g., `(eq,appName,my-app)`, `(and,(eq,state,STARTED),(gt,cpu,2))`
+        
+        **Supported operators**: eq, neq, gt, lt, gte, lte, in, and, or
+      operationId: listAppInstances
+      parameters:
+        - name: filter
+          in: query
+          description: FIQL-like filter expression
+          schema:
+            type: string
+          example: "(eq,operationalState,STARTED)"
+        - name: page
+          in: query
+          description: Page number (1-based)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          description: Page size (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: fields
+          in: query
+          description: Comma-separated field names for field selection
+          schema:
+            type: string
+          example: "appName,operationalState,instantiationState"
+      responses:
+        '200':
+          description: Successful response with paginated results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppInstanceList'
+        '400':
+          description: Bad request - invalid filter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - bearerAuth: []
+  
+  /app_lcm/v2/app_instances/{appInstanceId}:
+    get:
+      tags:
+        - Application Instances
+      summary: Get application instance
+      description: Retrieves details of a specific application instance
+      operationId: getAppInstance
+      parameters:
+        - name: appInstanceId
+          in: path
+          required: true
+          description: Application instance identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Application instance details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppInstanceInfo'
+        '404':
+          description: Application instance not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - bearerAuth: []
+    
+    delete:
+      tags:
+        - Application Instances
+      summary: Delete application instance
+      description: |
+        Deletes an application instance. The instance must be in NOT_INSTANTIATED state.
+        Use terminate operation first if the instance is INSTANTIATED.
+      operationId: deleteAppInstance
+      parameters:
+        - name: appInstanceId
+          in: path
+          required: true
+          description: Application instance identifier
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Application instance deleted successfully
+        '404':
+          description: Application instance not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Conflict - cannot delete instantiated instance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - bearerAuth: []
+  
+  /app_lcm/v2/app_instances/{appInstanceId}/instantiate:
+    post:
+      tags:
+        - Lifecycle Operations
+      summary: Instantiate application
+      description: |
+        Deploys the application instance to a selected MEPM (MEC Platform Manager).
+        The MEO selects an appropriate MEPM based on resource requirements and availability.
+        
+        Returns an operation occurrence ID for tracking the operation status.
+      operationId: instantiateApp
+      parameters:
+        - name: appInstanceId
+          in: path
+          required: true
+          description: Application instance identifier
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstantiateAppRequest'
+            example:
+              grantId: grant-123
+      responses:
+        '202':
+          description: Instantiation operation accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppLcmOpOcc'
+        '404':
+          description: Application instance not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Invalid state for operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - bearerAuth: []
+  
+  /app_lcm/v2/app_instances/{appInstanceId}/terminate:
+    post:
+      tags:
+        - Lifecycle Operations
+      summary: Terminate application
+      description: |
+        Undeploys the application instance from the MEPM and releases resources.
+        The instance transitions to NOT_INSTANTIATED state.
+      operationId: terminateApp
+      parameters:
+        - name: appInstanceId
+          in: path
+          required: true
+          description: Application instance identifier
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TerminateAppRequest'
+            example:
+              terminationType: GRACEFUL
+      responses:
+        '202':
+          description: Termination operation accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppLcmOpOcc'
+        '404':
+          description: Application instance not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Invalid state for operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - bearerAuth: []
+  
+  /app_lcm/v2/app_instances/{appInstanceId}/operate:
+    post:
+      tags:
+        - Lifecycle Operations
+      summary: Operate application
+      description: |
+        Changes the operational state of an instantiated application (START or STOP).
+        The instance must be in INSTANTIATED state.
+      operationId: operateApp
+      parameters:
+        - name: appInstanceId
+          in: path
+          required: true
+          description: Application instance identifier
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperateAppRequest'
+            example:
+              changeStateTo: STARTED
+      responses:
+        '202':
+          description: Operate operation accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppLcmOpOcc'
+        '404':
+          description: Application instance not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Invalid state for operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - bearerAuth: []
+  
+  /app_lcm/v2/app_lcm_op_occs:
+    get:
+      tags:
+        - Operation Occurrences
+      summary: List operation occurrences
+      description: |
+        Retrieves a list of lifecycle operation occurrences with optional filtering and pagination.
+        
+        Use this to track the status of instantiate, terminate, and operate operations.
+      operationId: listOpOccs
+      parameters:
+        - name: filter
+          in: query
+          description: FIQL-like filter expression
+          schema:
+            type: string
+          example: "(and,(eq,operationType,INSTANTIATE),(eq,operationState,COMPLETED))"
+        - name: page
+          in: query
+          description: Page number (1-based)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          description: Page size (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: fields
+          in: query
+          description: Comma-separated field names
+          schema:
+            type: string
+          example: "operationType,operationState,startTime"
+      responses:
+        '200':
+          description: Successful response with paginated results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppLcmOpOccList'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - bearerAuth: []
+  
+  /app_lcm/v2/app_lcm_op_occs/{lcmOpOccId}:
+    get:
+      tags:
+        - Operation Occurrences
+      summary: Get operation occurrence
+      description: Retrieves details of a specific operation occurrence
+      operationId: getOpOcc
+      parameters:
+        - name: lcmOpOccId
+          in: path
+          required: true
+          description: Operation occurrence identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operation occurrence details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppLcmOpOcc'
+        '404':
+          description: Operation occurrence not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - bearerAuth: []
+  
+  /app_lcm/v2/subscriptions:
+    post:
+      tags:
+        - Subscriptions
+      summary: Create subscription
+      description: |
+        Creates a subscription for application state change notifications.
+        Notifications are delivered via HTTP POST to the specified callback URI.
+        
+        **Supported notification types**:
+        - AppInstanceStateChangeNotification
+        - AppLcmOpOccStateChangeNotification
+      operationId: createSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubscriptionRequest'
+            example:
+              subscriptionType: AppInstanceStateChangeNotification
+              callbackUri: https://my-app.example.com/notifications
+              appInstanceFilter:
+                appName: my-app
+                operationalState: STARTED
+      responses:
+        '201':
+          description: Subscription created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - bearerAuth: []
+    
+    get:
+      tags:
+        - Subscriptions
+      summary: List subscriptions
+      description: |
+        Retrieves a list of subscriptions owned by the authenticated user.
+        Supports filtering, pagination, and field selection.
+      operationId: listSubscriptions
+      parameters:
+        - name: filter
+          in: query
+          description: FIQL-like filter expression
+          schema:
+            type: string
+          example: "(eq,subscriptionType,AppInstanceStateChangeNotification)"
+        - name: page
+          in: query
+          description: Page number (1-based)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          description: Page size (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: fields
+          in: query
+          description: Comma-separated field names
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response with paginated results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionList'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - bearerAuth: []
+  
+  /app_lcm/v2/subscriptions/{subscriptionId}:
+    get:
+      tags:
+        - Subscriptions
+      summary: Get subscription
+      description: Retrieves details of a specific subscription
+      operationId: getSubscription
+      parameters:
+        - name: subscriptionId
+          in: path
+          required: true
+          description: Subscription identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Subscription details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        '404':
+          description: Subscription not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - bearerAuth: []
+    
+    delete:
+      tags:
+        - Subscriptions
+      summary: Delete subscription
+      description: Deletes a subscription (soft delete - sets active to false)
+      operationId: deleteSubscription
+      parameters:
+        - name: subscriptionId
+          in: path
+          required: true
+          description: Subscription identifier
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Subscription deleted successfully
+        '404':
+          description: Subscription not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+        - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer token authentication using Nuvla session token
+  
+  schemas:
+    # Application Instance Schemas
+    CreateAppInstanceRequest:
+      type: object
+      required:
+        - appDId
+        - appName
+      properties:
+        appDId:
+          type: string
+          description: Application descriptor identifier (module ID in Nuvla)
+          example: "module/my-app-descriptor"
+        appName:
+          type: string
+          description: Human-readable application name
+          example: "my-web-app"
+        appDescription:
+          type: string
+          description: Human-readable application description
+          example: "Web application for 5G edge computing"
+    
+    AppInstanceInfo:
+      type: object
+      required:
+        - id
+        - appInstanceId
+        - appDId
+        - appName
+        - instantiationState
+      properties:
+        id:
+          type: string
+          description: Resource identifier
+          example: "deployment/abc-123"
+        appInstanceId:
+          type: string
+          description: Application instance identifier
+          example: "deployment/abc-123"
+        appDId:
+          type: string
+          description: Application descriptor identifier
+          example: "module/my-app"
+        appName:
+          type: string
+          description: Application name
+          example: "my-web-app"
+        appDescription:
+          type: string
+          description: Application description
+        instantiationState:
+          type: string
+          enum: [NOT_INSTANTIATED, INSTANTIATED]
+          description: Instantiation state
+        operationalState:
+          type: string
+          enum: [STARTED, STOPPED, UNKNOWN]
+          description: Operational state (only valid when INSTANTIATED)
+        instantiatedAppState:
+          $ref: '#/components/schemas/InstantiatedAppState'
+        _links:
+          type: object
+          description: HATEOAS links
+          properties:
+            self:
+              $ref: '#/components/schemas/Link'
+            instantiate:
+              $ref: '#/components/schemas/Link'
+            terminate:
+              $ref: '#/components/schemas/Link'
+            operate:
+              $ref: '#/components/schemas/Link'
+    
+    InstantiatedAppState:
+      type: object
+      properties:
+        mecHostInformation:
+          type: object
+          description: MEC host where app is deployed
+          properties:
+            hostName:
+              type: string
+            hostId:
+              type: string
+        extVirtualLinks:
+          type: array
+          items:
+            type: object
+          description: External virtual links
+    
+    AppInstanceList:
+      type: object
+      required:
+        - items
+        - total
+        - page
+        - size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppInstanceInfo'
+        total:
+          type: integer
+          description: Total number of items matching filter
+        page:
+          type: integer
+          description: Current page number (1-based)
+        size:
+          type: integer
+          description: Page size
+        totalPages:
+          type: integer
+          description: Total number of pages
+        _links:
+          type: object
+          description: HAL-style pagination links
+          properties:
+            self:
+              $ref: '#/components/schemas/Link'
+            first:
+              $ref: '#/components/schemas/Link'
+            prev:
+              $ref: '#/components/schemas/Link'
+            next:
+              $ref: '#/components/schemas/Link'
+            last:
+              $ref: '#/components/schemas/Link'
+    
+    # Lifecycle Operation Schemas
+    InstantiateAppRequest:
+      type: object
+      properties:
+        grantId:
+          type: string
+          description: Grant identifier (optional)
+          example: "grant-123"
+    
+    TerminateAppRequest:
+      type: object
+      required:
+        - terminationType
+      properties:
+        terminationType:
+          type: string
+          enum: [GRACEFUL, FORCEFUL]
+          description: Termination type
+          example: "GRACEFUL"
+    
+    OperateAppRequest:
+      type: object
+      required:
+        - changeStateTo
+      properties:
+        changeStateTo:
+          type: string
+          enum: [STARTED, STOPPED]
+          description: Target operational state
+          example: "STARTED"
+    
+    # Operation Occurrence Schemas
+    AppLcmOpOcc:
+      type: object
+      required:
+        - id
+        - lcmOpOccId
+        - operationType
+        - operationState
+        - appInstanceId
+        - startTime
+      properties:
+        id:
+          type: string
+          description: Resource identifier
+          example: "job/xyz-789"
+        lcmOpOccId:
+          type: string
+          description: Operation occurrence identifier
+          example: "job/xyz-789"
+        operationType:
+          type: string
+          enum: [INSTANTIATE, TERMINATE, OPERATE]
+          description: Operation type
+        operationState:
+          type: string
+          enum: [STARTING, PROCESSING, COMPLETED, FAILED, ROLLED_BACK]
+          description: Operation state
+        appInstanceId:
+          type: string
+          description: Application instance identifier
+        isAutomaticInvocation:
+          type: boolean
+          description: Whether operation was automatically invoked
+          default: false
+        startTime:
+          type: string
+          format: date-time
+          description: Operation start time
+        stateEnteredTime:
+          type: string
+          format: date-time
+          description: Time when current state was entered
+        operationParams:
+          type: object
+          description: Operation parameters
+        error:
+          $ref: '#/components/schemas/ProblemDetails'
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: '#/components/schemas/Link'
+            appInstance:
+              $ref: '#/components/schemas/Link'
+    
+    AppLcmOpOccList:
+      type: object
+      required:
+        - items
+        - total
+        - page
+        - size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppLcmOpOcc'
+        total:
+          type: integer
+        page:
+          type: integer
+        size:
+          type: integer
+        totalPages:
+          type: integer
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: '#/components/schemas/Link'
+            first:
+              $ref: '#/components/schemas/Link'
+            prev:
+              $ref: '#/components/schemas/Link'
+            next:
+              $ref: '#/components/schemas/Link'
+            last:
+              $ref: '#/components/schemas/Link'
+    
+    # Subscription Schemas
+    CreateSubscriptionRequest:
+      type: object
+      required:
+        - subscriptionType
+        - callbackUri
+      properties:
+        subscriptionType:
+          type: string
+          enum: [AppInstanceStateChangeNotification, AppLcmOpOccStateChangeNotification]
+          description: Notification type
+        callbackUri:
+          type: string
+          format: uri
+          description: HTTP(S) URI for notification delivery
+          example: "https://my-app.example.com/notifications"
+        appInstanceFilter:
+          $ref: '#/components/schemas/AppInstanceFilter'
+        appLcmOpOccFilter:
+          $ref: '#/components/schemas/AppLcmOpOccFilter'
+    
+    AppInstanceFilter:
+      type: object
+      description: Filter for AppInstanceStateChangeNotification
+      properties:
+        appInstanceId:
+          type: string
+          description: Filter by app instance ID
+        appName:
+          type: string
+          description: Filter by app name
+        operationalState:
+          type: string
+          enum: [STARTED, STOPPED]
+          description: Filter by operational state
+        instantiationState:
+          type: string
+          enum: [NOT_INSTANTIATED, INSTANTIATED]
+          description: Filter by instantiation state
+    
+    AppLcmOpOccFilter:
+      type: object
+      description: Filter for AppLcmOpOccStateChangeNotification
+      properties:
+        appInstanceId:
+          type: string
+          description: Filter by app instance ID
+        operationType:
+          type: string
+          enum: [INSTANTIATE, TERMINATE, OPERATE]
+          description: Filter by operation type
+        operationState:
+          type: string
+          enum: [STARTING, PROCESSING, COMPLETED, FAILED]
+          description: Filter by operation state
+    
+    Subscription:
+      type: object
+      required:
+        - id
+        - subscriptionId
+        - subscriptionType
+        - callbackUri
+        - active
+      properties:
+        id:
+          type: string
+          description: Resource identifier
+          example: "subscription-123"
+        subscriptionId:
+          type: string
+          description: Subscription identifier
+          example: "subscription-123"
+        subscriptionType:
+          type: string
+          enum: [AppInstanceStateChangeNotification, AppLcmOpOccStateChangeNotification]
+        callbackUri:
+          type: string
+          format: uri
+          description: Notification delivery URI
+        appInstanceFilter:
+          $ref: '#/components/schemas/AppInstanceFilter'
+        appLcmOpOccFilter:
+          $ref: '#/components/schemas/AppLcmOpOccFilter'
+        active:
+          type: boolean
+          description: Whether subscription is active
+        owner:
+          type: string
+          description: Subscription owner (user ID)
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: '#/components/schemas/Link'
+    
+    SubscriptionList:
+      type: object
+      required:
+        - items
+        - total
+        - page
+        - size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Subscription'
+        total:
+          type: integer
+        page:
+          type: integer
+        size:
+          type: integer
+        totalPages:
+          type: integer
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: '#/components/schemas/Link'
+            first:
+              $ref: '#/components/schemas/Link'
+            prev:
+              $ref: '#/components/schemas/Link'
+            next:
+              $ref: '#/components/schemas/Link'
+            last:
+              $ref: '#/components/schemas/Link'
+    
+    # Common Schemas
+    Link:
+      type: object
+      required:
+        - href
+      properties:
+        href:
+          type: string
+          format: uri
+          description: URI reference
+    
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI reference identifying the problem type
+          example: "https://docs.nuvla.io/mec/errors/not-found"
+        title:
+          type: string
+          description: Short, human-readable summary
+          example: "Resource Not Found"
+        status:
+          type: integer
+          description: HTTP status code
+          example: 404
+        detail:
+          type: string
+          description: Human-readable explanation
+          example: "AppInstance app-123 not found"
+        instance:
+          type: string
+          description: URI reference identifying the specific occurrence
+          example: "app-123"
+      additionalProperties: true
+      description: RFC 7807 Problem Details for HTTP APIs

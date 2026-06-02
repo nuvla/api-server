@@ -17,6 +17,16 @@
       (not (.contains ns-name "test"))
       sym)))
 
+(defn mec-resource-link?
+  "Returns the namespace symbol for nested MEC resource collections that should
+   be exposed in the cloud-entry-point collections list."
+  [sym]
+  (let [ns-name (name sym)]
+    (and
+      (re-matches #"^com\.sixsq\.nuvla\.server\.resources\.mec\.[\w-]+$" ns-name)
+      (not (.contains ns-name "test"))
+      sym)))
+
 
 (defn resource-namespaces
   "Returns sequence of the resource namespaces on the classpath."
@@ -29,8 +39,9 @@
    keyword associated with the relative URL for the resource. Function returns
    nil if 'resource-type' cannot be found in the resource."
   [resource-ns]
-  (when-let [vtag (ns-util/resolve "resource-type" resource-ns)]
-    [(keyword (deref vtag)) {:href (deref vtag)}]))
+  (when (ns-util/resolve "query-impl" resource-ns)
+    (when-let [vtag (ns-util/resolve "resource-type" resource-ns)]
+      [(keyword (deref vtag)) {:href (deref vtag)}])))
 
 
 (def ^:private initialize-data-fns (atom []))
@@ -70,7 +81,8 @@
   "Returns a lazy sequence of all of the resource links for resources
    discovered on the classpath."
   []
-  (->> (resource-namespaces)
+  (->> (concat (resource-namespaces)
+               (ns-util/load-filtered-namespaces mec-resource-link?))
        (map get-resource-link)
        (remove nil?)))
 

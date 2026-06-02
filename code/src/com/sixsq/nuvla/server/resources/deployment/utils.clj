@@ -112,7 +112,7 @@
 
 (defn create-job
   [{:keys [id nuvlabox deployment-set] :as resource} request action execution-mode
-   & {:keys [payload]}]
+   & {:keys [payload job-attrs]}]
   (a/throw-cannot-manage resource request)
   (let [active-claim (auth/current-active-claim request)
         low-priority (get-in request [:body :low-priority] false)
@@ -131,7 +131,8 @@
                                        :parent-job parent-job
                                        :priority (if low-priority 999 50)
                                        :execution-mode execution-mode
-                                       :payload (when (seq payload) (j/write-value-as-string payload)))
+                                       :payload (when (seq payload) (j/write-value-as-string payload))
+                                       :job-attrs job-attrs)
         job-msg      (str action " " id " with async " job-id)]
     (when (not= job-status 201)
       (throw (r/ex-response

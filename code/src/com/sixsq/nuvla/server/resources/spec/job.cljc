@@ -177,13 +177,86 @@
            :json-schema/order 36)))
 
 
+(s/def ::mec-operation-type
+  (-> (st/spec #{"INSTANTIATE" "TERMINATE" "OPERATE"})
+      (assoc :name "mec-operation-type"
+             :json-schema/type "string"
+             :json-schema/description "ETSI MEC lifecycle operation type"
+             :json-schema/value-scope {:values ["INSTANTIATE" "TERMINATE" "OPERATE"]}
+
+             :json-schema/order 37)))
+
+
+(s/def ::mec-app-instance-id
+  (-> (st/spec ::core/resource-href)
+      (assoc :name "mec-app-instance-id"
+             :json-schema/type "resource-id"
+             :json-schema/description "deployment-backed MEC app instance identifier"
+
+             :json-schema/order 38)))
+
+
+(s/def ::mec-request-params
+  (-> (st/spec map?)
+      (assoc :name "mec-request-params"
+             :json-schema/type "map"
+             :json-schema/description "MEC lifecycle request parameters associated with this job"
+
+             :json-schema/order 39)))
+
+
+(s/def ::mepm-id
+  (-> (st/spec ::core/resource-href)
+      (assoc :name "mepm-id"
+             :json-schema/type "resource-id"
+             :json-schema/description "identifier of the MEPM selected for the MEC lifecycle action"
+
+             :json-schema/order 40)))
+
+
+(s/def ::mepm-endpoint
+  (-> (st/spec ::core/url)
+      (assoc :name "mepm-endpoint"
+             :json-schema/type "string"
+             :json-schema/description "Mm3 endpoint of the selected MEPM"
+
+             :json-schema/order 41)))
+
+
+(s/def ::mec-host-id
+  (-> (st/spec ::core/resource-href)
+      (assoc :name "mec-host-id"
+             :json-schema/type "resource-id"
+             :json-schema/description "target MEC host associated with the lifecycle job"
+
+             :json-schema/order 42)))
+
+
+(s/def ::mec-last-notification
+  (-> (st/spec map?)
+      (assoc :name "mec-last-notification"
+             :json-schema/type "map"
+             :json-schema/description "summary of the most recent southbound Mm3.003 lifecycle notification correlated to this job"
+
+             :json-schema/order 43)))
+
+
+(s/def ::mec-southbound-operation-id
+  (-> (st/spec string?)
+      (assoc :name "mec-southbound-operation-id"
+             :json-schema/type "string"
+             :json-schema/description "southbound Mm3 lifecycle operation identifier correlated with this job"
+
+             :json-schema/order 44)))
+
+
 (s/def ::version
   (-> (st/spec nat-int?)
     (assoc :name "version"
            :json-schema/type "integer"
            :json-schema/description "Compatibility indicator which represent Job-engine major version"
 
-           :json-schema/order 37)))
+           :json-schema/order 45)))
 
 
 (s/def ::schema
@@ -205,4 +278,12 @@
                                ::duration
                                ::expiry
                                ::output
-                               ::payload]}))
+                               ::payload
+                               ::mec-operation-type
+                               ::mec-app-instance-id
+                               ::mec-request-params
+                               ::mepm-id
+                               ::mepm-endpoint
+                               ::mec-host-id
+                               ::mec-last-notification
+                               ::mec-southbound-operation-id]}))

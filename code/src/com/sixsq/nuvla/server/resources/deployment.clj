@@ -15,6 +15,7 @@ a container orchestration engine.
     [com.sixsq.nuvla.server.resources.deployment.utils :as utils]
     [com.sixsq.nuvla.server.resources.job.interface :as job-interface]
     [com.sixsq.nuvla.server.resources.job.utils :as job-utils]
+    [com.sixsq.nuvla.server.resources.mec.job-notifications :as mec-job-notifications]
     [com.sixsq.nuvla.server.resources.module.utils :as module-utils]
     [com.sixsq.nuvla.server.resources.nuvlabox.status-utils :as nuvlabox-status-utils]
     [com.sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -188,14 +189,15 @@ a container orchestration engine.
   [{{:keys [parent execution-mode deployment-set app-set api-endpoint]} :body :as request}]
   ;; TODO only allow creation with specific version to always have a version without needing to check versions map
   (a/throw-cannot-add collection-acl request)
-  (-> request
-      module-utils/resolve-from-module
-      (cond-> deployment-set (assoc :deployment-set deployment-set)
-              app-set (assoc :app-set app-set)
-              parent (assoc :parent parent)
-              execution-mode (assoc :execution-mode execution-mode)
-              api-endpoint (assoc :api-endpoint api-endpoint))
-      (create-deployment request)))
+  (let [body (:body request)]
+    (-> (merge (select-keys body [:data :name :description :tags])
+               (module-utils/resolve-from-module request))
+        (cond-> deployment-set (assoc :deployment-set deployment-set)
+                app-set (assoc :app-set app-set)
+                parent (assoc :parent parent)
+                execution-mode (assoc :execution-mode execution-mode)
+                api-endpoint (assoc :api-endpoint api-endpoint))
+        (create-deployment request))))
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 
@@ -308,6 +310,8 @@ a container orchestration engine.
           user-rights?   (get-in deployment [:module :content :requires-user-rights])
           data?          (some? (:data deployment))
           execution-mode (:execution-mode deployment)
+          job-attrs      (get-in request [:body :job-attrs])
+          mec-operate?   (= "OPERATE" (:mec-operation-type job-attrs))
           state          (if (= execution-mode "pull") "PENDING" "STARTING")
           new-deployment (-> deployment
                              (assoc :state state)
@@ -318,18 +322,25 @@ a container orchestration engine.
                                                                  user-rights?)
                                                          (auth/current-authentication request))))
                              (edit-deployment request))]
-      (when stopped?
+      ;; A stopped MEC deployment must keep its persisted southbound MM3 app instance id
+      ;; so the subsequent OPERATE->STARTED job can act on the same instance.
+      (when (and stopped? (not mec-operate?))
         (utils/delete-child-resources "deployment-parameter" id))
-      (utils/create-job new-deployment request "start_deployment" execution-mode))
+      (utils/create-job new-deployment request "start_deployment" execution-mode
+                        :job-attrs job-attrs))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
 (defmethod crud/do-action [resource-type "stop"]
   [{{uuid :uuid} :params body :body :as request}]
   (try
-    (let [deployment     (-> (str resource-type "/" uuid)
-                             (crud/retrieve-by-id-as-admin)
-                             (u/throw-cannot-do-action-invalid-state utils/can-stop? "stop"))
+    (let [deployment-id   (str resource-type "/" uuid)
+          job-attrs       (:job-attrs body)
+          mec-terminate?  (= "TERMINATE" (:mec-operation-type job-attrs))
+          deployment0     (crud/retrieve-by-id-as-admin deployment-id)
+          deployment      (if (and mec-terminate? (= "STOPPED" (:state deployment0)))
+                            deployment0
+                            (u/throw-cannot-do-action-invalid-state deployment0 utils/can-stop? "stop"))
           execution-mode (:execution-mode deployment)
           params         (cond-> {}
                                  (:delete body) (assoc :delete true)
@@ -338,7 +349,9 @@ a container orchestration engine.
       (-> deployment
           (assoc :state "STOPPING")
           (edit-deployment request)
-          (utils/create-job request "stop_deployment" execution-mode :payload params)))
+          (utils/create-job request "stop_deployment" execution-mode
+                            :payload params
+                            :job-attrs job-attrs)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -441,19 +454,48 @@ a container orchestration engine.
   (utils/get-context resource false))
 
 (defmethod job-interface/on-cancel ["deployment" "start_deployment"]
-  [resource]
-  (utils/on-cancel resource))
+  [job]
+  (let [response (utils/on-cancel job)]
+    (mec-job-notifications/dispatch-mec-job-finalization! job)
+    response))
 
 (defmethod job-interface/on-cancel ["deployment" "update_deployment"]
-  [resource]
-  (utils/on-cancel resource))
+  [job]
+  (let [response (utils/on-cancel job)]
+    (mec-job-notifications/dispatch-mec-job-finalization! job)
+    response))
 
 (defmethod job-interface/on-cancel ["deployment" "stop_deployment"]
-  [resource]
-  (utils/on-cancel resource))
+  [job]
+  (let [response (utils/on-cancel job)]
+    (mec-job-notifications/dispatch-mec-job-finalization! job)
+    response))
+
+(defmethod job-interface/on-timeout ["deployment" "start_deployment"]
+  [job]
+  (let [response (utils/on-cancel job)]
+    (mec-job-notifications/dispatch-mec-job-finalization! job)
+    response))
+
+(defmethod job-interface/on-timeout ["deployment" "update_deployment"]
+  [job]
+  (let [response (utils/on-cancel job)]
+    (mec-job-notifications/dispatch-mec-job-finalization! job)
+    response))
+
+(defmethod job-interface/on-timeout ["deployment" "stop_deployment"]
+  [job]
+  (let [response (utils/on-cancel job)]
+    (mec-job-notifications/dispatch-mec-job-finalization! job)
+    response))
+
+(defmethod job-interface/on-done ["deployment" "start_deployment"]
+  [job]
+  (mec-job-notifications/dispatch-mec-job-finalization! job))
 
 (defmethod job-interface/on-done ["deployment" "stop_deployment"]
-  [{:keys [target-resource state payload] :as _job}]
+  [{:keys [target-resource state payload] :as job}]
+  (mec-job-notifications/dispatch-mec-job-finalization! job)
   (when-let [deployment (and (= state job-utils/state-success)
                              (-> payload j/read-value (get "delete" false))
                              (some-> target-resource :href crud/retrieve-by-id-as-admin))]

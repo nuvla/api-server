@@ -4,6 +4,7 @@
     [com.sixsq.nuvla.server.resources.common.crud :as crud]
     [com.sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
     [com.sixsq.nuvla.server.resources.common.event-context :as ec]
+    [com.sixsq.nuvla.server.resources.mec :as mec]
     [com.sixsq.nuvla.server.util.response :as r]
     [compojure.core :refer [ANY DELETE GET let-routes OPTIONS PATCH POST PUT routes]]
     [compojure.route :as route]
@@ -87,6 +88,7 @@
    classpath."
   []
   (apply routes (doall (concat [cors-preflight-check-route
-                                (route/resources (str p/service-context "static"))]
+                                (route/resources (str p/service-context "static"))
+                                mec/routes]
                                (dyn/resource-routes)
                                final-routes))))

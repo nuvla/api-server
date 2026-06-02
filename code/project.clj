@@ -44,6 +44,7 @@
    [compojure "1.7.1" :exclusions [[ring/ring-core]]]
    [instaparse "1.5.0"]
    [metosin/spec-tools "0.10.7"]
+   [clj-commons/clj-yaml "1.0.29"]
    [expound "0.9.0"]
    [com.draines/postal "2.0.5"]
    [org.clojure/data.csv "1.1.0"]
@@ -95,9 +96,10 @@
                              [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
 
    :test     {:dependencies      [[me.raynes/fs "1.4.6"]
-                                  [org.testcontainers/testcontainers "1.20.4"]
+                                  [org.testcontainers/testcontainers "1.21.4"]
                                   [peridot "0.5.4"]
                                   [clj-test-containers "0.7.4"]
+                                  [ring/ring-jetty-adapter "1.12.2"]
                                   [org.clojure/test.check "1.1.1"]
                                   [com.cemerick/url "0.1.1"]
                                   [org.clojars.konstan/kinsky-test-jar ~kinsky-version]

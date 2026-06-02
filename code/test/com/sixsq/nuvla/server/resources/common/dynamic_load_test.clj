@@ -49,3 +49,9 @@
             ;; check that initialization happened in the right order
             (is (apply <= (map second @init-seq)))))))))
 
+(deftest nested-mec-resource-discovery
+  (testing "cloud-entry-point links only expose collection-style MEC resources"
+    (let [resource-links (into {} (dyn/get-resource-links))]
+      (is (= {:href "mec-subscription"} (:mec-subscription resource-links)))
+      (is (nil? (:mec-app-lcm resource-links))))))
+

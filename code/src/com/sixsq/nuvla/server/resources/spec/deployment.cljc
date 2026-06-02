@@ -341,6 +341,75 @@
 
     :json-schema/section "meta"))
 
+(s/def ::mec-last-notification
+  (assoc (st/spec map?)
+    :name "mec-last-notification"
+    :json-schema/type "map"
+    :json-schema/description "summary of the most recent southbound Mm3.003 lifecycle notification correlated to this deployment"
+
+    :json-schema/section "meta"))
+
+(s/def ::mec-app-instance-id
+  (assoc (st/spec ::common/id)
+    :name "mec-app-instance-id"
+    :json-schema/type "resource-id"
+    :json-schema/description "identifier of the MEC-facing app instance deployment correlated to this deployment"
+
+    :json-schema/section "meta"
+    :json-schema/editable false
+    :json-schema/server-managed true))
+
+(s/def ::mec-backing-deployment-id
+  (assoc (st/spec ::common/id)
+    :name "mec-backing-deployment-id"
+    :json-schema/type "resource-id"
+    :json-schema/description "identifier of the backing Nuvla deployment correlated to this MEC app instance"
+
+    :json-schema/section "meta"
+    :json-schema/editable false
+    :json-schema/server-managed true))
+
+(s/def ::mec-mepm-id
+  (assoc (st/spec ::common/id)
+    :name "mec-mepm-id"
+    :json-schema/type "resource-id"
+    :json-schema/description "identifier of the MEPM selected for this MEC-correlated deployment"
+
+    :json-schema/section "meta"
+    :json-schema/editable false
+    :json-schema/server-managed true))
+
+(s/def ::mec-mepm-name
+  (assoc (st/spec string?)
+    :name "mec-mepm-name"
+    :json-schema/type "string"
+    :json-schema/description "display name snapshot of the MEPM selected for this MEC-correlated deployment"
+
+    :json-schema/section "meta"
+    :json-schema/editable false
+    :json-schema/server-managed true))
+
+(s/def ::mec-host-id
+  (assoc (st/spec ::common/id)
+    :name "mec-host-id"
+    :json-schema/type "resource-id"
+    :json-schema/description "identifier of the MEC host or Nuvla Edge selected for this MEC-correlated deployment"
+
+    :json-schema/section "meta"
+    :json-schema/editable false
+    :json-schema/server-managed true))
+
+(s/def ::mec-backend-mode
+  (assoc (st/spec #{"MOCK" "NUVLA_BACKED"})
+    :name "mec-backend-mode"
+    :json-schema/type "string"
+    :json-schema/description "MEPM backend mode snapshot associated with this MEC-correlated deployment"
+    :json-schema/value-scope {:values ["MOCK" "NUVLA_BACKED"]}
+
+    :json-schema/section "meta"
+    :json-schema/editable false
+    :json-schema/server-managed true))
+
 (def deployment-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::module
@@ -360,6 +429,13 @@
                                   ::deployment-set
                                   ::deployment-set-name
                                   ::app-set
+                                  ::mec-last-notification
+                                  ::mec-app-instance-id
+                                  ::mec-backing-deployment-id
+                                  ::mec-mepm-id
+                                  ::mec-mepm-name
+                                  ::mec-host-id
+                                  ::mec-backend-mode
                                   ::data-objects            ;; deprecated
                                   ::data-records            ;; deprecated
                                   ::data-records-filter     ;; deprecated

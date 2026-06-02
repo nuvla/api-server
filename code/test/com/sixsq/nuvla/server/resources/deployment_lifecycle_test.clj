@@ -100,6 +100,29 @@
   (mdtu/check-metadata-exists t/resource-type))
 
 
+(deftest lifecycle-create-preserves-tags
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session-anon  (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+          session-user  (header session-anon authn-info-header
+                                (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
+          module-id     (setup-module session-user (valid-module "component" valid-component "tags/preserve"))
+          deployment-id (-> session-user
+                            (request base-uri
+                                     :request-method :post
+                                     :body (j/write-value-as-string {:module {:href module-id}
+                                                                     :tags   ["MEC"]}))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))]
+      (-> session-user
+          (request (str p/service-context deployment-id))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :tags ["MEC"])))))
+
+
 (defn lifecycle-deployment
   [subtype valid-module-content]
   (binding [config-nuvla/*stripe-api-key* nil]

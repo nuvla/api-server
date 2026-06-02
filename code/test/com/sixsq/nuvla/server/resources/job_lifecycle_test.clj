@@ -150,14 +150,14 @@
           (let [bulk-job-resp (-> session-admin
                                   (request base-uri
                                            :request-method :post
-                                           :body (j/write-value-as-string (assoc valid-job
-                                                                   :action "bulk-action"
-                                                                   :priority 50)))
+                                           :body (j/write-value-as-string
+                                                   (assoc valid-job
+                                                          :action "bulk-action"
+                                                          :priority 50)))
                                   (ltu/body->edn)
                                   (ltu/is-status 201))
                 bulk-job-id   (ltu/location bulk-job-resp)
                 bulk-job-url  (ltu/location-url bulk-job-resp)]
-
             (testing "Cancel job with children"
               (let [cancel-url (-> session-admin
                                    (request bulk-job-url)
@@ -169,8 +169,34 @@
                     (request cancel-url)
                     (ltu/body->edn)
                     (ltu/is-status 200))
+                (is (some? (ju/existing-job-id-not-in-final-state bulk-job-id "cancel_children_jobs")))))))
 
-                (is (some? (ju/existing-job-id-not-in-final-state bulk-job-id "cancel_children_jobs")))))))))
+        (testing "Admin can create a MEC-tagged lifecycle job"
+          (let [mec-job-url (-> session-admin
+                                (request base-uri
+                                         :request-method :post
+                                         :body (j/write-value-as-string
+                                                 (assoc valid-job
+                                                        :action "start_deployment"
+                                                        :target-resource {:href "deployment/test-mec"}
+                                                        :mec-operation-type "INSTANTIATE"
+                                                        :mec-app-instance-id "deployment/test-mec"
+                                                        :mec-request-params {:grantId "grant-1"}
+                                                        :mepm-id "mepm/test-1"
+                                                        :mepm-endpoint "https://mepm.example.com"
+                                                        :mec-host-id "nuvlabox/test-1")))
+                                (ltu/body->edn)
+                                (ltu/is-status 201)
+                                (ltu/location-url))]
+            (-> session-admin
+                (request mec-job-url)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-key-value :mec-operation-type "INSTANTIATE")
+                (ltu/is-key-value :mec-app-instance-id "deployment/test-mec")
+                (ltu/is-key-value :mepm-id "mepm/test-1")
+                (ltu/is-key-value :mepm-endpoint "https://mepm.example.com")
+                (ltu/is-key-value :mec-host-id "nuvlabox/test-1"))))))
 
     (testing "Job timeout"
       (let [job-resp (-> session-admin

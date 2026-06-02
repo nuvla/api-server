@@ -1,6 +1,6 @@
 (ns com.sixsq.nuvla.server.resources.cloud-entry-point-lifecycle-test
   (:require
-    [clojure.test :refer [deftest testing use-fixtures]]
+    [clojure.test :refer [deftest is testing use-fixtures]]
     [com.sixsq.nuvla.server.app.params :as p]
     [com.sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [com.sixsq.nuvla.server.resources.cloud-entry-point :as t]
@@ -41,7 +41,9 @@
                   (ltu/is-operation-absent :delete)
                   (ltu/body))]
 
-      (stu/is-valid ::cep/resource cep))
+      (stu/is-valid ::cep/resource cep)
+      (is (= {:href "mec-subscription"}
+             (get-in cep [:collections :mec-subscription]))))
 
     ;; retrieve root resource (root should have edit rights)
     (-> session-admin
